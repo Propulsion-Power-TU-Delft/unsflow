@@ -1220,7 +1220,7 @@ class MeridionalProcess:
         if folder is None:
             folder = folder_meta_data_default
         if file_name is None:
-            file_name = 'meridional_process_%d_%d' %(self.nstream, self.nspan)
+            file_name = 'meridional_process_%d_%d.pickle' %(self.nstream, self.nspan)
 
-        with open(folder+file_name, "wb") as file:
+        with open(folder+file_name+'.pickle', "wb") as file:
             pickle.dump(self, file)
