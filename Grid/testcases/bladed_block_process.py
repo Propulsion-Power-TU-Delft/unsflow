@@ -42,10 +42,12 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_span_points(sampling_mode=grid_sampling)
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='streamwise', curved_border=True)
 bladed_block.compute_double_grid()
 bladed_block.find_border()
-bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan))
+bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
+bladed_block.plot_full_grid(save_filename='grid_outline_%2d_%2d' % (nstream, nspan), outline=True)
+
 
 # find the camber surface, using the (z,r) grid found in the bladed block
 blade.find_camber_surface(bladed_block)
@@ -66,7 +68,7 @@ blade.compute_blade_camber_angles(convention='rotation-wise')
 blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
 # instantiate cfd data object and perform processing removing the outliers
-file_name = 'data/meta/config_02.csv'
+file_name = 'data/meta/config_01.csv'
 data = Grid.src.CfdData(file_name, rpm_shaft=-17186, blade=blade, cut_block=bladed_block, verbose=True, normalize=True)
 data.process_from_ansys_csv()
 data.compute_flow_ideal_vectors()

@@ -91,32 +91,58 @@ class Block:
 
 
 
-    def compute_span_points(self, sampling_mode='default'):
+    def compute_grid_points(self, sampling_mode='default', grid_mode='spanwise', curved_border=True):
         """
         obtain the points in the middle of the channel connecting with a straight line the streamwise points 
         on hub and shroud. Then sample them on the connecting line with a certain sampling algorithm
         """
         if sampling_mode == 'default':
             self.u_span = np.linspace(0, 1, self.nspan)
+            self.u_stream = np.linspace(0, 1, self.nstream)
         elif sampling_mode == 'clustering':
             self.u_span = cluster_sample_u(self.nspan)  # this can also be obtained with sigmoid
+            self.u_stream = cluster_sample_u(self.nstream)  # this can also be obtained with sigmoid
         self.r_grid_points = np.zeros((self.nstream, self.nspan))
         self.z_grid_points = np.zeros((self.nstream, self.nspan))
 
-        # algorith for internal points. The leading and trailing lines are obtained directly from the inlet and outlet lines
-        for istream in range(0, self.nstream):
-            for ispan in range(0, self.nspan):
-                self.r_grid_points[istream, ispan] = self.hub_trim.r_sample[istream] + self.u_span[ispan] * (
-                        self.shroud_trim.r_sample[istream] - self.hub_trim.r_sample[istream])
 
-                self.z_grid_points[istream, ispan] = self.hub_trim.z_sample[istream] + self.u_span[ispan] * (
-                        self.shroud_trim.z_sample[istream] - self.hub_trim.z_sample[istream])
+        if grid_mode == 'spanwise':
+            # algorithm for internal points, connecting points on the hub and shroud along the span direction
+            for istream in range(0, self.nstream):
+                for ispan in range(0, self.nspan):
 
-        # now overwrite the points that in reality are taken from the leading and trailing edges
-        self.r_grid_points[0, :] = self.leading_edge.r_sample
-        self.r_grid_points[-1, :] = self.trailing_edge.r_sample
-        self.z_grid_points[0, :] = self.leading_edge.z_sample
-        self.z_grid_points[-1, :] = self.trailing_edge.z_sample
+                    self.r_grid_points[istream, ispan] = self.hub_trim.r_sample[istream] + self.u_span[ispan] * (
+                            self.shroud_trim.r_sample[istream] - self.hub_trim.r_sample[istream])
+
+                    self.z_grid_points[istream, ispan] = self.hub_trim.z_sample[istream] + self.u_span[ispan] * (
+                            self.shroud_trim.z_sample[istream] - self.hub_trim.z_sample[istream])
+
+            # now overwrite the points that in reality are taken from the curved leading and trailing edges
+            if curved_border:
+                self.r_grid_points[0, :] = self.leading_edge.r_sample
+                self.r_grid_points[-1, :] = self.trailing_edge.r_sample
+                self.z_grid_points[0, :] = self.leading_edge.z_sample
+                self.z_grid_points[-1, :] = self.trailing_edge.z_sample
+
+        elif grid_mode == 'streamwise':
+            # algorithm for internal points, connecting points on the inlet and trailing edges along the stream direction
+            for istream in range(0, self.nstream):
+                for ispan in range(0, self.nspan):
+                    self.r_grid_points[istream, ispan] = self.leading_edge.r_sample[ispan] + self.u_stream[istream] * (
+                            self.trailing_edge.r_sample[ispan] - self.leading_edge.r_sample[ispan])
+
+                    self.z_grid_points[istream, ispan] = self.leading_edge.z_sample[ispan] + self.u_stream[istream] * (
+                            self.trailing_edge.z_sample[ispan] - self.leading_edge.z_sample[ispan])
+
+            # now overwrite the points that in reality are taken from the curved leading and trailing edges
+            if curved_border:
+                self.r_grid_points[:, 0] = self.hub_trim.r_sample
+                self.r_grid_points[:, -1] = self.shroud_trim.r_sample
+                self.z_grid_points[:, 0] = self.hub_trim.z_sample
+                self.z_grid_points[:, -1] = self.shroud_trim.z_sample
+
+
+
 
 
 
@@ -300,8 +326,8 @@ class Block:
 
 
 
-    def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False):
+    def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
+                       secondary_grid_points=False, hub_shroud=False, outline=False):
         """
         plot everything of the grid
         """
@@ -323,6 +349,11 @@ class Block:
                 plt.plot(self.z_grid_points[istream, :], self.r_grid_points[istream, :], lw=light_line_width, c='black')
             for ispan in range(0, self.nspan):
                 plt.plot(self.z_grid_points[:, ispan], self.r_grid_points[:, ispan], lw=light_line_width, c='black')
+        elif outline:
+            plt.plot(self.z_grid_points[0, :], self.r_grid_points[0, :], lw=line_width, label='leading edge')
+            plt.plot(self.z_grid_points[-1, :], self.r_grid_points[-1, :], lw=line_width, label='trailing edge')
+            plt.plot(self.z_grid_points[:, 0], self.r_grid_points[:, 0], lw=line_width, label='hub')
+            plt.plot(self.z_grid_points[:, -1], self.r_grid_points[:, -1], lw=line_width, label='shroud')
 
         # primary grid points
         if primary_grid_points:
@@ -341,7 +372,7 @@ class Block:
             plt.scatter(self.z_grid_centers.flatten(), self.r_grid_centers.flatten(), c='blue', s=scatter_point_size,
                         label='secondary grid nodes')
 
-        if (primary_grid_points or secondary_grid_points):
+        if (primary_grid_points or secondary_grid_points or outline):
             plt.legend()
         plt.xlabel(r'$z \ \mathrm{%s}$' % (self.units))
         plt.ylabel(r'$r \ \mathrm{%s}$' % (self.units))
