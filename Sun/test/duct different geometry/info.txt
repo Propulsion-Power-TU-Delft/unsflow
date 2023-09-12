@@ -1,0 +1,4 @@
+this folder contains scripts to execute the duct annulus problem for 
+different geometry. This is needed to understand if 
+the code correctly follows the change in the eigenfrequencies with the 
+Change in geometry

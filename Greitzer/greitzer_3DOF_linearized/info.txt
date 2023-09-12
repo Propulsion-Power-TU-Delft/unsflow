@@ -1,0 +1,2 @@
+this folder contains calculations relative to the linearized Greitzer's surge equations. It computes the stability map
+of two different compression systems, differing only for the plenum volume value.

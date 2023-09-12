@@ -1,0 +1,4 @@
+this folder contains scripts to execute the duct annulus problem for 
+different circumferential mode numbers. This is needed to understand if 
+the code correctly follows the increase of the eigenfrequencies with the 
+increase of the circumferential mode number.
