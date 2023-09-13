@@ -133,3 +133,109 @@ def cartesian_to_cylindrical_matrix(x, y):
                   [0, 0, 1]])
 
     return M
+
+
+def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0):
+    # parameters
+    nx = np.shape(c_bottom)[1]
+    ny = np.shape(c_left)[1]
+    maxit = 500000
+    show = 1  # 1 for yes, 0 for no to display solution while solving
+    Ermax = 1e-9
+
+    # initializing the borders
+    c1 = c_left
+    c2 = c_bottom
+    c3 = c_right
+    c4 = c_top
+
+    # plot the border
+    plt.figure()
+    plt.plot(c1[0, :], c1[1, :], label='c1')
+    plt.plot(c2[0, :], c2[1, :], label='c2')
+    plt.plot(c3[0, :], c3[1, :], label='c3')
+    plt.plot(c4[0, :], c4[1, :], label='c4')
+    plt.legend()
+
+    alpha = np.zeros((nx, ny))
+    beta = np.zeros((nx, ny))
+    gamma = np.zeros((nx, ny))
+
+    # initialize the X grid
+    # X = np.zeros((nx, ny))
+    # X[0, :] = c1[0, :]  # left
+    # X[-1, :] = c3[0, :]  # right
+    # X[:, -1] = c4[0, :]  # top
+    # X[:, 0] = c2[0, :]  # bottom
+    X = X0
+
+    # initialize the Y grid
+    # Y = np.zeros((nx, ny))
+    # Y[0, :] = c1[1, :]  # right
+    # Y[-1, :] = c3[1, :]  # left
+    # Y[:, -1] = c4[1, :]  # top
+    # Y[:, 0] = c2[1, :]  # bottom
+    Y = Y0
+
+    newX = X.copy()
+    newY = Y.copy()
+
+    Er1 = np.zeros(maxit)
+    Er2 = np.zeros(maxit)
+
+    # calculating by iterations
+    for t in range(maxit):
+
+        # prepare the slices of the 2D array, to update internal points
+        i = slice(1, nx - 1)
+        i_plus = slice(2, nx)
+        i_minus = slice(0, nx - 2)
+        j = slice(1, ny - 1)
+        j_plus = slice(2, ny)
+        j_minus = slice(0, ny - 2)
+
+        alpha[i, j] = (1 / 4) * ((X[i, j_plus] - X[i, j_minus]) ** 2 + (Y[i, j_plus] - Y[i, j_minus]) ** 2)
+
+        beta[i, j] = (1 / 16) * ((X[i_plus, j] - X[i_minus, j]) * (X[i, j_plus] - X[i, j_minus]) +
+                                 (Y[i_plus, j] - Y[i_minus, j]) * (Y[i, j_plus] - Y[i, j_minus]))
+
+        gamma[i, j] = (1 / 4) * ((X[i_plus, j] - X[i_minus, j]) ** 2 + (Y[i_plus, j] - Y[i_minus, j]) ** 2)
+
+        newX[i, j] = ((-0.5) / (alpha[i, j] + gamma[i, j] + 1e-9)) * (
+                2 * beta[i, j] * (X[i_plus, j_plus] - X[i_minus, j_plus] - X[i_plus, j_minus] + X[i_minus, j_minus]) -
+                alpha[i, j] * (X[i_plus, j] + X[i_minus, j]) - gamma[i, j] * (X[i, j_plus] + X[i, j_minus]))
+
+        newY[i, j] = ((-0.5) / (alpha[i, j] + gamma[i, j] + 1e-9)) * (
+                2 * beta[i, j] * (Y[i_plus, j_plus] - Y[i_minus, j_plus] - Y[i_plus, j_minus] + Y[i_minus, j_minus]) -
+                alpha[i, j] * (Y[i_plus, j] + Y[i_minus, j]) - gamma[i, j] * (Y[i, j_plus] + Y[i, j_minus]))
+
+        Er1[t] = np.max(np.abs(newX - X))
+        Er2[t] = np.max(np.abs(newY - Y))
+
+        X = newX.copy()
+        Y = newY.copy()
+
+        if Er1[t] < Ermax and Er2[t] < Ermax:
+            break
+
+        if show == 1:
+            if t % 10 == 0:
+                plt.clf()
+                plt.axis('equal')
+                for m in range(nx):
+                    plt.plot(X[m, :], Y[m, :], 'b', lw=light_line_width)
+                for m in range(ny):
+                    plt.plot(X[:, m], Y[:, m], 'b', lw=light_line_width)
+                plt.pause(0.001)
+
+    if t == maxit:
+        print('Convergence not reached')
+
+    plt.clf()
+    plt.axis('equal')
+    for m in range(nx):
+        plt.plot(X[m, :], Y[m, :], 'b')
+    for m in range(ny):
+        plt.plot(X[:, m], Y[:, m], color=[0, 0, 0])
+    # plt.show()
+    return X, Y

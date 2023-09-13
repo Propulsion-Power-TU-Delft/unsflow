@@ -5,5 +5,6 @@ from .cfd_data import CfdData
 from .curve import Curve
 from .functions import *
 from .meridional_process import MeridionalProcess
+from .meridional_process_group import MeridionalProcessGroup
 from .multiblock import Multiblock
 from .styles import *
