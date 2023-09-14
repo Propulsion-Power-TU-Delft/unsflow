@@ -20,7 +20,7 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, blade_file_path, format_file='.curve', rescale_factor=1):
+    def __init__(self, blade_file_path, format_file='.curve', rescale_factor=1, x_ref=1):
         """
         reads the info from the blade file .curve, which is created during blade generation
         """
@@ -32,6 +32,7 @@ class Blade:
         self.blade = []  # main or splitter type
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
+        self.x_ref = x_ref
 
         if format_file == '.curve':
             self.read_from_curve_file()
@@ -74,8 +75,13 @@ class Blade:
         self.convert_to_arrays()
 
         self.x *= self.rescale_factor
+        self.x /= self.x_ref
+
         self.y *= self.rescale_factor
+        self.y /= self.x_ref
+
         self.z *= self.rescale_factor
+        self.z /= self.x_ref
 
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)

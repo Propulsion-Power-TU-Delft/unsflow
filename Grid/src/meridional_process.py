@@ -149,13 +149,8 @@ class MeridionalProcess:
         if gauss_filter:
             self.gauss_filtering()
 
-        if self.data.normalize:
-            # if the CFD data has been normalized, treat the cordinates that are still dimensional
-            self.ut_drag = (self.data.omega_shaft/self.data.omega_ref)*(self.r_grid / self.data.x_ref)
-            self.ut_rel = self.ut - self.ut_drag
-        else:
-            self.ut_drag = self.data.omega_shaft * self.r_grid
-            self.ut_rel = self.ut - self.ut_drag
+        self.ut_drag = self.data.omega_shaft * self.r_grid
+        self.ut_rel = self.ut - self.ut_drag
 
         self.ut_drag = self.ut - self.ut_rel
         self.M = self.u_mag / sqrt(1.4 * self.p / self.rho)
@@ -456,10 +451,6 @@ class MeridionalProcess:
             field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
         Returns: the three components of the field
         """
-        if self.data.normalize:
-            self.x_ref = self.data.x_ref  # because the CFD data have been non-dimensinalised, but not the cordinates
-        else:
-            self.x_ref = 1  # manage the case in which the data has not been normalized
 
         z_points_flat = self.z_grid.flatten()
         r_points_flat = self.r_grid.flatten()
@@ -476,8 +467,8 @@ class MeridionalProcess:
         field_interp_left = rbf(self.z_grid - dz, self.r_grid)
         field_interp_up = rbf(self.z_grid, self.r_grid + dr)
         field_interp_down = rbf(self.z_grid, self.r_grid - dr)
-        dfield_dz = ((field_interp_right - field_interp_left) / (2*dz)) * self.x_ref
-        dfield_dr = ((field_interp_up - field_interp_down) / (2*dr)) * self.x_ref
+        dfield_dz = ((field_interp_right - field_interp_left) / (2*dz))
+        dfield_dr = ((field_interp_up - field_interp_down) / (2*dr))
         dfield_dtheta = np.zeros_like(dfield_dr)
 
         return dfield_dr, dfield_dtheta, dfield_dz
@@ -861,243 +852,243 @@ class MeridionalProcess:
         fig, ax = plt.subplots(figsize=self.blade.blade_picture_size)
 
         if field == 'rho':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.rho, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.rho, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{\rho}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ur':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ur, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ur, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{u}_r$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ut':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ut, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ut, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{u}_{\theta}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'uz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.uz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.uz, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{u}_z$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'p':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.p, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.p, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{p}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 's':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.s, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.s, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{s}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'T':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.T, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.T, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{T}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'M':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.M, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.M, N_levels, cmap=color_map)
             ax.set_title(r'$M$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'drho_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.drho_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.drho_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'drho_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.drho_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.drho_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'drho_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.drho_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.drho_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[]}$')
         elif field == 'dur_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dur_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dur_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_r / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dur_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dur_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dur_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_r / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dur_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dur_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dur_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_r / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dut_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dut_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dut_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dut_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dut_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dut_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dut_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dut_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dut_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'duz_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.duz_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.duz_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'duz_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.duz_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.duz_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{z} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'duz_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.duz_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.duz_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dp_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dp_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dp_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{p} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dp_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dp_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dp_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{p} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dp_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dp_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dp_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{p} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ds_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ds_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ds_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{s} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ds_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ds_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ds_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{s} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ds_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ds_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ds_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{s} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dT_dr':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dT_dr, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dT_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{T} / \partial \hat{r}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dT_dtheta':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dT_dtheta, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dT_dtheta, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{T} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dT_dz':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.dT_dz, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.dT_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{T} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ut_rel':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ut_rel, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ut_rel, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{w}_{\theta}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ut_drag':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.ut_drag, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.ut_drag, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{v}_{\theta}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'k':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.k, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.k, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{k}$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_ntheta':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.F_ntheta, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.F_ntheta, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_{n \theta}$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_nr':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.F_nr, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.F_nr, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_{n r}$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_nz':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.F_nz, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.F_nz, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_{n z}$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'a1':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.a1, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.a1, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{a}_1$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'a2':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.a2, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.a2, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{a}_2$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'a3':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.a3, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.a3, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{a}_3$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'streamline length':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.stream_line_length/self.x_ref,
+                cs = ax.contourf(self.z_grid, self.r_grid, self.stream_line_length,
                                  levels=N_levels, cmap=color_map)
                 ax.set_title(r'streamline length')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'mu':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.mu,
+                cs = ax.contourf(self.z_grid, self.r_grid, self.mu,
                                  levels=N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{\mu}$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_t':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.F_t, N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.F_t, N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_t$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_t quiver':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.F_t, N_levels, cmap=color_map)
-                ax.quiver(self.z_grid/self.x_ref, self.r_grid/self.x_ref, -self.uz, -self.ur)
+                cs = ax.contourf(self.z_grid, self.r_grid, self.F_t, N_levels, cmap=color_map)
+                ax.quiver(self.z_grid, self.r_grid, -self.uz, -self.ur)
                 ax.set_title(r'$\hat{F}_t$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_n':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, np.sqrt(self.F_nr**2 + self.F_ntheta**2 +
+                cs = ax.contourf(self.z_grid, self.r_grid, np.sqrt(self.F_nr**2 + self.F_ntheta**2 +
                                                                                          self.F_nz**2), N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_n$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'p_tot':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.p_tot, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.p_tot, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{p}_{t}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'p_tot_bar':
-            cs = ax.contourf(self.z_grid/self.x_ref, self.r_grid/self.x_ref, self.p_tot_bar, N_levels, cmap=color_map)
+            cs = ax.contourf(self.z_grid, self.r_grid, self.p_tot_bar, N_levels, cmap=color_map)
             ax.set_title(r'$\bar{\hat{p}}_{t}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
@@ -1119,11 +1110,8 @@ class MeridionalProcess:
         self.p_tot = self.p * (1 + (self.gmma - 1) / 2 * self.M ** 2) ** (self.gmma / (self.gmma - 1))
         self.T_tot = self.T * (1 + (self.gmma - 1) / 2 * self.M ** 2)
 
-        if self.data.normalize:
-            self.p_tot_bar = self.p_tot - self.rho * (self.r_grid / self.data.x_ref) \
-                             * self.data.omega_shaft * self.ut  # rotary total pressure, adjusted for normalization
-        else:
-            self.p_tot_bar = self.p_tot - self.rho * self.r_grid * self.data.omega_shaft * self.ut
+        # rotary total pressure
+        self.p_tot_bar = self.p_tot - self.rho * self.r_grid * self.data.omega_shaft * self.ut
 
 
 
@@ -1183,11 +1171,6 @@ class MeridionalProcess:
                 ptot_bar_a = self.p_tot_bar[0, ispan]  # inlet rotary total pressure
                 ptot_bar_b = self.p_tot_bar[istream, ispan]  # outlet rotary total pressure
 
-                if self.data.normalize:
-                    self.x_ref = self.data.x_ref
-                else:
-                    self.x_ref = 1
-
                 # z_a = self.z_grid[istream, ispan] / self.x_ref
                 # r_a = self.r_grid[istream, ispan] / self.x_ref
                 # z_b = self.z_grid[istream + d_stream, ispan + d_span] / self.x_ref
@@ -1200,7 +1183,7 @@ class MeridionalProcess:
 
                 # definition of mu, from equation 16 of Sun et Al 2016
                 self.mu[istream, ispan] = (ptot_bar_a - ptot_bar_b) / (
-                        rho_avg * self.stream_line_length[istream, ispan] /self.x_ref * V_avg ** 2)
+                        rho_avg * self.stream_line_length[istream, ispan] * V_avg ** 2)
 
                 # artificially pose zero mu if the code found negative elements, which are not physical
                 if self.mu[istream, ispan] < 0:

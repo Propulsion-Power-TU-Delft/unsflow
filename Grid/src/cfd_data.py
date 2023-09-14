@@ -134,11 +134,8 @@ class CfdData:
         self.dp_dr, self.dp_dtheta = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.r, self.theta)
         self.ds_dr, self.ds_dtheta = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.r, self.theta)
 
-        #relative quantities. Omega_shaft has already been non-dimensionalised
-        if self.normalize:
-            self.ut_drag = self.r / self.x_ref * self.omega_shaft  # drag velocity
-        else:
-            self.ut_drag = self.r * self.omega_shaft  # drag velocity
+        # relative quantities
+        self.ut_drag = self.r * self.omega_shaft  # drag velocity
         self.ut_rel = self.ut - self.ut_drag  # relative velocity
         self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
@@ -356,10 +353,13 @@ class CfdData:
         """
         normalize everything, in order to increase numerical accuracy
         """
-        # self.z /= self.x_ref
-        # self.r /= self.x_ref
 
-        # the cordinates are left dimensional. They will be treated case by case in the gradients computation
+        # non-dimensionalize cordinates
+        self.z /= self.x_ref
+        self.r /= self.x_ref
+        self.omega_shaft /= self.omega_ref
+
+        # normalization of the fields
         self.rho /= self.rho_ref
         self.ux /= self.u_ref
         self.uy /= self.u_ref
@@ -368,7 +368,7 @@ class CfdData:
         self.T /= self.T_ref
         self.s /= self.s_ref
 
-        # gradients
+        # normalization of the gradients
         self.drho_dx /= (self.rho_ref / self.x_ref)
         self.drho_dy /= (self.rho_ref / self.x_ref)
         self.drho_dz /= (self.rho_ref / self.x_ref)

@@ -16,7 +16,7 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, hub_curve, shroud_curve, nstream=10, nspan=10):
+    def __init__(self, hub_curve, shroud_curve, nstream=10, nspan=10, x_ref=1):
         """
         provide the two curve objects related to hub and shroud, and in how many number of points 
         you want to discretize the streamwise and spanwise direction
@@ -26,6 +26,7 @@ class Block:
         self.nstream = nstream
         self.nspan = nspan
         self.units = self.hub.units
+        self.x_ref = x_ref
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -138,7 +139,7 @@ class Block:
                             self.shroud_trim.z_sample[istream] - self.hub_trim.z_sample[istream])
 
             # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border == 'right' or curved_border:
+            if curved_border == 'right':
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
             elif curved_border == 'left':
@@ -161,7 +162,7 @@ class Block:
                             self.trailing_edge.z_sample[ispan] - self.leading_edge.z_sample[ispan])
 
             # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border == 'right' or curved_border:
+            if curved_border == 'right':
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
             elif curved_border == 'left':
@@ -181,6 +182,8 @@ class Block:
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.z_grid_points, self.r_grid_points)
+        self.z_grid_points /= self.x_ref
+        self.r_grid_points /= self.x_ref
 
     def add_inlet_outlet_curves(self, inlet, outlet):
         """

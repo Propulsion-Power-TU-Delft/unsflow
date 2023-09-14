@@ -23,19 +23,19 @@ units = '[m]'
 nstream = 40
 nspan = 15
 grid_sampling = 'clustering'
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3, rescale_factor=0.01)
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
 bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
 # compute the blade object info, in order to cut the block appropriately
-blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=0.01)
+blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=0.01, x_ref=0.252)
 blade.find_inlet_points('axial')
 blade.find_outlet_points('axial')
 
 # cut the bladed block properly, and compute the meridional structured mesh
 bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 bladed_block.extend_inlet_outlet_curves()
-bladed_block.find_intersections(tol=1e-4)
+bladed_block.find_intersections(tol=1e-3, visual_check=True)
 bladed_block.bladed_zone_trim(machine_type='axial')
 # bladed_block.compute_leading_trailing_splines()
 bladed_block.spline_of_hub_shroud()

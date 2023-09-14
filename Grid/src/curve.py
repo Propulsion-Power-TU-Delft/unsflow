@@ -16,7 +16,7 @@ class Curve:
     """
 
     def __init__(self, z=None, r=None, nstream=10, curve_filepath=None, units='mm',
-                 mode='filedata', rot_axis=3, degree_spline=1, rescale_factor=1):
+                 mode='filedata', degree_spline=1, rescale_factor=1, x_ref=1):
         """
         overloaded constructor. You can give both the z and r cordinates (mode=cordinates), or you can provide 
         the filepath of the .curve files obtained from BladeGen (mode=filedata). 
@@ -29,8 +29,8 @@ class Curve:
             self.r = r
             self.z = z
 
-        self.r *= rescale_factor
-        self.z *= rescale_factor
+        self.r *= rescale_factor/x_ref
+        self.z *= rescale_factor/x_ref
 
         self.nstream = nstream
         self.u_spline = np.linspace(0, 1, 10000)  # parametrization of the spline. increase points if needed
