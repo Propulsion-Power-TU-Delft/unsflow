@@ -21,7 +21,7 @@ class CfdData:
     def __init__(self, filepath, cut_block = None, blade = None, rpm_drag=0,
                  normalize = False, file_type='Ansys .csv', verbose=False, rho_ref=None, x_ref=None, rpm_ref=None, T_ref=None):
         """
-        read the data from the csv file extracted from Ansys CFD-post.
+        read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:
         rho_ref: reference density, for air can be 1.014 [kg/m3]
         omega_ref: angular speed of the shaft [rpm]
@@ -100,8 +100,8 @@ class CfdData:
 
     def process_from_ansys_csv(self, cut=False):
         """
-        cut the domain thanks to the information contained in the cut_block border, and compute the derived quantities
-        (quantities in cylindrical cordinates)
+        if cut==True, it cuts the domain thanks to the information contained in the cut_block border.
+        Then it computes the derived quantities (quantities in cylindrical cordinates)
         """
         if (self.file_type == 'Ansys .csv' and self.cut_block is not None and cut=='True'):
             if self.verbose:
@@ -144,61 +144,13 @@ class CfdData:
 
 
 
-    def scatter_plot(self, field, save_filename = None, slice = 50):
-        """
-        Args:
-            save_filename: filename to save
-            field: specify the name of the field you want to visualise
-            slice: skip a certain number of points to visualise
-
-        Returns:
-            plot the 3d scatter field
-        """
-        fig = plt.figure(figsize=fig_size)
-        ax = fig.add_subplot(111, projection='3d')
-        if field == 'rho':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.rho[::slice], cmap=color_map)
-            ax.set_title(r'$\rho$')
-        elif field == 'ur':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.ur[::slice], cmap=color_map)
-            ax.set_title(r'$u_{r}$')
-        elif field == 'ut':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.ut[::slice], cmap=color_map)
-            ax.set_title(r'$u_{t}$')
-        elif field == 'uz':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.uz[::slice], cmap=color_map)
-            ax.set_title(r'$u_{z}$')
-        elif field == 'p':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.p[::slice], cmap=color_map)
-            ax.set_title(r'$p$')
-        elif field == 'T':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.T[::slice], cmap=color_map)
-            ax.set_title(r'$T$')
-        elif field == 's':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.s[::slice], cmap=color_map)
-            ax.set_title(r'$s$')
-        elif field == 'ut_drag':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.ut_drag[::slice], cmap=color_map)
-            ax.set_title(r'$u_{t,drag}$')
-        elif field == 'ut_rel':
-            scatter = ax.scatter(self.x[::slice], self.y[::slice], self.z[::slice], s=5, c=self.ut_rel[::slice], cmap=color_map)
-            ax.set_title(r'$u_{t,rel}$')
-        else:
-            raise ValueError('Field specified unknown')
-        ax.set_xlabel(r'$x$')
-        ax.set_ylabel(r'$y$')
-        ax.set_zlabel(r'$z$')
-        cbar = plt.colorbar(scatter, ax=ax)
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
-
     def compute_bfm_radial_fields(self):
         """
         computes the 3D fields necessary for the radial body force model, as described in my draft appendix, Radial Machines
         model. The 3D fields described here will be circumferentially averaged. Mu, coefficient of the resistant force
-        is not calculated on the 3D dataset and then averaged because too CPU expensive
+        is calculated directly in the 2D meridional object, because too expensive to be done in 3D.
+
+        To be checked
         """
 
         # ideal flow direction (following streamwise positions on the camber surface), in cartesian cordinates.
@@ -266,8 +218,6 @@ class CfdData:
     def cut_domain(self, border):
         """
         cut the cfd domain inside the mesh defined by the block object
-        Returns:
-
         """
 
         from shapely.geometry import Point
@@ -329,11 +279,9 @@ class CfdData:
         the aim is to find for every point in the dataset, the ideal flow vectors (the equivalent of the normal to the camber
         surface, the ideal streamwise direction, and the ideal spanwise directions). These vectors can be found taking
         the vectors on the camber surface point equivalent to them (same r,z position), and rotating them along z-axis
-        of an angle equal to the difference between the point and the point on the camber surface. To speed up the computation
-        only the points making part of the meridional grid are considered.
-
-        Returns:
-            void: stores the arrays for the 3 relevant directions
+        of an angle equal to the difference between the point and its projection on the camber surface.
+        To speed up the computation, only the points making part of the meridional grid can be considered if the cut method
+        was previously applied
         """
 
         # instantiate empty lists
@@ -391,22 +339,25 @@ class CfdData:
 
         return normal, stream, span
 
+
+
     def compute_normalization_quantities(self):
         """
         given the fundamental quantities, compute all the reference quantities for following non-dimensionalization
         """
         self.omega_ref = self.rpm_ref * 2*np.pi / 60  # convert to [rad/s]
-        self.u_ref = self.omega_ref * self.x_ref
-        self.t_ref = 1 / self.omega_ref
+        self.u_ref = self.omega_ref * self.x_ref  # tip speed of the machine
+        self.t_ref = 1 / self.omega_ref  # to be coherent
         self.p_ref = 0.5*self.rho_ref * self.u_ref**2
         self.s_ref = self.u_ref ** 2 / self.T_ref  # reference entropy
 
 
     def normalize_data(self):
         """
-        take the reference dimensions from the dataset, and normalize everything, in order to increase numerical accuracy
-        Returns: overwrites the dataset
+        normalize everything, in order to increase numerical accuracy
         """
+        # self.z /= self.x_ref
+        # self.r /= self.x_ref
 
         # the cordinates are left dimensional. They will be treated case by case in the gradients computation
         self.rho /= self.rho_ref

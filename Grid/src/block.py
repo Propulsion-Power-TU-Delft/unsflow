@@ -27,25 +27,19 @@ class Block:
         self.nspan = nspan
         self.units = self.hub.units
 
-
-
-    def trim_inlet(self, z_trim='span', r_trim='span', units='in'):
+    def trim_inlet(self, z_trim='span', r_trim='span'):
         """
         trim the inlet at a trim plane
         """
         self.hub.trim_inlet(z_trim, r_trim)
         self.shroud.trim_inlet(z_trim, r_trim)
 
-
-
-    def trim_outlet(self, z_trim='span', r_trim='span', units='in'):
+    def trim_outlet(self, z_trim='span', r_trim='span'):
         """
         trim the outlet at a trim plane
         """
         self.hub.trim_outlet(z_trim, r_trim)
         self.shroud.trim_outlet(z_trim, r_trim)
-
-
 
     def spline_of_hub_shroud(self):
         """
@@ -54,30 +48,25 @@ class Block:
         self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream, mode='cordinates')
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline,
                                  nstream=self.nstream, mode='cordinates')
-        # self.hub_trim.plot_spline()
-        # self.shroud_trim.plot_spline()
-
-
 
     def spline_of_leading_trailing_edge(self):
         """
-        make splines of the border
+        make splines of the inlet and outlet border of the domain of interest
         """
         self.inlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
-                                    self.inlet[1:-1, :],
-                                    np.reshape(self.point_shroud_inlet, (1, 2))))
+                                     self.inlet[1:-1, :],
+                                     np.reshape(self.point_shroud_inlet, (1, 2))))
 
         self.outlet = np.concatenate((np.reshape(self.point_hub_outlet, (1, 2)),
-                                     self.outlet[1:-1, :],
-                                     np.reshape(self.point_shroud_outlet, (1, 2))))
+                                      self.outlet[1:-1, :],
+                                      np.reshape(self.point_shroud_outlet, (1, 2))))
 
         self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates')
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates')
 
-
     def spline_of_outlet(self):
         """
-        make splines of the outlet border for the inlet block
+        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge
         """
         self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                       self.inlet[1:-1, :],
@@ -87,53 +76,48 @@ class Block:
 
     def spline_of_inlet(self):
         """
-        make splines of the outlet border for the inlet block
+        make splines of the inlet border for the outlet block, which coincides with self.Outlet
         """
         self.inlet = np.concatenate((np.reshape(self.point_hub_outlet, (1, 2)),
-                                      self.outlet[1:-1, :],
-                                      np.reshape(self.point_shroud_outlet, (1, 2))))
+                                     self.outlet[1:-1, :],
+                                     np.reshape(self.point_shroud_outlet, (1, 2))))
 
         self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates')
 
-
-
-
     def sample_hub_shroud(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline (trimmed correctly) with a certain sampling mode
+        sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
         """
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
 
-
-
     def sample_leading_trailing_edges(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline (trimmed correctly) with a certain sampling mode
+        sample the inlet and outlet edge splines (trimmed correctly) with a certain sampling mode
         """
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
-
     def sample_outlet(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline (trimmed correctly) with a certain sampling mode
+        sample the outlet edge for the inlet block
         """
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
     def sample_inlet(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline (trimmed correctly) with a certain sampling mode
+        sample the inlet edge for the outlet block
         """
         self.leading_edge.sample(sampling_mode=sampling_mode)
 
-
-
     def compute_grid_points(self, sampling_mode='default', grid_mode='spanwise', curved_border=True, smoothing=None):
         """
-        obtain the points in the middle of the channel connecting with a straight line the streamwise points 
-        on hub and shroud. Then sample them on the connecting line with a certain sampling algorithm
+        compute the internal grid points with a certain algorithm, specified by grid_mode:
+            spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
+            streamwise: means connecting inlet and outlet edge splines with straight lines sampled with a certain alg.
+        If smoothing = 'elliptic' it provides an elliptic smoothing of the grid. To be implemented yet
         """
+
         if sampling_mode == 'default':
             self.u_span = np.linspace(0, 1, self.nspan)
             self.u_stream = np.linspace(0, 1, self.nstream)
@@ -143,12 +127,10 @@ class Block:
         self.r_grid_points = np.zeros((self.nstream, self.nspan))
         self.z_grid_points = np.zeros((self.nstream, self.nspan))
 
-
         if grid_mode == 'spanwise':
             # algorithm for internal points, connecting points on the hub and shroud along the span direction
             for istream in range(0, self.nstream):
                 for ispan in range(0, self.nspan):
-
                     self.r_grid_points[istream, ispan] = self.hub_trim.r_sample[istream] + self.u_span[ispan] * (
                             self.shroud_trim.r_sample[istream] - self.hub_trim.r_sample[istream])
 
@@ -156,13 +138,13 @@ class Block:
                             self.shroud_trim.z_sample[istream] - self.hub_trim.z_sample[istream])
 
             # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border=='right' or curved_border==True:
+            if curved_border == 'right' or curved_border:
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
-            elif curved_border=='left':
+            elif curved_border == 'left':
                 self.r_grid_points[0, :] = self.leading_edge.r_sample
                 self.z_grid_points[0, :] = self.leading_edge.z_sample
-            elif curved_border=='both':
+            elif curved_border == 'both':
                 self.r_grid_points[0, :] = self.leading_edge.r_sample
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[0, :] = self.leading_edge.z_sample
@@ -179,7 +161,7 @@ class Block:
                             self.trailing_edge.z_sample[ispan] - self.leading_edge.z_sample[ispan])
 
             # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border == 'right' or curved_border == True:
+            if curved_border == 'right' or curved_border:
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
             elif curved_border == 'left':
@@ -192,6 +174,7 @@ class Block:
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
 
         if smoothing == 'elliptic':
+            print('Elliptic smoothing not tested yet...')
             inlet = np.vstack((self.leading_edge.z_sample, self.leading_edge.r_sample))
             outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
@@ -199,82 +182,54 @@ class Block:
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.z_grid_points, self.r_grid_points)
 
-
-
-
-
-
-    def plot_borders_grid(self):
-        """
-        it plots only the hub and shroud correctly trimmed, and the original set of points
-        """
-        plt.figure(figsize=fig_size)
-        plt.plot(self.hub.z_spline, self.hub.r_spline, label='hub')
-        plt.plot(self.hub_trim.z_sample, self.hub_trim.r_sample, 'o', label='hub sampled')
-        plt.plot(self.shroud.z_spline, self.shroud.r_spline, label='shroud')
-        plt.plot(self.shroud_trim.z_sample, self.shroud_trim.r_sample, 'o', label='shroud sample')
-        plt.legend()
-        plt.xlabel(r'$z \ \mathrm{[%s]}$' % (self.units))
-        plt.ylabel(r'$r \ \mathrm{[%s]}$' % (self.units))
-
-
-
     def add_inlet_outlet_curves(self, inlet, outlet):
         """
-        stores information regarding the inlet and outlet points, in order to compute the leading and trailing splines.
+        stores information regarding the inlet and outlet curve points, taken from blade object,
+        in order to compute the leading and trailing splines.
         """
         self.inlet = inlet
         self.outlet = outlet
         self.inlet_curve = Curve(z=inlet[:, 0], r=inlet[:, 1], mode='cordinates', degree_spline=3)
         self.outlet_curve = Curve(z=outlet[:, 0], r=outlet[:, 1], mode='cordinates', degree_spline=3)
 
-
-
     def extend_inlet_outlet_curves(self):
         """
-        extend the inlet and outlet curves in order to later find intersections with the hub and shroud
+        extend the inlet and outlet curves in order to later find the intersections with the hub and shroud.
         """
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
-
-
-    def find_intersections(self, tol=1e-4):
+    def find_intersections(self, tol=1e-4, visual_check=False):
         """
         having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         """
+
         hub_curve = np.stack((self.hub.z, self.hub.r), axis=1)
         shroud_curve = np.stack((self.shroud.z, self.shroud.r), axis=1)
-        # hub_curve = Curve(hub_curve, )
-        # shroud_curve = np.stack((self.shroud.z, self.shroud.r), axis=1)
-
         inlet_curve = np.stack((self.inlet_curve.z_spline_ext, self.inlet_curve.r_spline_ext), axis=1)
         outlet_curve = np.stack((self.outlet_curve.z_spline_ext, self.outlet_curve.r_spline_ext), axis=1)
-
-        print('If no intersections are found between blade edges and endwalls, it means that the threshold error is too low '
-              'for the intersection algorithm')
 
         self.point_hub_inlet = self.point_intersection(inlet_curve, hub_curve, tol)
         self.point_hub_outlet = self.point_intersection(outlet_curve, hub_curve, tol)
         self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol)
         self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol)
 
-        # plt.figure()
-        # plt.scatter(hub_curve[:, 0], hub_curve[:, 1])
-        # plt.scatter(shroud_curve[:, 0], shroud_curve[:, 1])
-        # plt.scatter(inlet_curve[:, 0], inlet_curve[:, 1])
-        # plt.scatter(self.point_hub_inlet[0], self.point_hub_inlet[1])
-        # plt.scatter(self.point_shroud_inlet[0], self.point_shroud_inlet[1])
-        # plt.scatter(outlet_curve[:, 0], outlet_curve[:, 1])
-        # plt.scatter(self.point_hub_outlet[0], self.point_hub_outlet[1])
-        # plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1])
-
+        if visual_check:
+            plt.figure()
+            plt.scatter(hub_curve[:, 0], hub_curve[:, 1])
+            plt.scatter(shroud_curve[:, 0], shroud_curve[:, 1])
+            plt.scatter(inlet_curve[:, 0], inlet_curve[:, 1])
+            plt.scatter(self.point_hub_inlet[0], self.point_hub_inlet[1])
+            plt.scatter(self.point_shroud_inlet[0], self.point_shroud_inlet[1])
+            plt.scatter(outlet_curve[:, 0], outlet_curve[:, 1])
+            plt.scatter(self.point_hub_outlet[0], self.point_hub_outlet[1])
+            plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1])
 
     @staticmethod
     def point_intersection(curve1, curve2, tol=1e-4):
         """
         find and return the intersection between 2 curves. static method because it is bound to the class, not to an instance
-        of the class. It could also avoid to specify the self, since it is not used. it could be used with decorator @static
+        of the class. It could also avoid to specify the self, since it is not used.
         """
         tree = KDTree(curve1)
         distances, indices = tree.query(curve2)
@@ -282,11 +237,10 @@ class Block:
         point = np.mean(intersection_points, axis=0)
         return point
 
-
-
-    def bladed_zone_trim(self, machine_type = 'radial'):
+    def bladed_zone_trim(self, machine_type='radial'):
         """
-        trim the block hub and shroud curves at the found intersections with the inlet and outlet curves
+        trim the block hub and shroud curves at the found intersections with the inlet and outlet curves. Machine type is
+        needed to know what kind of cut to apply
         """
         if machine_type == 'radial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
@@ -301,8 +255,6 @@ class Block:
         else:
             raise ValueError('Insert a valid machine type')
 
-
-
     def inlet_zone_trim(self):
         """
         trim the inlet block hub and shroud curves at the found intersections with the inlet curves of the blade
@@ -310,20 +262,16 @@ class Block:
         self.hub.trim_outlet(z_trim=self.point_hub_inlet[0])
         self.shroud.trim_outlet(z_trim=self.point_shroud_inlet[0])
 
-
-
     def outlet_zone_trim(self, mode='radial'):
         """
         trim the outlet block hub and shroud curves at the found intersections with the trailing edge of the blade
         """
-        if mode=='radial':
+        if mode == 'radial':
             self.hub.trim_inlet(r_trim=self.point_hub_outlet[1])
             self.shroud.trim_inlet(r_trim=self.point_shroud_outlet[1])
-        elif mode=='axial':
+        elif mode == 'axial':
             self.hub.trim_inlet(z_trim=self.point_hub_outlet[0])
             self.shroud.trim_inlet(z_trim=self.point_shroud_outlet[0])
-
-
 
     def compute_double_grid(self):
         """
@@ -386,8 +334,6 @@ class Block:
                 self.z_grid_centers[istream, ispan] = z_mid_point
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
-
-
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
                        secondary_grid_points=False, hub_shroud=False, outline=False):
         """
@@ -396,7 +342,7 @@ class Block:
         self.AR = (np.max(self.r_grid_points) - np.min(self.r_grid_points)) / \
                   (np.max(self.z_grid_points) - np.min(self.z_grid_points))
 
-        self.blade_picture_size = (7, 7*self.AR)
+        self.blade_picture_size = (7, 7 * self.AR)
 
         plt.figure(figsize=self.blade_picture_size)
 
@@ -443,8 +389,6 @@ class Block:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def find_border(self):
         """
         find the border delimiting the block. it stores the border info as (r,z) column arrays
@@ -472,4 +416,3 @@ class Block:
         border_r = [item for sublist in border_r for item in sublist]
 
         self.border = np.stack((border_z, border_r), axis=1)
-

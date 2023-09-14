@@ -17,11 +17,10 @@ from .styles import *
 
 class Blade:
     """
-    class that stores the information regarding a certain blade topology. It is needed in order to compute the camber
-    surface, which is used for the body force model.
+    class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, blade_file_path, format_file='.curve', rescale_factor = 1):
+    def __init__(self, blade_file_path, format_file='.curve', rescale_factor=1):
         """
         reads the info from the blade file .curve, which is created during blade generation
         """
@@ -33,26 +32,6 @@ class Blade:
         self.blade = []  # main or splitter type
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
-        self.r_splitter = None
-        self.theta_splitter = None
-        self.z_splitter = None
-        self.y_splitter = None
-        self.x_splitter = None
-        self.idx_splitter = None
-        self.theta_main = None
-        self.r_main = None
-        self.z_main = None
-        self.y_main = None
-        self.x_main = None
-        self.idx_main = None
-        self.splitter = None
-        self.r = None
-        self.theta = None
-        self.camber_intercept = None
-        self.camber_coefficients = None
-        self.camber_model = None
-        self.camber_poly_features = None
-        self.camber_degree = None
 
         if format_file == '.curve':
             self.read_from_curve_file()
@@ -102,7 +81,7 @@ class Blade:
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
         self.AR = (np.max(self.r) - np.min(self.r)) / (np.max(self.z) - np.min(self.z))
-        self.blade_picture_size = (7, 7*self.AR)
+        self.blade_picture_size = (7, 7 * self.AR)
 
         # check if the blade has a splitter blade
         if np.unique(self.blade).shape[0] > 1:
@@ -379,7 +358,7 @@ class Blade:
 
 
 
-    def find_inlet_points(self, geometry_type = 'radial'):
+    def find_inlet_points(self, geometry_type='radial'):
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
@@ -407,14 +386,13 @@ class Blade:
             else:
                 raise ValueError('Set a geometry type of the blade leading edge')
 
-
             self.inlet_z.append(min_z)
             self.inlet_r.append(min_r)
         self.inlet = np.stack((self.inlet_z, self.inlet_r), axis=1)
 
 
 
-    def find_outlet_points(self, geometry_type = 'radial'):
+    def find_outlet_points(self, geometry_type='radial'):
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
@@ -489,7 +467,7 @@ class Blade:
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.normal_vectors[i, j][0], self.normal_vectors[i, j][1], self.normal_vectors[i, j][2],
-                          length = self.scale, color='red')
+                          length=self.scale, color='red')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -510,7 +488,7 @@ class Blade:
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.streamline_vectors[i, j][0], self.streamline_vectors[i, j][1], self.streamline_vectors[i, j][2],
-                          length = self.scale, color='green')
+                          length=self.scale, color='green')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -531,7 +509,7 @@ class Blade:
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.spanline_vectors[i, j][0], self.spanline_vectors[i, j][1],
-                          self.spanline_vectors[i, j][2], length = self.scale, color='purple')
+                          self.spanline_vectors[i, j][2], length=self.scale, color='purple')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -545,29 +523,26 @@ class Blade:
         """
         from the normal and streamline vectors of the camber compute:
         gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)
-        blade_metal_angle: angle between the camber and the axial direction on the plane perpendicular to camber surface. it
-                            could be computed as the angle between the camber3d streamline vector and the cambermeridional2d
-                            vector
-        lean_angle: angle between the normal to the camber and the tangential direction
+        blade_metal_angle: angle between the camber 3d streamline vector and its meridional projection
+        lean_angle: angle between the camber 3D spanwise direction and its meridional projection
         blade_blockage: as defined by Kottapalli. For the moment not ready yet.
-        convetion: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the direction of rotation
+        convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the direction of rotation
         """
+
         self.gas_path_angle = np.zeros_like(self.x_camber)
         self.blade_metal_angle = np.zeros_like(self.x_camber)
         self.blade_lean_angle = np.zeros_like(self.x_camber)
 
-
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
                 self.gas_path_angle[i, j] = np.arctan(self.streamline_vectors_cyl[i, j][0] /
-                                                       self.streamline_vectors_cyl[i, j][2])
+                                                      self.streamline_vectors_cyl[i, j][2])
 
                 meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
                 meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
 
                 meridional_sp_vec = np.array([self.spanline_vectors_cyl[i, j][0], 0, self.spanline_vectors_cyl[i, j][2]])
                 meridional_sp_vec /= np.linalg.norm(meridional_sp_vec)
-
 
                 if convention == 'neutral':
                     self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
@@ -580,19 +555,18 @@ class Blade:
 
 
 
-    def show_blade_angles_contour(self, save_filename=None, field=None):
+    def show_blade_angles_contour(self, save_filename=None):
         """
         contour of the blade angles
         """
 
         fig, ax = plt.subplots(figsize=self.blade_picture_size)
-        cs = ax.contourf(self.z_camber, self.r_camber, 180/np.pi*self.gas_path_angle, N_levels, cmap=color_map)
+        cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\varphi$')
         cb = fig.colorbar(cs)
         cb.set_label(r'$\varphi \quad \mathrm{[deg]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
-
 
         fig, ax = plt.subplots(figsize=self.blade_picture_size)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)

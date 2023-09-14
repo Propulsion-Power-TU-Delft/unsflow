@@ -6,29 +6,30 @@ Created on Thu Jun 15 17:07:05 2023
 """
 
 import numpy as np
-from numpy import sqrt
 from .styles import *
-import matplotlib.path as mplpath
-from scipy.ndimage import gaussian_filter
-from scipy.interpolate import Rbf
 import pickle
 
 
 class MeridionalProcessGroup:
     """
-    Group of meridional Process object, used only to plot stuff together
+    Group of meridional Process object, used to plot the full machine data together
     """
 
     def __init__(self):
         self.group = []
 
 
-
-
     def add_to_group(self, meridional_obj):
+        """
+        add component to the group, follow streamwise order
+        """
         self.group.append(meridional_obj)
 
+
     def assemble_fields(self):
+        """
+        assemble together the fields contained in all the blocks
+        """
         self.z_grid = self.group[0].z_grid
         self.r_grid = self.group[0].r_grid
         self.rho = self.group[0].rho
@@ -52,7 +53,12 @@ class MeridionalProcessGroup:
             self.s = np.concatenate((self.s, obj.s), axis=0)
             self.M = np.concatenate((self.M, obj.M), axis=0)
 
+
+
     def assemble_field_gradients(self):
+        """
+        assemble together the gradients of the various blocks
+        """
         self.drho_dr = self.group[0].drho_dr
         self.drho_dz = self.group[0].drho_dz
         self.dur_dr = self.group[0].dur_dr
@@ -77,7 +83,11 @@ class MeridionalProcessGroup:
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
 
 
+
     def contour_fields(self, save_filename=None):
+        """
+        contour of the fields. Dimensional quantities
+        """
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.z_grid, self.r_grid, self.rho*self.group[0].data.rho_ref, cmap='jet', levels=N_levels_2)
@@ -152,7 +162,11 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
 
 
+
     def contour_field_gradients(self, save_filename=None):
+        """
+        contours of the gradients, non-dimensional quantities
+        """
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.z_grid, self.r_grid, self.drho_dr, cmap='jet', levels=N_levels_2)
