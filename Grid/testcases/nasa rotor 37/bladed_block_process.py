@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 30
-nspan = 10
+nstream = 40
+nspan = 15
 grid_sampling = 'clustering'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3, rescale_factor=0.01)
@@ -42,7 +42,7 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='right')
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both')
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -58,18 +58,12 @@ blade.show_normal_vectors(save_filename='normal_vectors')
 blade.show_streamline_vectors(save_filename='streamline_vectors')
 blade.show_spanline_vectors(save_filename='spanline_vectors')
 blade.compute_blade_camber_angles(convention='rotation-wise')
-
-# check the blade metal angle of IRIS, it doesn't look perfect agreement, maybe it is defined in a different way
-# plt.figure()
-# plt.plot(blade.blade_metal_angle[0, :] * 180 / np.pi, label='leading edge')
-# plt.plot(blade.blade_metal_angle[-1, :] * 180 / np.pi, label='trailing edge')
-# plt.xticks([0, len(blade.blade_metal_angle[0, :])], ['Hub', 'Shroud'])
-# plt.legend()
 blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
 # instantiate cfd data object and perform processing removing the outliers
-file_name = 'data/meta/config_04.csv'
-data = Grid.src.CfdData(file_name, rpm_shaft=-17186, blade=blade, cut_block=bladed_block, verbose=True, normalize=True)
+file_name = 'data/meta/config_01.csv'
+data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=-17189, cut_block=bladed_block, verbose=True, normalize=True,
+                        rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
 data.process_from_ansys_csv()
 data.compute_flow_ideal_vectors()
 data.compute_bfm_radial_fields()
@@ -121,7 +115,7 @@ data_process.contour_plot(field='F_n', save_filename='F_n_%2d_%2d' % (nstream, n
 data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
 
 
-data_process.store_pickle(file_name='nasa_rotor_config_04_%d_%d' %(nstream, nspan))
+data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))

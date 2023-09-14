@@ -151,9 +151,11 @@ class MeridionalProcess:
 
         if self.data.normalize:
             # if the CFD data has been normalized, treat the cordinates that are still dimensional
-            self.ut_rel = self.ut - self.data.omega_shaft * (self.r_grid / self.data.x_ref)
+            self.ut_drag = (self.data.omega_shaft/self.data.omega_ref)*(self.r_grid / self.data.x_ref)
+            self.ut_rel = self.ut - self.ut_drag
         else:
-            self.ut_rel = self.ut - self.data.omega_shaft * (self.r_grid)
+            self.ut_drag = self.data.omega_shaft * self.r_grid
+            self.ut_rel = self.ut - self.ut_drag
 
         self.ut_drag = self.ut - self.ut_rel
         self.M = self.u_mag / sqrt(1.4 * self.p / self.rho)

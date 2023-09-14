@@ -15,9 +15,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-inlet_file_path = 'data/meta/nasa_rotor_config_04_inlet_10_10.pickle'
-blade_file_path = 'data/meta/nasa_rotor_config_04_30_10.pickle'
-outlet_file_path = 'data/meta/nasa_rotor_config_04_outlet_15_10.pickle'
+inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_15_15.pickle'
+blade_file_path = 'data/meta/nasa_rotor_config_01_blade_40_15.pickle'
+outlet_file_path = 'data/meta/nasa_rotor_config_01_outlet_15_15.pickle'
 
 with open(inlet_file_path, 'rb') as file:
     inlet = pickle.load(file)
@@ -32,6 +32,7 @@ obj = Grid.src.meridional_process_group.MeridionalProcessGroup()
 obj.add_to_group(inlet)
 obj.add_to_group(blade)
 obj.add_to_group(outlet)
-obj.contour()
+obj.assemble_fields()
+obj.contour(save_filename='15_35_15_15')
 plt.show()
 

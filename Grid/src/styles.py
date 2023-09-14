@@ -73,6 +73,7 @@ light_line_width = 0.5
 
 #set number of levels in contourf plots
 N_levels = 50
+N_levels_2 = 100
 
 #set colormap for contourf plots
 color_map = cm.jet

@@ -18,27 +18,27 @@ start_time = time.time()
 print('Start execution:')
 
 # compute the bladed domain block object
-data_folder_path = 'nasa_rotor_37/cordinates/'
+data_folder_path = 'data/geo/'
 units = '[m]'
 nstream = 15
-nspan = 10
+nspan = 15
 stream_grid_sampling = 'clustering_left'
 span_grid_sampling = 'clustering'
 
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=1, rescale_factor=0.01)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=1, rescale_factor=0.01)
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=1, rescale_factor=1)
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1)
 block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
 # compute the blade object info, in order to cut the block appropriately
-blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=0.01)
-blade.find_inlet_points(geometry_type='axial')
-blade.find_outlet_points(geometry_type='axial')
+blade = Grid.src.Blade(data_folder_path + 'iris_blade.curve', rescale_factor=1)
+blade.find_inlet_points(geometry_type='radial')
+blade.find_outlet_points(geometry_type='radial')
 
 # cut the bladed block properly, and compute the meridional structured mesh
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
-block.find_intersections(tol=1e-4)
-block.outlet_zone_trim(mode='axial')
+block.find_intersections(tol=1e-6)
+block.outlet_zone_trim(mode='radial')
 block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
@@ -49,8 +49,9 @@ block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
 
 # instantiate cfd data object and perform processing removing the outliers
-file_name = 'data/meta/config_04.csv'
-data = Grid.src.CfdData(file_name, rpm_shaft=0, blade=blade, cut_block=block, verbose=True, normalize=True)
+file_name = 'data/meta/iris_85krpm_0.11kgs.csv'
+data = Grid.src.CfdData(file_name, rpm_drag=0, blade=blade, cut_block=block, verbose=True, normalize=True,
+                        rho_ref=1.014, x_ref=0.0228, rpm_ref=85e3, T_ref=288.15)
 data.process_from_ansys_csv()
 
 # instantiate meridional process object and avg
@@ -89,7 +90,7 @@ data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream,
 data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
 
-data_process.store_pickle(file_name='nasa_rotor_config_04_outlet_%d_%d' %(nstream, nspan))
+data_process.store_pickle(file_name='iris_outlet_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))

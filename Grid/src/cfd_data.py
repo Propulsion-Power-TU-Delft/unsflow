@@ -18,16 +18,27 @@ class CfdData:
     """
     
     
-    def __init__(self, filepath, rpm_shaft=0, cut_block = None, blade = None,
-                 normalize = False, file_type='Ansys .csv', verbose=False):
+    def __init__(self, filepath, cut_block = None, blade = None, rpm_drag=0,
+                 normalize = False, file_type='Ansys .csv', verbose=False, rho_ref=None, x_ref=None, rpm_ref=None, T_ref=None):
         """
-        read the data from the csv file extracted from Ansys CFD-post
+        read the data from the csv file extracted from Ansys CFD-post.
+        If normalize = True, it stores the normalization quantities:
+        rho_ref: reference density, for air can be 1.014 [kg/m3]
+        omega_ref: angular speed of the shaft [rpm]
+        x_ref: tip radius of the blade at leading edge [m]
+        T_ref: can be standard temperature [K]
         """
         self.filepath = filepath
-        self.omega_shaft = rpm_shaft*2*np.pi/60
+        self.omega_shaft = rpm_drag*2*np.pi/60
         self.verbose = verbose
         self.cut_block = cut_block
         self.normalize = normalize
+        if self.normalize:
+            self.rho_ref = rho_ref
+            self.x_ref = x_ref
+            self.rpm_ref = np.abs(rpm_ref)
+            self.T_ref = T_ref
+            self.compute_normalization_quantities()
         if blade is not None:
             self.blade = blade
         self.file_type = file_type
@@ -380,23 +391,24 @@ class CfdData:
 
         return normal, stream, span
 
+    def compute_normalization_quantities(self):
+        """
+        given the fundamental quantities, compute all the reference quantities for following non-dimensionalization
+        """
+        self.omega_ref = self.rpm_ref * 2*np.pi / 60  # convert to [rad/s]
+        self.u_ref = self.omega_ref * self.x_ref
+        self.t_ref = 1 / self.omega_ref
+        self.p_ref = 0.5*self.rho_ref * self.u_ref**2
+        self.s_ref = self.u_ref ** 2 / self.T_ref  # reference entropy
+
 
     def normalize_data(self):
         """
         take the reference dimensions from the dataset, and normalize everything, in order to increase numerical accuracy
         Returns: overwrites the dataset
         """
-        self.x_ref = np.max(self.z) - np.min(self.z)  # ref length, as the axial length of the impeller
-        self.u_ref = np.max(self.uz)  # ref velocity as the mean of the velocity magnitude
-        self.t_ref = self.x_ref / self.u_ref  # reference time
-        self.rho_ref = np.mean(self.rho)  # reference density
-        self.p_ref = self.rho_ref * self.u_ref**2  # reference pressure
-        self.T_ref = np.mean(self.T)  # reference pressure
-        self.s_ref = self.u_ref**2 / self.T_ref  # reference entropy
-        self.omega_shaft_ref = self.u_ref / self.x_ref  # reference of angular velocity
 
         # the cordinates are left dimensional. They will be treated case by case in the gradients computation
-        self.omega_shaft /= self.omega_shaft_ref
         self.rho /= self.rho_ref
         self.ux /= self.u_ref
         self.uy /= self.u_ref
