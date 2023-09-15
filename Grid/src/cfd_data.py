@@ -18,8 +18,8 @@ class CfdData:
     """
     
     
-    def __init__(self, filepath, cut_block = None, blade = None, rpm_drag=0,
-                 normalize = False, file_type='Ansys .csv', verbose=False, rho_ref=None, x_ref=None, rpm_ref=None, T_ref=None):
+    def __init__(self, filepath, rho_ref, x_ref, rpm_ref, rpm_drag, T_ref, cut_block = None, blade = None,
+                 normalize = True, file_type='Ansys .csv', verbose=False, ):
         """
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:

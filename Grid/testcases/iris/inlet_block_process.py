@@ -25,19 +25,19 @@ nspan = 15
 stream_grid_sampling = 'clustering_right'
 span_grid_sampling = 'clustering'
 
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=1, rescale_factor=1)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=1, rescale_factor=1)
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=1, rescale_factor=1, x_ref=0.0228)
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=1, rescale_factor=1, x_ref=0.0228)
 block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
 # compute the blade object info, in order to cut the block appropriately
-blade = Grid.src.Blade(data_folder_path + 'iris_blade.curve', rescale_factor=1)
+blade = Grid.src.Blade(data_folder_path + 'iris_blade.curve', rescale_factor=1, x_ref=0.0228)
 blade.find_inlet_points(geometry_type='axial')
 blade.find_outlet_points(geometry_type='axial')
 
 # cut the bladed block properly, and compute the meridional structured mesh
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
-block.find_intersections(tol=1e-4)
+block.find_intersections(tol=1e-2)
 block.inlet_zone_trim()
 block.spline_of_hub_shroud()
 block.spline_of_outlet()

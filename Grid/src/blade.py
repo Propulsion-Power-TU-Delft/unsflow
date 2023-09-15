@@ -20,7 +20,7 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, blade_file_path, format_file='.curve', rescale_factor=1, x_ref=1):
+    def __init__(self, blade_file_path, rescale_factor, x_ref, format_file='.curve'):
         """
         reads the info from the blade file .curve, which is created during blade generation
         """

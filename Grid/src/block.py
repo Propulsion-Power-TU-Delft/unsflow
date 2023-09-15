@@ -46,9 +46,9 @@ class Block:
         """
         compute hub,shroud splines, that are parameterized from 0 to 1 between the extremes.
         """
-        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream, mode='cordinates')
+        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream, mode='cordinates', rescale_factor=1, x_ref=1)
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline,
-                                 nstream=self.nstream, mode='cordinates')
+                                 nstream=self.nstream, mode='cordinates', x_ref=1, rescale_factor=1)
 
     def spline_of_leading_trailing_edge(self):
         """
@@ -62,8 +62,8 @@ class Block:
                                       self.outlet[1:-1, :],
                                       np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates')
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates')
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
 
     def spline_of_outlet(self):
         """
@@ -73,7 +73,7 @@ class Block:
                                       self.inlet[1:-1, :],
                                       np.reshape(self.point_shroud_inlet, (1, 2))))
 
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates')
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1)
 
     def spline_of_inlet(self):
         """
@@ -83,7 +83,7 @@ class Block:
                                      self.outlet[1:-1, :],
                                      np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates')
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
 
     def sample_hub_shroud(self, sampling_mode='default'):
         """
@@ -192,8 +192,8 @@ class Block:
         """
         self.inlet = inlet
         self.outlet = outlet
-        self.inlet_curve = Curve(z=inlet[:, 0], r=inlet[:, 1], mode='cordinates', degree_spline=3)
-        self.outlet_curve = Curve(z=outlet[:, 0], r=outlet[:, 1], mode='cordinates', degree_spline=3)
+        self.inlet_curve = Curve(z=inlet[:, 0], r=inlet[:, 1], mode='cordinates', degree_spline=3, x_ref=1, rescale_factor=1)
+        self.outlet_curve = Curve(z=outlet[:, 0], r=outlet[:, 1], mode='cordinates', degree_spline=3, x_ref=1, rescale_factor=1)
 
     def extend_inlet_outlet_curves(self):
         """
@@ -240,7 +240,7 @@ class Block:
         point = np.mean(intersection_points, axis=0)
         return point
 
-    def bladed_zone_trim(self, machine_type='radial'):
+    def bladed_zone_trim(self, machine_type):
         """
         trim the block hub and shroud curves at the found intersections with the inlet and outlet curves. Machine type is
         needed to know what kind of cut to apply
