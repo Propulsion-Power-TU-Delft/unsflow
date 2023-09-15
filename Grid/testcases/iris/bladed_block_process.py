@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 40
-nspan = 15
+nstream = 50
+nspan = 20
 grid_sampling = 'clustering'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -42,7 +42,7 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both')
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic')
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -73,6 +73,8 @@ data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade,
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='circular', bfm='radial', fix_borders=False, gauss_filter=True)
 data_process.compute_rbf_gradients()
+data_process.compute_bfm_axial(mode='averaged')
+
 
 # final meridional plots
 data_process.contour_plot(field='streamline length', save_filename='sl_length_%2d_%2d_interp' % (nstream, nspan))

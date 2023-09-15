@@ -36,8 +36,6 @@ class MeridionalProcess:
         self.z_grid_secondary = block.z_grid_centers  # secondary grid points
         self.r_grid_secondary = block.r_grid_centers
 
-
-
     def circumferential_average(self, mode='rectangular', fix_borders=True, bfm=None, gauss_filter=True):
         """
         perform circumferential averages
@@ -69,7 +67,7 @@ class MeridionalProcess:
                         quadrilateral_path = self.find_rectangle(istream, ispan, i)
                         idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
                         n_elem = len(idx[0])  # update n_elem
-                        i +=1  # update cycle number
+                        i += 1  # update cycle number
 
                 elif mode == 'circular':
                     # use a circle to identifying the scattered points in the meridional plane
@@ -82,7 +80,6 @@ class MeridionalProcess:
 
                 else:
                     raise ValueError('Unknown type of circumferential averaging procedure!')
-
 
                 # main quantities
                 self.rho[istream, ispan] = self.mass_average(self.data.rho, idx)
@@ -159,8 +156,6 @@ class MeridionalProcess:
             self.mu = self.compute_mu()
             self.F_t = self.mu * self.u_mag_rel ** 2
 
-
-
     def instantiate_2d_fields(self):
         """
         instantiate the 2D fields that will be averaged starting from the CFD data
@@ -195,8 +190,6 @@ class MeridionalProcess:
         self.theta_min = np.zeros((self.nstream, self.nspan))
         self.theta_max = np.zeros((self.nstream, self.nspan))
 
-
-
     def instantiate_2d_bfm_fields(self):
         """
         instantiate the 2D fields necessary for the body force model, depending on the specific model used
@@ -228,9 +221,7 @@ class MeridionalProcess:
             self.Ft_prime_ss_21 = np.zeros((self.nstream, self.nspan))
             self.Ft_prime_ss_22 = np.zeros((self.nstream, self.nspan))
 
-
-
-    def find_rectangle(self, istream, ispan, A = 0):
+    def find_rectangle(self, istream, ispan, A=0):
         """
         Args:
             istream: stream position
@@ -248,7 +239,6 @@ class MeridionalProcess:
         r2 = self.r_grid_secondary[istream + 1, ispan]
         r3 = self.r_grid_secondary[istream + 1, ispan + 1]
         r4 = self.r_grid_secondary[istream, ispan + 1]
-        
 
         if A == 0:
             # original research domain
@@ -257,9 +247,9 @@ class MeridionalProcess:
 
         else:
             # enlarged research domain
-            print('research domain enlarged, point (%2d,%2d), attempt %2d' %(istream, ispan, A))
+            print('research domain enlarged, point (%2d,%2d), attempt %2d' % (istream, ispan, A))
             z_vertices = [z1 - A * (z2 - z1),
-                          z2 + A * (z2 -z1),
+                          z2 + A * (z2 - z1),
                           z3 + A * (z3 - z4),
                           z4 - A * (z3 - z4)]
 
@@ -270,7 +260,6 @@ class MeridionalProcess:
 
         quadrilateral_path = mplpath.Path(np.column_stack((z_vertices, r_vertices)))
         return quadrilateral_path
-
 
     def find_points_inside_circle(self, istream, ispan, A):
         """
@@ -288,9 +277,9 @@ class MeridionalProcess:
                         (self.data.r - self.r_grid[istream, ispan]) ** 2)
 
         # this block of if's take care of the nodes on the boundary
-        if istream == self.nstream-1:
+        if istream == self.nstream - 1:
             istream -= 1
-        if ispan == self.nspan-1:
+        if ispan == self.nspan - 1:
             ispan -= 1
 
         l1 = sqrt((self.z_grid[istream + 1, ispan] - self.z_grid[istream, ispan]) ** 2 +
@@ -308,15 +297,12 @@ class MeridionalProcess:
         idx = np.where(distance <= r_lim)
         return idx
 
-
     def mass_average(self, field, idx):
         """
         mass weighted average of a fluid dynamics field[idx]
         """
         avg = np.sum(field[idx] * self.data.rho[idx]) / np.sum(self.data.rho[idx])
         return avg
-
-
 
     def gauss_filtering(self):
         """
@@ -376,7 +362,6 @@ class MeridionalProcess:
             self.Ft_prime_ss_21 = self.apply_gaussian_filter(self.Ft_prime_ss_21)
             self.Ft_prime_ss_22 = self.apply_gaussian_filter(self.Ft_prime_ss_22)
 
-
     @staticmethod
     def apply_gaussian_filter(field, sigma=2):
         """
@@ -385,8 +370,6 @@ class MeridionalProcess:
         smoothed_array = np.copy(field)
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
         return smoothed_array
-
-
 
     def fix_borders(self):
         """
@@ -428,8 +411,6 @@ class MeridionalProcess:
             self.copy_borders(self.a2)
             self.copy_borders(self.a3)
 
-
-
     def compute_rbf_gradients(self):
         """
         compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
@@ -442,8 +423,6 @@ class MeridionalProcess:
         self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
         self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
         self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
-
-
 
     def rbf_finite_difference(self, field):
         """
@@ -467,12 +446,11 @@ class MeridionalProcess:
         field_interp_left = rbf(self.z_grid - dz, self.r_grid)
         field_interp_up = rbf(self.z_grid, self.r_grid + dr)
         field_interp_down = rbf(self.z_grid, self.r_grid - dr)
-        dfield_dz = ((field_interp_right - field_interp_left) / (2*dz))
-        dfield_dr = ((field_interp_up - field_interp_down) / (2*dr))
+        dfield_dz = ((field_interp_right - field_interp_left) / (2 * dz))
+        dfield_dr = ((field_interp_up - field_interp_down) / (2 * dr))
         dfield_dtheta = np.zeros_like(dfield_dr)
 
         return dfield_dr, dfield_dtheta, dfield_dz
-
 
     @staticmethod
     def copy_borders(field):
@@ -480,8 +458,6 @@ class MeridionalProcess:
         field[-1, :] = field[-2, :]
         field[:, 0] = field[:, 1]
         field[:, -1] = field[:, -2]
-
-
 
     def quiver_plot(self, save_filename=None, field=None):
         fig, ax = plt.subplots(figsize=self.blade.blade_picture_size)
@@ -501,8 +477,6 @@ class MeridionalProcess:
 
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     def plot_stream_line(self, field, n, save_filename=None):
         fig, ax = plt.subplots(figsize=fig_size)
@@ -526,8 +500,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def compute_streamline_length(self):
         """
         compute the length along each streamline. Dimensional, same dimensions of cordinates
@@ -541,7 +513,6 @@ class MeridionalProcess:
                 tmp_len += sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
                 self.stream_line_length[istream, ispan] = tmp_len
 
-
     def compute_spanwise_length(self):
         """
         compute the length along each span direction. Dimensional, same dimensions of cordinates
@@ -554,8 +525,6 @@ class MeridionalProcess:
             for ispan in range(1, self.nspan):
                 tmp_len += sqrt((z[ispan] - z[ispan - 1]) ** 2 + (r[ispan] - r[ispan - 1]) ** 2)
                 self.span_wise_length[istream, ispan] = tmp_len
-
-
 
     def plot_spanline(self, field, n, save_filename=None):
         fig, ax = plt.subplots(figsize=fig_size)
@@ -579,8 +548,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def contour_plot(self, field, save_filename=None, unit_factor=1):
         """
         decide if plotting dimensional or non-dimensional quantities, depending on the CFD dataset if it has been
@@ -591,8 +558,6 @@ class MeridionalProcess:
             self.contour_plot_non_dimensional(field, save_filename)
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor)
-
-
 
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1):
         """
@@ -840,8 +805,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def contour_plot_non_dimensional(self, field, save_filename=None):
         """
         non-dimensional version of the contour plots
@@ -1077,8 +1040,8 @@ class MeridionalProcess:
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'F_n':
             if self.bfm == 'radial':
-                cs = ax.contourf(self.z_grid, self.r_grid, np.sqrt(self.F_nr**2 + self.F_ntheta**2 +
-                                                                                         self.F_nz**2), N_levels, cmap=color_map)
+                cs = ax.contourf(self.z_grid, self.r_grid, np.sqrt(self.F_nr ** 2 + self.F_ntheta ** 2 +
+                                                                   self.F_nz ** 2), N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_n$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
@@ -1100,8 +1063,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def compute_stagnation_quantities(self, gmma=1.4):
         """
         compute the 2D fields of the stagnation quantities
@@ -1112,8 +1073,6 @@ class MeridionalProcess:
 
         # rotary total pressure
         self.p_tot_bar = self.p_tot - self.rho * self.r_grid * self.data.omega_shaft * self.ut
-
-
 
     def compute_mu(self):
         """
@@ -1193,8 +1152,6 @@ class MeridionalProcess:
 
         return self.mu
 
-
-
     def store_pickle(self, file_name=None, folder=None):
         """
         store the object conent in a pickle
@@ -1205,7 +1162,107 @@ class MeridionalProcess:
         if folder is None:
             folder = folder_meta_data_default
         if file_name is None:
-            file_name = 'meridional_process_%d_%d.pickle' %(self.nstream, self.nspan)
+            file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)
 
-        with open(folder+file_name+'.pickle', "wb") as file:
+        with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
+
+    def compute_bfm_axial(self, mode='averaged'):
+        """
+        compute the BFM fields, following Fang et. al. 2023
+        """
+
+        self.compute_Floss(mode=mode)
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.u_meridional, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title('u meridional')
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.ds_dl, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title('ds_dl')
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.Floss, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title('Floss')
+
+        self.compute_Ftheta()
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.drut_dl, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title('drut_dl')
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.Ftheta, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title('Ftheta')
+
+    def compute_Floss(self, mode):
+
+        # meridional flow velocity
+        self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
+        self.compute_ds_dl(mode=mode)
+        if mode == 'global':
+            self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
+        if mode == 'averaged':
+            # we need to average also the other fields to make sure the global impact will be the same
+            self.T_avg = np.zeros_like(self.z_grid)
+            self.u_meridional_avg = np.zeros_like(self.z_grid)
+            self.u_mag_rel_avg = np.zeros_like(self.z_grid)
+
+            for ispan in range(0, self.nspan):
+                self.T_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.T[:, ispan])
+                self.u_meridional_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_meridional[:, ispan])
+                self.u_mag_rel_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_mag_rel[:, ispan])
+            self.Floss = self.T_avg * self.u_meridional_avg * self.ds_dl / self.u_mag_rel_avg
+
+    def compute_ds_dl(self, mode):
+        """
+        compute the derivative of the entropy along the meridional streamlines. In principle the increase should always be
+        positive
+        """
+        self.ds_dl = np.zeros_like(self.s)
+
+        if mode == 'averaged':
+            for ispan in range(self.nspan):
+                self.ds_dl[:, ispan] = (self.s[-1, ispan] - self.s[0, ispan]) / self.stream_line_length[-1, ispan]
+
+        elif mode == 'global':
+            for ispan in range(self.nspan):
+                i = slice(1, self.nstream - 1)
+                ip = slice(2, self.nstream)
+                im = slice(0, self.nstream - 2)
+
+                self.ds_dl[i, ispan] = (self.s[ip, ispan] - self.s[im, ispan]) / \
+                                       (self.stream_line_length[ip, ispan] - self.stream_line_length[im, ispan])
+
+            self.ds_dl[0, :] = (self.s[1, :] - self.s[0, :]) / (self.stream_line_length[1, :] - self.stream_line_length[0, :])
+            self.ds_dl[-1, :] = (self.s[-1, :] - self.s[-2, :]) / (
+                        self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
+
+
+
+    def compute_Ftheta(self):
+
+        self.drut_dl = np.zeros_like(self.z_grid)
+        for ispan in range(self.nspan):
+            i = slice(1, self.nstream - 1)
+            ip = slice(2, self.nstream)
+            im = slice(0, self.nstream - 2)
+
+            self.drut_dl[i, ispan] = (self.r_grid[ip, ispan]*self.ut[ip, ispan] - self.r_grid[im, ispan]*self.ut[im, ispan]) / \
+                                   (self.stream_line_length[ip, ispan] - self.stream_line_length[im, ispan])
+
+        self.drut_dl[0, :] = (self.r_grid[1, :]*self.ut[1, :] - self.r_grid[0, :]*self.ut[0, :]) / (
+                self.stream_line_length[1, :] - self.stream_line_length[0, :])
+
+        self.drut_dl[-1, :] = (self.r_grid[-1, :] * self.ut[-1, :] - self.r_grid[-2, :] * self.ut[-2, :]) / (
+                    self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
+
+        self.Ftheta = self.u_meridional / self.r_grid * self.drut_dl
+
+

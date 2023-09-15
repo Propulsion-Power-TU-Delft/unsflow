@@ -55,6 +55,36 @@ class MeridionalProcessGroup:
 
 
 
+    def assemble_fields_2(self):
+        """
+        assemble together the fields contained in all the blocks, but superposing the cordinates and fields,
+        to avoid having two points coincidents, with two different field values
+        """
+        self.z_grid = self.group[0].z_grid[0:-1, :]
+        self.r_grid = self.group[0].r_grid[0:-1, :]
+        self.rho = self.group[0].rho[0:-1, :]
+        self.ur = self.group[0].ur[0:-1, :]
+        self.ut = self.group[0].ut[0:-1, :]
+        self.uz = self.group[0].uz[0:-1, :]
+        self.p = self.group[0].p[0:-1, :]
+        self.T = self.group[0].T[0:-1, :]
+        self.s = self.group[0].s[0:-1, :]
+        self.M = self.group[0].M[0:-1, :]
+
+        for obj in self.group[1:]:
+            self.z_grid = np.concatenate((self.z_grid, obj.z_grid[0:-1, :]), axis=0)
+            self.r_grid = np.concatenate((self.r_grid, obj.r_grid[0:-1, :]), axis=0)
+            self.rho = np.concatenate((self.rho, obj.rho[0:-1, :]), axis=0)
+            self.ur = np.concatenate((self.ur, obj.ur[0:-1, :]), axis=0)
+            self.ut = np.concatenate((self.ut, obj.ut[0:-1, :]), axis=0)
+            self.uz = np.concatenate((self.uz, obj.uz[0:-1, :]), axis=0)
+            self.p = np.concatenate((self.p, obj.p[0:-1, :]), axis=0)
+            self.T = np.concatenate((self.T, obj.T[0:-1, :]), axis=0)
+            self.s = np.concatenate((self.s, obj.s[0:-1, :]), axis=0)
+            self.M = np.concatenate((self.M, obj.M[0:-1, :]), axis=0)
+
+
+
     def assemble_field_gradients(self):
         """
         assemble together the gradients of the various blocks
@@ -160,6 +190,28 @@ class MeridionalProcessGroup:
         plt.title(r'$M \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
+
+    def show_grid(self, save_filename=None):
+        """
+        contour of the grid. Non-Dimensional quantities
+        """
+
+        self.AR = (np.max(self.r_grid) - np.min(self.r_grid)) / \
+                  (np.max(self.z_grid) - np.min(self.z_grid))
+        self.picture_size = (7, 7 * self.AR)
+        self.nstream = np.shape(self.z_grid)[0]
+        self.nspan = np.shape(self.z_grid)[1]
+
+        plt.figure(figsize=self.picture_size)
+        for istream in range(0, self.nstream):
+            plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
+        for ispan in range(0, self.nspan):
+            plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_grid.pdf', bbox_inches='tight')
 
 
 

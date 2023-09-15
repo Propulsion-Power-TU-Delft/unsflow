@@ -239,3 +239,110 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0):
         plt.plot(X[:, m], Y[:, m], color=[0, 0, 0])
     # plt.show()
     return X, Y
+
+
+
+def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
+    # parameters
+    nx = np.shape(c_bottom)[1]
+    ny = np.shape(c_left)[1]
+    maxit = 500000
+    show = 1  # 1 for yes, 0 for no to display solution while solving
+    Ermax = 1e-9
+
+    xi = np.linspace(0, 1, nx)
+    dxi = xi[1] - xi[0]
+    eta = np.linspace(0, 1, ny)
+    deta = eta[1] - eta[0]
+
+
+    # initializing the borders
+    c1 = c_left
+    c2 = c_bottom
+    c3 = c_right
+    c4 = c_top
+
+    # plot the border
+    plt.figure()
+    plt.plot(c1[0, :], c1[1, :], label='c1')
+    plt.plot(c2[0, :], c2[1, :], label='c2')
+    plt.plot(c3[0, :], c3[1, :], label='c3')
+    plt.plot(c4[0, :], c4[1, :], label='c4')
+    plt.legend()
+
+    X = X0
+    Y = Y0
+
+    g11 = np.zeros((nx, ny))
+    g12 = np.zeros((nx, ny))
+    g22 = np.zeros((nx, ny))
+
+    a = np.zeros((nx, ny))
+    b = np.zeros((nx, ny))
+    c = np.zeros((nx, ny))
+    d = np.zeros((nx, ny))
+    e = np.zeros((nx, ny))
+
+    plt.figure(figsize=(5, 7))
+    for _ in range(100):
+        print('%d sweep' % (_))
+
+        plt.clf()
+        for ii in range(nx):
+            plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
+        for jj in range(ny):
+            plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
+        plt.pause(0.001)
+
+        # internal slices of the matrices
+        i = slice(1, nx - 1)
+        ip = slice(2, nx)
+        im = slice(0, nx - 2)
+        j = slice(1, ny - 1)
+        jp = slice(2, ny)
+        jm = slice(0, ny - 2)
+
+        g11[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) ** 2 + ((Y[ip, j] - Y[im, j]) / 2 / dxi) ** 2
+        g22[i, j] = ((X[i, jp] - X[i, jm]) / 2 / deta) ** 2 + ((Y[i, jp] - Y[i, jm]) / 2 / deta) ** 2
+        g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + \
+                    ((Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
+        a[i, j] = g22[i, j] / dxi ** 2
+        b[i, j] = 2 * g22[i, j] / (dxi ** 2) + 2 * g11[i, j] / deta ** 2
+        c[i, j] = g22[i, j] / dxi ** 2
+        d[i, j] = g11[i, j] / (deta ** 2) * (X[i, jp] + X[i, jm]) - 2 * g12[i, j] * (
+                X[ip, jp] + X[im, jm] - X[im, jp] - X[ip, jm]) / 4 / dxi / deta
+        e[i, j] = g11[i, j] / (deta ** 2) * (Y[i, jp] + Y[i, jm]) - 2 * g12[i, j] * (
+                Y[ip, jp] + Y[im, jm] - Y[im, jp] - Y[ip, jm]) / 4 / dxi / deta
+
+        P = np.zeros(nx)
+        Q = np.zeros(nx)
+        for jj in range(1, ny - 1):
+            d[1, jj] += a[1, jj]*X[0, jj]
+            d[-1, jj] += c[-1, jj] * X[-1, jj]
+            P[1] = c[1, jj] / (b[1, jj])
+            Q[1] = d[1, jj] / (b[1, jj])
+
+            for ii in range(2, nx - 1):
+                P[ii] = c[ii, jj] / (b[ii, jj] - a[ii, jj] * P[ii - 1])
+                Q[ii] = (d[ii, jj] + a[ii, jj] * Q[ii - 1]) / (b[ii, jj] - a[ii, jj] * P[ii - 1])
+
+            for ii in range(nx - 2, 0, -1):
+                X[ii, jj] = P[ii] * X[ii + 1, jj] + Q[ii]
+
+            e[1, jj] += a[1, jj] * Y[0, jj]
+            e[-1, jj] += c[-1, jj] * Y[-1, jj]
+            P[1] = c[1, jj] / (b[1, jj])
+            Q[1] = e[1, jj] / (b[1, jj])
+            for ii in range(2, nx - 1):
+                P[ii] = c[ii, jj] / (b[ii, jj] - a[ii, jj] * P[ii - 1])
+                Q[ii] = (e[ii, jj] + a[ii, jj] * Q[ii - 1]) / (b[ii, jj] - a[ii, jj] * P[ii - 1])
+
+            for ii in range(nx - 2, 0, -1):
+                Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
+
+
+    print('TEST')
+    for i in range(50, 1, -1):
+        print(i)
+
+    return X, Y
