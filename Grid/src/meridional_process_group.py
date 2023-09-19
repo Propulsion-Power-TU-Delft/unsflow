@@ -7,6 +7,7 @@ Created on Thu Jun 15 17:07:05 2023
 
 import numpy as np
 from .styles import *
+from scipy.ndimage import gaussian_filter
 import pickle
 
 
@@ -84,6 +85,29 @@ class MeridionalProcessGroup:
             self.M = np.concatenate((self.M, obj.M[0:-1, :]), axis=0)
 
 
+    def gauss_filtering(self):
+        self.rho = self.apply_gaussian_filter(self.rho)
+        self.ur = self.apply_gaussian_filter(self.ur)
+        self.ut = self.apply_gaussian_filter(self.ut)
+        self.uz = self.apply_gaussian_filter(self.uz)
+        self.p = self.apply_gaussian_filter(self.p)
+        self.T = self.apply_gaussian_filter(self.T)
+        self.s = self.apply_gaussian_filter(self.s)
+        self.M = self.apply_gaussian_filter(self.M)
+
+    def gauss_filtering_gradients(self):
+        self.drho_dr = self.apply_gaussian_filter(self.drho_dr)
+        self.drho_dz = self.apply_gaussian_filter(self.drho_dz)
+        self.dur_dr = self.apply_gaussian_filter(self.dur_dr)
+        self.dur_dz = self.apply_gaussian_filter(self.dur_dz)
+        self.dut_dr = self.apply_gaussian_filter(self.dut_dr)
+        self.dut_dz = self.apply_gaussian_filter(self.dut_dz)
+        self.duz_dr = self.apply_gaussian_filter(self.duz_dr)
+        self.duz_dz = self.apply_gaussian_filter(self.duz_dz)
+        self.dp_dr = self.apply_gaussian_filter(self.dp_dr)
+        self.dp_dz = self.apply_gaussian_filter(self.dp_dz)
+
+
 
     def assemble_field_gradients(self):
         """
@@ -111,6 +135,34 @@ class MeridionalProcessGroup:
             self.duz_dz = np.concatenate((self.duz_dz, obj.duz_dz), axis=0)
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
+
+
+    def assemble_field_gradients_2(self):
+        """
+        assemble the gradients field, superposing the coincident nodes
+        """
+        self.drho_dr = self.group[0].drho_dr[0:-1, :]
+        self.drho_dz = self.group[0].drho_dz[0:-1, :]
+        self.dur_dr = self.group[0].dur_dr[0:-1, :]
+        self.dur_dz = self.group[0].dur_dz[0:-1, :]
+        self.dut_dr = self.group[0].dut_dr[0:-1, :]
+        self.dut_dz = self.group[0].dut_dz[0:-1, :]
+        self.duz_dr = self.group[0].duz_dr[0:-1, :]
+        self.duz_dz = self.group[0].duz_dz[0:-1, :]
+        self.dp_dr = self.group[0].dp_dr[0:-1, :]
+        self.dp_dz = self.group[0].dp_dz[0:-1, :]
+
+        for obj in self.group[1:]:
+            self.drho_dr = np.concatenate((self.drho_dr, obj.drho_dr[0:-1, :]), axis=0)
+            self.drho_dz = np.concatenate((self.drho_dz, obj.drho_dz[0:-1, :]), axis=0)
+            self.dur_dr = np.concatenate((self.dur_dr, obj.dur_dr[0:-1, :]), axis=0)
+            self.dur_dz = np.concatenate((self.dur_dz, obj.dur_dz[0:-1, :]), axis=0)
+            self.dut_dr = np.concatenate((self.dut_dr, obj.dut_dr[0:-1, :]), axis=0)
+            self.dut_dz = np.concatenate((self.dut_dz, obj.dut_dz[0:-1, :]), axis=0)
+            self.duz_dr = np.concatenate((self.duz_dr, obj.duz_dr[0:-1, :]), axis=0)
+            self.duz_dz = np.concatenate((self.duz_dz, obj.duz_dz[0:-1, :]), axis=0)
+            self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr[0:-1, :]), axis=0)
+            self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz[0:-1, :]), axis=0)
 
 
 
@@ -309,5 +361,14 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
+
+    @staticmethod
+    def apply_gaussian_filter(field, sigma=2):
+        """
+        Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
+        """
+        smoothed_array = np.copy(field)
+        smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
+        return smoothed_array
 
 

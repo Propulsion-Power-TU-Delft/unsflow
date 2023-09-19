@@ -5,11 +5,11 @@ Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
 import numpy as np
-from numpy import sqrt, sin, cos, tan, arccos, arcsin
+from numpy import sqrt, sin, cos, tan, arccos, arcsin, log
 from .styles import *
 
 
-def cluster_sample_u(n, shrink_effect=3.5, border='default'):
+def cluster_sample_u(n, shrink_effect=5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
     it makes use of sigmoid function. Change the parameters if needed
@@ -246,9 +246,11 @@ def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
     # parameters
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
-    maxit = 500000
-    show = 1  # 1 for yes, 0 for no to display solution while solving
+    maxit = 500
+    show = True  # 1 for yes, 0 for no to display solution while solving
     Ermax = 1e-9
+    save_fig=False
+    orthogonality = False
 
     xi = np.linspace(0, 1, nx)
     dxi = xi[1] - xi[0]
@@ -272,10 +274,59 @@ def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
 
     X = X0
     Y = Y0
+    x_stretching = False
+    y_stretching = False
+    tol=1e-3
+    beta = 1.001
+
+    def func(x):
+        # return (1 / (1 + exp_term(x)))
+        return 1 - log((beta + 1 - x) / (beta - 1 + x)) / log((beta + 1) / (beta - 1))
+
+    def func_prime(x):
+        # return (10 * exp_term(x)) / (1 + exp_term(x)) ** 2
+        return 1 / log((beta + 1) / (beta - 1)) * (1 / (beta + 1 - x) + 1 / (beta - 1 + x))
+
+    def func_second(x):
+        # return (-100 * exp_term(x) * (1 + exp_term(x)) ** 2 - 10 * exp_term(x) * (-10 * exp_term(x)) * 2 * (1 + exp_term(x))) / (
+        #         1 + exp_term(x)) ** 4
+        return 1 / log((beta + 1) / (beta - 1)) * (1 / (beta + 1 - x) ** 2 - 1 / (beta - 1 + x) ** 2)
+
+    chi = func(xi)
+    chi_prime = func_prime(xi)
+    chi_second = func_second(xi)
+
+    plt.figure()
+    plt.plot(xi, chi, label=r'$f(\xi)$')
+    plt.legend()
+    plt.figure()
+    plt.plot(xi, chi_prime, label=r'$f_{1}(\xi)$')
+    plt.legend()
+    plt.figure()
+    plt.plot(xi, chi_second, label=r'$f_{2}(\xi)$')
+    plt.legend()
+    # plt.show()
+
+    f1 = np.zeros((nx, ny))
+    f1_prime = np.zeros((nx, ny))
+    f1_second = np.zeros((nx, ny))
+    f2 = np.zeros((nx, ny))
+    f2_prime = np.zeros((nx, ny))
+    f2_second = np.zeros((nx, ny))
+
+    for ispan in range(ny):
+        f1[:, ispan] = func(xi)
+        f1_prime[:, ispan] = func_prime(xi)
+        f2_prime[:, ispan] = func_second(xi)
+    for istream in range(0, nx):
+        f2[istream, :] = func(eta)
+        f2_prime[istream, :] = func_prime(eta)
+        f2_second[istream, :] = func_second(eta)
 
     g11 = np.zeros((nx, ny))
     g12 = np.zeros((nx, ny))
     g22 = np.zeros((nx, ny))
+    g = np.zeros((nx, ny))
 
     a = np.zeros((nx, ny))
     b = np.zeros((nx, ny))
@@ -283,16 +334,21 @@ def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
     d = np.zeros((nx, ny))
     e = np.zeros((nx, ny))
 
-    plt.figure(figsize=(5, 7))
-    for _ in range(100):
-        print('%d sweep' % (_))
+    if show:
+        plt.figure(figsize=(5, 7))
 
-        plt.clf()
-        for ii in range(nx):
-            plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
-        for jj in range(ny):
-            plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
-        plt.pause(0.001)
+    for _ in range(maxit):
+
+        if show:
+            plt.clf()
+            for ii in range(nx):
+                plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
+            for jj in range(ny):
+                plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
+            plt.pause(0.001)
+
+        X_old = X.copy()
+        Y_old = Y.copy()
 
         # internal slices of the matrices
         i = slice(1, nx - 1)
@@ -306,18 +362,33 @@ def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
         g22[i, j] = ((X[i, jp] - X[i, jm]) / 2 / deta) ** 2 + ((Y[i, jp] - Y[i, jm]) / 2 / deta) ** 2
         g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + \
                     ((Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
+        if orthogonality:
+            g12 *= 0
+
+        g[i, j] = g11[i, j] * g22[i, j] - g12[i, j] ** 2
         a[i, j] = g22[i, j] / dxi ** 2
         b[i, j] = 2 * g22[i, j] / (dxi ** 2) + 2 * g11[i, j] / deta ** 2
         c[i, j] = g22[i, j] / dxi ** 2
         d[i, j] = g11[i, j] / (deta ** 2) * (X[i, jp] + X[i, jm]) - 2 * g12[i, j] * (
                 X[ip, jp] + X[im, jm] - X[im, jp] - X[ip, jm]) / 4 / dxi / deta
+
         e[i, j] = g11[i, j] / (deta ** 2) * (Y[i, jp] + Y[i, jm]) - 2 * g12[i, j] * (
                 Y[ip, jp] + Y[im, jm] - Y[im, jp] - Y[ip, jm]) / 4 / dxi / deta
+
+        if x_stretching:
+            a[i, j] += +f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+            c[i, j] += -f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+            d[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
+
+        if y_stretching:
+            a[i, j] += +f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+            c[i, j] += -f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+            e[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
 
         P = np.zeros(nx)
         Q = np.zeros(nx)
         for jj in range(1, ny - 1):
-            d[1, jj] += a[1, jj]*X[0, jj]
+            d[1, jj] += a[1, jj] * X[0, jj]
             d[-1, jj] += c[-1, jj] * X[-1, jj]
             P[1] = c[1, jj] / (b[1, jj])
             Q[1] = d[1, jj] / (b[1, jj])
@@ -340,9 +411,24 @@ def elliptic_grid_generation_2(c_left, c_bottom, c_right, c_top, X0, Y0):
             for ii in range(nx - 2, 0, -1):
                 Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
 
+        err_x = np.linalg.norm(X_old - X)
+        err_y = np.linalg.norm(Y_old - Y)
+        if err_x < tol and err_y < tol:
+            print('convergence reached in %d sweeps' % (_))
+            break
 
-    print('TEST')
-    for i in range(50, 1, -1):
-        print(i)
+        if _ == maxit - 1:
+            print('convergence not reached')
+
+    if save_fig:
+        plt.figure(figsize=(5, 7))
+        for ii in range(nx):
+            plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
+        for jj in range(ny):
+            plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
+        plt.xlabel(r'$x$')
+        plt.ylabel(r'$y$')
+        plt.title('(%d X %d) grid' % (nx, ny))
+        plt.savefig('pics/%d_%d_orthogonal_%s.pdf' % (nx, ny, orthogonality), bbox_inches='tight')
 
     return X, Y

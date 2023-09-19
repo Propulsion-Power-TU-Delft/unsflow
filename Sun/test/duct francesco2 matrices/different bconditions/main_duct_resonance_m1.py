@@ -26,13 +26,9 @@ a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
 
 # non-dimensionalization terms:
 x_ref = r1
-# x_ref =1
 u_ref = M * a
-# u_ref = 1
 rho_ref = rho
-# rho_ref = 1
 t_ref = x_ref / u_ref
-# t_ref = 1
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
@@ -115,8 +111,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 15
-Nr = 5
+Nz = 30
+Nr = 10
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -138,7 +134,7 @@ duct_grid.ShowGrid()
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref, 0)
+sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
@@ -151,10 +147,11 @@ sun_obj.AddEMatrixToNodesFrancesco2()
 sun_obj.AddRMatrixToNodesFrancesco2()
 sun_obj.AddSMatrixToNodes()
 sun_obj.AddHatMatricesToNodes()
+sun_obj.impose_boundary_conditions('zero perturbation', 'zero pressure')
 sun_obj.ApplySpectralDifferentiation()
 
 omega_domain = [7.5e3, 35e3, -8e3, 8e3]
-grid_omega = [50, 10]
+grid_omega = [75, 10]
 sun_obj.ComputeSVD(omega_domain = omega_domain/omega_ref, grid_omega = grid_omega)
 sun_obj.PlotInverseConditionNumber(ref_solution=omega_analytical, save_filename='chi_map_p_%s-%s_%d_%d_m%d'
                                                                                 %(gradient_routine, gradient_order, Nz, Nr, m))

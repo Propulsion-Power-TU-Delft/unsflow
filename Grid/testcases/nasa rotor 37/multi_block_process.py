@@ -15,9 +15,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_15_15.pickle'
-blade_file_path = 'data/meta/nasa_rotor_config_01_blade_40_15.pickle'
-outlet_file_path = 'data/meta/nasa_rotor_config_01_outlet_15_15.pickle'
+inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_40_20.pickle'
+blade_file_path = 'data/meta/nasa_rotor_config_01_blade_40_20.pickle'
+outlet_file_path = 'data/meta/nasa_rotor_config_01_outlet_70_20.pickle'
 
 with open(inlet_file_path, 'rb') as file:
     inlet = pickle.load(file)
@@ -33,9 +33,11 @@ obj.add_to_group(inlet)
 obj.add_to_group(blade)
 obj.add_to_group(outlet)
 obj.assemble_fields_2()
-obj.contour_fields(save_filename='15_35_15_15')
-obj.show_grid(save_filename='15_35_15_15')
-# obj.assemble_field_gradients()
-# obj.contour_field_gradients(save_filename='15_35_15_15')
+obj.gauss_filtering()
+obj.contour_fields(save_filename='40_40_70_20')
+obj.show_grid(save_filename='40_40_70_20')
+obj.assemble_field_gradients_2()
+obj.gauss_filtering_gradients()
+obj.contour_field_gradients(save_filename='40_40_70_20')
 plt.show()
 

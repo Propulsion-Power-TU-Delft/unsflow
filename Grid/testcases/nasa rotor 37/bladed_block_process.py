@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 30
-nspan = 10
+nstream = 40
+nspan = 20
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
@@ -42,7 +42,7 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', smoothing='elliptic', curved_border='both')
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic')
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -64,6 +64,7 @@ blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nsp
 file_name = 'data/meta/config_01.csv'
 data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=-17189, cut_block=bladed_block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
+
 data.process_from_ansys_csv()
 data.compute_flow_ideal_vectors()
 data.compute_bfm_radial_fields()

@@ -289,9 +289,12 @@ class MeridionalProcess:
                   (self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]) ** 2)
 
         r_lim = 0.25 * (l1 + l2)
+        r_lim = min(l1, l2)
+
         if A >= 1:
             # enlarged domain of research
             print('research domain enlarged, point (%2d,%2d), attempt %2d' % (istream, ispan, A))
+            # r_lim += r_lim * A
             r_lim += r_lim * A
 
         idx = np.where(distance <= r_lim)

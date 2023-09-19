@@ -50,6 +50,7 @@ class Block:
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline,
                                  nstream=self.nstream, mode='cordinates', x_ref=1, rescale_factor=1)
 
+
     def spline_of_leading_trailing_edge(self):
         """
         make splines of the inlet and outlet border of the domain of interest
@@ -67,7 +68,8 @@ class Block:
 
     def spline_of_outlet(self):
         """
-        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge
+        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge.
+        At the same time prepare the straight spline for the inlet edge
         """
         self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                       self.inlet[1:-1, :],
@@ -75,15 +77,28 @@ class Block:
 
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1)
 
+        inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
+        inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
+
+        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+
+
     def spline_of_inlet(self):
         """
         make splines of the inlet border for the outlet block, which coincides with self.Outlet
+        At the same time prepare the outlet edge, as a straight line between the final points
         """
         self.inlet = np.concatenate((np.reshape(self.point_hub_outlet, (1, 2)),
                                      self.outlet[1:-1, :],
                                      np.reshape(self.point_shroud_outlet, (1, 2))))
 
         self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
+
+        outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
+        outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
+
+        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1,
+                                  degree_spline=1)
 
     def sample_hub_shroud(self, sampling_mode='default'):
         """
@@ -104,12 +119,14 @@ class Block:
         sample the outlet edge for the inlet block
         """
         self.trailing_edge.sample(sampling_mode=sampling_mode)
+        self.leading_edge.sample(sampling_mode=sampling_mode)
 
     def sample_inlet(self, sampling_mode='default'):
         """
         sample the inlet edge for the outlet block
         """
         self.leading_edge.sample(sampling_mode=sampling_mode)
+        self.trailing_edge.sample(sampling_mode=sampling_mode)
 
     def compute_grid_points(self, sampling_mode='default', grid_mode='spanwise', curved_border=True, smoothing=None):
         """

@@ -88,6 +88,7 @@ class CfdData:
         self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
         self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
 
+
         if normalize:
             self.normalize_data()
             if self.verbose:

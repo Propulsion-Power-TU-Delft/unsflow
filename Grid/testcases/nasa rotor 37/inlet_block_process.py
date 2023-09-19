@@ -20,10 +20,10 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 15
-nspan = 15
-stream_grid_sampling = 'clustering_right'
-span_grid_sampling = 'clustering'
+nstream = 40
+nspan = 20
+stream_grid_sampling = 'default'
+span_grid_sampling = 'default'
 
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=1, rescale_factor=0.01, x_ref=0.252)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=1, rescale_factor=0.01, x_ref=0.252)
@@ -43,7 +43,7 @@ block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_outlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right')
+block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right', smoothing='elliptic')
 block.compute_double_grid()
 block.find_border()
 block.plot_full_grid(save_filename='inlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
