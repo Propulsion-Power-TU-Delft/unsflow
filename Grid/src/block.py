@@ -7,7 +7,7 @@ Created on Wed Jun 14 18:29:29 2023
 import numpy as np
 from scipy.spatial import KDTree
 from .styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation_2
+from .functions import cluster_sample_u, elliptic_grid_generation
 from .curve import Curve
 
 
@@ -197,7 +197,7 @@ class Block:
             outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
-            self.z_grid_points, self.r_grid_points = elliptic_grid_generation_2(inlet, hub, outlet, shroud,
+            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.z_grid_points, self.r_grid_points)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
