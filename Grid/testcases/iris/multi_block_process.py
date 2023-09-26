@@ -7,17 +7,18 @@ Created on Wed Jul 12 11:41:53 2023
 """
 import time
 import matplotlib.pyplot as plt
-import sys
-
-sys.path.append('../../Grid')
 import Grid
 import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-inlet_file_path = 'data/meta/iris_inlet_15_15.pickle'
-blade_file_path = 'data/meta/iris_blade_40_15.pickle'
-outlet_file_path = 'data/meta/iris_outlet_15_15.pickle'
+grid_inlet = '35_20'
+grid_blade = '50_20'
+grid_outlet = '35_20'
+
+inlet_file_path = 'data/meta/iris_inlet_' + grid_inlet + '.pickle'
+blade_file_path = 'data/meta/iris_blade_' + grid_blade + '.pickle'
+outlet_file_path = 'data/meta/iris_outlet_' + grid_outlet + '.pickle'
 
 with open(inlet_file_path, 'rb') as file:
     inlet = pickle.load(file)
@@ -33,9 +34,13 @@ obj.add_to_group(inlet)
 obj.add_to_group(blade)
 obj.add_to_group(outlet)
 obj.assemble_fields_2()
-obj.contour_fields(save_filename='15_40_15_15')
-obj.show_grid(save_filename='15_40_15_15')
-# obj.assemble_field_gradients()
-# obj.contour_field_gradients(save_filename='15_40_15_15')
-plt.show()
+obj.gauss_filtering()
+obj.contour_fields(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+obj.show_grid(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+obj.assemble_field_gradients_2()
+obj.gauss_filtering_gradients()
+obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+
+obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+# plt.show()
 

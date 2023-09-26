@@ -9,7 +9,7 @@ from numpy import sqrt, sin, cos, tan, arccos, arcsin, log
 from .styles import *
 
 
-def cluster_sample_u(n, shrink_effect=5, border='default'):
+def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
     it makes use of sigmoid function. Change the parameters if needed
@@ -24,7 +24,6 @@ def cluster_sample_u(n, shrink_effect=5, border='default'):
         array = np.linspace(0, shrink_effect, length)
 
     sigmoid = 1 / (1 + np.exp(-array))  # Apply sigmoid function
-    # Scale the sigmoid values to the range 0 to 1
     scaled_array = (sigmoid - sigmoid.min()) / (sigmoid.max() - sigmoid.min())
     return scaled_array
 
@@ -136,7 +135,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 
 
-def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0, tol=1e-3):
+def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0, orthogonality, x_stretching, y_stretching, tol=1e-3):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, and the structured X,Y initial conditions. Tol is used to choose when stopping
@@ -148,7 +147,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0, tol=1e-3)
     maxit = 500
     show = True  # 1 display the solution while solving
     save_fig=False
-    orthogonality = False
 
     # computational domain
     xi = np.linspace(0, 1, nx)
@@ -172,23 +170,20 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, X0, Y0, tol=1e-3)
 
     X = X0
     Y = Y0
-    x_stretching = False
-    y_stretching = False
-    tol=1e-3
-    beta = 1.001
+    alpha = 5
 
     def func(x):
-        # return (1 / (1 + exp_term(x)))
-        return 1 - log((beta + 1 - x) / (beta - 1 + x)) / log((beta + 1) / (beta - 1))
+        return 1 / (1 + np.exp(-alpha*(x-0.5)))
+        # return 0.5 - 1/alpha*np.log(1/x-1)
 
     def func_prime(x):
-        # return (10 * exp_term(x)) / (1 + exp_term(x)) ** 2
-        return 1 / log((beta + 1) / (beta - 1)) * (1 / (beta + 1 - x) + 1 / (beta - 1 + x))
+        return (alpha*np.exp(-alpha*(x-0.5))) / (1 + np.exp(-alpha*(x-0.5)))**2
+        # return 1/(alpha*x**2)*(1/(1/x-1))
 
     def func_second(x):
-        # return (-100 * exp_term(x) * (1 + exp_term(x)) ** 2 - 10 * exp_term(x) * (-10 * exp_term(x)) * 2 * (1 + exp_term(x))) / (
-        #         1 + exp_term(x)) ** 4
-        return 1 / log((beta + 1) / (beta - 1)) * (1 / (beta + 1 - x) ** 2 - 1 / (beta - 1 + x) ** 2)
+        return (-alpha**2 * np.exp(-alpha*(x-0.5))*(1 + np.exp(-alpha*(x-0.5)))+ 2*alpha**2*np.exp(-2*alpha*(x-0.5))) / \
+            (1 + np.exp(-alpha*(x-0.5)))**3
+        # return -2/alpha*x**(-3)/(1/x-1) + 1/(alpha*x**2)*(-1/(x**2*(1/x-1)**2))
 
     chi = func(xi)
     chi_prime = func_prime(xi)

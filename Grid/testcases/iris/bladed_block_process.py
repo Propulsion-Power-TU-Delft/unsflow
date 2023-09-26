@@ -37,22 +37,20 @@ bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 bladed_block.extend_inlet_outlet_curves()
 bladed_block.find_intersections(tol=1e-2, visual_check=True)
 bladed_block.bladed_zone_trim(machine_type='radial')
-# bladed_block.compute_leading_trailing_splines()
 bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic')
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
+                                 orthogonality=False, x_stretching=False, y_stretching=False)
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
-bladed_block.plot_full_grid(save_filename='grid_outline_%2d_%2d' % (nstream, nspan), outline=True)
 
 
 # find the camber surface, using the (z,r) grid found in the bladed block
 blade.find_camber_surface(bladed_block)
 blade.plot_camber_surface(save_filename='camber_surface')
-# blade.render_full_annulus(7)
 blade.compute_camber_vectors()
 blade.show_normal_vectors(save_filename='normal_vectors')
 blade.show_streamline_vectors(save_filename='streamline_vectors')
@@ -116,7 +114,7 @@ data_process.contour_plot(field='F_t', save_filename='F_t_%2d_%2d' % (nstream, n
 data_process.contour_plot(field='F_n', save_filename='F_n_%2d_%2d' % (nstream, nspan))
 data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
 
-
+delattr(data_process, 'data')
 data_process.store_pickle(file_name='iris_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time

@@ -20,10 +20,10 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 15
-nspan = 15
-stream_grid_sampling = 'clustering_left'
-span_grid_sampling = 'clustering'
+nstream = 35
+nspan = 20
+stream_grid_sampling = 'default'
+span_grid_sampling = 'default'
 
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=1, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -43,7 +43,8 @@ block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left')
+block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
+                          orthogonality=False, x_stretching=False, y_stretching=False)
 block.compute_double_grid()
 block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -89,7 +90,7 @@ data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_in
 data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
 data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
-
+delattr(data_process, 'data')
 data_process.store_pickle(file_name='iris_outlet_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time-start_time

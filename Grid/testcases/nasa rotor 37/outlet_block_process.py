@@ -20,7 +20,7 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 70
+nstream = 75
 nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
@@ -43,7 +43,8 @@ block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic')
+block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
+                          orthogonality=False, x_stretching=False, y_stretching=False)
 block.compute_double_grid()
 block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -61,7 +62,7 @@ data_process.circumferential_average(mode='circular', fix_borders=False, gauss_f
 data_process.compute_rbf_gradients()
 
 
-save_plots = False
+save_plots = True
 if save_plots:
     data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d_interp' % (nstream, nspan))
@@ -92,7 +93,7 @@ if save_plots:
     data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
     data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
-
+delattr(data_process, 'data')
 data_process.store_pickle(file_name='nasa_rotor_config_01_outlet_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time-start_time

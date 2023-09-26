@@ -36,6 +36,14 @@ class MeridionalProcess:
         self.z_grid_secondary = block.z_grid_centers  # secondary grid points
         self.r_grid_secondary = block.r_grid_centers
 
+        self.rho_ref = data.rho_ref
+        self.u_ref = data.u_ref
+        self.T_ref = data.T_ref
+        self.s_ref = data.s_ref
+        self.x_ref = data.x_ref
+        self.omega_ref = data.omega_ref
+        self.p_ref = data.p_ref
+
     def circumferential_average(self, mode='rectangular', fix_borders=True, bfm=None, gauss_filter=True):
         """
         perform circumferential averages
@@ -289,7 +297,7 @@ class MeridionalProcess:
                   (self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]) ** 2)
 
         r_lim = 0.25 * (l1 + l2)
-        r_lim = min(l1, l2)
+        # r_lim = min(l1, l2)
 
         if A >= 1:
             # enlarged domain of research
@@ -366,7 +374,7 @@ class MeridionalProcess:
             self.Ft_prime_ss_22 = self.apply_gaussian_filter(self.Ft_prime_ss_22)
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=2):
+    def apply_gaussian_filter(field, sigma=3):
         """
         Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
         """
@@ -414,6 +422,20 @@ class MeridionalProcess:
             self.copy_borders(self.a2)
             self.copy_borders(self.a3)
 
+
+    def compute_rbf_fields(self):
+        """
+        compute the rbf interpolation of the primary fields
+        """
+        self.rho = self.rbf_interpolation(self.rho)
+        self.ur = self.rbf_interpolation(self.ur)
+        self.ut = self.rbf_interpolation(self.ut)
+        self.uz = self.rbf_interpolation(self.uz)
+        self.p = self.rbf_interpolation(self.p)
+        self.T = self.rbf_interpolation(self.T)
+        self.s = self.rbf_interpolation(self.s)
+
+
     def compute_rbf_gradients(self):
         """
         compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
@@ -426,6 +448,27 @@ class MeridionalProcess:
         self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
         self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
         self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
+
+
+
+    def rbf_interpolation(self, field):
+        """
+        Args:
+            field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
+        Returns: the three components of the field
+        """
+
+        z_points_flat = self.z_grid.flatten()
+        r_points_flat = self.r_grid.flatten()
+        field_flat = field.flatten()
+
+        # Create the RBFInterpolator object with the 'multiquadric' radial basis function
+        # You can also try other RBF functions like 'gaussian', 'linear', etc.
+        rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
+        field_interp = rbf(self.z_grid, self.r_grid)
+        return field_interp
+
+
 
     def rbf_finite_difference(self, field):
         """
@@ -1155,6 +1198,12 @@ class MeridionalProcess:
 
         return self.mu
 
+
+    # def build_useful_object(self):
+    #     data_container = DataContainer(self.z_grid, self.r_grid, )
+
+
+
     def store_pickle(self, file_name=None, folder=None):
         """
         store the object conent in a pickle
@@ -1169,6 +1218,7 @@ class MeridionalProcess:
 
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
+
 
     def compute_bfm_axial(self, mode='averaged'):
         """
@@ -1203,6 +1253,14 @@ class MeridionalProcess:
         plt.contourf(self.z_grid, self.r_grid, self.Ftheta, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.title('Ftheta')
+
+        self.alpha = self.Floss / self.u_mag_rel**2
+        # self.beta = self.F
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_grid, self.r_grid, self.alpha, cmap='jet', levels=N_levels_2)
+        plt.colorbar()
+        plt.title(r'$\alpha$')
 
     def compute_Floss(self, mode):
 
@@ -1246,6 +1304,10 @@ class MeridionalProcess:
             self.ds_dl[0, :] = (self.s[1, :] - self.s[0, :]) / (self.stream_line_length[1, :] - self.stream_line_length[0, :])
             self.ds_dl[-1, :] = (self.s[-1, :] - self.s[-2, :]) / (
                         self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
+            for istream in range(self.nstream):
+                for ispan in range(self.nspan):
+                    if self.ds_dl[istream, ispan] < 0:
+                        self.ds_dl[istream, ispan] = 0
 
 
 
@@ -1267,5 +1329,41 @@ class MeridionalProcess:
                     self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
 
         self.Ftheta = self.u_meridional / self.r_grid * self.drut_dl
+
+
+
+
+# class DataContainer:
+#     """
+#     class that stores only the important information, necessary from the sun Model, to avoid storing
+#     a lot of data for nothing
+#     """
+#     def __init__(self, type_name):
+#         """
+#         type_name: to store the type of block
+#         """
+#         self.type_name = type_name
+#
+#     def add_data(self, z_grid, r_grid, rho, ur, ut, uz, p, drho_dr, drho_dz, dur_dr, dur_dz,
+#                  dut_dr, dut_dz, duz_dr, duz_dz, dp_dr, dp_dz, nstream, nspan):
+#         self.z_grid = z_grid
+#         self.r_grid = r_grid
+#         self.rho = rho
+#         self.ur = ur
+#         self.ut = ut
+#         self.uz = uz
+#         self.p = p
+#         self.drho_dr = drho_dr
+#         self.drho_dz = drho_dz
+#         self.dur_dr = dur_dr
+#         self.dur_dz = dur_dz
+#         self.dut_dr = dut_dr
+#         self.dut_dz = dut_dz
+#         self.duz_dr = duz_dr
+#         self.duz_dz = duz_dz
+#         self.dp_dr = dp_dr
+#         self.dp_dz = dp_dz
+#         self.nstream = nstream
+#         self.nspan = nspan
 
 

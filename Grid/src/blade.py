@@ -87,7 +87,7 @@ class Blade:
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
         self.AR = (np.max(self.r) - np.min(self.r)) / (np.max(self.z) - np.min(self.z))
-        self.blade_picture_size = (7, 7 * self.AR)
+        self.blade_picture_size = (4, 4 * self.AR)
 
         # check if the blade has a splitter blade
         if np.unique(self.blade).shape[0] > 1:

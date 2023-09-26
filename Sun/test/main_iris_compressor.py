@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # import the data from the pickle meridional object
-filename = '../../Grid/debug/data/meta/iris_blade_35_15'
+filename = '../../Grid/testcases/iris/data/meta/iris_35_20_blade_50_20_outlet_35_20.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 
@@ -21,9 +21,9 @@ sun_obj.ComputeBoundaryNormals()
 sun_obj.ShowNormals()
 
 #reference quantities
-rho_ref = np.mean(meridional_obj.rho)  # ref density
-u_ref = np.mean(meridional_obj.u_mag)  # ref velocity
-x_ref = np.mean(meridional_obj.r_grid)  # ref length
+rho_ref = 1.014  # ref density
+u_ref = 100  # ref velocity
+x_ref = 0.003  # ref length
 
 rpm = 85e3
 sun_obj.AddNormalizationQuantities(1, 1, 1)

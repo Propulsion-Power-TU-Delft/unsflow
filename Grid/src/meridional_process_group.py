@@ -172,7 +172,7 @@ class MeridionalProcessGroup:
         """
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.rho*self.group[0].data.rho_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.rho*self.group[0].rho_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -181,7 +181,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.ur*self.group[0].data.u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.ur*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -190,7 +190,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, np.abs(self.ut)*self.group[0].data.u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, np.abs(self.ut)*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -199,7 +199,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.uz*self.group[0].data.u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.uz*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -208,7 +208,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.p*self.group[0].data.p_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.p*self.group[0].p_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -217,7 +217,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.T * self.group[0].data.T_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.T * self.group[0].T_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -226,7 +226,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.s * self.group[0].data.s_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_grid, self.r_grid, self.s * self.group[0].s_ref, cmap='jet', levels=N_levels_2)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -363,12 +363,30 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=2):
+    def apply_gaussian_filter(field, sigma=3):
         """
         Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
         """
         smoothed_array = np.copy(field)
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
         return smoothed_array
+
+
+
+    def store_pickle(self, file_name=None, folder=None):
+        """
+        store the object conent in a pickle
+        Args:
+            file_name: name to store. if None, default one is selected
+            folder: location to store. if None, default one is selected
+        """
+        if folder is None:
+            folder = folder_meta_data_default
+        if file_name is None:
+            file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)
+
+        with open(folder + file_name + '.pickle', "wb") as file:
+            pickle.dump(self, file)
+
 
 

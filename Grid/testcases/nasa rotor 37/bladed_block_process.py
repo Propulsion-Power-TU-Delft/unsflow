@@ -6,11 +6,8 @@ Created on Wed Jul 12 11:41:53 2023
 
 """
 import time
-import matplotlib.pyplot as plt
-import sys
-
-sys.path.append('../../Grid')
 import Grid
+import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 
@@ -20,7 +17,7 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 40
+nstream = 50
 nspan = 20
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
@@ -35,28 +32,25 @@ blade.find_outlet_points('axial')
 # cut the bladed block properly, and compute the meridional structured mesh
 bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 bladed_block.extend_inlet_outlet_curves()
-bladed_block.find_intersections(tol=1e-3, visual_check=True)
+bladed_block.find_intersections(tol=1e-3, visual_check=False)
 bladed_block.bladed_zone_trim(machine_type='axial')
-# bladed_block.compute_leading_trailing_splines()
 bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic')
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
+                                 orthogonality=False, x_stretching=False, y_stretching=False)
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
-bladed_block.plot_full_grid(save_filename='grid_outline_%2d_%2d' % (nstream, nspan), outline=True)
-
 
 # find the camber surface, using the (z,r) grid found in the bladed block
 blade.find_camber_surface(bladed_block)
-blade.plot_camber_surface(save_filename='camber_surface')
-# blade.render_full_annulus(7)
+# blade.plot_camber_surface(save_filename='camber_surface')
 blade.compute_camber_vectors()
-blade.show_normal_vectors(save_filename='normal_vectors')
-blade.show_streamline_vectors(save_filename='streamline_vectors')
-blade.show_spanline_vectors(save_filename='spanline_vectors')
+# blade.show_normal_vectors(save_filename='normal_vectors')
+# blade.show_streamline_vectors(save_filename='streamline_vectors')
+# blade.show_spanline_vectors(save_filename='spanline_vectors')
 blade.compute_blade_camber_angles(convention='rotation-wise')
 blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
@@ -73,8 +67,9 @@ data.compute_bfm_radial_fields()
 data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='circular', bfm='radial', fix_borders=False, gauss_filter=True)
+# data_process.compute_rbf_fields()
 data_process.compute_rbf_gradients()
-data_process.compute_bfm_axial(mode='averaged')
+data_process.compute_bfm_axial(mode='global')
 
 # final meridional plots
 save_plots = True
@@ -118,7 +113,7 @@ if save_plots:
     data_process.contour_plot(field='F_n', save_filename='F_n_%2d_%2d' % (nstream, nspan))
     data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
 
-
+delattr(data_process, 'data')
 data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time

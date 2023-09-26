@@ -7,6 +7,7 @@ Created on Wed Jul 12 11:41:53 2023
 """
 import time
 import Grid
+import matplotlib.pyplot as plt
 
 start_time = time.time()
 print('Start execution:')
@@ -15,7 +16,7 @@ print('Start execution:')
 data_folder_path = 'data/geo/'
 units = '[m]'
 nstream = 30
-nspan = 15
+nspan = 20
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3,
                      rescale_factor=1, x_ref=0.0228)
@@ -37,4 +38,7 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic')
+bladed_block.show_outline_grid()
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
+                                 orthogonality=False, x_stretching=False, y_stretching=False)
+plt.show()

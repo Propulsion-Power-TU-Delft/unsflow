@@ -128,7 +128,7 @@ class Block:
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, sampling_mode='default', grid_mode='spanwise', curved_border=True, smoothing=None):
+    def compute_grid_points(self, sampling_mode, grid_mode, curved_border, smoothing, orthogonality, x_stretching, y_stretching):
         """
         compute the internal grid points with a certain algorithm, specified by grid_mode:
             spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
@@ -198,7 +198,8 @@ class Block:
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
-                                                                              self.z_grid_points, self.r_grid_points)
+                                                                              self.z_grid_points, self.r_grid_points,orthogonality,
+                                                                              x_stretching, y_stretching)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 
@@ -436,3 +437,16 @@ class Block:
         border_r = [item for sublist in border_r for item in sublist]
 
         self.border = np.stack((border_z, border_r), axis=1)
+
+
+
+    def show_outline_grid(self):
+        """
+        show the outline grid, with the sampling points
+        """
+
+        plt.figure()
+        plt.plot(self.hub_trim.z_sample, self.hub_trim.r_sample, '-o')
+        plt.plot(self.shroud_trim.z_sample, self.shroud_trim.r_sample, '-o')
+        plt.plot(self.leading_edge.z_sample, self.leading_edge.r_sample, '-o')
+        plt.plot(self.trailing_edge.z_sample, self.trailing_edge.r_sample, '-o')
