@@ -56,8 +56,7 @@ class SunModel:
         self.u_ref = u_ref
         self.p_ref = rho_ref * u_ref ** 2
         self.x_ref = x_ref
-        self.t_ref = x_ref / u_ref
-        self.omega_ref = 1 / self.t_ref
+        self.t_ref = 1 / self.omega_ref
 
         # normalization terms = inverse of advections, to be used for governing equations normalization. They are correct
         # only for the form of the equations used. Otherwise they must be changed
@@ -72,6 +71,7 @@ class SunModel:
             rpm: revolutions per minute
         """
         self.omega_shaft = 2 * np.pi * rpm / 60
+        self.omega_ref = np.copy(self.omega_shaft)
 
     def NormalizeData(self):
         """
@@ -605,17 +605,16 @@ class SunModel:
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-    def AddSMatrixToNodes(self, BFM=None):
+    def AddSMatrixToNodes(self):
         """
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                if BFM is None:
+                if 1 == 1:
                     S = np.zeros((5, 5), dtype=complex)
-
-                if BFM == 'radial':
+                else:
                     S = np.zeros((5, 5), dtype=complex)
                     S[1, 1] = self.data.meridional_obj.Fn_prime_ss_00[ii, jj] - \
                               2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_00[ii, jj]
@@ -635,8 +634,7 @@ class SunModel:
                               2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_21[ii, jj]
                     S[2, 3] = self.data.meridional_obj.Fn_prime_ss_22[ii, jj] - \
                               2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_22[ii, jj]
-                else:
-                    S = np.zeros((5, 5), dtype=complex)  # provide here the body force matrix
+
                 S = self.NormalizeMatrix(S)  # normalization
                 self.data.dataSet[ii, jj].AddSMatrix(S)
 
@@ -973,7 +971,7 @@ class SunModel:
                         ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
-                u, s, v = np.linalg.svd(self.Z_g - 1j*omega * self.A_g)
+                u, s, v = np.linalg.svd(self.Z_g - 1j * omega * self.A_g)
                 self.sing_value_min[ii, jj] = np.min(s)
                 self.sing_value_max[ii, jj] = np.max(s)
                 self.chi[ii, jj] = np.min(s) / np.max(s)
@@ -998,10 +996,10 @@ class SunModel:
         # omega_{dimensional}=omega_shaft*RS+1j*U*DF/r where U and r taken where we want.
         # omega_{non-dimensinoal}=omega_{dimensional}/omega_ref
 
-        omR_min = self.omega_shaft * RS_domain[0] / self.omega_ref
-        omR_max = self.omega_shaft * RS_domain[1] / self.omega_ref
-        omI_min = self.omega_shaft * DF_domain[0] / self.omega_ref
-        omI_max = self.omega_shaft * DF_domain[1] / self.omega_ref
+        omR_min = RS_domain[0]
+        omR_max = RS_domain[1]
+        omI_min = DF_domain[0]
+        omI_max = DF_domain[1]
         self.RS_domain = RS_domain
         self.DF_domain = DF_domain
 
@@ -1011,8 +1009,8 @@ class SunModel:
         omR = np.linspace(omR_min, omR_max, nR)
         omI = np.linspace(omI_min, omI_max, nI)
         self.omegaI, self.omegaR = np.meshgrid(omI, omR)
-        self.DF = self.omegaI * self.omega_ref / self.omega_shaft
-        self.RS = self.omegaR * self.omega_ref / self.omega_shaft
+        self.DF = self.omegaI
+        self.RS = self.omegaR
 
         # instantiate results matrices and compute SVD for every point
         self.chi = np.zeros((nR, nI))  # inverse of the condition number
@@ -1294,8 +1292,6 @@ class SunModel:
         self.hub_bc = hub_bc
         self.shroud_bc = shroud_bc
 
-
-
     def apply_bc_condition(self, row, condition, wall_normal=np.array([1, 0, 0])):
         """
         for the considered grid node, it modifes the 5 governing equations starting from row index,
@@ -1325,8 +1321,6 @@ class SunModel:
 
         else:
             raise ValueError('unknown boundary condition type')
-
-
 
     def inspect_matrix(self, matrix_name=None, save_filename=None, precision=None):
         """

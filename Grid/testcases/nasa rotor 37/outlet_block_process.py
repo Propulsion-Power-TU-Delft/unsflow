@@ -20,10 +20,10 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 75
-nspan = 20
-stream_grid_sampling = 'default'
-span_grid_sampling = 'default'
+nstream = 15
+nspan = 10
+stream_grid_sampling = 'clustering_left'
+span_grid_sampling = 'clustering'
 
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=1, rescale_factor=0.01, x_ref=0.252)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=1, rescale_factor=0.01, x_ref=0.252)
@@ -43,7 +43,7 @@ block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
+block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing=None,
                           orthogonality=False, x_stretching=False, y_stretching=False)
 block.compute_double_grid()
 block.find_border()
@@ -62,7 +62,7 @@ data_process.circumferential_average(mode='circular', fix_borders=False, gauss_f
 data_process.compute_rbf_gradients()
 
 
-save_plots = True
+save_plots = False
 if save_plots:
     data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d_interp' % (nstream, nspan))

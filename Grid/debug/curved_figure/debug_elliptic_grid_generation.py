@@ -1,0 +1,44 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import Grid
+from Grid.src.functions import elliptic_grid_generation
+
+""" 
+test case to debug the elliptic grid generation method. Define a figure delimited by 4 curved
+borders, and see how it goes
+"""
+
+nx = 30
+ny = 35
+
+# parameteric picture
+L = 2
+R = 2
+
+"""  left border  """
+theta = np.linspace(0, np.pi, ny)
+x_left = -R*np.sin(theta)
+y_left = R-R*np.cos(theta)
+c_left = np.array((x_left,
+                   y_left))
+
+"""  bottom border  """
+c_bottom = np.array((np.linspace(0, L, nx),
+                     np.zeros(nx)))
+
+"""  right border  """
+theta = np.linspace(0, 2*np.pi, ny)
+x_right = L+R/5*np.sin(theta)
+y_right = np.linspace(0, 2*R, ny)
+c_right = np.array((x_right,
+                   y_right))
+
+"""  top border  """
+c_top = np.array((np.linspace(0, L, nx),
+                np.zeros(nx)+2*R))
+
+
+
+X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=True,
+                                x_stretching=True, y_stretching=False, tol=1e-3,
+                                save_filename='y_stretch_cubic')
