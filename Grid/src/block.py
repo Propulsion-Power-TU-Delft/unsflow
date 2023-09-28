@@ -197,9 +197,10 @@ class Block:
             outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
-            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
-                                                                              self.z_grid_points, self.r_grid_points,orthogonality,
-                                                                              x_stretching, y_stretching)
+            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
+                                                                              x_stretching=x_stretching, y_stretching=y_stretching,
+                                                                              X0=self.z_grid_points, Y0=self.r_grid_points,
+                                                                              tol=1e-6, sigmoid_coeff=5, pol_order=2)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 

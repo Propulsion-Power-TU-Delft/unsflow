@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sqrt, sin, cos, tan, arccos, arcsin, log
 from .styles import *
+import math
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -173,8 +174,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
                 Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
 
-
-
     # plt.figure()
     # plt.plot(xi, chi, label=r'$f(\xi)$')
     # plt.legend()
@@ -185,7 +184,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     # plt.plot(xi, chi_second, label=r'$f_{2}(\xi)$')
     # plt.legend()
     # plt.show()
-
 
     # stretching functions block!
     f1 = np.zeros((nx, ny))
@@ -212,7 +210,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = polynomial_function(eta, pol_order)
         else:
             raise ValueError('Check the value of y-strecthing parameter!')
-
 
     g11 = np.zeros((nx, ny))
     g12 = np.zeros((nx, ny))
@@ -297,7 +294,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         d[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
         e[i, j] += -f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
 
-
         # solve the thomas algorithm
         P = np.zeros(nx)
         Q = np.zeros(nx)
@@ -328,6 +324,79 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
             for ii in range(nx - 2, 0, -1):
                 Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
+
+        if orthogonality:
+            # print('bottom edge fixing..')
+            x = c_bottom[0, :]
+            y = c_bottom[1, :]
+            y_prime = np.gradient(y, x)
+            for istream in range(1, nx - 1):
+                xb_old = X_old[istream, 0]
+                xb_new = X[istream, 0]
+                xp_old = X_old[istream, 1]
+                xp_new = X[istream, 1]
+                yb_old = Y_old[istream, 0]
+                yb_new = Y[istream, 0]
+                yp_old = Y_old[istream, 1]
+                yp_new = Y[istream, 1]
+                yb_prime = y_prime[istream]
+                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                X[istream, 0] = sol[0]
+                Y[istream, 0] = sol[1]
+
+            # print('top edge fixing..')
+            x = c_top[0, :]
+            y = c_top[1, :]
+            y_prime = np.gradient(y, x)
+            for istream in range(1, nx - 1):
+                xb_old = X_old[istream, -1]
+                xb_new = X[istream, -1]
+                xp_old = X_old[istream, -2]
+                xp_new = X[istream, -2]
+                yb_old = Y_old[istream, -1]
+                yb_new = Y[istream, -1]
+                yp_old = Y_old[istream, -2]
+                yp_new = Y[istream, -2]
+                yb_prime = y_prime[istream]
+                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                X[istream, -1] = sol[0]
+                Y[istream, -1] = sol[1]
+
+            # print('left edge fixing..')
+            x = c_left[0, :]
+            y = c_left[1, :]
+            y_prime = np.gradient(y, x)
+            for ispan in range(1, ny - 1):
+                xb_old = X_old[0, ispan]
+                xb_new = X[0, ispan]
+                xp_old = X_old[1, ispan]
+                xp_new = X[1, ispan]
+                yb_old = Y_old[0, ispan]
+                yb_new = Y[0, ispan]
+                yp_old = Y_old[1, ispan]
+                yp_new = Y[1, ispan]
+                yb_prime = y_prime[ispan]
+                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                X[0, ispan] = sol[0]
+                Y[0, ispan] = sol[1]
+
+            # print('right edge fixing..')
+            x = c_right[0, :]
+            y = c_right[1, :]
+            y_prime = np.gradient(y, x)
+            for ispan in range(1, ny - 1):
+                xb_old = X_old[-1, ispan]
+                xb_new = X[-1, ispan]
+                xp_old = X_old[-2, ispan]
+                xp_new = X[-2, ispan]
+                yb_old = Y_old[-1, ispan]
+                yb_new = Y[-1, ispan]
+                yp_old = Y_old[-2, ispan]
+                yp_new = Y[-2, ispan]
+                yb_prime = y_prime[ispan]
+                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                X[-1, ispan] = sol[0]
+                Y[-1, ispan] = sol[1]
 
         err_x = np.linalg.norm(X_old - X)
         err_y = np.linalg.norm(Y_old - Y)
@@ -381,3 +450,30 @@ def no_stretching_function(x):
     f_prime = np.zeros(len(x)) + 1
     f_second = np.zeros(len(x))
     return f, f_prime, f_second
+
+
+def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
+    """
+    solve the linear system to fix the borders, handling zero,inf or nan slopes of the curves
+    """
+    if yb_prime == 0:
+        print('found %s' % (yb_prime))
+        A_sys = np.array([[1, 0],
+                          [0, 1]])
+        B_sys = np.array([xp_new,
+                          yb_old])
+    elif math.isinf(yb_prime) or math.isnan(yb_prime):
+        print('found %s' %(yb_prime))
+        A_sys = np.array([[0, 1],
+                          [1, 0]])
+        B_sys = np.array([yp_new,
+                          xb_old])
+    elif math.isfinite(yb_prime):
+        A_sys = np.array([[1 / yb_prime, 1],
+                          [-yb_prime, 1]])
+        B_sys = np.array([yp_new + xp_new / yb_prime,
+                          yb_old - yb_prime * xb_old])
+    else:
+        raise ValueError('Matrix system ill posed, check if the gradients has weird values')
+    sol = np.linalg.solve(A_sys, B_sys)
+    return sol

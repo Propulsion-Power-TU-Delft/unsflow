@@ -17,9 +17,9 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 20
-nspan = 10
-grid_sampling = 'clustering'
+nstream = 40
+nspan = 20
+grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3, rescale_factor=0.01, x_ref=0.252)
 bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
@@ -38,8 +38,8 @@ bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
-bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing=None,
-                                 orthogonality=False, x_stretching=False, y_stretching=False)
+bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
+                                 orthogonality=True, x_stretching='polynomial', y_stretching='polynomial')
 bladed_block.compute_double_grid()
 bladed_block.find_border()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
