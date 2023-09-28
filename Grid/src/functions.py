@@ -134,7 +134,8 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
-                             y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None):
+                             y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
+                             pol_order=2, sigmoid_coeff=5):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, and the structured X,Y initial conditions. Tol is used to choose when stopping
@@ -144,31 +145,17 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
     maxit = 5000
-    show = True  # 1 display the solution while solving
 
-    # computational domain
+    # computational domain between 0 and 1
     xi = np.linspace(0, 1, nx)
     dxi = xi[1] - xi[0]
     eta = np.linspace(0, 1, ny)
     deta = eta[1] - eta[0]
 
-    # initializing the borders
-    c1 = c_left
-    c2 = c_bottom
-    c3 = c_right
-    c4 = c_top
-
-    # # plot the border
-    # plt.figure()
-    # plt.plot(c1[0, :], c1[1, :], label='c1')
-    # plt.plot(c2[0, :], c2[1, :], label='c2')
-    # plt.plot(c3[0, :], c3[1, :], label='c3')
-    # plt.plot(c4[0, :], c4[1, :], label='c4')
-    # plt.legend()
-
     X = np.zeros((nx, ny))
     Y = np.zeros((nx, ny))
     if X0 is not None and Y0 is not None:
+        # inital grid attempt given in the args
         X = X0
         Y = Y0
     else:
@@ -186,28 +173,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
                 Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
 
-    alpha = 5
 
-    def func(x):
-        return 1 / (1 + np.exp(-alpha * (x - 0.5)))
-        # return 0.5 - 1/alpha*np.log(1/x-1)
-        # return x**2
-
-    def func_prime(x):
-        return (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
-        # return 1/(alpha*x**2)*(1/(1/x-1))
-        # return 2*x
-
-    def func_second(x):
-        return (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 * np.exp(
-            -2 * alpha * (x - 0.5))) / \
-            (1 + np.exp(-alpha * (x - 0.5))) ** 3
-        # return -2/alpha*x**(-3)/(1/x-1) + 1/(alpha*x**2)*(-1/(x**2*(1/x-1)**2))
-        # return 2
-
-    chi = func(xi)
-    chi_prime = func_prime(xi)
-    chi_second = func_second(xi)
 
     # plt.figure()
     # plt.plot(xi, chi, label=r'$f(\xi)$')
@@ -220,27 +186,38 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     # plt.legend()
     # plt.show()
 
+
+    # stretching functions block!
     f1 = np.zeros((nx, ny))
     f1_prime = np.zeros((nx, ny))
     f1_second = np.zeros((nx, ny))
     f2 = np.zeros((nx, ny))
     f2_prime = np.zeros((nx, ny))
     f2_second = np.zeros((nx, ny))
-
     for ispan in range(ny):
-        f1[:, ispan] = func(xi)
-        f1_prime[:, ispan] = func_prime(xi)
-        f1_second[:, ispan] = func_second(xi)
+        if not x_stretching:
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
+        elif x_stretching == 'sigmoid':
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff)
+        elif x_stretching == 'polynomial':
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = polynomial_function(xi, pol_order)
+        else:
+            raise ValueError('Check the value of x-strecthing parameter!')
     for istream in range(0, nx):
-        f2[istream, :] = func(eta)
-        f2_prime[istream, :] = func_prime(eta)
-        f2_second[istream, :] = func_second(eta)
+        if not y_stretching:
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
+        elif y_stretching == 'sigmoid':
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff)
+        elif y_stretching == 'polynomial':
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = polynomial_function(eta, pol_order)
+        else:
+            raise ValueError('Check the value of y-strecthing parameter!')
+
 
     g11 = np.zeros((nx, ny))
     g12 = np.zeros((nx, ny))
     g22 = np.zeros((nx, ny))
     g = np.zeros((nx, ny))
-
     a = np.zeros((nx, ny))
     b = np.zeros((nx, ny))
     c = np.zeros((nx, ny))
@@ -248,7 +225,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     e = np.zeros((nx, ny))
 
     WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
-    scale = 0.5*((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y))) # scale of the dimensions
+    scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # scale of the dimensions
     tol *= scale  # scale the tolerance threshold
     if WH_ratio >= 1:
         pic_size = (8, 8 / WH_ratio)
@@ -314,24 +291,14 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         e[i, j] = g11[i, j] / (deta ** 2) * (Y[i, jp] + Y[i, jm]) - 2 * g12[i, j] * (
                 Y[ip, jp] + Y[im, jm] - Y[im, jp] - Y[ip, jm]) / 4 / dxi / deta
 
-        if x_stretching and y_stretching:
-            if it==0:
-                print('stretching in both directions')
-            a[i, j] += +f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
-            c[i, j] += -f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
-            d[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
-            e[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
-        elif (x_stretching == True and y_stretching == False):
-            if it == 0:
-                print('stretching in x direction')
-            a[i, j] += +f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
-            c[i, j] += -f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
-        elif (y_stretching == True and x_stretching == False):
-            if it == 0:
-                print('stretching in y directions')
-            d[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
-            e[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
+        # adjustments due to stretching functions
+        a[i, j] += +f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+        c[i, j] += -f1_second[i, j] / f1_prime[i, j] * g22[i, j] / 2 / dxi
+        d[i, j] += f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
+        e[i, j] += -f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
 
+
+        # solve the thomas algorithm
         P = np.zeros(nx)
         Q = np.zeros(nx)
         for jj in range(1, ny - 1):
@@ -380,6 +347,37 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         plt.xlabel(r'$x$')
         plt.ylabel(r'$y$')
         plt.title('iteration %d' % (it))
-        plt.savefig('pictures/'+save_filename+'_%d_%d.pdf' % (nx, ny), bbox_inches='tight')
+        plt.savefig('pictures/' + save_filename + '_%d_%d.pdf' % (nx, ny), bbox_inches='tight')
 
     return X, Y
+
+
+def scaled_sigmoid(x, alpha):
+    """
+    return sigmoid scaled function, first derivative, and second derivative over an array x. alpha decides the slope
+    """
+    f = 1 / (1 + np.exp(-alpha * (x - 0.5)))
+    f_prime = (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
+    f_second = (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 *
+                np.exp(-2 * alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 3
+    return f, f_prime, f_second
+
+
+def polynomial_function(x, n):
+    """
+    return polynomial x^n function, first derivative, and second derivative over an array x. alpha decides the slope
+    """
+    f = x ** n
+    f_prime = n * x ** (n - 1)
+    f_second = n * (n - 1) * x ** (n - 2)
+    return f, f_prime, f_second
+
+
+def no_stretching_function(x):
+    """
+    return the x function, first derivative, and second derivative over an array x. which defines the zero-stretching function
+    """
+    f = x
+    f_prime = np.zeros(len(x)) + 1
+    f_second = np.zeros(len(x))
+    return f, f_prime, f_second
