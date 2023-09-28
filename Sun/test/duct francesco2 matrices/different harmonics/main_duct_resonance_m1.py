@@ -138,7 +138,8 @@ duct_grid.ShowGrid()
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref, 0)
+sun_obj.add_shaft_rpm(1)
+sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
@@ -155,7 +156,7 @@ sun_obj.ApplySpectralDifferentiation()
 sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 
 omega_domain = [7.5e3, 35e3, -8e3, 8e3]
-grid_omega = [150, 20]
+grid_omega = [10, 10]
 sun_obj.ComputeSVD(omega_domain = omega_domain/omega_ref, grid_omega = grid_omega)
 sun_obj.PlotInverseConditionNumber(ref_solution=omega_analytical, save_filename='chi_map_ur2_%s-%s_%d_%d_m%d'
                                                                                 %(gradient_routine, gradient_order, Nz, Nr, m))

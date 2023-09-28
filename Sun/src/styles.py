@@ -67,4 +67,4 @@ light_line_width = 0.5
 N_levels = 50
 
 # set colormap for contourf plots
-color_map = cm.jet
+color_map = cm.coolwarm

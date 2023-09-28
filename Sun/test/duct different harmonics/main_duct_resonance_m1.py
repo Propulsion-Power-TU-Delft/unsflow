@@ -111,8 +111,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 10
+Nr = 5
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -134,7 +134,7 @@ duct_grid.ShowGrid()
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref, 0)
+sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'numpy'
