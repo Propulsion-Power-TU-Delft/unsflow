@@ -8,16 +8,16 @@ test case to debug the elliptic grid generation method. Define a figure delimite
 borders, and see how it goes
 """
 
-nx = 20
-ny = 20
+nx = 30
+ny = 30
 
 # parameteric picture
 L = 2
-R = 2
+R = 1
 
 """  left border  """
 theta = np.linspace(0, np.pi, ny)
-x_left = -R*np.sin(theta)
+x_left = np.zeros(ny)
 y_left = R-R*np.cos(theta)
 c_left = np.array((x_left,
                    y_left))
@@ -38,11 +38,11 @@ c_top = np.array((np.linspace(0, L, nx),
                 np.zeros(nx)+2*R))
 
 
-orthogonality = True
+orthogonality = False
 x_stretching = 'sigmoid'
 y_stretching = 'sigmoid'
 
 
-X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff=3,
+X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff=7,
                                 x_stretching=x_stretching, y_stretching=y_stretching, tol=1e-3,
                                 save_filename='orth_%s__xstr_%s__ystr_%s' %(orthogonality, x_stretching, y_stretching))

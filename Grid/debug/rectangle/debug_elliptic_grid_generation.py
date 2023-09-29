@@ -8,11 +8,11 @@ test case to debug the elliptic grid generation method. Define a figure delimite
 borders, and see how it goes
 """
 
-nx = 20
+nx = 40
 ny = 20
 
 # parameteric picture
-L = 1
+L = 2
 H = 1
 
 """  left border  """

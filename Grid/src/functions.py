@@ -137,7 +137,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
-                             pol_order=2, sigmoid_coeff=5, it_orth=100):
+                             pol_order=3, sigmoid_coeff=7, it_orth=20):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, and the structured X,Y initial conditions. Tol is used to choose when stopping
@@ -146,7 +146,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     """
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
-    maxit = 5000
+    maxit = 500
 
     # computational domain between 0 and 1
     xi = np.linspace(0, 1, nx)
@@ -239,13 +239,19 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         to unstructured grid generation> from Farrashkhalvat, pag. 132. Thomas algorithm
         """
 
-        # plot the grid at every iteration
+        # plot the grid at every iteration, as well as the original border in red, to check the mesh doesn't behave weird
+        if it > it_orth:
+            pass # breakpoint to check
         if show:
             plt.clf()
             for ii in range(nx):
                 plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
             for jj in range(ny):
                 plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
+            plt.plot(c_left[0, :], c_left[1, :], 'red', lw=0.5)
+            plt.plot(c_bottom[0, :], c_bottom[1, :], 'red', lw=0.5)
+            plt.plot(c_right[0, :], c_right[1, :], 'red', lw=0.5)
+            plt.plot(c_top[0, :], c_top[1, :], 'red', lw=0.5)
             plt.xlabel(r'$X$')
             plt.ylabel(r'$Y$')
             plt.title('iteration %d' % (it))
@@ -269,11 +275,11 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + \
                     ((Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
 
-        if orthogonality:
-            """
-            orthogonality condition given in the book, paragraph 5.3.1
-            """
-            g12 *= 0
+        # if orthogonality:
+        #     """
+        #     orthogonality condition given in the book, paragraph 5.3.1
+        #     """
+        #     g12 *= 0
 
         g[i, j] = g11[i, j] * g22[i, j] - g12[i, j] ** 2
 
@@ -341,7 +347,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_old = Y_old[istream, 1]
                 yp_new = Y[istream, 1]
                 yb_prime = y_prime[istream]
-                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                # sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
                 X[istream, 0] = sol[0]
                 Y[istream, 0] = sol[1]
 
@@ -458,24 +464,30 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
     solve the linear system to fix the borders, handling zero,inf or nan slopes of the curves
     """
     if yb_prime == 0:
-        print('found %s' % (yb_prime))
-        A_sys = np.array([[1, 0],
-                          [0, 1]])
-        B_sys = np.array([xp_new,
-                          yb_old])
+        # print('found %s' % (yb_prime))
+        # A_sys = np.array([[1, 0],
+        #                   [0, 1]])
+        # B_sys = np.array([xp_new,
+        #                   yb_old])
+        xb_new = xp_new
+        yb_new = None
     elif math.isinf(yb_prime) or math.isnan(yb_prime):
-        print('found %s' %(yb_prime))
-        A_sys = np.array([[0, 1],
-                          [1, 0]])
-        B_sys = np.array([yp_new,
-                          xb_old])
+        # print('found %s' %(yb_prime))
+        # A_sys = np.array([[0, 1],
+        #                   [1, 0]])
+        # B_sys = np.array([yp_new,
+        #                   xb_old])
+        yb_new = yp_new
+        xb_new = None
     elif math.isfinite(yb_prime):
         A_sys = np.array([[1 / yb_prime, 1],
                           [-yb_prime, 1]])
         B_sys = np.array([yp_new + xp_new / yb_prime,
                           yb_old - yb_prime * xb_old])
+        sol = np.linalg.solve(A_sys, B_sys)
+        xp_new = sol[0]
+        yp_new = None
     else:
         raise ValueError('Matrix system ill posed, check if the gradients has weird values')
-    sol = np.linalg.solve(A_sys, B_sys)
 
-    return sol
+    return xp_new, yp_new
