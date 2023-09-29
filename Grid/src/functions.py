@@ -9,6 +9,7 @@ import numpy as np
 from numpy import sqrt, sin, cos, tan, arccos, arcsin, log
 from .styles import *
 import math
+from scipy.optimize import fsolve
 from scipy import interpolate
 
 
@@ -137,7 +138,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
-                             pol_order=3, sigmoid_coeff=7, it_orth=20):
+                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, and the structured X,Y initial conditions. Tol is used to choose when stopping
@@ -197,7 +198,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         if not x_stretching:
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
         elif x_stretching == 'sigmoid':
-            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff)
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
         elif x_stretching == 'polynomial':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = polynomial_function(xi, pol_order)
         else:
@@ -206,7 +207,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         if not y_stretching:
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
         elif y_stretching == 'sigmoid':
-            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff)
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff_y)
         elif y_stretching == 'polynomial':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = polynomial_function(eta, pol_order)
         else:
@@ -241,7 +242,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
         # plot the grid at every iteration, as well as the original border in red, to check the mesh doesn't behave weird
         if it > it_orth:
-            pass # breakpoint to check
+            pass  # breakpoint to check
         if show:
             plt.clf()
             for ii in range(nx):
@@ -332,7 +333,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             for ii in range(nx - 2, 0, -1):
                 Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
 
-        if orthogonality and it>it_orth:
+        if orthogonality and it > it_orth:
             # print('bottom edge fixing..')
             x = c_bottom[0, :]
             y = c_bottom[1, :]
@@ -347,9 +348,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_old = Y_old[istream, 1]
                 yp_new = Y[istream, 1]
                 yb_prime = y_prime[istream]
-                # sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                X[istream, 0] = sol[0]
-                Y[istream, 0] = sol[1]
+                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                X[istream, 0] = xb_new
+                Y[istream, 0] = yb_new
 
             # print('top edge fixing..')
             x = c_top[0, :]
@@ -366,8 +368,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[istream, -2]
                 yb_prime = y_prime[istream]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                X[istream, -1] = sol[0]
-                Y[istream, -1] = sol[1]
+                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                X[istream, -1] = xb_new
+                Y[istream, -1] = yb_new
 
             # print('left edge fixing..')
             x = c_left[0, :]
@@ -384,8 +387,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[1, ispan]
                 yb_prime = y_prime[ispan]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                X[0, ispan] = sol[0]
-                Y[0, ispan] = sol[1]
+                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                X[0, ispan] = xb_new
+                Y[0, ispan] = yb_new
 
             # print('right edge fixing..')
             x = c_right[0, :]
@@ -402,12 +406,13 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[-2, ispan]
                 yb_prime = y_prime[ispan]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                X[-1, ispan] = sol[0]
-                Y[-1, ispan] = sol[1]
+                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                X[-1, ispan] = xb_new
+                Y[-1, ispan] = yb_new
 
         err_x = np.linalg.norm(X_old - X)
         err_y = np.linalg.norm(Y_old - Y)
-        if err_x < tol and err_y < tol and it>it_orth:
+        if err_x < tol and err_y < tol and it > it_orth:
             print('convergence reached in %d sweeps' % (it))
             break
 
@@ -464,30 +469,111 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
     solve the linear system to fix the borders, handling zero,inf or nan slopes of the curves
     """
     if yb_prime == 0:
-        # print('found %s' % (yb_prime))
-        # A_sys = np.array([[1, 0],
-        #                   [0, 1]])
-        # B_sys = np.array([xp_new,
-        #                   yb_old])
-        xb_new = xp_new
-        yb_new = None
+        # print('Horizontal point\n')
+        sol = [xp_new, None]  # same x cordinate of the interior point
     elif math.isinf(yb_prime) or math.isnan(yb_prime):
-        # print('found %s' %(yb_prime))
-        # A_sys = np.array([[0, 1],
-        #                   [1, 0]])
-        # B_sys = np.array([yp_new,
-        #                   xb_old])
-        yb_new = yp_new
-        xb_new = None
+        # print('Vertical point\n')
+        sol = [None, yp_new]  # same y cordinate of the interior point
     elif math.isfinite(yb_prime):
+        # print('Inclined point\n')
         A_sys = np.array([[1 / yb_prime, 1],
                           [-yb_prime, 1]])
         B_sys = np.array([yp_new + xp_new / yb_prime,
                           yb_old - yb_prime * xb_old])
         sol = np.linalg.solve(A_sys, B_sys)
-        xp_new = sol[0]
-        yp_new = None
+        sol = [sol[0], None]  # solve this case as the horizontal point case
     else:
         raise ValueError('Matrix system ill posed, check if the gradients has weird values')
+    return sol
 
-    return xp_new, yp_new
+
+def find_point_on_border(xb_new, yb_new, x, y, xb_old, yb_old):
+    if xb_new is not None:
+        idx = find_nearestneighbor_x(x, y, xb_new, xb_old, yb_old)
+    elif xb_new is None:
+        idx = find_nearestneighbor_y(x, y, yb_new, xb_old, yb_old)
+    else:
+        raise ValueError('Not foreseen case!')
+
+    if not idx:
+        xb_new = xb_old
+        yb_new = yb_old
+    else:
+        xb_new = x[idx]
+        yb_new = y[idx]
+
+    return xb_new, yb_new
+
+
+def find_nearestneighbor_x(x, y, x_new, x_old, y_old):
+    delta = np.sqrt((x_old - x_new) ** 2) / 2
+    idx = 0  # initialize index search
+    found = False
+
+    for i in range(0, len(x)):
+        delta_tmp = np.sqrt((x[i] - x_new) ** 2 + (y[i] - y_old) ** 2)
+        if delta_tmp < delta:
+            delta = delta_tmp
+            idx = i
+            found = True  # found a new point
+    if found:
+        return idx
+    else:
+        return False
+
+
+def find_nearestneighbor_y(x, y, y_new, x_old, y_old):
+    delta = np.sqrt((y_old - y_new) ** 2) / 2
+    idx = 0  # initialize index search
+    found = False
+
+    for i in range(0, len(x)):
+        delta_tmp = np.sqrt((x[i] - x_old) ** 2 + (y[i] - y_new) ** 2)
+        if delta_tmp < delta:
+            delta = delta_tmp
+            idx = i
+            found = True  # found a new point
+    if found:
+        return idx
+    else:
+        return False
+
+
+def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old):
+    """
+    depending on which of new cordinates is defined, find the other one corresponding on the curve
+    """
+    u = np.linspace(0, 1, len(x))  # curve parameterization
+    degree = 10
+    # Perform polynomial interpolation
+    coefficients = np.polyfit(u, x, degree)
+    interp_x = np.poly1d(coefficients)
+    coefficients = np.polyfit(u, y, degree)
+    interp_y = np.poly1d(coefficients)
+
+    def zero_y_fx(u):
+        return interp_y(u) - yb_new
+
+    def zero_x_fy(u):
+        return interp_x(u) - xb_new
+
+    if xb_new is not None:
+        # err = 1
+        # tol = np.sqrt((np.max(y) - np.min(y)) ** 2 + (np.max(x) - np.min(x)) ** 2)
+        # u_root = 0.5
+        # while (err > tol):
+        #     print('point (%.2f, %.2f)' % (xb_old, yb_old))
+        u_root = fsolve(zero_x_fy, np.random.random())
+        yb_new = interp_y(u_root)
+            # err = np.abs(yb_new - yb_old)
+    else:
+        # err = 1
+        # tol = np.sqrt((np.max(y) - np.min(y)) ** 2 + (np.max(x) - np.min(x)) ** 2)
+        # u_root = 0.5
+        # while (err > tol):
+        #     print('point (%.2f, %.2f)' % (xb_old, yb_old))
+        u_root = fsolve(zero_y_fx, np.random.random())
+        xb_new = interp_x(u_root)
+            # err = np.abs(xb_new - xb_old)
+
+    return xb_new, yb_new

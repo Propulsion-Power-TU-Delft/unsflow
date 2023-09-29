@@ -76,6 +76,7 @@ N_levels = 75
 N_levels_2 = 100
 
 #set colormap for contourf plots
-color_map = cm.coolwarm
+# color_map = cm.coolwarm
 # color_map = cm.viridis
 # color_map = cm.inferno
+color_map = cm.jet

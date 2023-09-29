@@ -200,7 +200,8 @@ class Block:
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
                                                                               x_stretching=x_stretching, y_stretching=y_stretching,
                                                                               X0=self.z_grid_points, Y0=self.r_grid_points,
-                                                                              tol=1e-6, sigmoid_coeff=8, pol_order=2)
+                                                                              tol=1e-6, sigmoid_coeff_x=6, sigmoid_coeff_y=9,
+                                                                              pol_order=2)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 

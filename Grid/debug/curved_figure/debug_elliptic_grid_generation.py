@@ -8,16 +8,16 @@ test case to debug the elliptic grid generation method. Define a figure delimite
 borders, and see how it goes
 """
 
-nx = 30
-ny = 30
+nx = 20
+ny = 20
 
 # parameteric picture
 L = 2
-R = 1
+R = 2
 
 """  left border  """
 theta = np.linspace(0, np.pi, ny)
-x_left = np.zeros(ny)
+x_left = -0.5*R*np.sin(theta)
 y_left = R-R*np.cos(theta)
 c_left = np.array((x_left,
                    y_left))
@@ -38,11 +38,32 @@ c_top = np.array((np.linspace(0, L, nx),
                 np.zeros(nx)+2*R))
 
 
-orthogonality = False
+orthogonality = True
 x_stretching = 'sigmoid'
 y_stretching = 'sigmoid'
 
 
-X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff=7,
-                                x_stretching=x_stretching, y_stretching=y_stretching, tol=1e-3,
+X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff_x=2,
+                                x_stretching=x_stretching, y_stretching=y_stretching, tol=1e-3, sigmoid_coeff_y=2,
                                 save_filename='orth_%s__xstr_%s__ystr_%s' %(orthogonality, x_stretching, y_stretching))
+
+
+# x = c_top[0, :]
+# y = c_top[1, :]
+# u = np.linspace(0,1, len(x))
+#
+# degree = 10
+# # Perform polynomial interpolation
+# coefficients = np.polyfit(u, x, degree)
+# int_fx = np.poly1d(coefficients)
+# coefficients = np.polyfit(u, y, degree)
+# int_fy = np.poly1d(coefficients)
+# new_y = int_fy(u)
+# new_x = int_fx(u)
+#
+# plt.figure()
+# plt.plot(x, y, 'ko')
+# plt.plot(new_x, new_y, '--r')
+# plt.show()
+#
+#
