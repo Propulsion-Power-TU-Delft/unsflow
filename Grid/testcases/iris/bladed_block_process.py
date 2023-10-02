@@ -20,9 +20,9 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 20
-nspan = 10
-grid_sampling = 'clustering'
+nstream = 30
+nspan = 15
+grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)

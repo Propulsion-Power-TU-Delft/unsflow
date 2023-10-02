@@ -205,6 +205,14 @@ class Block:
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 
+
+    def compute_grid_nodes(self):
+        """
+        once the main grid is computed find the nodes that lie in the baricenter of the geometry
+        """
+
+
+
     def add_inlet_outlet_curves(self, inlet, outlet):
         """
         stores information regarding the inlet and outlet curve points, taken from blade object,
