@@ -200,17 +200,30 @@ class Block:
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
                                                                               x_stretching=x_stretching, y_stretching=y_stretching,
                                                                               X0=self.z_grid_points, Y0=self.r_grid_points,
-                                                                              tol=1e-6, sigmoid_coeff_x=6, sigmoid_coeff_y=9,
+                                                                              tol=1e-3, sigmoid_coeff_x=8, sigmoid_coeff_y=8,
                                                                               pol_order=2)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 
 
-    def compute_grid_nodes(self):
+    def compute_grid_centers(self):
         """
         once the main grid is computed find the nodes that lie in the baricenter of the geometry
         """
+        self.r_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
+        self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
 
+        # slices of original arrays
+        i = slice(0, self.nstream-1)
+        ip = slice(1, self.nstream)
+        j = slice(0, self.nspan - 1)
+        jp = slice(1, self.nspan)
+
+        self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j] \
+                         + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) /4
+
+        self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j] \
+                         + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) /4
 
 
     def add_inlet_outlet_curves(self, inlet, outlet):
@@ -366,7 +379,7 @@ class Block:
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False):
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers = True):
         """
         plot everything of the grid
         """
@@ -405,6 +418,9 @@ class Block:
                 plt.plot(self.z_grid_centers[istream, :], self.r_grid_centers[istream, :], '--b', lw=light_line_width)
             for ispan in range(0, self.nspan + 1):
                 plt.plot(self.z_grid_centers[:, ispan], self.r_grid_centers[:, ispan], '--b', lw=light_line_width)
+
+        if grid_centers:
+            plt.plot(self.z_grid_cg, self.r_grid_cg, 'r.')
 
                 # secondary grid points
         if secondary_grid_points:

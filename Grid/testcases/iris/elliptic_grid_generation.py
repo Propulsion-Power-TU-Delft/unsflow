@@ -16,7 +16,7 @@ print('Start execution:')
 data_folder_path = 'data/geo/'
 units = '[m]'
 nstream = 30
-nspan = 20
+nspan = 15
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3,
                      rescale_factor=1, x_ref=0.0228)
@@ -40,5 +40,5 @@ bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
 bladed_block.show_outline_grid()
 bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
-                                 orthogonality=False, x_stretching=False, y_stretching=False)
+                                 orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid')
 plt.show()
