@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # import the data from the pickle meridional object
-filename = '../../Grid/testcases/nasa rotor 37/data/meta/inlet_10_10_blade_20_10_outlet_15_10.pickle'
+filename = '../../Grid/testcases/nasa rotor 37/data/meta/nasa_rotor_config_01_blade_10_10.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 
@@ -32,7 +32,7 @@ sun_obj.ShowPhysicalGrid(save_filename='iris_blade_physical_grid_35_15', mode='l
 sun_obj.ComputeSpectralGrid()
 sun_obj.ShowSpectralGrid(save_filename='iris_blade_computational_grid_35_15', mode='lines')
 gradient_routine = 'findiff'
-gradient_order = 6
+gradient_order = 2
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
 sun_obj.ContourTransformation(save_filename='iris_blade_jacobians_grid_35_15')
 sun_obj.AddAMatrixToNodesFrancesco2()
@@ -53,8 +53,8 @@ sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 
 # #settings for the research of poles
 RS = [-2, 2]
-DF = [0, 10]
-grid=[5, 30]
-sun_obj.ComputeSVDcompressor(RS_domain=RS, DF_domain=DF)
-sun_obj.PlotInverseConditionNumberCompressor(save_filename='chi_map_iris')
+DF = [-4, 4]
+grid=[50, 100]
+sun_obj.ComputeSVDcompressor(RS_domain=RS, DF_domain=DF, grid=grid)
+sun_obj.PlotInverseConditionNumberCompressor(save_filename='chi_map_nasar37')
 plt.show()

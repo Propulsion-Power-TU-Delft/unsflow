@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 35
-nspan = 20
+nstream = 20
+nspan = 21
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -44,7 +44,7 @@ block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
 block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
-                          orthogonality=False, x_stretching=False, y_stretching=False)
+                          orthogonality=True, x_stretching='sigmoid_left', y_stretching='sigmoid')
 block.compute_double_grid()
 block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)

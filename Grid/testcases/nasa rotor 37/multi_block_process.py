@@ -15,9 +15,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-grid_inlet = '10_10'
-grid_blade = '20_10'
-grid_outlet = '15_10'
+grid_inlet = '20_20'
+grid_blade = '20_20'
+grid_outlet = '40_20'
 
 inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_'+grid_inlet+'.pickle'
 blade_file_path = 'data/meta/nasa_rotor_config_01_blade_'+grid_blade+'.pickle'
@@ -36,11 +36,11 @@ obj = Grid.src.meridional_process_group.MeridionalProcessGroup()
 obj.add_to_group(inlet)
 obj.add_to_group(blade)
 obj.add_to_group(outlet)
-obj.assemble_fields_2()
+obj.assemble_fields()
 obj.gauss_filtering()
 obj.contour_fields(save_filename='inlet_%s_blade_%s_outlet_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.show_grid(save_filename='inlet_%s_blade_%s_outlet_%s' %(grid_inlet, grid_blade, grid_outlet))
-obj.assemble_field_gradients_2()
+obj.assemble_field_gradients()
 obj.gauss_filtering_gradients()
 obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))

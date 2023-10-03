@@ -9,15 +9,15 @@ borders, and see how it goes
 """
 
 nx = 30
-ny = 20
+ny = 30
 
 # parameteric picture
 L = 2
 H = 2
 
 # left border
-x = np.linspace(0, L, nx)
-y = np.linspace(0, -H, nx)
+x = L-np.linspace(0, L, nx)
+y = -H+np.linspace(0, H, nx)
 c_left = np.array((x,
                    y))
 
@@ -41,8 +41,8 @@ c_top = np.array((x,
 
 
 orthogonality = True
-x_stretching = 'sigmoid'
-y_stretching = 'sigmoid'
-X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff_x=8,
-                                sigmoid_coeff_y=8, x_stretching=x_stretching, y_stretching=y_stretching, tol=1e-3,
+x_stretching = 'polynomial'
+y_stretching = 'polynomial'
+X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff_x=10,
+                                sigmoid_coeff_y=10, x_stretching=x_stretching, y_stretching=y_stretching, tol=1e-3,
                                 save_filename='orth_%s__xstr_%s__ystr_%s' %(orthogonality, x_stretching, y_stretching))

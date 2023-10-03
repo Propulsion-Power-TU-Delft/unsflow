@@ -8,6 +8,7 @@ Created on Thu Jun 15 17:07:05 2023
 import numpy as np
 from numpy import sqrt
 from .styles import *
+from .polynomial_ls_regression import *
 import matplotlib.path as mplpath
 from scipy.ndimage import gaussian_filter
 from scipy.interpolate import Rbf
@@ -28,12 +29,13 @@ class MeridionalProcess:
     def __init__(self, data, block=None, blade=None, verbose=False):
         self.data = data
         self.block = block
-        if blade is not None:
-            self.blade = blade
         self.nstream = block.nstream-1  # how many grid points
         self.nspan = block.nspan-1
         self.nAxialNodes = block.nstream-1  # how many grid element centers
         self.nRadialNodes = block.nspan-1
+        if blade is not None:
+            self.blade = blade
+            self.compute_camber_angles()
         self.verbose = verbose
         self.z_grid = block.z_grid_points  # primary grid points
         self.r_grid = block.r_grid_points
@@ -47,6 +49,23 @@ class MeridionalProcess:
         self.x_ref = data.x_ref
         self.omega_ref = data.omega_ref
         self.p_ref = data.p_ref
+
+    def compute_camber_angles(self):
+        """
+        starting from the angles in the blade object (if defined), store the normal camber angle
+        """
+        self.camber_normal_r = np.zeros((self.nstream, self.nspan))
+        self.camber_normal_theta = np.zeros((self.nstream, self.nspan))
+        self.camber_normal_z = np.zeros((self.nstream, self.nspan))
+        for istream in range(self.nstream):
+            for ispan in range(self.nspan):
+                self.camber_normal_r[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][0]
+                self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
+                self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
+
+        self.camber_normal_check = np.sqrt(self.camber_normal_r**2 + self.camber_normal_theta**2 +
+                                           self.camber_normal_z**2)
+
 
     def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True):
         """
@@ -94,7 +113,7 @@ class MeridionalProcess:
                 elif mode == 'cell centered':
                     n_elem = 0  # number of elements found in the rectangle. initialization
                     i = 0  # cycle counter
-                    while n_elem < 100:  # limit for accepting the average
+                    while n_elem < 20:  # limit for accepting the average
                         quadrilateral_path = self.find_rectangle(istream, ispan, i)
                         idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
                         n_elem = len(idx[0])  # update n_elem
@@ -177,6 +196,18 @@ class MeridionalProcess:
         if bfm == 'radial':
             self.mu = self.compute_mu()
             self.F_t = self.mu * self.u_mag_rel ** 2
+
+    def compute_derived_quantities(self):
+        """
+        from the primary averaged fields, compute derived fields
+        """
+        self.ut_drag = self.data.omega_shaft * self.r_cg
+        self.ut_rel = self.ut - self.ut_drag
+        self.ut_drag = self.ut - self.ut_rel
+        self.u_mag = np.sqrt(self.ur**2 + self.ut**2 + self.uz**2)
+        self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+        self.M = self.u_mag / sqrt(self.gmma * self.p / self.rho)
+        self.compute_stagnation_quantities()
 
     def instantiate_2d_fields(self):
         """
@@ -450,6 +481,36 @@ class MeridionalProcess:
         self.s = self.rbf_interpolation(self.s)
 
 
+    def compute_regressed_fields(self, order=4):
+        """
+        compute the third order polynomial regressed fields
+        """
+        self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
+        self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
+        self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
+        self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
+        self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
+        self.uz, self.duz_dr, self.duz_dtheta, self.duz_dz = self.polynomial_regression_solution(self.uz)
+        self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.p)
+        self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.T)
+        self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
+        # self.M, self.dM_dr, self.dM_dtheta, self.dM_dz = self.polynomial_regression_solution(self.M)
+        # self.ut_rel, self.dut_rel_dr, self.dut_rel_dtheta, self.dut_rel_dz = self.polynomial_regression_solution(self.ut_rel)
+        # self.p_tot, self.dp_tot_dr, self.dp_tot_dtheta, self.dp_tot_dz = self.polynomial_regression_solution(self.p_tot)
+        # self.T_tot, self.dT_tot_dr, self.dT_tot_dtheta, self.dT_tot_dz = self.polynomial_regression_solution(self.T_tot)
+
+    def polynomial_regression_solution(self, field):
+        Nz = np.shape(field)[0]
+        Nr = np.shape(field)[1]
+        coeff_vector = least_square_regression(self.W, field)
+        regr_field = regression_evaluation(self.W, coeff_vector, Nz, Nr)
+        regr_field_dz = regression_evaluation(self.W_dz, coeff_vector, Nz, Nr)
+        regr_field_dr = regression_evaluation(self.W_dr, coeff_vector, Nz, Nr)
+        regr_field_dtheta = np.zeros_like(field)  # theta derivatives always zero
+
+        return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
+
+
 
     def compute_interpolated_fields(self):
         """
@@ -470,6 +531,19 @@ class MeridionalProcess:
         Returns:
         """
         self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
+        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
+        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
+        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
+        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
+        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
+        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
+
+
+    def compute_regression_gradients(self):
+        """
+        compute the gradients of the relevant fields, using third order polynomial regression based derivation
+        """
+        self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_derivative(self.rho)
         self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
         self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
         self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
@@ -676,18 +750,18 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def contour_plot(self, field, save_filename=None, unit_factor=1):
+    def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
         decide if plotting dimensional or non-dimensional quantities, depending on the CFD dataset if it has been
         non-dimensionalised or not
         """
 
         if self.data.normalize:
-            self.contour_plot_non_dimensional(field, save_filename)
+            self.contour_plot_non_dimensional(field, save_filename, quiver)
         else:
-            self.contour_plot_dimensional(field, save_filename, unit_factor)
+            self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
 
-    def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1):
+    def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
         dimensional version of the contour plots
         Args:
@@ -933,7 +1007,7 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def contour_plot_non_dimensional(self, field, save_filename=None):
+    def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False):
         """
         non-dimensional version of the contour plots
         Args:
@@ -1178,6 +1252,11 @@ class MeridionalProcess:
             ax.set_title(r'$\hat{p}_{t}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'T_tot':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.T_tot, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{T}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'p_tot_bar':
             cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot_bar, N_levels, cmap=color_map)
             ax.set_title(r'$\bar{\hat{p}}_{t}$')
@@ -1188,6 +1267,8 @@ class MeridionalProcess:
         # cb = fig.colorbar(cs)
         ax.set_xlabel(r'$\hat{z} \ \mathrm{[-]}$')
         ax.set_ylabel(r'$\hat{r} \ \mathrm{[-]}$')
+        if quiver:
+            ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
@@ -1302,47 +1383,90 @@ class MeridionalProcess:
             pickle.dump(self, file)
 
 
-    def compute_bfm_axial(self, mode='averaged'):
+    def compute_bfm_axial(self, mode='global'):
         """
         compute the BFM fields, following Fang et. al. 2023
         """
-
         self.compute_Floss(mode=mode)
 
-        plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap='jet', levels=N_levels_2)
-        plt.colorbar()
-        plt.title('u meridional')
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$u_{m}$')
+
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial s}{\partial m}$')
 
         plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.title('ds_dl')
+        plt.title(r'$F_{l}$')
 
-        plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap='jet', levels=N_levels_2)
-        plt.colorbar()
-        plt.title('Floss')
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,r}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,\theta}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,z}$')
 
         self.compute_Ftheta()
 
-        plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap='jet', levels=N_levels_2)
-        plt.colorbar()
-        plt.title('drut_dl')
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{\theta}$')
 
-        plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap='jet', levels=N_levels_2)
-        plt.colorbar()
-        plt.title('Ftheta')
+        self.compute_Fturn()
+
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, r}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, \theta}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, z}$')
+        #
+        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t}$')
 
         self.alpha = self.Floss / self.u_mag_rel**2
-        # self.beta = self.F
+        self.beta = self.Fturn / self.u_meridional / self.ut_rel
 
         plt.figure(figsize=self.blade.blade_picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\alpha$')
+
+        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\beta$')
+
+
 
     def compute_Floss(self, mode):
 
@@ -1350,23 +1474,27 @@ class MeridionalProcess:
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
         self.compute_ds_dl(mode=mode)
         if mode == 'global':
+            # compute the modulus, and then the components, which are opposed to the relative flow velocity
             self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
-        if mode == 'averaged':
-            # we need to average also the other fields to make sure the global impact will be the same
-            self.T_avg = np.zeros_like(self.z_grid)
-            self.u_meridional_avg = np.zeros_like(self.z_grid)
-            self.u_mag_rel_avg = np.zeros_like(self.z_grid)
-
-            for ispan in range(0, self.nspan):
-                self.T_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.T[:, ispan])
-                self.u_meridional_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_meridional[:, ispan])
-                self.u_mag_rel_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_mag_rel[:, ispan])
-            self.Floss = self.T_avg * self.u_meridional_avg * self.ds_dl / self.u_mag_rel_avg
+            self.Floss_r = -self.Floss*self.ur/self.u_mag_rel
+            self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
+            self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
+        # if mode == 'averaged':
+        #     # we need to average also the other fields to make sure the global impact will be the same
+        #     self.T_avg = np.zeros_like(self.z_grid)
+        #     self.u_meridional_avg = np.zeros_like(self.z_grid)
+        #     self.u_mag_rel_avg = np.zeros_like(self.z_grid)
+        #
+        #     for ispan in range(0, self.nspan):
+        #         self.T_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.T[:, ispan])
+        #         self.u_meridional_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_meridional[:, ispan])
+        #         self.u_mag_rel_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_mag_rel[:, ispan])
+        #     self.Floss = self.T_avg * self.u_meridional_avg * self.ds_dl / self.u_mag_rel_avg
 
     def compute_ds_dl(self, mode):
         """
-        compute the derivative of the entropy along the meridional streamlines. In principle the increase should always be
-        positive
+        compute the derivative of the entropy along the meridional direction. In principle the increase should always be
+        positive, but in reality it can also decrease (as explained by Kottapalli, due to the meridional projection)
         """
         self.ds_dl = np.zeros_like(self.s)
 
@@ -1375,42 +1503,45 @@ class MeridionalProcess:
                 self.ds_dl[:, ispan] = (self.s[-1, ispan] - self.s[0, ispan]) / self.stream_line_length[-1, ispan]
 
         elif mode == 'global':
-            for ispan in range(self.nspan):
-                i = slice(1, self.nstream - 1)
-                ip = slice(2, self.nstream)
-                im = slice(0, self.nstream - 2)
-
-                self.ds_dl[i, ispan] = (self.s[ip, ispan] - self.s[im, ispan]) / \
-                                       (self.stream_line_length[ip, ispan] - self.stream_line_length[im, ispan])
-
-            self.ds_dl[0, :] = (self.s[1, :] - self.s[0, :]) / (self.stream_line_length[1, :] - self.stream_line_length[0, :])
-            self.ds_dl[-1, :] = (self.s[-1, :] - self.s[-2, :]) / (
-                        self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
-            for istream in range(self.nstream):
-                for ispan in range(self.nspan):
-                    if self.ds_dl[istream, ispan] < 0:
-                        self.ds_dl[istream, ispan] = 0
+            # calculate ds_dl projecting the gradient of s over the direction in which the particle is going
+            for istream in range(self.nAxialNodes):
+                for ispan in range(self.nRadialNodes):
+                    dir_vector = np.array((self.uz[istream, ispan],
+                                           self.ur[istream, ispan]))
+                    dir_vector /= np.linalg.norm(dir_vector)
+                    self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan]*dir_vector[0] + \
+                                                 self.ds_dr[istream, ispan]*dir_vector[1]
 
 
 
     def compute_Ftheta(self):
-
-        self.drut_dl = np.zeros_like(self.z_cg)
-        for ispan in range(self.nspan):
-            i = slice(1, self.nstream - 1)
-            ip = slice(2, self.nstream)
-            im = slice(0, self.nstream - 2)
-
-            self.drut_dl[i, ispan] = (self.r_cg[ip, ispan]*self.ut[ip, ispan] - self.r_cg[im, ispan]*self.ut[im, ispan]) / \
-                                   (self.stream_line_length[ip, ispan] - self.stream_line_length[im, ispan])
-
-        self.drut_dl[0, :] = (self.r_cg[1, :]*self.ut[1, :] - self.r_cg[0, :]*self.ut[0, :]) / (
-                self.stream_line_length[1, :] - self.stream_line_length[0, :])
-
-        self.drut_dl[-1, :] = (self.r_cg[-1, :] * self.ut[-1, :] - self.r_cg[-2, :] * self.ut[-2, :]) / (
-                    self.stream_line_length[-1, :] - self.stream_line_length[-2, :])
-
+        """
+        compute the modulus of the gloabl theta component of the body force
+        """
+        dr_dl = self.ur / self.u_meridional
+        dut_dl = np.zeros_like(dr_dl)
+        for istream in range(self.nAxialNodes):
+            for ispan in range(self.nRadialNodes):
+                dir_vector = np.array((self.uz[istream, ispan],
+                                       self.ur[istream, ispan]))
+                dir_vector /= np.linalg.norm(dir_vector)
+                dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
+                                         self.dut_dr[istream, ispan] * dir_vector[1]
+        self.drut_dl = dr_dl*self.ut + self.r_cg*dut_dl
         self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
+
+
+
+    def compute_Fturn(self):
+        """
+        starting from the Ftheta and camber normal vectors, compute the turning force
+        """
+        self.Fturn_t = self.Ftheta - self.Floss_t
+        self.Fturn = self.Fturn_t / self.camber_normal_theta
+        self.Fturn_r = self.Fturn * self.camber_normal_r
+        self.Fturn_z = self.Fturn * self.camber_normal_z
+
+
 
 
 

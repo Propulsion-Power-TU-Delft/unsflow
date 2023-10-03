@@ -199,6 +199,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
+        elif x_stretching == 'sigmoid_right':
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid_right(xi, sigmoid_coeff_x)
+        elif x_stretching == 'sigmoid_left':
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid_left(xi, sigmoid_coeff_x)
         elif x_stretching == 'polynomial':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = polynomial_function(xi, pol_order)
         else:
@@ -208,6 +212,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
         elif y_stretching == 'sigmoid':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff_y)
+        elif y_stretching == 'sigmoid_down':
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid_left(eta, sigmoid_coeff_y)
+        elif y_stretching == 'sigmoid_up':
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid_right(eta, sigmoid_coeff_y)
         elif y_stretching == 'polynomial':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = polynomial_function(eta, pol_order)
         else:
@@ -426,6 +434,36 @@ def scaled_sigmoid(x, alpha):
     f_prime = (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
     f_second = (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 *
                 np.exp(-2 * alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 3
+    return f, f_prime, f_second
+
+
+def scaled_sigmoid_right(x, alpha):
+    """
+    return a straight line until half of the domain, and attach a sigmoid scaled function, first derivative,
+    and second derivative over an array x. alpha decides the slope of the sigmoid part
+    """
+    f, f_prime, f_second = scaled_sigmoid(x, alpha)
+
+    # now overwrite the first half with a straight line function
+    N = len(x)
+    f[0:N//2] = x[0:N//2]
+    f_prime[0:N//2] = np.zeros(N//2)+1
+    f_second[0:N//2] = np.zeros(N//2)
+    return f, f_prime, f_second
+
+
+def scaled_sigmoid_left(x, alpha):
+    """
+    return a straight line from half of the domain, and attach a sigmoid scaled function, first derivative,
+    and second derivative over an array x. alpha decides the slope of sigmoid part
+    """
+    f, f_prime, f_second = scaled_sigmoid(x, alpha)
+
+    # now overwrite the first half with a straight line function
+    N = len(x)
+    f[N//2:] = x[N//2:]
+    f_prime[N//2:] = np.zeros_like(f_prime[N//2:])+1
+    f_second[N//2:] =np.zeros_like(f_second[N//2:])
     return f, f_prime, f_second
 
 

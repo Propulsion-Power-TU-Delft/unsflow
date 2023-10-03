@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 15
-nspan = 25
+nstream = 20
+nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -44,9 +44,9 @@ block.spline_of_outlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_outlet(sampling_mode=span_grid_sampling)
 block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right', smoothing='elliptic',
-                          orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid')
+                          orthogonality=False, x_stretching=False, y_stretching=False, sigmoid_coeff_x=6,
+                          sigmoid_coeff_y=9)
 block.compute_grid_centers()
-block.compute_double_grid()
 block.find_border()
 block.plot_full_grid(save_filename='inlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
 
@@ -60,7 +60,7 @@ data.process_from_ansys_csv()
 data_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='circular', fix_borders=False, gauss_filter=True)
-data_process.compute_rbf_gradients()
+data_process.compute_regressed_fields()
 
 save_plots = True
 if save_plots:

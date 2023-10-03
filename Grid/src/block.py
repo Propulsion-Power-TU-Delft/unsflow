@@ -128,7 +128,8 @@ class Block:
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, sampling_mode, grid_mode, curved_border, smoothing, orthogonality, x_stretching, y_stretching):
+    def compute_grid_points(self, sampling_mode, grid_mode, curved_border, smoothing, orthogonality, x_stretching,
+                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5):
         """
         compute the internal grid points with a certain algorithm, specified by grid_mode:
             spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
@@ -200,8 +201,8 @@ class Block:
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
                                                                               x_stretching=x_stretching, y_stretching=y_stretching,
                                                                               X0=self.z_grid_points, Y0=self.r_grid_points,
-                                                                              tol=1e-3, sigmoid_coeff_x=8, sigmoid_coeff_y=8,
-                                                                              pol_order=2)
+                                                                              tol=1e-3, sigmoid_coeff_x=sigmoid_coeff_x,
+                                                                              sigmoid_coeff_y=sigmoid_coeff_y, pol_order=2)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 

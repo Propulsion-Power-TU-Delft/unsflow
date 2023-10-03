@@ -31,8 +31,8 @@ class MeridionalProcessGroup:
         """
         assemble together the fields contained in all the blocks
         """
-        self.z_grid = self.group[0].z_grid
-        self.r_grid = self.group[0].r_grid
+        self.z_cg = self.group[0].z_cg
+        self.r_cg = self.group[0].r_cg
         self.rho = self.group[0].rho
         self.ur = self.group[0].ur
         self.ut = self.group[0].ut
@@ -43,8 +43,8 @@ class MeridionalProcessGroup:
         self.M = self.group[0].M
 
         for obj in self.group[1:]:
-            self.z_grid = np.concatenate((self.z_grid, obj.z_grid), axis=0)
-            self.r_grid = np.concatenate((self.r_grid, obj.r_grid), axis=0)
+            self.z_cg = np.concatenate((self.z_cg, obj.z_cg), axis=0)
+            self.r_cg = np.concatenate((self.r_cg, obj.r_cg), axis=0)
             self.rho = np.concatenate((self.rho, obj.rho), axis=0)
             self.ur = np.concatenate((self.ur, obj.ur), axis=0)
             self.ut = np.concatenate((self.ut, obj.ut), axis=0)
@@ -61,8 +61,8 @@ class MeridionalProcessGroup:
         assemble together the fields contained in all the blocks, but superposing the cordinates and fields,
         to avoid having two points coincidents, with two different field values
         """
-        self.z_grid = self.group[0].z_grid[0:-1, :]
-        self.r_grid = self.group[0].r_grid[0:-1, :]
+        self.z_cg = self.group[0].z_cg[0:-1, :]
+        self.r_cg = self.group[0].r_cg[0:-1, :]
         self.rho = self.group[0].rho[0:-1, :]
         self.ur = self.group[0].ur[0:-1, :]
         self.ut = self.group[0].ut[0:-1, :]
@@ -73,8 +73,8 @@ class MeridionalProcessGroup:
         self.M = self.group[0].M[0:-1, :]
 
         for obj in self.group[1:]:
-            self.z_grid = np.concatenate((self.z_grid, obj.z_grid[0:-1, :]), axis=0)
-            self.r_grid = np.concatenate((self.r_grid, obj.r_grid[0:-1, :]), axis=0)
+            self.z_cg = np.concatenate((self.z_cg, obj.z_cg[0:-1, :]), axis=0)
+            self.r_cg = np.concatenate((self.r_cg, obj.r_cg[0:-1, :]), axis=0)
             self.rho = np.concatenate((self.rho, obj.rho[0:-1, :]), axis=0)
             self.ur = np.concatenate((self.ur, obj.ur[0:-1, :]), axis=0)
             self.ut = np.concatenate((self.ut, obj.ut[0:-1, :]), axis=0)
@@ -172,7 +172,7 @@ class MeridionalProcessGroup:
         """
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.rho*self.group[0].rho_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.rho*self.group[0].rho_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -181,7 +181,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.ur*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.ur*self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -190,7 +190,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, np.abs(self.ut)*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut)*self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -199,7 +199,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.uz*self.group[0].u_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.uz*self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -208,7 +208,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.p*self.group[0].p_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.p*self.group[0].p_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -217,7 +217,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.T * self.group[0].T_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.T * self.group[0].T_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -226,7 +226,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.s * self.group[0].s_ref, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.s * self.group[0].s_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -235,7 +235,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.M, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -248,17 +248,17 @@ class MeridionalProcessGroup:
         contour of the grid. Non-Dimensional quantities
         """
 
-        self.AR = (np.max(self.r_grid) - np.min(self.r_grid)) / \
-                  (np.max(self.z_grid) - np.min(self.z_grid))
+        self.AR = (np.max(self.r_cg) - np.min(self.r_cg)) / \
+                  (np.max(self.z_cg) - np.min(self.z_cg))
         self.picture_size = (7, 7 * self.AR)
-        self.nstream = np.shape(self.z_grid)[0]
-        self.nspan = np.shape(self.z_grid)[1]
+        self.nstream = np.shape(self.z_cg)[0]
+        self.nspan = np.shape(self.z_cg)[1]
 
         plt.figure(figsize=self.picture_size)
         for istream in range(0, self.nstream):
-            plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
+            plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], lw=light_line_width, c='black')
         for ispan in range(0, self.nspan):
-            plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
+            plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], lw=light_line_width, c='black')
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
@@ -273,7 +273,7 @@ class MeridionalProcessGroup:
         """
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.drho_dr, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.drho_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -282,7 +282,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.drho_dz, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.drho_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -291,7 +291,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dur_dr, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dur_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -300,7 +300,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dur_dz, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dur_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -309,7 +309,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dut_dr, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dut_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -318,7 +318,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dut_dz, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dut_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -327,7 +327,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.duz_dr, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.duz_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -336,7 +336,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.duz_dz, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.duz_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -345,7 +345,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dp_dr, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dp_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -354,7 +354,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_grid, self.r_grid, self.dp_dz, cmap='jet', levels=N_levels_2)
+        plt.contourf(self.z_cg, self.r_cg, self.dp_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -363,7 +363,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=3):
+    def apply_gaussian_filter(field, sigma=1.5):
         """
         Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
         """

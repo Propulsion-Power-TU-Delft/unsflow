@@ -40,7 +40,7 @@ c_top = np.array((x, y))
 
 orthogonality = True
 x_stretching = 'sigmoid'
-y_stretching = 'sigmoid'
+y_stretching = 'polynomial'
 
 
 X, Y = elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality=orthogonality, sigmoid_coeff_x=9,

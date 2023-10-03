@@ -26,13 +26,13 @@ class SunGrid():
             mode: if physical it stores physical cordinates, if spectral it stores spectral cordinates
         """
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
-        self.n_stream = meridional_obj.nstream
+        self.n_stream = meridional_obj.nAxialNodes
         self.nAxialNodes = self.n_stream
-        self.n_span = meridional_obj.nspan
+        self.n_span = meridional_obj.nRadialNodes
         self.nRadialNodes = self.n_span
         self.nPoints = self.n_stream * self.n_span
         if mode == 'physical':
-            self.rGrid, self.zGrid = meridional_obj.r_grid, meridional_obj.z_grid
+            self.rGrid, self.zGrid = meridional_obj.r_cg, meridional_obj.z_cg
         elif mode == 'spectral':  # construct a gauss-lobatto grid for the spectral dataset
             self.z = GaussLobattoPoints(self.nAxialNodes)
             self.r = GaussLobattoPoints(self.nRadialNodes)
