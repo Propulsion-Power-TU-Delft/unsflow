@@ -11,6 +11,8 @@ from .styles import *
 import math
 from scipy.optimize import fsolve
 from scipy import interpolate
+from scipy.optimize import minimize
+
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -138,18 +140,19 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
-                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1):
+                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=25, guardian=False,
+                             method='fzero'):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
-    delimiting the figure, and the structured X,Y initial conditions. Tol is used to choose when stopping
-    the iterations.
-    The features to be implemented are orthogonality, and stretching of the grid.
+    delimiting the figure, ordered in a certain way. Think about meridional sector, inlet=left border, hub=bottom border,
+    shroud of top border, outlet =right border.
+    The features comprehend orthogonality and stretching of the grid.
     """
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
     maxit = 500
 
-    # computational domain between 0 and 1
+    # computational domain between 0 and 1 in both directions
     xi = np.linspace(0, 1, nx)
     dxi = xi[1] - xi[0]
     eta = np.linspace(0, 1, ny)
@@ -176,18 +179,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
                 Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
 
-    # plt.figure()
-    # plt.plot(xi, chi, label=r'$f(\xi)$')
-    # plt.legend()
-    # plt.figure()
-    # plt.plot(xi, chi_prime, label=r'$f_{1}(\xi)$')
-    # plt.legend()
-    # plt.figure()
-    # plt.plot(xi, chi_second, label=r'$f_{2}(\xi)$')
-    # plt.legend()
-    # plt.show()
-
-    # stretching functions block!
+    # compute stretching functions, even in the case of no-stretching to avoid messing up things
     f1 = np.zeros((nx, ny))
     f1_prime = np.zeros((nx, ny))
     f1_second = np.zeros((nx, ny))
@@ -232,7 +224,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     e = np.zeros((nx, ny))
 
     WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
-    scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # scale of the dimensions
+    scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
     tol *= scale  # scale the tolerance threshold
     if WH_ratio >= 1:
         pic_size = (8, 8 / WH_ratio)
@@ -248,9 +240,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         to unstructured grid generation> from Farrashkhalvat, pag. 132. Thomas algorithm
         """
 
-        # plot the grid at every iteration, as well as the original border in red, to check the mesh doesn't behave weird
-        if it > it_orth:
-            pass  # breakpoint to check
         if show:
             plt.clf()
             for ii in range(nx):
@@ -284,11 +273,11 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + \
                     ((Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
 
-        # if orthogonality:
-        #     """
-        #     orthogonality condition given in the book, paragraph 5.3.1
-        #     """
-        #     g12 *= 0
+        if orthogonality:
+            """
+            orthogonality condition given in the book, paragraph 5.3.1
+            """
+            g12 *= 0
 
         g[i, j] = g11[i, j] * g22[i, j] - g12[i, j] ** 2
 
@@ -311,7 +300,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         e[i, j] += -f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
 
 
-        # solve the thomas algorithm
+        # solve the thomas algorithm, running sweeps along i for every j
         P = np.zeros(nx)
         Q = np.zeros(nx)
         for jj in range(1, ny - 1):
@@ -319,13 +308,14 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             d[1, jj] += a[1, jj] * X[0, jj]
             d[-1, jj] += c[-1, jj] * X[-1, jj]
 
+            #compute P and Q for every point, using the recursion from 1, for the x problem
             P[1] = c[1, jj] / (b[1, jj])
             Q[1] = d[1, jj] / (b[1, jj])
-
             for ii in range(2, nx - 1):
                 P[ii] = c[ii, jj] / (b[ii, jj] - a[ii, jj] * P[ii - 1])
                 Q[ii] = (d[ii, jj] + a[ii, jj] * Q[ii - 1]) / (b[ii, jj] - a[ii, jj] * P[ii - 1])
 
+            # use P and Q to compute X
             for ii in range(nx - 2, 0, -1):
                 X[ii, jj] = P[ii] * X[ii + 1, jj] + Q[ii]
 
@@ -333,17 +323,21 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             e[1, jj] += a[1, jj] * Y[0, jj]
             e[-1, jj] += c[-1, jj] * Y[-1, jj]
 
+            # compute P and Q for every point, using the recursion from 1, for the y problem
             P[1] = c[1, jj] / (b[1, jj])
             Q[1] = e[1, jj] / (b[1, jj])
             for ii in range(2, nx - 1):
                 P[ii] = c[ii, jj] / (b[ii, jj] - a[ii, jj] * P[ii - 1])
                 Q[ii] = (e[ii, jj] + a[ii, jj] * Q[ii - 1]) / (b[ii, jj] - a[ii, jj] * P[ii - 1])
 
+            # use P and Q to compute Y
             for ii in range(nx - 2, 0, -1):
                 Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
 
+        # if orthogonality required, update all the borders points cordinates, except the vertices
         if orthogonality and it > it_orth:
-            # print('bottom edge fixing..')
+
+            # BOTTOM EDGE
             x = c_bottom[0, :]
             y = c_bottom[1, :]
             y_prime = np.gradient(y, x)
@@ -354,11 +348,16 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[istream, 1]
                 yb_prime = y_prime[istream]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                if method=='fzero':
+                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                elif method=='minimize':
+                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                else:
+                    raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, 0] = xb_new
                 Y[istream, 0] = yb_new
 
-            # print('top edge fixing..')
+            # TOP EDGE
             x = c_top[0, :]
             y = c_top[1, :]
             y_prime = np.gradient(y, x)
@@ -369,11 +368,16 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[istream, -2]
                 yb_prime = y_prime[istream]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                if method=='fzero':
+                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                elif method=='minimize':
+                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                else:
+                    raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, -1] = xb_new
                 Y[istream, -1] = yb_new
 
-            # print('left edge fixing..')
+            # LEFT EDGE
             x = c_left[0, :]
             y = c_left[1, :]
             y_prime = np.gradient(y, x)
@@ -384,11 +388,16 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[1, ispan]
                 yb_prime = y_prime[ispan]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                if method=='fzero':
+                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                elif method=='minimize':
+                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                else:
+                    raise ValueError('Select a valid method for borders adjustment!')
                 X[0, ispan] = xb_new
                 Y[0, ispan] = yb_new
 
-            # print('right edge fixing..')
+            # RIGHT EDGE
             x = c_right[0, :]
             y = c_right[1, :]
             y_prime = np.gradient(y, x)
@@ -399,16 +408,23 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[-2, ispan]
                 yb_prime = y_prime[ispan]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old)
+                if method=='fzero':
+                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                elif method=='minimize':
+                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                else:
+                    raise ValueError('Select a valid method for borders adjustment!')
                 X[-1, ispan] = xb_new
                 Y[-1, ispan] = yb_new
 
+        # compute differences from last iteration
         err_x = np.linalg.norm(X_old - X)
         err_y = np.linalg.norm(Y_old - Y)
         if err_x < tol and err_y < tol and it > it_orth:
             print('convergence reached in %d sweeps' % (it))
             break
 
+        # give an indication that convergence was not reached even if exiting the loop
         if it == maxit - 1:
             print('convergence not reached')
 
@@ -509,13 +525,17 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
 
 
 
-def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old):
+def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True):
     """
     depending on which (xb_new, yb_new) of is different from none, find the other one constraining it on the original border curve.
     xb_old, yb_old are the cordinates of the previous iteration
     """
+    Deltax = np.max(x) - np.min(x)
+    Deltay = np.max(y) - np.min(y)
+    tol_x = Deltax/5
+    tol_y = Deltay/5
     u = np.linspace(0, 1, len(x))  # curve parameterization
-    degree = 8
+    degree = 10
 
     # Perform polynomial interpolation
     coefficients = np.polyfit(u, x, degree)
@@ -531,22 +551,58 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old):
         return interp_x(u_param) - xb_new
 
     if xb_new is not None:
-        # err = 1
-        # tol = np.sqrt((np.max(y) - np.min(y)) ** 2 + (np.max(x) - np.min(x)) ** 2)
-        # u_root = 0.5
-        # while (err > tol):
-        #     print('point (%.2f, %.2f)' % (xb_old, yb_old))
-        u_root = fsolve(zero_x_fy, x0=yb_old)
+        # this is the problem
+        u_root = fsolve(zero_x_fy, x0=xb_new)
         yb_new = interp_y(u_root)
-            # err = np.abs(yb_new - yb_old)
+        if guardian:
+            if np.abs(yb_new-yb_old)>tol_y or u_root>1 or u_root<0:
+                print("im not finding the right point")
+                xb_new = xb_old
+                yb_new = yb_old
     else:
-        # err = 1
-        # tol = np.sqrt((np.max(y) - np.min(y)) ** 2 + (np.max(x) - np.min(x)) ** 2)
-        # u_root = 0.5
-        # while (err > tol):
-        #     print('point (%.2f, %.2f)' % (xb_old, yb_old))
-        u_root = fsolve(zero_y_fx, x0=xb_old)
+        u_root = fsolve(zero_y_fx, x0=yb_new)
         xb_new = interp_x(u_root)
-            # err = np.abs(xb_new - xb_old)
+        if guardian:
+            if np.abs(xb_new-xb_old)>tol_x or u_root>1 or u_root<0:
+                print("im not finding the right point")
+                xb_new = xb_old
+                yb_new = yb_old
 
     return xb_new, yb_new
+
+
+def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
+    """
+    depending on which (xb_new, yb_new) is different from none, find the other one constraining it on the original border curve.
+    through an optimization problem, minimizing the new point distance from the old point distance.
+    xb_old, yb_old are the cordinates of the previous iteration
+    """
+    u = np.linspace(0, 1, len(x))  # curve parameterization
+    degree = 12
+
+    # Perform polynomial interpolation
+    coefficients = np.polyfit(u, x, degree)
+    interp_x = np.poly1d(coefficients)
+
+    coefficients = np.polyfit(u, y, degree)
+    interp_y = np.poly1d(coefficients)
+
+    def objective(u, xp_new, yb_new):
+        y_u = interp_y(u)
+        x_u = interp_x(u)
+        obj = (y_u - yp_new) ** 2 + (x_u - xp_new) ** 2
+        return obj
+
+    initial_guess = np.mean(u)  # initial guess for u
+    u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
+
+    if xb_new is not None:
+        u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
+    else:
+        u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
+
+    xb_new = interp_x(u_result.x)
+    yb_new = interp_y(u_result.x)
+    return xb_new, yb_new
+
+
