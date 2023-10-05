@@ -15,9 +15,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-grid_inlet = '20_20'
-grid_blade = '20_20'
-grid_outlet = '40_20'
+grid_inlet = '30_30'
+grid_blade = '30_30'
+grid_outlet = '50_30'
 
 inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_'+grid_inlet+'.pickle'
 blade_file_path = 'data/meta/nasa_rotor_config_01_blade_'+grid_blade+'.pickle'

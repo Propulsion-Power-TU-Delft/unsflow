@@ -7,8 +7,9 @@ Created on Wed Jun 14 18:29:29 2023
 import numpy as np
 from scipy.spatial import KDTree
 from .styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation
+from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size
 from .curve import Curve
+
 
 
 class Block:
@@ -83,6 +84,26 @@ class Block:
         self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
 
+    def spline_of_inlet_outlet_full_block(self):
+        """
+        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge.
+        At the same time prepare the straight spline for the inlet edge
+        """
+        # self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
+        #                               self.inlet[1:-1, :],
+        #                               np.reshape(self.point_shroud_inlet, (1, 2))))
+        #
+        # self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1)
+
+        inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
+        inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
+        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+
+        outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
+        outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
+        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1,
+                                  degree_spline=1)
+
     def spline_of_inlet(self):
         """
         make splines of the inlet border for the outlet block, which coincides with self.Outlet
@@ -101,6 +122,13 @@ class Block:
                                   degree_spline=1)
 
     def sample_hub_shroud(self, sampling_mode='default'):
+        """
+        sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
+        """
+        self.hub_trim.sample(sampling_mode=sampling_mode)
+        self.shroud_trim.sample(sampling_mode=sampling_mode)
+
+    def sample_hub_shroud_full_block(self, sampling_mode='default'):
         """
         sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
         """
@@ -385,10 +413,10 @@ class Block:
         """
         plot everything of the grid
         """
-        self.AR = (np.max(self.r_grid_points) - np.min(self.r_grid_points)) / \
-                  (np.max(self.z_grid_points) - np.min(self.z_grid_points))
+        # self.AR = (np.max(self.r_grid_points) - np.min(self.r_grid_points)) / \
+        #           (np.max(self.z_grid_points) - np.min(self.z_grid_points))
 
-        self.blade_picture_size = (7, 7 * self.AR)
+        self.blade_picture_size = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
 
         plt.figure(figsize=self.blade_picture_size)
 
@@ -422,7 +450,7 @@ class Block:
                 plt.plot(self.z_grid_centers[:, ispan], self.r_grid_centers[:, ispan], '--b', lw=light_line_width)
 
         if grid_centers:
-            plt.plot(self.z_grid_cg, self.r_grid_cg, 'r.')
+            plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='red')
 
                 # secondary grid points
         if secondary_grid_points:

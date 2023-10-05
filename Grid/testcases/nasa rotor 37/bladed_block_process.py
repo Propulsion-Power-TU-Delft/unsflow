@@ -39,16 +39,16 @@ bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
 bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
-                                 orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+                                 orthogonality=False, x_stretching=False, y_stretching=False,
                                  sigmoid_coeff_x=6, sigmoid_coeff_y=9, method='minimize')
 bladed_block.compute_grid_centers()
-# bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=True)
+bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=True)
 
 # find the camber surface, using the (z,r) grid found in the bladed block
 blade.find_camber_surface(bladed_block)
 blade.compute_camber_vectors()
 blade.compute_blade_camber_angles(convention='rotation-wise')
-# blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
+blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
 # instantiate cfd data object and perform processing removing the outliers
 file_name = 'data/meta/config_01.csv'
@@ -61,6 +61,7 @@ data.compute_bfm_radial_fields()
 
 # instantiate meridional process object and avg
 data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
+data_process.compute_camber_angles()
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='cell centered', bfm='radial', fix_borders=False, gauss_filter=False)
 data_process.compute_regressed_fields(order=4)
@@ -69,17 +70,17 @@ data_process.compute_bfm_axial(mode='global')
 
 # final meridional plots
 save_plots = True
-if save_plots:
+# if save_plots:
     # data_process.contour_plot(field='streamline length', save_filename='sl_length_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='ut', save_filename='ut_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='ut_rel', save_filename='ut_rel_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='ut_drag', save_filename='ut_drag_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='uz', save_filename='uz_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='p', save_filename='p_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='s', save_filename='s_%2d_%2d_interp' % (nstream, nspan), quiver=True)
-    data_process.contour_plot(field='T', save_filename='T_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='ut', save_filename='ut_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='ut_rel', save_filename='ut_rel_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='ut_drag', save_filename='ut_drag_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='uz', save_filename='uz_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='p', save_filename='p_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='s', save_filename='s_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='T', save_filename='T_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='drho_dr', save_filename='drho_dr_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='drho_dz', save_filename='drho_dz_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='dur_dr', save_filename='dur_dr_%2d_%2d_interp' % (nstream, nspan))
@@ -94,9 +95,9 @@ if save_plots:
     # data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='M', save_filename='M_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='T_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='M', save_filename='M_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='T_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='mu', save_filename='mu_%2d_%2d_interp' % (nstream, nspan))
     # data_process.contour_plot(field='k', save_filename='k_%2d_%2d_interp' % (nstream, nspan))

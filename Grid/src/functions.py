@@ -606,3 +606,13 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     return xb_new, yb_new
 
 
+def compute_picture_size(x, y):
+    W = np.max(x) - np.min(x)
+    H = np.max(y) - np.min(y)
+    WH_ratio = W/H
+    if WH_ratio >= 1:
+        pic_size = (8, 8 / WH_ratio)
+    else:
+        pic_size = (6 * WH_ratio, 6)
+    return pic_size
+

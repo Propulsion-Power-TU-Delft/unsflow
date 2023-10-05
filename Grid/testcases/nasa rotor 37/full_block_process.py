@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 30
-nspan = 30
+nstream = 100
+nspan = 100
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -38,10 +38,10 @@ blade.find_outlet_points(geometry_type='axial')
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
 block.find_intersections(tol=1e-3)
-block.inlet_zone_trim()
+# block.inlet_zone_trim()
 block.spline_of_hub_shroud()
-block.spline_of_outlet()
-block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
+block.spline_of_inlet_outlet_full_block()
+block.sample_hub_shroud_full_block(sampling_mode=stream_grid_sampling)
 block.sample_outlet(sampling_mode=span_grid_sampling)
 block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right', smoothing='elliptic',
                           orthogonality=False, x_stretching=False, y_stretching=False, sigmoid_coeff_x=6,
@@ -61,6 +61,7 @@ data_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbos
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='circular', fix_borders=False, gauss_filter=False)
 data_process.compute_regressed_fields()
+data_process.compute_derived_quantities()
 
 save_plots = True
 if save_plots:
@@ -73,30 +74,30 @@ if save_plots:
     data_process.contour_plot(field='p', save_filename='p_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='s', save_filename='s_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='T', save_filename='T_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='drho_dr', save_filename='drho_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='drho_dz', save_filename='drho_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dur_dr', save_filename='dur_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dur_dz', save_filename='dur_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dut_dr', save_filename='dut_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dut_dz', save_filename='dut_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='duz_dr', save_filename='duz_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='duz_dz', save_filename='duz_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dp_dr', save_filename='dp_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dp_dz', save_filename='dp_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='M', save_filename='M_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_interp' % (nstream, nspan))
-    # data_process.contour_plot(field='T_tot', save_filename='T_tot_%2d_%2d' % (nstream, nspan))
+    data_process.contour_plot(field='drho_dr', save_filename='drho_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='drho_dz', save_filename='drho_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dur_dr', save_filename='dur_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dur_dz', save_filename='dur_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dut_dr', save_filename='dut_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dut_dz', save_filename='dut_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='duz_dr', save_filename='duz_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='duz_dz', save_filename='duz_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dp_dr', save_filename='dp_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dp_dz', save_filename='dp_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='M', save_filename='M_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_interp' % (nstream, nspan))
+    data_process.contour_plot(field='T_tot', save_filename='T_tot_%2d_%2d' % (nstream, nspan))
     # data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
-    # data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
+    data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
 delattr(data_process, 'data')
 data_process.store_pickle(file_name='nasa_rotor_config_01_inlet_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()

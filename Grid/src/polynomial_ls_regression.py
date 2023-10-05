@@ -93,7 +93,7 @@ def basis_function_matrix_derivatives(W, X, Y):
     # y-derivatives
     Wdy[:, 0] = np.zeros(len(x))
     Wdy[:, 1] = np.zeros(len(x))
-    Wdy[:, 2] = y
+    Wdy[:, 2] = np.zeros(len(x))+1
     Wdy[:, 3] = np.zeros(len(x))
     Wdy[:, 4] = 2 * y
     Wdy[:, 5] = x

@@ -13,17 +13,18 @@ from Grid.src.polynomial_ls_regression import *
 def random_function(X, Y):
     return X ** 4 - X ** 2 * Y ** 2 + 3 * X ** 3 * Y - 6 * X * Y ** 2 - 2 * X + Y ** 2 + 1
     # return X**4
+    # return X + Y
 
 
 def random_function_dx(X, Y):
     return 4 * X ** 3 - 2 * X * Y ** 2 + 9 * X ** 2 * Y - 6 * Y ** 2 - 2
     # return 4 * X ** 3
-
+    # return np.zeros_like(X)+1
 
 def random_function_dy(X, Y):
     return -X ** 2 * 2 * Y + 3 * X ** 3 - 12 * X * Y + 2 * Y
     # return X*0
-
+    # return np.zeros_like(X)+1
 
 # GENERATE THE DATA, READING FROM THE BLADE FILE
 L = 5

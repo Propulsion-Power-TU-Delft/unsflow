@@ -7,14 +7,16 @@ Created on Thu Jun 15 17:07:05 2023
 
 import numpy as np
 from numpy import sqrt
-from .styles import *
-from .polynomial_ls_regression import *
 import matplotlib.path as mplpath
 from scipy.ndimage import gaussian_filter
 from scipy.interpolate import Rbf
 import pickle
 import sympy as sp
 from scipy.interpolate import griddata
+
+from .styles import *
+from .polynomial_ls_regression import *
+from .functions import compute_picture_size
 
 
 
@@ -35,12 +37,12 @@ class MeridionalProcess:
         self.nRadialNodes = block.nspan-1
         if blade is not None:
             self.blade = blade
-            self.compute_camber_angles()
         self.verbose = verbose
         self.z_grid = block.z_grid_points  # primary grid points
         self.r_grid = block.r_grid_points
         self.z_cg = block.z_grid_cg  # elements centers points
         self.r_cg = block.r_grid_cg
+        self.picture_size = compute_picture_size(self.z_cg, self.r_cg)
 
         self.rho_ref = data.rho_ref
         self.u_ref = data.u_ref
@@ -487,6 +489,7 @@ class MeridionalProcess:
         """
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
+        #test to deleted
         self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
         self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
         self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
@@ -662,7 +665,7 @@ class MeridionalProcess:
         field[:, -1] = field[:, -2]
 
     def quiver_plot(self, save_filename=None, field=None):
-        fig, ax = plt.subplots(figsize=self.blade.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size)
         if field == 'p':
             cs = ax.contourf(self.z_cg, self.r_cg, self.p, N_levels, cmap=color_map)
             ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
@@ -681,7 +684,7 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_stream_line(self, field, n, save_filename=None):
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots(figsize=self.picture_size)
         if field == 'rho':
             ax.plot(self.stream_line_length[:, n], self.rho[:, n], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
@@ -729,7 +732,7 @@ class MeridionalProcess:
                 self.span_wise_length[istream, ispan] = tmp_len
 
     def plot_spanline(self, field, n, save_filename=None):
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots(figsize=self.picture_size)
         if field == 'rho':
             ax.plot(self.span_wise_length[n, :], self.rho[n, :], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
@@ -769,7 +772,7 @@ class MeridionalProcess:
             save_filename: name to save
             unit_factor: it could be needed in a second time to conver different unit systems
         """
-        fig, ax = plt.subplots(figsize=self.blade.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size)
 
         if field == 'rho':
             cs = ax.contourf(self.z_grid * unit_factor, self.r_grid * unit_factor, self.rho, N_levels, cmap=color_map)
@@ -1014,7 +1017,7 @@ class MeridionalProcess:
             field: field to plot
             save_filename: name to save
         """
-        fig, ax = plt.subplots(figsize=self.blade.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size)
 
         if field == 'rho':
             cs = ax.contourf(self.z_cg, self.r_cg, self.rho, N_levels, cmap=color_map)
@@ -1389,79 +1392,79 @@ class MeridionalProcess:
         """
         self.compute_Floss(mode=mode)
 
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$u_{m}$')
 
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$\frac{\partial s}{\partial m}$')
 
-        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l}$')
 
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{l,r}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{l,\theta}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{l,z}$')
 
         self.compute_Ftheta()
 
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{\theta}$')
 
         self.compute_Fturn()
 
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{t, r}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{t, \theta}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
+        # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
         # plt.colorbar()
         # plt.title(r'$F_{t, z}$')
         #
-        # plt.figure(figsize=self.blade.blade_picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{t}$')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{t}$')
 
         self.alpha = self.Floss / self.u_mag_rel**2
         self.beta = self.Fturn / self.u_meridional / self.ut_rel
 
-        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\alpha$')
 
-        plt.figure(figsize=self.blade.blade_picture_size)
+        plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\beta$')
