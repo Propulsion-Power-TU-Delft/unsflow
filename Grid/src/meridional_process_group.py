@@ -18,6 +18,8 @@ class MeridionalProcessGroup:
 
     def __init__(self):
         self.group = []
+        self.nstream = 0
+        self.nspan = 0
 
 
     def add_to_group(self, meridional_obj):
@@ -25,6 +27,8 @@ class MeridionalProcessGroup:
         add component to the group, follow streamwise order
         """
         self.group.append(meridional_obj)
+        self.nstream += meridional_obj.nstream
+        self.nspan = meridional_obj.nspan
 
 
     def assemble_fields(self):
@@ -230,7 +234,7 @@ class MeridionalProcessGroup:
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$s \ \mathrm{[kJ/kgK]}$')
+        plt.title(r'$s \ \mathrm{[J/kgK]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
 
@@ -387,3 +391,87 @@ class MeridionalProcessGroup:
 
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
+
+
+    def compute_streamline_length(self):
+        """
+        compute the length along each streamline. Dimensional, same dimensions of cordinates
+        """
+        self.stream_line_length = np.zeros((self.nstream, self.nspan))
+        for ispan in range(0, self.nspan):
+            z = self.z_cg[:, ispan]
+            r = self.r_cg[:, ispan]
+            tmp_len = 0
+            for istream in range(1, self.nstream):
+                tmp_len += np.sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
+                self.stream_line_length[istream, ispan] = tmp_len
+
+
+    def plot_stream_line(self, field, n, save_filename=None):
+        """
+        for the streamline n, plot the evolution of the flow field
+        """
+        sl_max = self.stream_line_length[:, n].max()
+        fig, ax = plt.subplots(figsize=fig_size)
+        if field == 'rho':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.rho[:, n], '--s')
+            ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
+        elif field == 'ur':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.ur[:, n], '--s')
+            ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
+        elif field == 'ut':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.ut[:, n], '--s')
+            ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
+        elif field == 'uz':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.uz[:, n], '--s')
+            ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+        elif field == 'p':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.p[:, n], '--s')
+            ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+        elif field == 'T':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.T[:, n], '--s')
+            ax.set_ylabel(r'$T \ \mathrm{[-]}$')
+        elif field == 's':
+            ax.plot(self.stream_line_length[:, n]/sl_max, self.s[:, n], '--s')
+            ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        else:
+            raise ValueError("Field name unknown!")
+
+        ax.grid(alpha=0.3)
+        ax.set_xlabel(r'$l \ \mathrm{[-]}$')
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+
+    def plot_averaged_fluxes(self, field, save_filename):
+        fig, ax = plt.subplots(figsize=fig_size)
+        for obj in self.group:
+            if field == 'rho':
+                ax.plot(obj.rho_flux, '--s')
+                ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
+            elif field == 'ur':
+                ax.plot(obj.ur_flux, '--s')
+                ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
+            elif field == 'ut':
+                ax.plot(obj.ut_flux, '--s')
+                ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
+            elif field == 'uz':
+                ax.plot(obj.uz_flux, '--s')
+                ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+            elif field == 'p':
+                ax.plot(obj.p_flux, '--s')
+                ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+            elif field == 'T':
+                ax.plot(obj.T_flux, '--s')
+                ax.set_ylabel(r'$T \ \mathrm{[-]}$')
+            elif field == 's':
+                ax.plot(obj.s_flux, '--s')
+                ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+            else:
+                raise ValueError("Field name unknown!")
+
+            ax.grid(alpha=0.3)
+            ax.set_xlabel(r'$l \ \mathrm{[-]}$')
+            if save_filename is not None:
+                fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+

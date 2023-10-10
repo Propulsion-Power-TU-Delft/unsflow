@@ -203,9 +203,9 @@ class MeridionalProcess:
         """
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
-        self.ut_drag = self.ut - self.ut_rel
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+        self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
         self.M = self.u_mag / sqrt(self.gmma * self.p / self.rho)
         self.compute_stagnation_quantities()
 
@@ -485,7 +485,8 @@ class MeridionalProcess:
         """
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
-        # test to deleted
+
+        # compute the regressed fields and gradients
         self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
         self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
         self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
@@ -493,10 +494,6 @@ class MeridionalProcess:
         self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.p)
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
-        # self.M, self.dM_dr, self.dM_dtheta, self.dM_dz = self.polynomial_regression_solution(self.M)
-        # self.ut_rel, self.dut_rel_dr, self.dut_rel_dtheta, self.dut_rel_dz = self.polynomial_regression_solution(self.ut_rel)
-        # self.p_tot, self.dp_tot_dr, self.dp_tot_dtheta, self.dp_tot_dz = self.polynomial_regression_solution(self.p_tot)
-        # self.T_tot, self.dT_tot_dr, self.dT_tot_dtheta, self.dT_tot_dz = self.polynomial_regression_solution(self.T_tot)
 
     def polynomial_regression_solution(self, field):
         Nz = np.shape(field)[0]
@@ -615,27 +612,37 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_stream_line(self, field, n, save_filename=None):
+        """
+        for the streamline n, plot the evolution of the flow field
+        """
+        sl_max = self.stream_line_length[:, n].max()
         fig, ax = plt.subplots(figsize=fig_size)
         if field == 'rho':
-            ax.plot(self.stream_line_length[:, n], self.rho[:, n], '--s')
-            ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.rho[:, n], '--s')
+            ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
         elif field == 'ur':
-            ax.plot(self.stream_line_length[:, n], self.ur[:, n], '--s')
-            ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.ur[:, n], '--s')
+            ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
         elif field == 'ut':
-            ax.plot(self.stream_line_length[:, n], self.ut[:, n], '--s')
-            ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.ut[:, n], '--s')
+            ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
         elif field == 'uz':
-            ax.plot(self.stream_line_length[:, n], self.uz[:, n], '--s')
-            ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.uz[:, n], '--s')
+            ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
         elif field == 'p':
-            ax.plot(self.stream_line_length[:, n], self.p[:, n], '--s')
-            ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.p[:, n], '--s')
+            ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+        elif field == 'T':
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.T[:, n], '--s')
+            ax.set_ylabel(r'$T \ \mathrm{[-]}$')
         elif field == 's':
-            ax.plot(self.stream_line_length[:, n], self.s[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.s[:, n], '--s')
             ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        else:
+            raise ValueError("Field name unknown!")
 
-        ax.set_xlabel(r'$s \ \mathrm{[m]}$')
+        ax.grid(alpha=0.3)
+        ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
@@ -644,11 +651,11 @@ class MeridionalProcess:
         compute the length along each streamline. Dimensional, same dimensions of cordinates
         """
         self.stream_line_length = np.zeros((self.nstream, self.nspan))
-        for ispan in range(0, self.nRadialNodes):
+        for ispan in range(0, self.nspan):
             z = self.z_cg[:, ispan]
             r = self.r_cg[:, ispan]
             tmp_len = 0
-            for istream in range(1, self.nAxialNodes):
+            for istream in range(1, self.nstream):
                 tmp_len += sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
                 self.stream_line_length[istream, ispan] = tmp_len
 
@@ -1011,7 +1018,7 @@ class MeridionalProcess:
             cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dz, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[]}$')
+            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dur_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{u}_r / \partial \hat{r}$')
@@ -1155,12 +1162,11 @@ class MeridionalProcess:
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'streamline length':
-            if self.bfm == 'radial':
-                cs = ax.contourf(self.z_cg, self.r_cg, self.stream_line_length,
-                                 levels=N_levels, cmap=color_map)
-                ax.set_title(r'streamline length')
-                cb = fig.colorbar(cs)
-                cb.set_label(r'$\mathrm{[-]}$')
+            cs = ax.contourf(self.z_cg, self.r_cg, self.stream_line_length,
+                             levels=N_levels, cmap=color_map)
+            ax.set_title(r'streamline length')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'mu':
             if self.bfm == 'radial':
                 cs = ax.contourf(self.z_cg, self.r_cg, self.mu,
@@ -1200,7 +1206,7 @@ class MeridionalProcess:
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'p_tot_bar':
             cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot_bar, N_levels, cmap=color_map)
-            ax.set_title(r'$\bar{\hat{p}}_{t}$')
+            ax.set_title(r'$\hat{\bar{p}}_{t}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         else:
@@ -1329,7 +1335,7 @@ class MeridionalProcess:
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.title(r'$u_{m}$')
+        plt.title(r'$\hat{u}_{m}$')
         if save_fig:
             plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
@@ -1457,7 +1463,7 @@ class MeridionalProcess:
                                            self.ur[istream, ispan]))
                     dir_vector /= np.linalg.norm(dir_vector)
                     self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan] * dir_vector[0] + \
-                                                self.ds_dr[istream, ispan] * dir_vector[1]
+                                                 self.ds_dr[istream, ispan] * dir_vector[1]
 
     def compute_Ftheta(self):
         """
@@ -1484,35 +1490,69 @@ class MeridionalProcess:
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
 
-# class DataContainer:
-#     """
-#     class that stores only the important information, necessary from the sun Model, to avoid storing
-#     a lot of data for nothing
-#     """
-#     def __init__(self, type_name):
-#         """
-#         type_name: to store the type of block
-#         """
-#         self.type_name = type_name
-#
-#     def add_data(self, z_grid, r_grid, rho, ur, ut, uz, p, drho_dr, drho_dz, dur_dr, dur_dz,
-#                  dut_dr, dut_dz, duz_dr, duz_dz, dp_dr, dp_dz, nstream, nspan):
-#         self.z_grid = z_grid
-#         self.r_grid = r_grid
-#         self.rho = rho
-#         self.ur = ur
-#         self.ut = ut
-#         self.uz = uz
-#         self.p = p
-#         self.drho_dr = drho_dr
-#         self.drho_dz = drho_dz
-#         self.dur_dr = dur_dr
-#         self.dur_dz = dur_dz
-#         self.dut_dr = dut_dr
-#         self.dut_dz = dut_dz
-#         self.duz_dr = duz_dr
-#         self.duz_dz = duz_dz
-#         self.dp_dr = dp_dr
-#         self.dp_dz = dp_dz
-#         self.nstream = nstream
-#         self.nspan = nspan
+    def compute_averaged_fluxes(self):
+        """
+        on the meridional plane, compute the fluxes for each cell, in order to show a 1D plot, comprehensive
+        of the machine
+        """
+        self.dA = np.zeros_like(self.z_cg)
+        for istream in range(self.nstream):
+            for ispan in range(self.nspan):
+                dz = self.z_grid[istream, ispan + 1] - self.z_grid[istream, ispan]
+                dr = self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]
+                self.dA[istream, ispan] = np.sqrt(dz ** 2 + dr ** 2)
+
+        self.rho_flux = self.compute_flux(self.rho)
+        self.ur_flux = self.compute_flux(self.ur)
+        self.ut_flux = self.compute_flux(self.ut)
+        self.uz_flux = self.compute_flux(self.uz)
+        self.p_flux = self.compute_flux(self.p)
+        self.s_flux = self.compute_flux(self.s)
+        self.T_flux = self.compute_flux(self.T)
+
+    def compute_flux(self, field):
+        """
+        average the terms along the span, and store it in the stream index
+        """
+        fluxes = np.zeros(self.nstream)
+        for istream in range(self.nstream):
+            fluxes[istream] = np.sum(self.rho[istream, :] * self.dA[istream, :] * field[istream, :]) / \
+                              np.sum(self.rho[istream, :] * self.dA[istream, :])
+
+        return fluxes
+
+
+    def plot_averaged_fluxes(self, field, save_filename=None):
+        """
+        plot the averaged fluxe value
+        """
+        sl_max = self.stream_line_length[:, 0].max()
+        fig, ax = plt.subplots(figsize=fig_size)
+        if field == 'rho':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux, '--s')
+            ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
+        elif field == 'ur':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux, '--s')
+            ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
+        elif field == 'ut':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ut_flux, '--s')
+            ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
+        elif field == 'uz':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.uz_flux, '--s')
+            ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+        elif field == 'p':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_flux, '--s')
+            ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+        elif field == 'T':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_flux, '--s')
+            ax.set_ylabel(r'$T \ \mathrm{[-]}$')
+        elif field == 's':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.s_flux, '--s')
+            ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        else:
+            raise ValueError("Field name unknown!")
+
+        ax.grid(alpha=0.3)
+        ax.set_xlabel(r'$l \ \mathrm{[-]}$')
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')

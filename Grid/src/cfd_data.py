@@ -22,7 +22,7 @@ class CfdData:
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:
         rho_ref: reference density, for air can be 1.014 [kg/m3]
-        omega_ref: angular speed of the shaft [rpm]
+        omega_ref: angular speed of the shaft [rpm], with algebraic sign
         x_ref: tip radius of the blade at leading edge [m]
         T_ref: can be standard temperature [K]
         """
@@ -113,7 +113,8 @@ class CfdData:
         
     def compute_derived_quantities(self):
         """
-        Compute other derived quantities, projecting in the radial and tangential direction when needed
+        Compute other derived quantities, projecting in the radial and tangential direction when needed. Gradients are
+        not actually needed since they will be calculated from the 2D regressed fields, but that's okey for now.
         """
 
         # velocity magnitude
