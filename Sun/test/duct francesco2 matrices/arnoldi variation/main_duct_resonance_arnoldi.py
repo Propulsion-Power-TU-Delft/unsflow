@@ -117,8 +117,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 5
-Nr = 5
+Nz = 15
+Nr = 15
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -140,7 +140,8 @@ duct_grid.ShowGrid()
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref, 0)
+sun_obj.add_shaft_rpm(omega_ref)
+sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
@@ -158,14 +159,18 @@ sun_obj.build_A_global_matrix()
 sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_Z_global_matrix()
-sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
+sun_obj.impose_boundary_conditions('zero perturbation', 'zero perturbation')
 sun_obj.apply_boundary_conditions_generalized()
 
 
 sigma = 15000/omega_ref
-# eigenvalues, eigenvectors = eigs(sun_obj.Z_g, M=sun_obj.A_g, sigma=sigma, k=20)
-eigenvalues, eigenvectors = scipy.linalg.eig(sun_obj.Z_g, b=sun_obj.A_g)
-check =scipy.linalg.ishermitian(sun_obj.A_g, atol=None, rtol=None)
+
+# put in standard form A x = lambda x
+A = sun_obj.Z_g
+M = sun_obj.A_g
+A = np.dot(np.linalg.inv(M), A)
+eigenvalues, eigenvectors = eigs(A, sigma=sigma, k=20)
+# eigenvalues, eigenvectors = scipy.linalg.eig(sun_obj.Z_g, b=sun_obj.A_g)
 eigenvalues *= omega_ref
 
 marker_size=100

@@ -31,6 +31,7 @@ class AnnulusMeridional():
         self.z = np.linspace(zmin, zmax, Nz)
         self.r = np.linspace(rmin, rmax, Nr)
         self.r_grid, self.z_grid = np.meshgrid(self.r, self.z)
+        self.r_cg, self.z_cg = np.meshgrid(self.r, self.z)
         self.rho = rho
         self.ur = u
         self.ut = v

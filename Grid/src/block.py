@@ -47,9 +47,10 @@ class Block:
         """
         compute hub,shroud splines, that are parameterized from 0 to 1 between the extremes.
         """
-        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream, mode='cordinates', rescale_factor=1, x_ref=1)
-        self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline,
-                                 nstream=self.nstream, mode='cordinates', x_ref=1, rescale_factor=1)
+        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream,
+                              mode='cordinates', rescale_factor=1, x_ref=1)
+        self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, nstream=self.nstream,
+                                 mode='cordinates', x_ref=1, rescale_factor=1)
 
 
     def spline_of_leading_trailing_edge(self):
@@ -64,8 +65,10 @@ class Block:
                                       self.outlet[1:-1, :],
                                       np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan,
+                                  mode='cordinates', rescale_factor=1, x_ref=1)
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan,
+                                   mode='cordinates', rescale_factor=1, x_ref=1)
 
     def spline_of_outlet(self):
         """
@@ -76,33 +79,30 @@ class Block:
                                       self.inlet[1:-1, :],
                                       np.reshape(self.point_shroud_inlet, (1, 2))))
 
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1)
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan,
+                                   mode='cordinates', x_ref=1, rescale_factor=1)
 
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
 
-        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
+                                  mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
 
     def spline_of_inlet_outlet_full_block(self):
         """
-        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge.
-        At the same time prepare the straight spline for the inlet edge
+        make inlet and outlet splines for all the domain together. The inlet and outlet coincides with initial and last
+        points of hub and shroud splines. Degree 1 because they are straight lines.
         """
-        # self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
-        #                               self.inlet[1:-1, :],
-        #                               np.reshape(self.point_shroud_inlet, (1, 2))))
-        #
-        # self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1)
-
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
-        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
+                                  mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
         outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
         outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
-        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1,
-                                  degree_spline=1)
+        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
+                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
     def spline_of_inlet(self):
         """
@@ -113,13 +113,14 @@ class Block:
                                      self.outlet[1:-1, :],
                                      np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan, mode='cordinates', rescale_factor=1, x_ref=1)
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan,
+                                  mode='cordinates', rescale_factor=1, x_ref=1)
 
         outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
         outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
 
-        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan, mode='cordinates', x_ref=1, rescale_factor=1,
-                                  degree_spline=1)
+        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
+                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
     def sample_hub_shroud(self, sampling_mode='default'):
         """
@@ -227,11 +228,12 @@ class Block:
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
-                                                                              x_stretching=x_stretching, y_stretching=y_stretching,
+                                                                              x_stretching=x_stretching,
+                                                                              y_stretching=y_stretching,
                                                                               X0=self.z_grid_points, Y0=self.r_grid_points,
                                                                               tol=1e-3, sigmoid_coeff_x=sigmoid_coeff_x,
                                                                               sigmoid_coeff_y=sigmoid_coeff_y, pol_order=2,
-                                                                              method = 'fzero')
+                                                                              method = method)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 
@@ -249,10 +251,10 @@ class Block:
         j = slice(0, self.nspan - 1)
         jp = slice(1, self.nspan)
 
-        self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j] \
+        self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j]
                          + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) /4
 
-        self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j] \
+        self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j]
                          + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) /4
 
 
@@ -452,7 +454,6 @@ class Block:
         if grid_centers:
             plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='red')
 
-                # secondary grid points
         if secondary_grid_points:
             plt.scatter(self.z_grid_centers.flatten(), self.r_grid_centers.flatten(), c='blue', s=scatter_point_size,
                         label='secondary grid nodes')

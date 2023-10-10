@@ -4,13 +4,11 @@
 Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
-import matplotlib.pyplot as plt
 import numpy as np
-from numpy import sqrt, sin, cos, tan, arccos, arcsin, log
+from numpy import sin, cos
 from .styles import *
 import math
 from scipy.optimize import fsolve
-from scipy import interpolate
 from scipy.optimize import minimize
 
 
@@ -28,6 +26,8 @@ def cluster_sample_u(n, shrink_effect=3.5, border='default'):
         array = np.linspace(-shrink_effect, 0, length)
     elif border == 'right':
         array = np.linspace(0, shrink_effect, length)
+    else:
+        raise ValueError("Unknown type of border")
 
     sigmoid = 1 / (1 + np.exp(-array))  # Apply sigmoid function
     scaled_array = (sigmoid - sigmoid.min()) / (sigmoid.max() - sigmoid.min())
@@ -234,6 +234,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     if show:
         plt.figure(figsize=pic_size)
 
+    it = 0
     for it in range(maxit):
         """
         main iteration loop. Follow the instructions given in the book <Basic structured grid generation with an introduction 
@@ -527,7 +528,7 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
 
 def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True):
     """
-    depending on which (xb_new, yb_new) of is different from none, find the other one constraining it on the original border curve.
+    depending on which (xb_new, yb_new) of is different from none, find the other one constraining it on the original border.
     xb_old, yb_old are the cordinates of the previous iteration
     """
     Deltax = np.max(x) - np.min(x)
@@ -555,7 +556,7 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
         u_root = fsolve(zero_x_fy, x0=xb_new)
         yb_new = interp_y(u_root)
         if guardian:
-            if np.abs(yb_new-yb_old)>tol_y or u_root>1 or u_root<0:
+            if (np.abs(yb_new-yb_old)>tol_y or u_root>1 or u_root<0):
                 print("im not finding the right point")
                 xb_new = xb_old
                 yb_new = yb_old
@@ -563,7 +564,7 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
         u_root = fsolve(zero_y_fx, x0=yb_new)
         xb_new = interp_x(u_root)
         if guardian:
-            if np.abs(xb_new-xb_old)>tol_x or u_root>1 or u_root<0:
+            if (np.abs(xb_new-xb_old)>tol_x or u_root>1 or u_root<0):
                 print("im not finding the right point")
                 xb_new = xb_old
                 yb_new = yb_old
@@ -587,7 +588,7 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     coefficients = np.polyfit(u, y, degree)
     interp_y = np.poly1d(coefficients)
 
-    def objective(u, xp_new, yb_new):
+    def objective(u, xp_new, yp_new):
         y_u = interp_y(u)
         x_u = interp_x(u)
         obj = (y_u - yp_new) ** 2 + (x_u - xp_new) ** 2
@@ -615,4 +616,3 @@ def compute_picture_size(x, y):
     else:
         pic_size = (6 * WH_ratio, 6)
     return pic_size
-

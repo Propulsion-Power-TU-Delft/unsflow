@@ -1185,7 +1185,7 @@ class SunModel:
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_A_g(diag_block_ij, row, column)
+                self.add_to_A_g(diag_block_ij*1j, row, column)
 
     def build_C_global_matrix(self):
         """

@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 40
-nspan = 27
+nstream = 30
+nspan = 15
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -63,15 +63,17 @@ file_name = 'data/meta/iris_85krpm_0.11kgs.csv'
 data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=85e3, cut_block=bladed_block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.0228, rpm_ref=85e3, T_ref=288.15)
 data.process_from_ansys_csv()
-# data.compute_flow_ideal_vectors()
-# data.compute_bfm_radial_fields()
+data.compute_flow_ideal_vectors()
+data.compute_bfm_radial_fields()
 
 # instantiate meridional process object and avg
 data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
+data_process.compute_camber_angles()
 data_process.compute_streamline_length()
-data_process.circumferential_average(mode='circular', bfm=None, fix_borders=False, gauss_filter=True)
-data_process.compute_regressed_fields()
-data_process.compute_bfm_axial()
+data_process.circumferential_average(mode='cell centered', bfm='radial', fix_borders=False, gauss_filter=False)
+data_process.compute_regressed_fields(order=4)
+data_process.compute_derived_quantities()
+data_process.compute_bfm_axial(mode='global', save_fig=True)
 
 
 # final meridional plots
@@ -112,11 +114,11 @@ data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_in
 # data_process.contour_plot(field='F_nz', save_filename='F_nz_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='F_t', save_filename='F_t_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='F_n', save_filename='F_n_%2d_%2d' % (nstream, nspan))
-data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
+# data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
 
 delattr(data_process, 'data')
 data_process.store_pickle(file_name='iris_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()

@@ -5,6 +5,7 @@ Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
 import matplotlib.pyplot as plt
+from numpy import sqrt
 from scipy.interpolate import splprep, splev
 from .styles import *
 from .functions import *
@@ -82,6 +83,8 @@ class Curve:
             idx = np.where(self.z_spline >= z_trim)
         elif z_trim == 'span':
             idx = np.where(self.r_spline >= r_trim)
+        else:
+            raise ValueError("Unknown trim type!")
         self.z_spline = self.z_spline[idx]
         self.r_spline = self.r_spline[idx]
 
@@ -95,6 +98,8 @@ class Curve:
             idx = np.where(self.r_spline <= r_trim)
         elif r_trim == 'span':
             idx = np.where(self.z_spline <= z_trim)
+        else:
+            raise ValueError("Unknown trim type!")
         self.z_spline = self.z_spline[idx]
         self.r_spline = self.r_spline[idx]
 

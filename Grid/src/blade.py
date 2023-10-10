@@ -6,7 +6,6 @@ Created on Wed Jul 12 11:41:53 2023
 """
 from numpy import array
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical

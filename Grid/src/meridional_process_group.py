@@ -387,6 +387,3 @@ class MeridionalProcessGroup:
 
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
-
-
-

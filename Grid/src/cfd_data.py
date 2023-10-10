@@ -4,9 +4,7 @@
 Created on Thu Jun 15 16:53:11 2023
 @author: F. Neri, TU Delft
 """
-
-import matplotlib.pyplot as plt
-import numpy as np
+from numpy import sqrt
 import pandas as pd
 from .functions import *
 

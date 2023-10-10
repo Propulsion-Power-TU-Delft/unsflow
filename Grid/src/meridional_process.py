@@ -19,8 +19,6 @@ from .polynomial_ls_regression import *
 from .functions import compute_picture_size
 
 
-
-
 class MeridionalProcess:
     """
     class that contains a multiblock grid object, and the CFD data results. It performs the circumferential averaging.
@@ -31,10 +29,10 @@ class MeridionalProcess:
     def __init__(self, data, block=None, blade=None, verbose=False):
         self.data = data
         self.block = block
-        self.nstream = block.nstream-1  # how many grid points
-        self.nspan = block.nspan-1
-        self.nAxialNodes = block.nstream-1  # how many grid element centers
-        self.nRadialNodes = block.nspan-1
+        self.nstream = block.nstream - 1  # how many grid points
+        self.nspan = block.nspan - 1
+        self.nAxialNodes = block.nstream - 1  # how many grid element centers
+        self.nRadialNodes = block.nspan - 1
         if blade is not None:
             self.blade = blade
         self.verbose = verbose
@@ -65,11 +63,10 @@ class MeridionalProcess:
                 self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
                 self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
 
-        self.camber_normal_check = np.sqrt(self.camber_normal_r**2 + self.camber_normal_theta**2 +
-                                           self.camber_normal_z**2)
+        self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
+                                           self.camber_normal_z ** 2)
 
-
-    def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True):
+    def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True, threshold=20):
         """
         perform circumferential averages
         Args:
@@ -80,6 +77,7 @@ class MeridionalProcess:
             fix_borders: if True, the values on the borders are copied from the values in the inner nodes
             bfm: if True, enables calculation of BFM related quantities (depending on the type of BFM specified)
             gauss_filter: if True enables gauss filtering of the 2D fields, to smooth it down
+            threshold: minimum amount of points found in one element projection, in order to accept the average
         """
         self.bfm = bfm
         self.instantiate_2d_fields()
@@ -97,7 +95,7 @@ class MeridionalProcess:
                     # use the secondary grid to identifying the scattered points in the meridional plane
                     n_elem = 0  # number of elements found in the rectangle. initialization
                     i = 0  # cycle counter
-                    while n_elem == 0: # minumum amount of points to make an average
+                    while n_elem < threshold:  # minumum amount of points to make an average
                         quadrilateral_path = self.find_rectangle(istream, ispan, i)
                         idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
                         n_elem = len(idx[0])  # update n_elem
@@ -107,7 +105,7 @@ class MeridionalProcess:
                     # use a circle to identifying the scattered points in the meridional plane
                     n_elem = 0  # number of elements found in the rectangle. initialization
                     i = 0  # cycle counter
-                    while n_elem == 0:
+                    while n_elem < threshold:
                         idx = self.find_points_inside_circle(istream, ispan, i)
                         n_elem = len(idx[0])  # update n_elem
                         i += 1  # update cycle number
@@ -115,7 +113,7 @@ class MeridionalProcess:
                 elif mode == 'cell centered':
                     n_elem = 0  # number of elements found in the rectangle. initialization
                     i = 0  # cycle counter
-                    while n_elem < 20:  # limit for accepting the average
+                    while n_elem < threshold:  # limit for accepting the average
                         quadrilateral_path = self.find_rectangle(istream, ispan, i)
                         idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
                         n_elem = len(idx[0])  # update n_elem
@@ -206,7 +204,7 @@ class MeridionalProcess:
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
         self.ut_drag = self.ut - self.ut_rel
-        self.u_mag = np.sqrt(self.ur**2 + self.ut**2 + self.uz**2)
+        self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.M = self.u_mag / sqrt(self.gmma * self.p / self.rho)
         self.compute_stagnation_quantities()
@@ -301,16 +299,16 @@ class MeridionalProcess:
 
         # vertices of the bounding box
         scaling_factor = 0.2  # factor needed to expand the original figure when no points are found
-        z_vertices = [z_cg + (z1-z_cg)*(1+ A * scaling_factor),
-                      z_cg + (z2-z_cg)*(1+ A * scaling_factor),
-                      z_cg + (z3-z_cg)*(1+ A * scaling_factor),
-                      z_cg + (z4-z_cg)*(1+ A * scaling_factor)]
-        r_vertices = [r_cg + (r1 - r_cg)*(1 + A * scaling_factor),
-                      r_cg + (r2 - r_cg)*(1 + A * scaling_factor),
-                      r_cg + (r3 - r_cg)*(1 + A * scaling_factor),
-                      r_cg + (r4 - r_cg)*(1 + A * scaling_factor)]
+        z_vertices = [z_cg + (z1 - z_cg) * (1 + A * scaling_factor),
+                      z_cg + (z2 - z_cg) * (1 + A * scaling_factor),
+                      z_cg + (z3 - z_cg) * (1 + A * scaling_factor),
+                      z_cg + (z4 - z_cg) * (1 + A * scaling_factor)]
+        r_vertices = [r_cg + (r1 - r_cg) * (1 + A * scaling_factor),
+                      r_cg + (r2 - r_cg) * (1 + A * scaling_factor),
+                      r_cg + (r3 - r_cg) * (1 + A * scaling_factor),
+                      r_cg + (r4 - r_cg) * (1 + A * scaling_factor)]
 
-        if A!=0:
+        if A != 0:
             # print warning regarding the enlarged research domain
             print('research domain enlarged, point (%2d, %2d), attempt %2d' % (istream, ispan, A))
         quadrilateral_path = mplpath.Path(np.column_stack((z_vertices, r_vertices)))
@@ -469,7 +467,6 @@ class MeridionalProcess:
             self.copy_borders(self.a2)
             self.copy_borders(self.a3)
 
-
     def compute_rbf_fields(self):
         """
         compute the rbf interpolation of the primary fields
@@ -482,14 +479,13 @@ class MeridionalProcess:
         self.T = self.rbf_interpolation(self.T)
         self.s = self.rbf_interpolation(self.s)
 
-
     def compute_regressed_fields(self, order=4):
         """
         compute the third order polynomial regressed fields
         """
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
-        #test to deleted
+        # test to deleted
         self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
         self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
         self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
@@ -513,25 +509,9 @@ class MeridionalProcess:
 
         return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
 
-
-
-    def compute_interpolated_fields(self):
-        """
-        compute the polynomial interpolation of the primary fields
-        """
-        self.rho = self.polynomial_interpolation(self.rho)
-        self.ur = self.polynomial_interpolation(self.ur)
-        self.ut = self.polynomial_interpolation(self.ut)
-        self.uz = self.polynomial_interpolation(self.uz)
-        self.p = self.polynomial_interpolation(self.p)
-        self.T = self.polynomial_interpolation(self.T)
-        self.s = self.polynomial_interpolation(self.s)
-
-
     def compute_rbf_gradients(self):
         """
         compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
-        Returns:
         """
         self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
         self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
@@ -540,35 +520,6 @@ class MeridionalProcess:
         self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
         self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
         self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
-
-
-    def compute_regression_gradients(self):
-        """
-        compute the gradients of the relevant fields, using third order polynomial regression based derivation
-        """
-        self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_derivative(self.rho)
-        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
-        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
-        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
-        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
-        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
-        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
-
-
-    def compute_rbf_gradients_symbolic(self):
-        """
-        compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
-        Returns:
-        """
-        self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_symbolic_gradient(self.rho)
-        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_symbolic_gradient(self.ur)
-        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_symbolic_gradient(self.ut)
-        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_symbolic_gradient(self.uz)
-        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_symbolic_gradient(self.p)
-        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_symbolic_gradient(self.T)
-        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_symbolic_gradient(self.s)
-
-
 
     def rbf_interpolation(self, field):
         """
@@ -586,25 +537,6 @@ class MeridionalProcess:
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='gaussian')
         field_interp = rbf(self.z_cg, self.r_cg)
         return field_interp
-
-    def polynomial_interpolation(self, field):
-        """
-        Args:
-            field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
-        Returns: the polynomial regression of the flow field
-        """
-        # Fit a third-order polynomial regression
-        X = self.z_cg.flatten()
-        Y = self.r_cg.flatten()
-        A = np.array([X*0+1, X, Y, X**2, X**2*Y, X**2*Y**2, Y**2, X*Y**2, X*Y]).T
-        B = field.flatten()
-        coeff, r, rank, s = np.linalg.lstsq(A, B)
-
-        field_interp = griddata((self.z_cg.flatten(), self.r_cg.flatten()), field.flatten(), (self.z_cg, self.r_cg), method='linear')
-
-        return field_interp
-
-
 
     def rbf_finite_difference(self, field):
         """
@@ -633,7 +565,6 @@ class MeridionalProcess:
         dfield_dtheta = np.zeros_like(dfield_dr)
 
         return dfield_dr, dfield_dtheta, dfield_dz
-
 
     def rbf_symbolic_gradient(self, field):
         """
@@ -684,7 +615,7 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_stream_line(self, field, n, save_filename=None):
-        fig, ax = plt.subplots(figsize=self.picture_size)
+        fig, ax = plt.subplots(figsize=fig_size)
         if field == 'rho':
             ax.plot(self.stream_line_length[:, n], self.rho[:, n], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
@@ -700,6 +631,9 @@ class MeridionalProcess:
         elif field == 'p':
             ax.plot(self.stream_line_length[:, n], self.p[:, n], '--s')
             ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
+        elif field == 's':
+            ax.plot(self.stream_line_length[:, n], self.s[:, n], '--s')
+            ax.set_ylabel(r'$s \ \mathrm{[-]}$')
 
         ax.set_xlabel(r'$s \ \mathrm{[m]}$')
         if save_filename is not None:
@@ -771,6 +705,7 @@ class MeridionalProcess:
             field: field to plot
             save_filename: name to save
             unit_factor: it could be needed in a second time to conver different unit systems
+            quiver: if true superposes the veelocity vectors on the contours
         """
         fig, ax = plt.subplots(figsize=self.picture_size)
 
@@ -1005,6 +940,8 @@ class MeridionalProcess:
         else:
             raise Exception('Choose a valid contour plot data!')
         # cb = fig.colorbar(cs)
+        if quiver:
+            ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
         ax.set_xlabel(r'$z \ \mathrm{[mm]}$')
         ax.set_ylabel(r'$r \ \mathrm{[mm]}$')
         if save_filename is not None:
@@ -1016,6 +953,7 @@ class MeridionalProcess:
         Args:
             field: field to plot
             save_filename: name to save
+            quiver: if true superpose the velocity vectors on the contours
         """
         fig, ax = plt.subplots(figsize=self.picture_size)
 
@@ -1246,7 +1184,7 @@ class MeridionalProcess:
         elif field == 'F_n':
             if self.bfm == 'radial':
                 cs = ax.contourf(self.z_cg, self.r_cg, np.sqrt(self.F_nr ** 2 + self.F_ntheta ** 2 +
-                                                                   self.F_nz ** 2), N_levels, cmap=color_map)
+                                                               self.F_nz ** 2), N_levels, cmap=color_map)
                 ax.set_title(r'$\hat{F}_n$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
@@ -1364,11 +1302,8 @@ class MeridionalProcess:
 
         return self.mu
 
-
     # def build_useful_object(self):
     #     data_container = DataContainer(self.z_grid, self.r_grid, )
-
-
 
     def store_pickle(self, file_name=None, folder=None):
         """
@@ -1385,17 +1320,18 @@ class MeridionalProcess:
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
 
-
-    def compute_bfm_axial(self, mode='global'):
+    def compute_bfm_axial(self, mode='global', save_fig=False):
         """
-        compute the BFM fields, following Fang et. al. 2023
+        compute the BFM fields, following Fang et al. 2023
         """
         self.compute_Floss(mode=mode)
 
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$u_{m}$')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$u_{m}$')
+        if save_fig:
+            plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
@@ -1406,6 +1342,8 @@ class MeridionalProcess:
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l}$')
+        if save_fig:
+            plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         # plt.figure(figsize=self.picture_size)
         # plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
@@ -1429,10 +1367,12 @@ class MeridionalProcess:
         # plt.colorbar()
         # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{\theta}$')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{\theta}$')
+        if save_fig:
+            plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         self.compute_Fturn()
 
@@ -1455,21 +1395,25 @@ class MeridionalProcess:
         plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{t}$')
+        if save_fig:
+            plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        self.alpha = self.Floss / self.u_mag_rel**2
+        self.alpha = self.Floss / self.u_mag_rel ** 2
         self.beta = self.Fturn / self.u_meridional / self.ut_rel
 
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\alpha$')
+        if save_fig:
+            plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\beta$')
-
-
+        if save_fig:
+            plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
     def compute_Floss(self, mode):
 
@@ -1479,7 +1423,7 @@ class MeridionalProcess:
         if mode == 'global':
             # compute the modulus, and then the components, which are opposed to the relative flow velocity
             self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
-            self.Floss_r = -self.Floss*self.ur/self.u_mag_rel
+            self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
             self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
             self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
         # if mode == 'averaged':
@@ -1512,10 +1456,8 @@ class MeridionalProcess:
                     dir_vector = np.array((self.uz[istream, ispan],
                                            self.ur[istream, ispan]))
                     dir_vector /= np.linalg.norm(dir_vector)
-                    self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan]*dir_vector[0] + \
-                                                 self.ds_dr[istream, ispan]*dir_vector[1]
-
-
+                    self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan] * dir_vector[0] + \
+                                                self.ds_dr[istream, ispan] * dir_vector[1]
 
     def compute_Ftheta(self):
         """
@@ -1530,10 +1472,8 @@ class MeridionalProcess:
                 dir_vector /= np.linalg.norm(dir_vector)
                 dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
                                          self.dut_dr[istream, ispan] * dir_vector[1]
-        self.drut_dl = dr_dl*self.ut + self.r_cg*dut_dl
+        self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
-
-
 
     def compute_Fturn(self):
         """
@@ -1543,11 +1483,6 @@ class MeridionalProcess:
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
-
-
-
-
-
 
 # class DataContainer:
 #     """
@@ -1581,5 +1516,3 @@ class MeridionalProcess:
 #         self.dp_dz = dp_dz
 #         self.nstream = nstream
 #         self.nspan = nspan
-
-

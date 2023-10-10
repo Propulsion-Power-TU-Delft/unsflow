@@ -27,7 +27,7 @@ if not os.path.exists(folder_meta_data_default):
     os.makedirs(folder_meta_data_default)
 
 # default size of the figures
-fig_size = (10,6)
+fig_size = (8, 5)
 
 # Set grid opacity:
 grid_opacity = 0.3
