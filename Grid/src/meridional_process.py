@@ -1496,11 +1496,19 @@ class MeridionalProcess:
         of the machine
         """
         self.dA = np.zeros_like(self.z_cg)
+        self.dA_nz = np.zeros_like(self.z_cg)
+        self.dA_nr = np.zeros_like(self.z_cg)
         for istream in range(self.nstream):
             for ispan in range(self.nspan):
                 dz = self.z_grid[istream, ispan + 1] - self.z_grid[istream, ispan]
                 dr = self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]
+
+                # Area of the flux per unit length in circumferential direction
                 self.dA[istream, ispan] = np.sqrt(dz ** 2 + dr ** 2)
+
+                # normal of the flux area (-90 deg rotation of the edge, normalized)
+                self.dA_nz[istream, ispan] = dr/self.dA[istream, ispan]
+                self.dA_nr[istream, ispan] = -dz/self.dA[istream, ispan]
 
         self.rho_flux = self.compute_flux(self.rho)
         self.ur_flux = self.compute_flux(self.ur)
@@ -1516,9 +1524,12 @@ class MeridionalProcess:
         """
         fluxes = np.zeros(self.nstream)
         for istream in range(self.nstream):
-            fluxes[istream] = np.sum(self.rho[istream, :] * self.dA[istream, :] * field[istream, :]) / \
-                              np.sum(self.rho[istream, :] * self.dA[istream, :])
+            # projection of meridional velocity on the normal boundary of each cell
+            normal_velocity = self.uz[istream, :] * self.dA_nz[istream, :] + self.ur[istream, :] * self.dA_nr[istream, :]
 
+            # flux calculation as sum{rho*u*A*phi}/sum{rho*u*A}
+            fluxes[istream] = np.sum(self.rho[istream, :] * self.dA[istream, :] * field[istream, :] * normal_velocity) / \
+                              np.sum(self.rho[istream, :] * self.dA[istream, :] * normal_velocity)
         return fluxes
 
 
@@ -1532,8 +1543,8 @@ class MeridionalProcess:
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux, '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
         elif field == 'ur':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux, '--s')
-            ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux*self.u_ref, '--s')
+            ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
         elif field == 'ut':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.ut_flux, '--s')
             ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')

@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 100
-nspan = 100
+nstream = 75
+nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -62,6 +62,7 @@ data_process.compute_streamline_length()
 data_process.circumferential_average(mode='circular', fix_borders=False, gauss_filter=False)
 data_process.compute_regressed_fields()
 data_process.compute_derived_quantities()
+data_process.compute_averaged_fluxes()
 
 save_plots = True
 if save_plots:
@@ -89,15 +90,25 @@ if save_plots:
     data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='M', save_filename='M_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_interp' % (nstream, nspan))
-    data_process.contour_plot(field='T_tot', save_filename='T_tot_%2d_%2d' % (nstream, nspan))
+    # data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d_interp' % (nstream, nspan))
+    # data_process.contour_plot(field='T_tot', save_filename='T_tot_%2d_%2d' % (nstream, nspan))
     # data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
-    data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
+    # data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
-delattr(data_process, 'data')
-data_process.store_pickle(file_name='nasa_rotor_config_01_inlet_%d_%d' %(nstream, nspan))
+
+data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+
+delattr(data_process, 'data')  # before storing the pickle file deleted the CFD database from it
+data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
-delta_time = end_time-start_time
+delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))
-# plt.show()
+
+plt.show()

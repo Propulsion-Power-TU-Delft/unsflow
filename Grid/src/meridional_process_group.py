@@ -443,29 +443,36 @@ class MeridionalProcessGroup:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
 
-    def plot_averaged_fluxes(self, field, save_filename):
+    def plot_averaged_fluxes(self, field, save_filename=None):
+        old_value = 0
         fig, ax = plt.subplots(figsize=fig_size)
         for obj in self.group:
+
+            # calcualte the streamline length (x arrays) of that subcomponent
+            x = old_value + obj.stream_line_length[:, obj.nspan//2]
+            old_value = x[-1]
+
+            # plots
             if field == 'rho':
-                ax.plot(obj.rho_flux, '--s')
+                ax.plot(x, obj.rho_flux, '--s')
                 ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
             elif field == 'ur':
-                ax.plot(obj.ur_flux, '--s')
+                ax.plot(x, obj.ur_flux, '--s')
                 ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
             elif field == 'ut':
-                ax.plot(obj.ut_flux, '--s')
+                ax.plot(x, obj.ut_flux, '--s')
                 ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
             elif field == 'uz':
-                ax.plot(obj.uz_flux, '--s')
+                ax.plot(x, obj.uz_flux, '--s')
                 ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
             elif field == 'p':
-                ax.plot(obj.p_flux, '--s')
+                ax.plot(x, obj.p_flux, '--s')
                 ax.set_ylabel(r'$p \ \mathrm{[-]}$')
             elif field == 'T':
-                ax.plot(obj.T_flux, '--s')
+                ax.plot(x, obj.T_flux, '--s')
                 ax.set_ylabel(r'$T \ \mathrm{[-]}$')
             elif field == 's':
-                ax.plot(obj.s_flux, '--s')
+                ax.plot(x, obj.s_flux, '--s')
                 ax.set_ylabel(r'$s \ \mathrm{[-]}$')
             else:
                 raise ValueError("Field name unknown!")

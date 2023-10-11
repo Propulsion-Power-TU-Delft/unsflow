@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 30
-nspan = 15
+nstream = 20
+nspan = 10
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -69,6 +69,10 @@ data_process.circumferential_average(mode='cell centered', fix_borders=False, ga
 data_process.compute_regressed_fields(order=4)
 data_process.compute_derived_quantities()
 data_process.compute_bfm_axial(mode='global', save_fig=True)
+data_process.compute_averaged_fluxes()
+
+
+
 
 
 # final meridional plots
@@ -92,20 +96,13 @@ data_process.contour_plot(field='duz_dr', save_filename='duz_dr_%2d_%2d' % (nstr
 data_process.contour_plot(field='duz_dz', save_filename='duz_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='dp_dr', save_filename='dp_dr_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='dp_dz', save_filename='dp_dz_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
-
-delattr(data_process, 'data')
-data_process.store_pickle(file_name='iris_blade_%d_%d' %(nstream, nspan))
-end_time = time.time()
-delta_time = end_time - start_time
-print('Total time: %d sec' % (delta_time))
-
 
 jstream = nspan//2  # streamline to follow
 data_process.plot_stream_line(field='rho', n=jstream, save_filename='sline_%d_rho_%d_%d' %(jstream, nstream, nspan))
@@ -116,4 +113,18 @@ data_process.plot_stream_line(field='p', n=jstream, save_filename='sline_%d_p_%d
 data_process.plot_stream_line(field='T', n=jstream, save_filename='sline_%d_T_%d_%d' %(jstream, nstream, nspan))
 data_process.plot_stream_line(field='s', n=jstream, save_filename='sline_%d_s_%d_%d' %(jstream, nstream, nspan))
 
+data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+
+
+delattr(data_process, 'data')
+data_process.store_pickle(file_name='iris_blade_%d_%d' %(nstream, nspan))
+end_time = time.time()
+delta_time = end_time - start_time
+print('Total time: %d sec' % (delta_time))
 # plt.show()

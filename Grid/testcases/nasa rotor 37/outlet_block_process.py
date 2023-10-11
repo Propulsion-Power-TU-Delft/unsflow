@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 40
-nspan = 20
+nstream = 45
+nspan = 30
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -111,4 +111,4 @@ data_process.store_pickle(file_name='nasa_rotor_config_01_outlet_%d_%d' %(nstrea
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()
