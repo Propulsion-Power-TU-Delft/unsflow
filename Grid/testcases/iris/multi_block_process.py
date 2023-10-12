@@ -12,9 +12,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-grid_inlet = '10_10'
-grid_blade = '20_10'
-grid_outlet = '10_10'
+grid_inlet = '20_20'
+grid_blade = '40_20'
+grid_outlet = '20_20'
 
 inlet_file_path = 'data/meta/iris_inlet_' + grid_inlet + '.pickle'
 blade_file_path = 'data/meta/iris_blade_' + grid_blade + '.pickle'
@@ -48,7 +48,8 @@ obj.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%s_%s_%s' %(grid_inl
 obj.plot_averaged_fluxes(field='p', save_filename='flux_p_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.plot_averaged_fluxes(field='T', save_filename='flux_T_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.plot_averaged_fluxes(field='s', save_filename='flux_s_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
-
+obj.compute_performance()
+obj.print_performance()
 
 obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 # plt.show()

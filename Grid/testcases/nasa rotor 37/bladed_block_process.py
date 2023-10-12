@@ -17,8 +17,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 30
-nspan = 30
+nstream = 20
+nspan = 20
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=0.01, x_ref=0.252)
@@ -92,23 +92,13 @@ data_process.contour_plot(field='duz_dr', save_filename='duz_dr_%2d_%2d' % (nstr
 data_process.contour_plot(field='duz_dz', save_filename='duz_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='dp_dr', save_filename='dp_dr_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='dp_dz', save_filename='dp_dz_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
-
-
-jstream = 0  # streamline to follow
-data_process.plot_stream_line(field='rho', n=jstream, save_filename='sline_%d_rho_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='ur', n=jstream, save_filename='sline_%d_ur_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='ut', n=jstream, save_filename='sline_%d_ut_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='uz', n=jstream, save_filename='sline_%d_uz_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='p', n=jstream, save_filename='sline_%d_p_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='T', n=jstream, save_filename='sline_%d_T_%d_%d' %(jstream, nstream, nspan))
-data_process.plot_stream_line(field='s', n=jstream, save_filename='sline_%d_s_%d_%d' %(jstream, nstream, nspan))
 
 
 data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
@@ -118,6 +108,10 @@ data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(ns
 data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
 data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
 data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+
+
 
 delattr(data_process, 'data')  # before storing the pickle file deleted the CFD database from it
 data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))

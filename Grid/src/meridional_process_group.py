@@ -474,6 +474,12 @@ class MeridionalProcessGroup:
             elif field == 's':
                 ax.plot(x, obj.s_flux, '--s')
                 ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+            elif field == 'p_tot':
+                ax.plot(x, obj.p_tot_flux, '--s')
+                ax.set_ylabel(r'$p_t \ \mathrm{[-]}$')
+            elif field == 'T_tot':
+                ax.plot(x, obj.T_tot_flux, '--s')
+                ax.set_ylabel(r'$T_t \ \mathrm{[-]}$')
             else:
                 raise ValueError("Field name unknown!")
 
@@ -481,4 +487,40 @@ class MeridionalProcessGroup:
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
                 fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+
+    def compute_performance(self):
+        """
+        compute pressure ratio and efficiency given the averaged fluxes of total quantities
+        """
+        GMMA = 1.4
+
+        T1 = self.group[0].T_flux[0]
+        Tt1 = self.group[0].T_tot_flux[0]
+        T2 = self.group[-1].T_flux[-1]
+        Tt2 = self.group[-1].T_tot_flux[-1]
+
+        P1 = self.group[0].p_flux[0]
+        Pt1 = self.group[0].p_tot_flux[0]
+        P2 = self.group[-1].p_flux[-1]
+        Pt2 = self.group[-1].p_tot_flux[-1]
+
+        self.beta_ss = P2/P1
+        self.beta_ts = P2/Pt1
+        self.beta_tt = Pt2/Pt1
+
+        self.eta_ts = ((P2 / Pt1)**((GMMA-1)/GMMA) -1) / (Tt2/Tt1 - 1)
+        self.eta_tt = ((Pt2 / Pt1)**((GMMA-1)/GMMA) -1) / (Tt2/Tt1 - 1)
+
+
+    def print_performance(self):
+        """
+        print on terminal the performance of the machine. only total to total
+        """
+        print("---------PERFORMANCE---------")
+        print("Beta_ts: %.2f" % (self.beta_ts))
+        print("Beta_tt: %.2f" %(self.beta_tt))
+        # print("Eta_ts: %.2f" % (self.eta_ts))
+        # print("Eta_tt: %.2f" % (self.eta_tt))
+        print("-----------------------------")
 

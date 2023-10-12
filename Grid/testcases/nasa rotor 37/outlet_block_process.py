@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 45
-nspan = 30
+nstream = 30
+nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -45,7 +45,7 @@ block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
 block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
                           orthogonality=False, x_stretching=False, y_stretching=False,
-                          sigmoid_coeff_x=8, sigmoid_coeff_y=8)
+                          sigmoid_coeff_x=5, sigmoid_coeff_y=7, method='minimize')
 block.compute_grid_centers()
 block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
@@ -59,11 +59,14 @@ data.process_from_ansys_csv()
 # instantiate meridional process object and avg
 data_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
 data_process.compute_streamline_length()
-data_process.circumferential_average(mode='circular', fix_borders=False, gauss_filter=False)
+data_process.circumferential_average(mode='cell centered', fix_borders=False, gauss_filter=False)
 data_process.compute_regressed_fields()
+data_process.compute_derived_quantities()
+data_process.compute_averaged_fluxes()
 
 
-save_plots = True
+
+save_plots = False
 if save_plots:
     data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d_interp' % (nstream, nspan))
     data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d_interp' % (nstream, nspan))
@@ -104,6 +107,9 @@ data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(ns
 data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
 data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
 data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+
 
 
 delattr(data_process, 'data')
@@ -111,4 +117,4 @@ data_process.store_pickle(file_name='nasa_rotor_config_01_outlet_%d_%d' %(nstrea
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-# plt.show()
+plt.show()

@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 20
-nspan = 10
+nstream = 40
+nspan = 20
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -43,7 +43,7 @@ bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
 bladed_block.compute_grid_points(sampling_mode=grid_sampling, grid_mode='spanwise', curved_border='both', smoothing='elliptic',
                                  orthogonality=False, x_stretching=False, y_stretching=False,
-                                 sigmoid_coeff_x=9, sigmoid_coeff_y=6, method='minimize')
+                                 sigmoid_coeff_x=8, sigmoid_coeff_y=5, method='minimize')
 bladed_block.compute_grid_centers()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
 
@@ -67,9 +67,10 @@ data_process.compute_camber_angles()
 data_process.compute_streamline_length()
 data_process.circumferential_average(mode='cell centered', fix_borders=False, gauss_filter=False)
 data_process.compute_regressed_fields(order=4)
-data_process.compute_derived_quantities()
 data_process.compute_bfm_axial(mode='global', save_fig=True)
 data_process.compute_averaged_fluxes()
+data_process.compute_derived_quantities()
+
 
 
 

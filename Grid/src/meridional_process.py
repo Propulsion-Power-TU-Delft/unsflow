@@ -66,7 +66,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True, threshold=20):
+    def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True, threshold=10):
         """
         perform circumferential averages
         Args:
@@ -1517,6 +1517,8 @@ class MeridionalProcess:
         self.p_flux = self.compute_flux(self.p)
         self.s_flux = self.compute_flux(self.s)
         self.T_flux = self.compute_flux(self.T)
+        self.p_tot_flux = self.compute_flux(self.p_tot)
+        self.T_tot_flux = self.compute_flux(self.T_tot)
 
     def compute_flux(self, field):
         """
@@ -1560,6 +1562,12 @@ class MeridionalProcess:
         elif field == 's':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.s_flux, '--s')
             ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        elif field == 'p_tot':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_tot_flux, '--s')
+            ax.set_ylabel(r'$p_{t} \ \mathrm{[-]}$')
+        elif field == 'T_tot':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_tot_flux, '--s')
+            ax.set_ylabel(r'$T_{t} \ \mathrm{[-]}$')
         else:
             raise ValueError("Field name unknown!")
 
