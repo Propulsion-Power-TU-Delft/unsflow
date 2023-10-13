@@ -37,6 +37,8 @@ class MeridionalProcessGroup:
         """
         self.z_cg = self.group[0].z_cg
         self.r_cg = self.group[0].r_cg
+        self.z_grid = self.group[0].z_grid
+        self.r_grid = self.group[0].r_grid
         self.rho = self.group[0].rho
         self.ur = self.group[0].ur
         self.ut = self.group[0].ut
@@ -49,6 +51,8 @@ class MeridionalProcessGroup:
         for obj in self.group[1:]:
             self.z_cg = np.concatenate((self.z_cg, obj.z_cg), axis=0)
             self.r_cg = np.concatenate((self.r_cg, obj.r_cg), axis=0)
+            self.z_grid = np.concatenate((self.z_grid, obj.z_grid), axis=0)
+            self.r_grid = np.concatenate((self.r_grid, obj.r_grid), axis=0)
             self.rho = np.concatenate((self.rho, obj.rho), axis=0)
             self.ur = np.concatenate((self.ur, obj.ur), axis=0)
             self.ut = np.concatenate((self.ut, obj.ut), axis=0)
@@ -259,10 +263,19 @@ class MeridionalProcessGroup:
         self.nspan = np.shape(self.z_cg)[1]
 
         plt.figure(figsize=self.picture_size)
-        for istream in range(0, self.nstream):
-            plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], lw=light_line_width, c='black')
-        for ispan in range(0, self.nspan):
-            plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], lw=light_line_width, c='black')
+
+        # external grid
+        for istream in range(0, self.nstream+1):
+            plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
+        for ispan in range(0, self.nspan+1):
+            plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
+
+        # grid centers
+        # for istream in range(0, self.nstream):
+        #     plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], 'r.')
+        # for ispan in range(0, self.nspan):
+        #     plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], 'r.')
+
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))

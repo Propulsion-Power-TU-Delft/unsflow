@@ -12,7 +12,6 @@ from scipy.optimize import fsolve
 from scipy.optimize import minimize
 
 
-
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
@@ -141,7 +140,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
                              pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=25, guardian=False,
-                             method='fzero'):
+                             method='minimize', fix_inlet=False, fix_outlet=False):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way. Think about meridional sector, inlet=left border, hub=bottom border,
@@ -300,7 +299,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         d[i, j] += -f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (X[i, jp] - X[i, jm]) / 2 / deta
         e[i, j] += -f2_second[i, j] / f2_prime[i, j] * g11[i, j] * (Y[i, jp] - Y[i, jm]) / 2 / deta
 
-
         # solve the thomas algorithm, running sweeps along i for every j
         P = np.zeros(nx)
         Q = np.zeros(nx)
@@ -309,7 +307,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             d[1, jj] += a[1, jj] * X[0, jj]
             d[-1, jj] += c[-1, jj] * X[-1, jj]
 
-            #compute P and Q for every point, using the recursion from 1, for the x problem
+            # compute P and Q for every point, using the recursion from 1, for the x problem
             P[1] = c[1, jj] / (b[1, jj])
             Q[1] = d[1, jj] / (b[1, jj])
             for ii in range(2, nx - 1):
@@ -349,9 +347,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[istream, 1]
                 yb_prime = y_prime[istream]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                if method=='fzero':
+                if method == 'fzero':
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
-                elif method=='minimize':
+                elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
@@ -369,9 +367,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 yp_new = Y[istream, -2]
                 yb_prime = y_prime[istream]
                 sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                if method=='fzero':
+                if method == 'fzero':
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
-                elif method=='minimize':
+                elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
@@ -379,44 +377,46 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 Y[istream, -1] = yb_new
 
             # LEFT EDGE
-            x = c_left[0, :]
-            y = c_left[1, :]
-            y_prime = np.gradient(y, x)
-            for ispan in range(1, ny - 1):
-                xb_old = X_old[0, ispan]
-                xp_new = X[1, ispan]
-                yb_old = Y_old[0, ispan]
-                yp_new = Y[1, ispan]
-                yb_prime = y_prime[ispan]
-                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                if method=='fzero':
-                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
-                elif method=='minimize':
-                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                else:
-                    raise ValueError('Select a valid method for borders adjustment!')
-                X[0, ispan] = xb_new
-                Y[0, ispan] = yb_new
+            if fix_inlet == False:
+                x = c_left[0, :]
+                y = c_left[1, :]
+                y_prime = np.gradient(y, x)
+                for ispan in range(1, ny - 1):
+                    xb_old = X_old[0, ispan]
+                    xp_new = X[1, ispan]
+                    yb_old = Y_old[0, ispan]
+                    yp_new = Y[1, ispan]
+                    yb_prime = y_prime[ispan]
+                    sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                    if method == 'fzero':
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                    elif method == 'minimize':
+                        xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                    else:
+                        raise ValueError('Select a valid method for borders adjustment!')
+                    X[0, ispan] = xb_new
+                    Y[0, ispan] = yb_new
 
             # RIGHT EDGE
-            x = c_right[0, :]
-            y = c_right[1, :]
-            y_prime = np.gradient(y, x)
-            for ispan in range(1, ny - 1):
-                xb_old = X_old[-1, ispan]
-                xp_new = X[-2, ispan]
-                yb_old = Y_old[-1, ispan]
-                yp_new = Y[-2, ispan]
-                yb_prime = y_prime[ispan]
-                sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
-                if method=='fzero':
-                    xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
-                elif method=='minimize':
-                    xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                else:
-                    raise ValueError('Select a valid method for borders adjustment!')
-                X[-1, ispan] = xb_new
-                Y[-1, ispan] = yb_new
+            if fix_outlet == False:
+                x = c_right[0, :]
+                y = c_right[1, :]
+                y_prime = np.gradient(y, x)
+                for ispan in range(1, ny - 1):
+                    xb_old = X_old[-1, ispan]
+                    xp_new = X[-2, ispan]
+                    yb_old = Y_old[-1, ispan]
+                    yp_new = Y[-2, ispan]
+                    yb_prime = y_prime[ispan]
+                    sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
+                    if method == 'fzero':
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                    elif method == 'minimize':
+                        xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                    else:
+                        raise ValueError('Select a valid method for borders adjustment!')
+                    X[-1, ispan] = xb_new
+                    Y[-1, ispan] = yb_new
 
         # compute differences from last iteration
         err_x = np.linalg.norm(X_old - X)
@@ -463,9 +463,9 @@ def scaled_sigmoid_right(x, alpha):
 
     # now overwrite the first half with a straight line function
     N = len(x)
-    f[0:N//2] = x[0:N//2]
-    f_prime[0:N//2] = np.zeros(N//2)+1
-    f_second[0:N//2] = np.zeros(N//2)
+    f[0:N // 2] = x[0:N // 2]
+    f_prime[0:N // 2] = np.zeros(N // 2) + 1
+    f_second[0:N // 2] = np.zeros(N // 2)
     return f, f_prime, f_second
 
 
@@ -478,9 +478,9 @@ def scaled_sigmoid_left(x, alpha):
 
     # now overwrite the first half with a straight line function
     N = len(x)
-    f[N//2:] = x[N//2:]
-    f_prime[N//2:] = np.zeros_like(f_prime[N//2:])+1
-    f_second[N//2:] =np.zeros_like(f_second[N//2:])
+    f[N // 2:] = x[N // 2:]
+    f_prime[N // 2:] = np.zeros_like(f_prime[N // 2:]) + 1
+    f_second[N // 2:] = np.zeros_like(f_second[N // 2:])
     return f, f_prime, f_second
 
 
@@ -525,7 +525,6 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
     return sol
 
 
-
 def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True):
     """
     depending on which (xb_new, yb_new) of is different from none, find the other one constraining it on the original border.
@@ -533,8 +532,8 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
     """
     Deltax = np.max(x) - np.min(x)
     Deltay = np.max(y) - np.min(y)
-    tol_x = Deltax/5
-    tol_y = Deltay/5
+    tol_x = Deltax / 5
+    tol_y = Deltay / 5
     u = np.linspace(0, 1, len(x))  # curve parameterization
     degree = 10
 
@@ -556,7 +555,7 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
         u_root = fsolve(zero_x_fy, x0=xb_new)
         yb_new = interp_y(u_root)
         if guardian:
-            if (np.abs(yb_new-yb_old)>tol_y or u_root>1 or u_root<0):
+            if (np.abs(yb_new - yb_old) > tol_y or u_root > 1 or u_root < 0):
                 print("im not finding the right point")
                 xb_new = xb_old
                 yb_new = yb_old
@@ -564,7 +563,7 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
         u_root = fsolve(zero_y_fx, x0=yb_new)
         xb_new = interp_x(u_root)
         if guardian:
-            if (np.abs(xb_new-xb_old)>tol_x or u_root>1 or u_root<0):
+            if (np.abs(xb_new - xb_old) > tol_x or u_root > 1 or u_root < 0):
                 print("im not finding the right point")
                 xb_new = xb_old
                 yb_new = yb_old
@@ -610,7 +609,7 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
 def compute_picture_size(x, y):
     W = np.max(x) - np.min(x)
     H = np.max(y) - np.min(y)
-    WH_ratio = W/H
+    WH_ratio = W / H
     if WH_ratio >= 1:
         pic_size = (8, 8 / WH_ratio)
     else:

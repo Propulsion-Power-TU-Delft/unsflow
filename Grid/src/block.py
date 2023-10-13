@@ -11,7 +11,6 @@ from .functions import cluster_sample_u, elliptic_grid_generation, compute_pictu
 from .curve import Curve
 
 
-
 class Block:
     """
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
@@ -52,7 +51,6 @@ class Block:
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, nstream=self.nstream,
                                  mode='cordinates', x_ref=1, rescale_factor=1)
 
-
     def spline_of_leading_trailing_edge(self):
         """
         make splines of the inlet and outlet border of the domain of interest
@@ -87,7 +85,6 @@ class Block:
 
         self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
-
 
     def spline_of_inlet_outlet_full_block(self):
         """
@@ -157,13 +154,15 @@ class Block:
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, sampling_mode, grid_mode, curved_border, smoothing, orthogonality, x_stretching,
-                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='fzero'):
+    def compute_grid_points(self, grid_mode, orthogonality, x_stretching,
+                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='fzero',
+                            sampling_mode='default', curved_border='both', inlet_meridional_obj=None, outlet_meridional_obj=None):
         """
         compute the internal grid points with a certain algorithm, specified by grid_mode:
             spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
             streamwise: means connecting inlet and outlet edge splines with straight lines sampled with a certain alg.
         If smoothing = 'elliptic' it provides an elliptic smoothing of the grid. To be implemented yet
+        inlet and outlet meridional objects contain the cordinates of grid points that should be kept constant
         """
 
         if sampling_mode == 'default':
@@ -172,6 +171,9 @@ class Block:
         elif sampling_mode == 'clustering':
             self.u_span = cluster_sample_u(self.nspan)  # this can also be obtained with sigmoid
             self.u_stream = cluster_sample_u(self.nstream)  # this can also be obtained with sigmoid
+        else:
+            raise ValueError("sampling_mode parameter not recognized!")
+
         self.r_grid_points = np.zeros((self.nstream, self.nspan))
         self.z_grid_points = np.zeros((self.nstream, self.nspan))
 
@@ -197,6 +199,8 @@ class Block:
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[0, :] = self.leading_edge.z_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
+            else:
+                raise ValueError('curved_border parameter not recognized')
 
         elif grid_mode == 'streamwise':
             # algorithm for internal points, connecting points on the inlet and trailing edges along the stream direction
@@ -220,23 +224,37 @@ class Block:
                 self.r_grid_points[-1, :] = self.trailing_edge.r_sample
                 self.z_grid_points[0, :] = self.leading_edge.z_sample
                 self.z_grid_points[-1, :] = self.trailing_edge.z_sample
+            else:
+                raise ValueError('curved_border parameter not recognized')
 
-        if smoothing == 'elliptic':
-            print('Elliptic smoothing not tested yet...')
-            inlet = np.vstack((self.leading_edge.z_sample, self.leading_edge.r_sample))
-            outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
+        elif grid_mode == 'elliptic':
+
+            # handle the case in which some grid cordinates must be copied from adjacent blocks
+            if inlet_meridional_obj is not None:
+                inlet = np.vstack((inlet_meridional_obj.z_grid[-1, :], inlet_meridional_obj.r_grid[-1, :]))
+                fix_inlet = True
+            else:
+                inlet = np.vstack((self.leading_edge.z_sample, self.leading_edge.r_sample))
+                fix_inlet = False
+            if outlet_meridional_obj is not None:
+                outlet = np.vstack((outlet_meridional_obj.z_grid[0, :], outlet_meridional_obj.r_grid[0, :]))
+                fix_outlet = True
+            else:
+                outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
+                fix_outlet = False
+
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
-            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud, orthogonality,
+            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
+                                                                              orthogonality,
                                                                               x_stretching=x_stretching,
                                                                               y_stretching=y_stretching,
-                                                                              X0=self.z_grid_points, Y0=self.r_grid_points,
-                                                                              tol=1e-3, sigmoid_coeff_x=sigmoid_coeff_x,
-                                                                              sigmoid_coeff_y=sigmoid_coeff_y, pol_order=2,
-                                                                              method = method)
+                                                                              sigmoid_coeff_x=sigmoid_coeff_x,
+                                                                              sigmoid_coeff_y=sigmoid_coeff_y,
+                                                                              method=method,
+                                                                              fix_inlet = fix_inlet, fix_outlet = fix_outlet)
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
-
 
     def compute_grid_centers(self):
         """
@@ -246,17 +264,16 @@ class Block:
         self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
 
         # slices of original arrays
-        i = slice(0, self.nstream-1)
+        i = slice(0, self.nstream - 1)
         ip = slice(1, self.nstream)
         j = slice(0, self.nspan - 1)
         jp = slice(1, self.nspan)
 
         self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j]
-                         + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) /4
+                          + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) / 4
 
         self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j]
-                         + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) /4
-
+                          + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) / 4
 
     def add_inlet_outlet_curves(self, inlet, outlet):
         """
@@ -275,7 +292,7 @@ class Block:
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
-    def find_intersections(self, tol=1e-4, visual_check=False):
+    def find_intersections(self, tol=1e-3, visual_check=False):
         """
         having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         """
@@ -411,7 +428,7 @@ class Block:
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers = True):
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True):
         """
         plot everything of the grid
         """
@@ -494,8 +511,6 @@ class Block:
         border_r = [item for sublist in border_r for item in sublist]
 
         self.border = np.stack((border_z, border_r), axis=1)
-
-
 
     def show_outline_grid(self):
         """

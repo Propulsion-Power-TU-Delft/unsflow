@@ -66,7 +66,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=True, bfm=None, gauss_filter=True, threshold=10):
+    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=10):
         """
         perform circumferential averages
         Args:
