@@ -52,7 +52,7 @@ block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), pri
 
 # instantiate cfd data object and perform processing removing the outliers
 file_name = 'data/meta/config_01.csv'
-data = Grid.src.CfdData(file_name, rpm_drag=0, blade=blade, cut_block=block, verbose=True, normalize=True,
+data = Grid.src.CfdData(file_name, rpm_drag=-17189, blade=blade, cut_block=block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
 data.process_from_ansys_csv()
 

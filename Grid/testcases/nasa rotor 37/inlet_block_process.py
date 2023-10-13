@@ -52,7 +52,7 @@ block.plot_full_grid(save_filename='inlet_grid_%2d_%2d' % (nstream, nspan), prim
 
 # instantiate cfd data object and perform processing removing the outliers
 file_name = 'data/meta/config_01.csv'
-data = Grid.src.CfdData(file_name, rpm_drag=0, blade=blade, cut_block=block, verbose=True, normalize=True,
+data = Grid.src.CfdData(file_name, rpm_drag=-17189, blade=blade, cut_block=block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
 data.process_from_ansys_csv()
 
@@ -97,15 +97,22 @@ if save_plots:
     data_process.quiver_plot(field='p', save_filename='quiver_p_%2d_%2d' % (nstream, nspan))
     # data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
-data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+
+data_process.plot_stream_line(field='M_rel', n=17)
+
+# data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='M', save_filename='flux_M_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_%d_%d' %(nstream, nspan))
+
+
 
 
 delattr(data_process, 'data')

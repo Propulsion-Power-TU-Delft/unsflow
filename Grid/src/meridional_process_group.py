@@ -480,6 +480,12 @@ class MeridionalProcessGroup:
             elif field == 'T_tot':
                 ax.plot(x, obj.T_tot_flux, '--s')
                 ax.set_ylabel(r'$T_t \ \mathrm{[-]}$')
+            elif field == 'M':
+                ax.plot(x, obj.M_flux, '--s')
+                ax.set_ylabel(r'$M \ \mathrm{[-]}$')
+            elif field == 'M_rel':
+                ax.plot(x, obj.M_rel_flux, '--s')
+                ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
             else:
                 raise ValueError("Field name unknown!")
 

@@ -207,6 +207,7 @@ class MeridionalProcess:
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
         self.M = self.u_mag / sqrt(self.gmma * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.gmma * self.p / self.rho)
         self.compute_stagnation_quantities()
 
     def instantiate_2d_fields(self):
@@ -638,6 +639,12 @@ class MeridionalProcess:
         elif field == 's':
             ax.plot(self.stream_line_length[:, n] / sl_max, self.s[:, n], '--s')
             ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        elif field == 'M':
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.M[:, n], '--s')
+            ax.set_ylabel(r'$M \ \mathrm{[-]}$')
+        elif field == 'M_rel':
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.M_rel[:, n], '--s')
+            ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
         else:
             raise ValueError("Field name unknown!")
 
@@ -1515,6 +1522,8 @@ class MeridionalProcess:
         self.ut_flux = self.compute_flux(self.ut)
         self.uz_flux = self.compute_flux(self.uz)
         self.p_flux = self.compute_flux(self.p)
+        self.M_flux = self.compute_flux(self.M)
+        self.M_rel_flux = self.compute_flux(self.M_rel)
         self.s_flux = self.compute_flux(self.s)
         self.T_flux = self.compute_flux(self.T)
         self.p_tot_flux = self.compute_flux(self.p_tot)
@@ -1553,6 +1562,12 @@ class MeridionalProcess:
         elif field == 'uz':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.uz_flux, '--s')
             ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+        elif field == 'M':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.M_flux, '--s')
+            ax.set_ylabel(r'$M \ \mathrm{[-]}$')
+        elif field == 'M_rel':
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.M_rel_flux, '--s')
+            ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
         elif field == 'p':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_flux, '--s')
             ax.set_ylabel(r'$p \ \mathrm{[-]}$')
