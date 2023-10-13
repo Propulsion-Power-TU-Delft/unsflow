@@ -1380,12 +1380,12 @@ class MeridionalProcess:
         # plt.colorbar()
         # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         #
-        plt.figure(figsize=self.picture_size)
-        plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{\theta}$')
-        if save_fig:
-            plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        # plt.figure(figsize=self.picture_size)
+        # plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{\theta}$')
+        # if save_fig:
+        #     plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         self.compute_Fturn()
 

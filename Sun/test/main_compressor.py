@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # import the data from the pickle meridional object
-filename = '../../Grid/testcases/nasa rotor 37/data/meta/nasa_rotor_config_01_blade_10_10.pickle'
+filename = '../../Grid/testcases/nasa rotor 37/data/meta/inlet_10_blade_10_outlet_10.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 
@@ -48,13 +48,13 @@ sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_S_global_matrix()
 sun_obj.build_Z_global_matrix()
-sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
+sun_obj.impose_boundary_conditions('zero perturbation', 'zero pressure')
 
 
 # #settings for the research of poles
-RS = [-2, 2]
-DF = [-4, 4]
-grid=[50, 100]
+RS = [-1, 1]
+DF = [-5, 5]
+grid=[25, 25]
 sun_obj.ComputeSVDcompressor(RS_domain=RS, DF_domain=DF, grid=grid)
 sun_obj.PlotInverseConditionNumberCompressor(save_filename='chi_map_nasar37')
 plt.show()

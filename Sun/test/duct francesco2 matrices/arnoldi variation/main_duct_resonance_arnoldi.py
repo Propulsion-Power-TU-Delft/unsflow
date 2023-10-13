@@ -117,8 +117,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 15
-Nr = 15
+Nz = 30
+Nr = 10
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -145,7 +145,7 @@ sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
-gradient_order = 2
+gradient_order = 6
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
 sun_obj.AddAMatrixToNodesFrancesco2()
 sun_obj.AddBMatrixToNodesFrancesco2()
@@ -159,18 +159,18 @@ sun_obj.build_A_global_matrix()
 sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_Z_global_matrix()
-sun_obj.impose_boundary_conditions('zero perturbation', 'zero perturbation')
+sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-
-sigma = 15000/omega_ref
-
-# put in standard form A x = lambda x
+omega_search = 22.5e3
+sigma = omega_search/omega_ref
 A = sun_obj.Z_g
 M = sun_obj.A_g
-A = np.dot(np.linalg.inv(M), A)
-eigenvalues, eigenvectors = eigs(A, sigma=sigma, k=20)
-# eigenvalues, eigenvectors = scipy.linalg.eig(sun_obj.Z_g, b=sun_obj.A_g)
+C = np.linalg.inv(A - sigma*M)
+C = np.dot(C, M)
+number_search = 10
+eigenvalues, eigenvectors = eigs(C, k=number_search)
+eigenvalues = sigma + 1/eigenvalues
 eigenvalues *= omega_ref
 
 marker_size=100
@@ -182,10 +182,9 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 
 # ax.scatter(sigma.real*omega_ref, sigma.imag*omega_ref, marker='s', facecolors='red',
 #            edgecolors='red', label=r'$\sigma$ initial 'r'guess', s=marker_size)
-ax.set_xlabel(r'$\lambda_{R}$')
-ax.set_ylabel(r'$\lambda_{I}$')
+ax.set_xlabel(r'$\lambda_{R}$ [rad/s]')
+ax.set_ylabel(r'$\lambda_{I}$ [rad/s]')
 ax.legend()
 ax.set_xlim([7500, 35000])
 ax.set_ylim([-8000, 8000])
-# fig.savefig('eigenvalues_%d_%d.pdf' %(dim, k), bbox_inches='tight')
 plt.show()

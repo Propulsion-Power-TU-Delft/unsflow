@@ -26,9 +26,9 @@ class SunGrid():
             mode: if physical it stores physical cordinates, if spectral it stores spectral cordinates
         """
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
-        self.n_stream = meridional_obj.nAxialNodes
+        self.n_stream = meridional_obj.nstream
         self.nAxialNodes = self.n_stream
-        self.n_span = meridional_obj.nRadialNodes
+        self.n_span = meridional_obj.nspan
         self.nRadialNodes = self.n_span
         self.nPoints = self.n_stream * self.n_span
         if mode == 'physical':
