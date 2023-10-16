@@ -174,17 +174,16 @@ eigenvalues = sigma + 1/eigenvalues
 eigenvalues *= omega_ref
 
 marker_size=100
-fig, ax = plt.subplots(figsize=(10, 7))
-ax.scatter(omega_analytical.real, omega_analytical.imag, marker='x', facecolors='black',
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.scatter(omega_analytical.real, omega_analytical.imag, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
-ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='black',
+ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
-
-# ax.scatter(sigma.real*omega_ref, sigma.imag*omega_ref, marker='s', facecolors='red',
-#            edgecolors='red', label=r'$\sigma$ initial 'r'guess', s=marker_size)
-ax.set_xlabel(r'$\lambda_{R}$ [rad/s]')
-ax.set_ylabel(r'$\lambda_{I}$ [rad/s]')
+ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
+ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
 ax.set_xlim([7500, 35000])
 ax.set_ylim([-8000, 8000])
+ax.grid(alpha=0.3)
+fig.savefig('pictures/chi_map_arnoldi_%i_%i' %(Nz, Nr), bbox_inches='tight')
 plt.show()

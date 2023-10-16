@@ -253,6 +253,9 @@ class Block:
                                                                               sigmoid_coeff_y=sigmoid_coeff_y,
                                                                               method=method,
                                                                               fix_inlet = fix_inlet, fix_outlet = fix_outlet)
+        else:
+            raise ValueError('Grid method not recognized!')
+
         self.z_grid_points /= self.x_ref
         self.r_grid_points /= self.x_ref
 

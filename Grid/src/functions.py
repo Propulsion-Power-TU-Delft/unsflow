@@ -139,7 +139,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
-                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=25, guardian=False,
+                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
                              method='minimize', fix_inlet=False, fix_outlet=False):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders

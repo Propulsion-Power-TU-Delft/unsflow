@@ -20,7 +20,7 @@ r2 = 0.2487  # outer radius [m]
 M = 0.015  # Mach number
 p = 100e3  # pressure [Pa]
 T = 288  # temperature [K]
-L = 0.08  # length [m]
+L = 0.8  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p / (R * T)  # density [kg/m3]
@@ -28,9 +28,13 @@ a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
 
 # non-dimensionalization terms:
 x_ref = r1
+# x_ref =1
 u_ref = M * a
+# u_ref = 1
 rho_ref = rho
+# rho_ref = 1
 t_ref = x_ref / u_ref
+# t_ref = 1
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
@@ -113,7 +117,7 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 30
+Nz = 50
 Nr = 10
 
 # implement a constant uniform flow in the annulus duct
@@ -136,7 +140,8 @@ duct_grid.ShowGrid()
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref, 0)
+sun_obj.add_shaft_rpm(omega_ref)
+sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
@@ -157,28 +162,28 @@ sun_obj.build_Z_global_matrix()
 sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
+omega_search = 4500
+sigma = omega_search/omega_ref
+A = sun_obj.Z_g
+M = sun_obj.A_g
+C = np.linalg.inv(A - sigma*M)
+C = np.dot(C, M)
+number_search = 10
+eigenvalues, eigenvectors = eigs(C, k=number_search)
+eigenvalues = sigma + 1/eigenvalues
+eigenvalues *= omega_ref
 
-eigenvalues, eigenvectors = scipy.linalg.eig(sun_obj.Z_g, sun_obj.A_g)
-eigenvalues = eigenvalues * omega_ref
-
-
-
-omega_lim = [7500, 35000]
 marker_size=100
-fig, ax = plt.subplots(figsize=(10, 7))
-ax.scatter(omega_analytical.real, omega_analytical.imag, marker='o', facecolors='black',
+fig, ax = plt.subplots(figsize=(7, 5))
+ax.scatter(omega_analytical.real, omega_analytical.imag, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
-ax.scatter(eigenvalues.real, eigenvalues.imag, marker='x', facecolors='red', edgecolors='red',
+ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
-num = 100
-ax.plot(np.linspace(omega_lim[0], omega_lim[1], num), np.zeros((num)), '--k', lw=0.5)
-# ax.scatter(sigma.real*omega_ref, sigma.imag*omega_ref, marker='s', facecolors='red',
-#            edgecolors='red', label=r'$\sigma$ initial 'r'guess', s=marker_size)
-ax.set_xlabel(r'$\omega_{R} \ \mathrm{[rad/s]}$')
-ax.set_ylabel(r'$\omega_{I} \ \mathrm{[rad/s]}$')
+ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
+ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([omega_lim[0], omega_lim[1]])
-ax.set_ylim([-8000, 8000])
-ax.grid(alpha=0.2)
-fig.savefig('pictures/eigenvalues_qz_%d_%d.pdf' %(Nz, Nr), bbox_inches='tight')
-plt.show()
+ax.set_xlim([1000, 8500])
+ax.set_ylim([-1000, 1000])
+ax.grid(alpha=0.3)
+fig.savefig('pictures/chi_map_arnoldi_long_%i_%i' %(Nz, Nr), bbox_inches='tight')
+
