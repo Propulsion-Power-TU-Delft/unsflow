@@ -40,8 +40,8 @@ sigmoid_coeff_span = 8
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 print("\nINLET BLOCK PROCESSING...")
-nstream = 10
-nspan = 10
+nstream = 20
+nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -92,8 +92,8 @@ delattr(inlet_process, 'data')  # release useless memory
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 print("\nBLADE BLOCK PROCESSING...")
-nstream = 10
-nspan = 10
+nstream = 20
+nspan = 20
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=rescale_factor, x_ref=x_ref)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
@@ -136,8 +136,8 @@ delattr(blade_process, 'data')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 print("\nOUTLET BLOCK PROCESSING...")
-nstream = 10
-nspan = 10
+nstream = 35
+nspan = 20
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=rescale_factor, x_ref=x_ref)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
@@ -196,7 +196,7 @@ obj.plot_averaged_fluxes(field='T_tot')
 obj.plot_averaged_fluxes(field='M_rel')
 obj.compute_performance()
 obj.print_performance()
-obj.store_pickle(file_name='inlet_10_blade_10_outlet_10')
+obj.store_pickle(file_name='inlet_20_blade_20_outlet_35')
 
 
 

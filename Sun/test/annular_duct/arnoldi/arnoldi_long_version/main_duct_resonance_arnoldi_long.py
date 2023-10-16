@@ -20,7 +20,7 @@ r2 = 0.2487  # outer radius [m]
 M = 0.015  # Mach number
 p = 100e3  # pressure [Pa]
 T = 288  # temperature [K]
-L = 0.08  # length [m]
+L = 0.8  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p / (R * T)  # density [kg/m3]
@@ -117,7 +117,7 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%COMPUTATIONAL PART
 # number of grid nodes in the computational domain
-Nz = 30
+Nz = 50
 Nr = 10
 
 # implement a constant uniform flow in the annulus duct
@@ -162,13 +162,13 @@ sun_obj.build_Z_global_matrix()
 sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 22.5e3
+omega_search = 7000
 sigma = omega_search/omega_ref
 A = sun_obj.Z_g
 M = sun_obj.A_g
 C = np.linalg.inv(A - sigma*M)
 C = np.dot(C, M)
-number_search = 10
+number_search = 1
 eigenvalues, eigenvectors = eigs(C, k=number_search)
 eigenvalues = sigma + 1/eigenvalues
 eigenvalues *= omega_ref
@@ -182,8 +182,61 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([7500, 35000])
-ax.set_ylim([-8000, 8000])
+ax.set_xlim([1000, 8500])
+ax.set_ylim([-1000, 1000])
 ax.grid(alpha=0.3)
-fig.savefig('pictures/chi_map_arnoldi_%i_%i' %(Nz, Nr), bbox_inches='tight')
+fig.savefig('pictures/chi_map_arnoldi_long_%i_%i' %(Nz, Nr), bbox_inches='tight')
+
+
+
+
+z_grid = sun_obj.data.zGrid
+r_grid = sun_obj.data.rGrid
+p_eig = []
+for i in range(len(eigenvectors)):
+    if (i - 4) % 5 == 0 and i != 0:
+        # print(i)
+        p_eig.append(eigenvectors[i])
+
+p_eig = np.array(p_eig, dtype=complex)
+p_eig = np.reshape(p_eig, (Nz, Nr))
+p_eig_r = p_eig.real / (np.max(p_eig.real) - np.min(p_eig.real))
+
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, p_eig_r, levels=30, cmap='viridis')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\varphi(r,z)$')
+plt.colorbar()
+
+# plt.figure()
+# plt.contourf(z_grid, r_grid, p_eig.imag, levels=30)
+# plt.colorbar()
+
+# first axial order
+# plt.figure(figsize=(7, 5))
+# plt.plot(z_grid[:, 0], p_eig_r[:, 0].real, '--o', label='numerical eigenmode')
+# plt.plot(z_grid[:, 0], np.max(np.abs(p_eig[:, 0].real)) * np.sin(np.pi * z_grid[:, 0] / L * r1), label='analytical eigenmode')
+# plt.ylabel(r'$p$ [-]')
+# plt.xlabel(r'$z$ [-]')
+# plt.title(r'$\varphi(z)$')
+# plt.legend()
+
+# second axial order
+plt.figure(figsize=(7, 5))
+plt.plot(z_grid[:, 0], p_eig_r[:, 0], '--o', label='numerical eigenmode')
+plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(6 * np.pi * z_grid[:, 0] / L * r1), label='analytical eigenmode')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\varphi(z)$')
+plt.legend()
+
+plt.figure(figsize=(7, 5))
+plt.plot(r_grid[Nz//2, :], (p_eig[Nz//2, :].real), '--o', label='numerical eigenmode')
+# plt.plot(z_grid[:, 0], np.max(np.abs(p_eig[:, 0].real)) * np.sin(np.pi * z_grid[:, 0] / L * r1), label='analytical eigenmode')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$r$ [-]')
+plt.title(r'$\varphi(r)$')
+plt.legend()
+
 plt.show()
