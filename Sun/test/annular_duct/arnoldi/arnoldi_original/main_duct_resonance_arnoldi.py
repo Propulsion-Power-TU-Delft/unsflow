@@ -109,7 +109,18 @@ alpha = [1, 2, 3, 4, 5, 6, 7, 8]  # possible axial wavenumbers
 omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
 omega_analytical_zero = np.zeros_like(omega_analytical)
 
-# %%COMPUTATIONAL PART
+
+
+
+
+
+
+
+
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
 Nz = 60
 Nr = 20
@@ -156,7 +167,7 @@ sun_obj.build_Z_global_matrix()
 sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 51500
+omega_search = 51350
 mode_name = r'$[R,Z] = [3, 3]$'
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
@@ -281,9 +292,23 @@ plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, N
 
 
 
+
+# RADIAL CUT
+LAMBDA = roots[2]
+ALPHA = jvp(m, LAMBDA*r1, n=1) / yvp(m, LAMBDA*r1, n=1)
+ALPHA2 = jvp(m, LAMBDA*r2, n=1) / yvp(m, LAMBDA*r2, n=1)
+r_var = np.linspace(r1, r2, 100)
+eigen_analyt_r = jv(m, LAMBDA*r_var) - ALPHA*yv(m, LAMBDA*r_var)
+eigen_analyt_r_scaled = eigen_analyt_r / (np.max(eigen_analyt_r) - np.min(eigen_analyt_r))
+
+
 plt.figure(figsize=(7, 5))
-plt.plot(r_grid[Nz // 2, :], (p_eig_r[Nz // 2, :]), '--o', label='numerical')
-# plt.plot(z_grid[:, 0], np.max(np.abs(p_eig[:, 0].real)) * np.sin(np.pi * z_grid[:, 0] / L * r1), label='analytical eigenmode')
+# if opposite signs
+plt.plot(r_grid[Nz // 2, :], (p_eig_r[Nz // 2, :]) / (np.max(p_eig_r[Nz // 2, :]) - np.min(p_eig_r[Nz // 2, :])), '--o', label='numerical')
+plt.plot(r_var/r1, eigen_analyt_r_scaled, label='analytical')
+#if same signs
+# plt.plot(r_grid[Nz // 2, :], np.abs(p_eig_r[Nz // 2, :])/np.max(np.abs(p_eig_r[Nz // 2, :])), '--o', label='numerical')
+# plt.plot(r_var/r1, np.abs(eigen_analyt_r_scaled)/np.max(np.abs(eigen_analyt_r_scaled)), label='analytical')
 plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$r$ [-]')
 plt.title(mode_name)
