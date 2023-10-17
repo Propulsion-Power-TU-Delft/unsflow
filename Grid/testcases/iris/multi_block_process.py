@@ -12,9 +12,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-grid_inlet = '20_20'
-grid_blade = '40_20'
-grid_outlet = '20_20'
+grid_inlet = '10_15'
+grid_blade = '30_15'
+grid_outlet = '10_15'
 
 inlet_file_path = 'data/meta/iris_inlet_' + grid_inlet + '.pickle'
 blade_file_path = 'data/meta/iris_blade_' + grid_blade + '.pickle'
@@ -34,11 +34,11 @@ obj.add_to_group(inlet)
 obj.add_to_group(blade)
 obj.add_to_group(outlet)
 obj.assemble_fields()
-obj.gauss_filtering()
+# obj.gauss_filtering()
 obj.contour_fields(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 obj.show_grid(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 obj.assemble_field_gradients()
-obj.gauss_filtering_gradients()
+# obj.gauss_filtering_gradients()
 obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 
 obj.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
@@ -52,5 +52,5 @@ obj.compute_performance()
 obj.print_performance()
 
 obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
-# plt.show()
+plt.show()
 

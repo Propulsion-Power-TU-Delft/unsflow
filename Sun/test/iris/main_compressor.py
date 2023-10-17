@@ -8,7 +8,7 @@ from scipy.sparse.linalg import eigs
 
 
 # import the data from the pickle meridional object
-filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_20_blade_20_outlet_35.pickle'
+filename = '../../../Grid/testcases/iris/data/meta/inlet_10_15_blade_30_15_outlet_10_15.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 
@@ -27,7 +27,7 @@ sun_obj.ShowNormals()
 # u_ref = 100  # ref velocity
 # x_ref = 0.003  # ref length
 
-rpm = -17.189e3
+rpm = 85e3
 sun_obj.add_shaft_rpm(rpm)
 sun_obj.AddNormalizationQuantities(1, 1, 1)
 sun_obj.ShowPhysicalGrid(save_filename='iris_blade_physical_grid_35_15', mode='lines')

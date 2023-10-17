@@ -71,7 +71,7 @@ class SunModel:
             rpm: revolutions per minute
         """
         self.omega_shaft = 2 * np.pi * rpm / 60
-        self.omega_ref = np.copy(self.omega_shaft)
+        self.omega_ref = np.abs(np.copy(self.omega_shaft))
 
     def NormalizeData(self):
         """
@@ -327,7 +327,6 @@ class SunModel:
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 0] = - self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ur * self.gmma / self.data.dataSet[ii, jj].rho
-                B[4, 4] = + self.data.dataSet[ii, jj].ur
 
                 B = self.NormalizeMatrix(B)  # normalization
                 self.data.dataSet[ii, jj].AddBMatrix(B)
@@ -398,7 +397,6 @@ class SunModel:
                 C[0, 2] = self.data.dataSet[ii, jj].rho
                 C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
                 C[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ut * self.gmma / self.data.dataSet[ii, jj].rho
-                C[4, 4] = self.data.dataSet[ii, jj].ut
 
                 C = self.NormalizeMatrix(C)  # normalization
                 C = C * 1j * m / self.data.dataSet[ii, jj].r
@@ -465,7 +463,6 @@ class SunModel:
                 E[0, 3] = self.data.dataSet[ii, jj].rho
                 E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
                 E[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].uz * self.gmma / self.data.dataSet[ii, jj].rho
-                E[4, 4] = self.data.dataSet[ii, jj].uz
 
                 E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
@@ -574,7 +571,7 @@ class SunModel:
                 R[0, 2] = 0
                 R[0, 3] = self.data.dataSet[ii, jj].drho_dz
                 R[0, 4] = 0
-                R[1, 0] = self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
+                R[1, 0] = self.data.dataSet[ii, jj].dp_dr / (self.data.dataSet[ii, jj].rho ** 2)
                 R[1, 1] = self.data.dataSet[ii, jj].dur_dr
                 R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
                 R[1, 3] = self.data.dataSet[ii, jj].dur_dz
@@ -584,23 +581,36 @@ class SunModel:
                 R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
                 R[2, 3] = self.data.dataSet[ii, jj].dut_dz
                 R[2, 4] = 0
-                R[3, 0] = self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
+                R[3, 0] = self.data.dataSet[ii, jj].dp_dz / (self.data.dataSet[ii, jj].rho ** 2)
                 R[3, 1] = self.data.dataSet[ii, jj].duz_dr
                 R[3, 2] = 0
                 R[3, 3] = self.data.dataSet[ii, jj].duz_dz
                 R[3, 4] = 0
-                R[4, 0] = (1 / self.gmma) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
+                # R[4, 0] = (1 / self.gmma) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
+                #                              self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
+                #
+                # R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr + \
+                #           self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dr
+                #
+                # R[4, 2] = 0
+                # R[4, 3] = self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dz / self.gmma - \
+                #           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
+                #
+                # R[4, 4] = -self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr - \
+                #           self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz
+
+                R[4, 0] = (1 / self.data.dataSet[ii, jj].rho) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
                                              self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
 
-                R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr + \
-                          self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dr
+                R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr * self.gmma / \
+                          self.data.dataSet[ii, jj].rho + self.data.dataSet[ii, jj].dp_dr
 
                 R[4, 2] = 0
-                R[4, 3] = self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dz / self.gmma - \
+                R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma/self.data.dataSet[ii, jj].rho * \
                           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
 
-                R[4, 4] = -self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr - \
-                          self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz
+                R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr - \
+                          self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * self.gmma/self.data.dataSet[ii, jj].rho
 
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)

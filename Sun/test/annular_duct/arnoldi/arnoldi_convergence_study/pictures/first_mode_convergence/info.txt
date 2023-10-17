@@ -1,0 +1,5 @@
+this folders contains pictures related to convergence study of annular duct.
+The folder names x_y_z have the following meaning:
+x: number of axial grid points
+y: number of radial grid points
+z: finite difference order used in the code (findiff package)

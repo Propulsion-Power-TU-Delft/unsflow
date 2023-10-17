@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 20
-nspan = 20
+nstream = 10
+nspan = 15
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -43,7 +43,7 @@ block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_outlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right', smoothing='elliptic',
+block.compute_grid_points(grid_mode='elliptic',
                           orthogonality=False, x_stretching=False, y_stretching=False,
                           sigmoid_coeff_x=7, sigmoid_coeff_y=7, method='minimize')
 block.compute_grid_centers()
@@ -97,4 +97,4 @@ data_process.store_pickle(file_name='iris_inlet_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-# plt.show()
+plt.show()
