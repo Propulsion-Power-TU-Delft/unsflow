@@ -65,26 +65,28 @@ class CfdData:
         self.p = self.data[' Pressure [ Pa ]'].values
         self.T = self.data[' Temperature [ K ]'].values
         self.s = self.data[' Static Entropy [ J kg^-1 K^-1 ]'].values
+        self.volume = self.data[' Volume [ m^3 ]'].values
+        self.finite_volume = self.data[' Volume of Finite Volumes [ m^3 ]'].values
 
         #gradients
-        self.drho_dx = self.data[' Density.Gradient X [ kg m^-4 ]'].values
-        self.drho_dy = self.data[' Density.Gradient Y [ kg m^-4 ]'].values
-        self.drho_dz = self.data[' Density.Gradient Z [ kg m^-4 ]'].values
-        self.dux_dx = self.data[' Velocity in Stn Frame u.Gradient X [ s^-1 ]'].values
-        self.dux_dy = self.data[' Velocity in Stn Frame u.Gradient Y [ s^-1 ]'].values
-        self.dux_dz = self.data[' Velocity in Stn Frame u.Gradient Z [ s^-1 ]'].values
-        self.duy_dx = self.data[' Velocity in Stn Frame v.Gradient X [ s^-1 ]'].values
-        self.duy_dy = self.data[' Velocity in Stn Frame v.Gradient Y [ s^-1 ]'].values
-        self.duy_dz = self.data[' Velocity in Stn Frame v.Gradient Z [ s^-1 ]'].values
-        self.duz_dx = self.data[' Velocity in Stn Frame w.Gradient X [ s^-1 ]'].values
-        self.duz_dy = self.data[' Velocity in Stn Frame w.Gradient Y [ s^-1 ]'].values
-        self.duz_dz = self.data[' Velocity in Stn Frame w.Gradient Z [ s^-1 ]'].values
-        self.dp_dx = self.data[' Pressure.Gradient X [ kg m^-2 s^-2 ]'].values
-        self.dp_dy = self.data[' Pressure.Gradient Y [ kg m^-2 s^-2 ]'].values
-        self.dp_dz = self.data[' Pressure.Gradient Z [ kg m^-2 s^-2 ]'].values
-        self.ds_dx = self.data[' Static Entropy.Gradient X [ m s^-2 K^-1 ]'].values
-        self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
-        self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
+        # self.drho_dx = self.data[' Density.Gradient X [ kg m^-4 ]'].values
+        # self.drho_dy = self.data[' Density.Gradient Y [ kg m^-4 ]'].values
+        # self.drho_dz = self.data[' Density.Gradient Z [ kg m^-4 ]'].values
+        # self.dux_dx = self.data[' Velocity in Stn Frame u.Gradient X [ s^-1 ]'].values
+        # self.dux_dy = self.data[' Velocity in Stn Frame u.Gradient Y [ s^-1 ]'].values
+        # self.dux_dz = self.data[' Velocity in Stn Frame u.Gradient Z [ s^-1 ]'].values
+        # self.duy_dx = self.data[' Velocity in Stn Frame v.Gradient X [ s^-1 ]'].values
+        # self.duy_dy = self.data[' Velocity in Stn Frame v.Gradient Y [ s^-1 ]'].values
+        # self.duy_dz = self.data[' Velocity in Stn Frame v.Gradient Z [ s^-1 ]'].values
+        # self.duz_dx = self.data[' Velocity in Stn Frame w.Gradient X [ s^-1 ]'].values
+        # self.duz_dy = self.data[' Velocity in Stn Frame w.Gradient Y [ s^-1 ]'].values
+        # self.duz_dz = self.data[' Velocity in Stn Frame w.Gradient Z [ s^-1 ]'].values
+        # self.dp_dx = self.data[' Pressure.Gradient X [ kg m^-2 s^-2 ]'].values
+        # self.dp_dy = self.data[' Pressure.Gradient Y [ kg m^-2 s^-2 ]'].values
+        # self.dp_dz = self.data[' Pressure.Gradient Z [ kg m^-2 s^-2 ]'].values
+        # self.ds_dx = self.data[' Static Entropy.Gradient X [ m s^-2 K^-1 ]'].values
+        # self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
+        # self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
 
 
         if normalize:
@@ -124,15 +126,15 @@ class CfdData:
         self.ur, self.ut = project_vector_to_cylindrical(self.ux, self.uy, self.theta)
 
         # #gradients in cylindrical cordinates
-        self.drho_dr, self.drho_dtheta = project_scalar_gradient_to_cylindrical(self.drho_dx, self.drho_dy,
-                                                                            self.r, self.theta)
-        self.dur_dr, self.dur_dtheta, self.dut_dr, self.dut_dtheta = project_velocity_gradient_to_cylindrical(self.dux_dx,
-                                                            self.dux_dy, self.duy_dx, self.duy_dy, self.r, self.theta)
-        self.duz_dr, self.duz_dtheta = project_scalar_gradient_to_cylindrical(self.duz_dx, self.duz_dy, self.r, self.theta)
-        self.dur_dz = cos(self.theta)*self.dux_dz + sin(self.theta)*self.duy_dz
-        self.dut_dz = -sin(self.theta)*self.dux_dz + cos(self.theta)*self.duy_dz
-        self.dp_dr, self.dp_dtheta = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.r, self.theta)
-        self.ds_dr, self.ds_dtheta = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.r, self.theta)
+        # self.drho_dr, self.drho_dtheta = project_scalar_gradient_to_cylindrical(self.drho_dx, self.drho_dy,
+        #                                                                     self.r, self.theta)
+        # self.dur_dr, self.dur_dtheta, self.dut_dr, self.dut_dtheta = project_velocity_gradient_to_cylindrical(self.dux_dx,
+        #                                                     self.dux_dy, self.duy_dx, self.duy_dy, self.r, self.theta)
+        # self.duz_dr, self.duz_dtheta = project_scalar_gradient_to_cylindrical(self.duz_dx, self.duz_dy, self.r, self.theta)
+        # self.dur_dz = cos(self.theta)*self.dux_dz + sin(self.theta)*self.duy_dz
+        # self.dut_dz = -sin(self.theta)*self.dux_dz + cos(self.theta)*self.duy_dz
+        # self.dp_dr, self.dp_dtheta = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.r, self.theta)
+        # self.ds_dr, self.ds_dtheta = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.r, self.theta)
 
         # relative quantities
         self.ut_drag = self.r * self.omega_shaft  # drag velocity
@@ -369,21 +371,21 @@ class CfdData:
         self.s /= self.s_ref
 
         # normalization of the gradients
-        self.drho_dx /= (self.rho_ref / self.x_ref)
-        self.drho_dy /= (self.rho_ref / self.x_ref)
-        self.drho_dz /= (self.rho_ref / self.x_ref)
-        self.dux_dx /= (self.u_ref / self.x_ref)
-        self.dux_dy /= (self.u_ref / self.x_ref)
-        self.dux_dz /= (self.u_ref / self.x_ref)
-        self.duy_dx /= (self.u_ref / self.x_ref)
-        self.duy_dy /= (self.u_ref / self.x_ref)
-        self.duy_dz /= (self.u_ref / self.x_ref)
-        self.duz_dx /= (self.u_ref / self.x_ref)
-        self.duz_dy /= (self.u_ref / self.x_ref)
-        self.duz_dz /= (self.u_ref / self.x_ref)
-        self.dp_dx /= (self.p_ref / self.x_ref)
-        self.dp_dy /= (self.p_ref / self.x_ref)
-        self.dp_dz /= (self.p_ref / self.x_ref)
-        self.ds_dx /= (self.s_ref / self.x_ref)
-        self.ds_dy /= (self.s_ref / self.x_ref)
-        self.ds_dz /= (self.s_ref / self.x_ref)
+        # self.drho_dx /= (self.rho_ref / self.x_ref)
+        # self.drho_dy /= (self.rho_ref / self.x_ref)
+        # self.drho_dz /= (self.rho_ref / self.x_ref)
+        # self.dux_dx /= (self.u_ref / self.x_ref)
+        # self.dux_dy /= (self.u_ref / self.x_ref)
+        # self.dux_dz /= (self.u_ref / self.x_ref)
+        # self.duy_dx /= (self.u_ref / self.x_ref)
+        # self.duy_dy /= (self.u_ref / self.x_ref)
+        # self.duy_dz /= (self.u_ref / self.x_ref)
+        # self.duz_dx /= (self.u_ref / self.x_ref)
+        # self.duz_dy /= (self.u_ref / self.x_ref)
+        # self.duz_dz /= (self.u_ref / self.x_ref)
+        # self.dp_dx /= (self.p_ref / self.x_ref)
+        # self.dp_dy /= (self.p_ref / self.x_ref)
+        # self.dp_dz /= (self.p_ref / self.x_ref)
+        # self.ds_dx /= (self.s_ref / self.x_ref)
+        # self.ds_dy /= (self.s_ref / self.x_ref)
+        # self.ds_dz /= (self.s_ref / self.x_ref)

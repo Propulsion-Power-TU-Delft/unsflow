@@ -66,7 +66,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=10):
+    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
         perform circumferential averages
         Args:
@@ -123,35 +123,35 @@ class MeridionalProcess:
                     raise ValueError('Unknown type of circumferential averaging procedure!')
 
                 # main quantities
-                self.rho[istream, ispan] = self.mass_average(self.data.rho, idx)
-                self.ur[istream, ispan] = self.mass_average(self.data.ur, idx)
-                self.ut[istream, ispan] = self.mass_average(self.data.ut, idx)
-                self.uz[istream, ispan] = self.mass_average(self.data.uz, idx)
-                self.p[istream, ispan] = self.mass_average(self.data.p, idx)
-                self.T[istream, ispan] = self.mass_average(self.data.T, idx)
-                self.s[istream, ispan] = self.mass_average(self.data.s, idx)
-                self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx)
-                self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx)
+                self.rho[istream, ispan] = self.mass_average(self.data.rho, idx, istream, ispan)
+                self.ur[istream, ispan] = self.mass_average(self.data.ur, idx, istream, ispan)
+                self.ut[istream, ispan] = self.mass_average(self.data.ut, idx, istream, ispan)
+                self.uz[istream, ispan] = self.mass_average(self.data.uz, idx, istream, ispan)
+                self.p[istream, ispan] = self.mass_average(self.data.p, idx, istream, ispan)
+                self.T[istream, ispan] = self.mass_average(self.data.T, idx, istream, ispan)
+                self.s[istream, ispan] = self.mass_average(self.data.s, idx, istream, ispan)
+                self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx, istream, ispan)
+                self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx, istream, ispan)
 
                 # gradients
-                self.drho_dr[istream, ispan] = self.mass_average(self.data.drho_dr, idx)
-                self.drho_dtheta[istream, ispan] = self.mass_average(self.data.drho_dtheta, idx)
-                self.drho_dz[istream, ispan] = self.mass_average(self.data.drho_dz, idx)
-                self.dur_dr[istream, ispan] = self.mass_average(self.data.dur_dr, idx)
-                self.dur_dtheta[istream, ispan] = self.mass_average(self.data.dur_dtheta, idx)
-                self.dur_dz[istream, ispan] = self.mass_average(self.data.dur_dz, idx)
-                self.dut_dr[istream, ispan] = self.mass_average(self.data.dut_dr, idx)
-                self.dut_dtheta[istream, ispan] = self.mass_average(self.data.dut_dtheta, idx)
-                self.dut_dz[istream, ispan] = self.mass_average(self.data.dut_dz, idx)
-                self.duz_dr[istream, ispan] = self.mass_average(self.data.duz_dr, idx)
-                self.duz_dtheta[istream, ispan] = self.mass_average(self.data.duz_dtheta, idx)
-                self.duz_dz[istream, ispan] = self.mass_average(self.data.duz_dz, idx)
-                self.dp_dr[istream, ispan] = self.mass_average(self.data.dp_dr, idx)
-                self.dp_dtheta[istream, ispan] = self.mass_average(self.data.dp_dtheta, idx)
-                self.dp_dz[istream, ispan] = self.mass_average(self.data.dp_dz, idx)
-                self.ds_dr[istream, ispan] = self.mass_average(self.data.ds_dr, idx)
-                self.ds_dtheta[istream, ispan] = self.mass_average(self.data.ds_dtheta, idx)
-                self.ds_dz[istream, ispan] = self.mass_average(self.data.ds_dz, idx)
+                # self.drho_dr[istream, ispan] = self.mass_average(self.data.drho_dr, idx)
+                # self.drho_dtheta[istream, ispan] = self.mass_average(self.data.drho_dtheta, idx)
+                # self.drho_dz[istream, ispan] = self.mass_average(self.data.drho_dz, idx)
+                # self.dur_dr[istream, ispan] = self.mass_average(self.data.dur_dr, idx)
+                # self.dur_dtheta[istream, ispan] = self.mass_average(self.data.dur_dtheta, idx)
+                # self.dur_dz[istream, ispan] = self.mass_average(self.data.dur_dz, idx)
+                # self.dut_dr[istream, ispan] = self.mass_average(self.data.dut_dr, idx)
+                # self.dut_dtheta[istream, ispan] = self.mass_average(self.data.dut_dtheta, idx)
+                # self.dut_dz[istream, ispan] = self.mass_average(self.data.dut_dz, idx)
+                # self.duz_dr[istream, ispan] = self.mass_average(self.data.duz_dr, idx)
+                # self.duz_dtheta[istream, ispan] = self.mass_average(self.data.duz_dtheta, idx)
+                # self.duz_dz[istream, ispan] = self.mass_average(self.data.duz_dz, idx)
+                # self.dp_dr[istream, ispan] = self.mass_average(self.data.dp_dr, idx)
+                # self.dp_dtheta[istream, ispan] = self.mass_average(self.data.dp_dtheta, idx)
+                # self.dp_dz[istream, ispan] = self.mass_average(self.data.dp_dz, idx)
+                # self.ds_dr[istream, ispan] = self.mass_average(self.data.ds_dr, idx)
+                # self.ds_dtheta[istream, ispan] = self.mass_average(self.data.ds_dtheta, idx)
+                # self.ds_dz[istream, ispan] = self.mass_average(self.data.ds_dz, idx)
 
                 # body force model quantities
                 if bfm == 'radial':
@@ -354,11 +354,24 @@ class MeridionalProcess:
         idx = np.where(distance <= r_lim)
         return idx
 
-    def mass_average(self, field, idx):
+    def mass_average(self, field, idx, istream, ispan, RBF=False):
         """
-        mass weighted average of a fluid dynamics field[idx]
+        mass weighted average of a fluid dynamics field[idx], weighted also as a RBF
         """
-        avg = np.sum(field[idx] * self.data.rho[idx]) / np.sum(self.data.rho[idx])
+        field = field[idx]
+        rho = self.data.rho[idx]
+        volume = self.data.volume[idx]
+        r = self.data.r[idx]  # cordinate of points to average
+        z = self.data.z[idx]
+        r_c = self.r_cg[istream, ispan]  # grid point (center) that will contain the averaged value
+        z_c = self.z_cg[istream, ispan]
+        d = np.sqrt((r-r_c)**2 + (z-z_c)**2)  # distances of points from the center
+        dmax = np.max(d)  # maximum distance of all points considered
+        if RBF:
+            weight = (1+d/dmax)**5 * (1-d/dmax)**5  # C4 RBF by Mendez
+        else:
+            weight = np.zeros_like(rho)+1
+        avg = np.sum(field * rho * volume * weight) / np.sum(rho * volume * weight)
         return avg
 
     def gauss_filtering(self):

@@ -380,7 +380,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=1.5):
+    def apply_gaussian_filter(field, sigma=1):
         """
         Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
         """
@@ -462,7 +462,7 @@ class MeridionalProcessGroup:
         for obj in self.group:
 
             # calcualte the streamline length (x arrays) of that subcomponent
-            x = old_value + obj.stream_line_length[:, obj.nspan//2]
+            x = old_value + obj.stream_line_length[:, obj.nspan//2] + obj.stream_line_length[1, obj.nspan//2]
             old_value = x[-1]
 
             # plots
@@ -539,7 +539,7 @@ class MeridionalProcessGroup:
         print("---------PERFORMANCE---------")
         print("Beta_ts: %.2f" % (self.beta_ts))
         print("Beta_tt: %.2f" %(self.beta_tt))
-        # print("Eta_ts: %.2f" % (self.eta_ts))
-        # print("Eta_tt: %.2f" % (self.eta_tt))
+        print("Eta_ts: %.2f" % (self.eta_ts))
+        print("Eta_tt: %.2f" % (self.eta_tt))
         print("-----------------------------")
 

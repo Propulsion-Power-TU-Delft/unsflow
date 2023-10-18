@@ -41,7 +41,7 @@ bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
 bladed_block.compute_grid_points(grid_mode='elliptic',
-                                 orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+                                 orthogonality=False, x_stretching=False, y_stretching=False,
                                  sigmoid_coeff_x=5, sigmoid_coeff_y=7, method='minimize')
 bladed_block.compute_grid_centers()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=True)
@@ -54,7 +54,7 @@ blade.compute_blade_camber_angles(convention='rotation-wise')
 blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
 # instantiate cfd data object and perform processing removing the outliers
-file_name = 'data/meta/config_01.csv'
+file_name = 'data/meta/config_02_slim.csv'
 data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=-17189, cut_block=bladed_block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
 data.process_from_ansys_csv()
@@ -76,12 +76,12 @@ data_process.compute_averaged_fluxes()
 data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d' % (nstream, nspan), quiver=True)
 data_process.contour_plot(field='ur', save_filename='ur_%2d_%2d' % (nstream, nspan))
 data_process.contour_plot(field='ut', save_filename='ut_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='ut_rel', save_filename='ut_rel_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='ut_drag', save_filename='ut_drag_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='uz', save_filename='uz_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='p', save_filename='p_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='s', save_filename='s_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='T', save_filename='T_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='ut_rel', save_filename='ut_rel_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='ut_drag', save_filename='ut_drag_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='uz', save_filename='uz_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='p', save_filename='p_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='s', save_filename='s_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='T', save_filename='T_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='drho_dr', save_filename='drho_dr_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='drho_dz', save_filename='drho_dz_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='dur_dr', save_filename='dur_dr_%2d_%2d' % (nstream, nspan))
@@ -92,24 +92,24 @@ data_process.contour_plot(field='ut', save_filename='ut_%2d_%2d' % (nstream, nsp
 # data_process.contour_plot(field='duz_dz', save_filename='duz_dz_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='dp_dr', save_filename='dp_dr_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='dp_dz', save_filename='dp_dz_%2d_%2d' % (nstream, nspan))
-# # data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
-# # data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dr', save_filename='dT_dr_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
-# data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
-#
-#
-# data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
-# data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
+data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
+
+
+data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
+data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
 
 
 

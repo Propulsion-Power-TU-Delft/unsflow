@@ -20,7 +20,7 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 30
+nstream = 40
 nspan = 20
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
@@ -43,7 +43,7 @@ block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud(sampling_mode=stream_grid_sampling)
 block.sample_inlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='left', smoothing='elliptic',
+block.compute_grid_points(grid_mode='elliptic',
                           orthogonality=False, x_stretching=False, y_stretching=False,
                           sigmoid_coeff_x=5, sigmoid_coeff_y=7, method='minimize')
 block.compute_grid_centers()
@@ -51,7 +51,7 @@ block.find_border()
 block.plot_full_grid(save_filename='outlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
 
 # instantiate cfd data object and perform processing removing the outliers
-file_name = 'data/meta/config_01.csv'
+file_name = 'data/meta/config_02_slim.csv'
 data = Grid.src.CfdData(file_name, rpm_drag=-17189, blade=blade, cut_block=block, verbose=True, normalize=True,
                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
 data.process_from_ansys_csv()

@@ -20,12 +20,12 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = False
-INLET_NZ = 30
-BLADE_NZ = 30
-OUTLET_NZ = 60
-NR = 30
+INLET_NZ = 10
+BLADE_NZ = 40
+OUTLET_NZ = 20
+NR = 15
 AVG_MODE = 'cell centered'
-file_name = 'data/meta/config_02_slim.csv'
+file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
 MULTIBLOCK_FILTERING = False
 
 
@@ -35,13 +35,13 @@ MULTIBLOCK_FILTERING = False
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GLOBAL DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-data_folder_path = 'nasa_rotor_37/cordinates/'
+data_folder_path = 'data/geo/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
-x_ref = 0.252  # reference length, tip radius [m]
-rpm_ref = -17189  # shaft rpm with sign
+x_ref = 0.0228  # reference length, tip radius [m]
+rpm_ref = +85e3  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
-rescale_factor = 0.01  # cordinates of data files are in [cm]
+rescale_factor = 1  # cordinates of data files are in [cm]
 sigmoid_coeff_stream = 8
 sigmoid_coeff_span = 8
 
@@ -55,14 +55,14 @@ print("\nINLET BLOCK PROCESSING...")
 nstream = INLET_NZ
 nspan = NR
 
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=1,
                      rescale_factor=rescale_factor, x_ref=x_ref)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=1,
                         rescale_factor=rescale_factor, x_ref=x_ref)
 block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
 # compute the blade object info, in order to cut the block appropriately
-blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
+blade = Grid.src.Blade(data_folder_path + 'iris_blade.curve', rescale_factor=rescale_factor, x_ref=x_ref)
 blade.find_inlet_points(geometry_type='axial')
 blade.find_outlet_points(geometry_type='axial')
 
@@ -109,9 +109,9 @@ delattr(inlet_process, 'data')  # release useless memory
 print("\nBLADE BLOCK PROCESSING...")
 nstream = BLADE_NZ
 nspan = NR
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3,
                      rescale_factor=rescale_factor, x_ref=x_ref)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3,
                         rescale_factor=rescale_factor, x_ref=x_ref)
 bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
@@ -119,7 +119,7 @@ bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 bladed_block.extend_inlet_outlet_curves()
 bladed_block.find_intersections()
-bladed_block.bladed_zone_trim(machine_type='axial')
+bladed_block.bladed_zone_trim(machine_type='radial')
 bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud()
@@ -159,15 +159,15 @@ delattr(blade_process, 'data')
 print("\nOUTLET BLOCK PROCESSING...")
 nstream = OUTLET_NZ
 nspan = NR
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3,
                      rescale_factor=rescale_factor, x_ref=x_ref)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3,
                         rescale_factor=rescale_factor, x_ref=x_ref)
 block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
 block.find_intersections()
-block.outlet_zone_trim(mode='axial')
+block.outlet_zone_trim(mode='radial')
 block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud()
