@@ -66,7 +66,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
+    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=100):
         """
         perform circumferential averages
         Args:
@@ -1359,10 +1359,12 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$\frac{\partial s}{\partial m}$')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\frac{\partial s}{\partial m}$')
+        if save_fig:
+            plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
@@ -1371,52 +1373,66 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{l,r}$')
-        #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{l,\theta}$')
-        #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{l,z}$')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{l,r}$')
+        if save_fig:
+            plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{l,\theta}$')
+        if save_fig:
+            plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{l,z}$')
+        if save_fig:
+            plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         self.compute_Ftheta()
 
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
-        #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{\theta}$')
-        # if save_fig:
-        #     plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
+        if save_fig:
+            plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{\theta}$')
+        if save_fig:
+            plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
         self.compute_Fturn()
 
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{t, r}$')
-        #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{t, \theta}$')
-        #
-        # plt.figure(figsize=self.picture_size)
-        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.title(r'$F_{t, z}$')
-        #
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{t, r}$')
+        if save_fig:
+            plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{t, \theta}$')
+        if save_fig:
+            plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{t, z}$')
+        if save_fig:
+            plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
         plt.colorbar()

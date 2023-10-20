@@ -17,8 +17,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 20
-nspan = 20
+nstream = 10
+nspan = 10
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=0.01, x_ref=0.252)
@@ -42,16 +42,16 @@ bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_leading_trailing_edges(sampling_mode=grid_sampling)
 bladed_block.compute_grid_points(grid_mode='elliptic',
                                  orthogonality=False, x_stretching=False, y_stretching=False,
-                                 sigmoid_coeff_x=5, sigmoid_coeff_y=7, method='minimize')
+                                 sigmoid_coeff_x=6, sigmoid_coeff_y=8, method='minimize')
 bladed_block.compute_grid_centers()
-bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=True)
+bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=False, ticks=False)
 
 
 # find the camber surface, using the (z,r) grid found in the bladed block
 blade.find_camber_surface(bladed_block)
 blade.compute_camber_vectors()
 blade.compute_blade_camber_angles(convention='rotation-wise')
-blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
+# blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
 
 # instantiate cfd data object and perform processing removing the outliers
 file_name = 'data/meta/config_02_slim.csv'
@@ -96,25 +96,25 @@ data_process.contour_plot(field='T', save_filename='T_%2d_%2d' % (nstream, nspan
 # data_process.contour_plot(field='dT_dz', save_filename='dT_dz_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='ds_dr', save_filename='ds_dr_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='ds_dz', save_filename='ds_dz_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
-data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
-
-
-data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
-data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
+# data_process.contour_plot(field='M', save_filename='M_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='p_tot', save_filename='p_tot_%2d_%2d' % (nstream, nspan))
+# data_process.contour_plot(field='p_tot_bar', save_filename='p_tot_bar_%2d_%2d' % (nstream, nspan))
+#
+#
+# data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='uz', save_filename='flux_uz_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='p', save_filename='flux_p_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='s', save_filename='flux_s_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='T', save_filename='flux_T_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='p_tot', save_filename='flux_p_tot_%d_%d' %(nstream, nspan))
+# data_process.plot_averaged_fluxes(field='T_tot', save_filename='flux_T_tot_%d_%d' %(nstream, nspan))
 
 
 
 delattr(data_process, 'data')  # before storing the pickle file deleted the CFD database from it
-data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
+# data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))

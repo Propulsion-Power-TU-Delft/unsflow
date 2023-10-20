@@ -419,6 +419,10 @@ class MeridionalProcessGroup:
                 tmp_len += np.sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
                 self.stream_line_length[istream, ispan] = tmp_len
 
+        #reports to zero the first length of the bladed zone
+        self.middle_line_length = self.stream_line_length[:, self.nspan//2]
+        self.middle_line_length /= self.group[1].stream_line_length[-1, self.group[1].nspan//2]
+
 
     def plot_stream_line(self, field, n, save_filename=None):
         """
@@ -458,12 +462,13 @@ class MeridionalProcessGroup:
 
     def plot_averaged_fluxes(self, field, save_filename=None):
         old_value = 0
+        reference_point = self.middle_line_length[self.group[0].nstream]  # initial reference is the leading edge of the blade
         fig, ax = plt.subplots(figsize=fig_size)
         for obj in self.group:
-
-            # calcualte the streamline length (x arrays) of that subcomponent
-            x = old_value + obj.stream_line_length[:, obj.nspan//2] + obj.stream_line_length[1, obj.nspan//2]
-            old_value = x[-1]
+            begin = old_value  # begin index
+            end = begin + obj.nstream  # end index
+            x = self.middle_line_length[begin:end] - reference_point  # 0 is at leading edge of blade
+            old_value = end
 
             # plots
             if field == 'rho':

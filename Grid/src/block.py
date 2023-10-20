@@ -431,7 +431,7 @@ class Block:
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True):
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True, ticks=False):
         """
         plot everything of the grid
         """
@@ -483,6 +483,12 @@ class Block:
         plt.xlabel(r'$z \ \mathrm{%s}$' % (self.units))
         plt.ylabel(r'$r \ \mathrm{%s}$' % (self.units))
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
+
+        if ticks==False:
+            plt.xticks([])
+            plt.yticks([])
+            plt.xlabel('')
+            plt.ylabel('')
 
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')

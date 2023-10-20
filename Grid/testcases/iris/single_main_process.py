@@ -19,11 +19,11 @@ print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
-REGRESSION = False
-INLET_NZ = 10
-BLADE_NZ = 40
-OUTLET_NZ = 20
-NR = 15
+REGRESSION = True
+INLET_NZ = 5
+BLADE_NZ = 20
+OUTLET_NZ = 10
+NR = 10
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
 MULTIBLOCK_FILTERING = False
@@ -238,7 +238,7 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_filt_%s_%i_%i_
                                                       %(MULTIBLOCK_FILTERING, INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 obj.compute_performance()
 obj.print_performance()
-# obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
+obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 
 

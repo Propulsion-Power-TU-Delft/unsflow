@@ -35,12 +35,13 @@ obj.add_to_group(blade)
 obj.add_to_group(outlet)
 obj.assemble_fields()
 # obj.gauss_filtering()
-obj.contour_fields(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+# obj.contour_fields(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 obj.show_grid(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 obj.assemble_field_gradients()
 # obj.gauss_filtering_gradients()
-obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+# obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 
+obj.compute_streamline_length()
 obj.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.plot_averaged_fluxes(field='ut', save_filename='flux_ut_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
@@ -51,6 +52,6 @@ obj.plot_averaged_fluxes(field='s', save_filename='flux_s_%s_%s_%s' %(grid_inlet
 obj.compute_performance()
 obj.print_performance()
 
-obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+# obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 plt.show()
 

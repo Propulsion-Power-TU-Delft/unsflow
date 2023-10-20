@@ -8,10 +8,10 @@ from scipy.sparse.linalg import eigs
 
 
 # import the data from the pickle meridional object
-filename = '../../../Grid/testcases/iris/data/meta/inlet_10_15_blade_30_15_outlet_10_15.pickle'
+filename = '../../../Grid/testcases/iris/data/meta/inlet_5_blade_20_outlet_10_nspan_10.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
-
+m = 1 # circumferential order
 
 
 #%%sun model
@@ -39,7 +39,7 @@ sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
 sun_obj.ContourTransformation(save_filename='iris_blade_jacobians_grid_35_15')
 sun_obj.AddAMatrixToNodesFrancesco2()
 sun_obj.AddBMatrixToNodesFrancesco2()
-sun_obj.AddCMatrixToNodesFrancesco2(m=1)
+sun_obj.AddCMatrixToNodesFrancesco2(m=m)
 sun_obj.AddEMatrixToNodesFrancesco2()
 sun_obj.AddRMatrixToNodesFrancesco2()
 sun_obj.AddSMatrixToNodes()
@@ -79,12 +79,10 @@ eigenvalues *= omega_ref
 marker_size = 20
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.scatter(eigenvalues.real/omega_ref, eigenvalues.imag/omega_ref, marker='o', facecolors='red', edgecolors='red',
-           s=marker_size, label=r'numerical')
+           s=marker_size, label='m: %i' %(m))
 ax.set_xlabel(r'RS [-]')
 ax.set_ylabel(r'DF [-]')
 ax.legend()
-# ax.set_xlim([7500, 35000])
-# ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
 # fig.savefig('pictures/%i/chi_map_arnoldi_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
