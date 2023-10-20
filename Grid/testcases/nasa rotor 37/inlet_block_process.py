@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 20
-nspan = 20
+nstream = 10
+nspan = 15
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -63,6 +63,7 @@ data_process.circumferential_average(mode='cell centered', fix_borders=False, ga
 data_process.compute_regressed_fields()
 data_process.compute_derived_quantities()
 data_process.compute_averaged_fluxes()
+data_process.compute_body_fource_S()
 
 
 save_plots = False
@@ -98,7 +99,7 @@ if save_plots:
     # data_process.quiver_plot(save_filename='quiver_%2d_%2d' % (nstream, nspan))
 
 
-data_process.plot_stream_line(field='M_rel', n=17)
+# data_process.plot_stream_line(field='M_rel', n=17)
 
 # data_process.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%d_%d' %(nstream, nspan))
 # data_process.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%d_%d' %(nstream, nspan))

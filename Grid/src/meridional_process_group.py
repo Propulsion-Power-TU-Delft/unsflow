@@ -63,6 +63,73 @@ class MeridionalProcessGroup:
             self.M = np.concatenate((self.M, obj.M), axis=0)
 
 
+    def assemble_body_force_fields(self):
+        """
+        assemble together the fields contained in all the blocks
+        """
+        self.S00 = self.group[0].S00
+        self.S01 = self.group[0].S01
+        self.S02 = self.group[0].S02
+        self.S03 = self.group[0].S03
+        self.S04 = self.group[0].S04
+
+        self.S10 = self.group[0].S10
+        self.S11 = self.group[0].S11
+        self.S12 = self.group[0].S12
+        self.S13 = self.group[0].S13
+        self.S14 = self.group[0].S14
+
+        self.S20 = self.group[0].S20
+        self.S21 = self.group[0].S21
+        self.S22 = self.group[0].S22
+        self.S23 = self.group[0].S23
+        self.S24 = self.group[0].S24
+
+        self.S30 = self.group[0].S30
+        self.S31 = self.group[0].S31
+        self.S32 = self.group[0].S32
+        self.S33 = self.group[0].S33
+        self.S34 = self.group[0].S34
+
+        self.S40 = self.group[0].S40
+        self.S41 = self.group[0].S41
+        self.S42 = self.group[0].S42
+        self.S43 = self.group[0].S43
+        self.S44 = self.group[0].S44
+
+
+        for obj in self.group[1:]:
+            self.S00 = np.concatenate((self.S00, obj.S00), axis=0)
+            self.S01 = np.concatenate((self.S01, obj.S01), axis=0)
+            self.S02 = np.concatenate((self.S02, obj.S02), axis=0)
+            self.S03 = np.concatenate((self.S03, obj.S03), axis=0)
+            self.S04 = np.concatenate((self.S04, obj.S04), axis=0)
+
+            self.S10 = np.concatenate((self.S10, obj.S10), axis=0)
+            self.S11 = np.concatenate((self.S11, obj.S11), axis=0)
+            self.S12 = np.concatenate((self.S12, obj.S12), axis=0)
+            self.S13 = np.concatenate((self.S13, obj.S13), axis=0)
+            self.S14 = np.concatenate((self.S14, obj.S14), axis=0)
+
+            self.S20 = np.concatenate((self.S20, obj.S20), axis=0)
+            self.S21 = np.concatenate((self.S21, obj.S21), axis=0)
+            self.S22 = np.concatenate((self.S22, obj.S22), axis=0)
+            self.S23 = np.concatenate((self.S23, obj.S23), axis=0)
+            self.S24 = np.concatenate((self.S24, obj.S24), axis=0)
+
+            self.S30 = np.concatenate((self.S30, obj.S30), axis=0)
+            self.S31 = np.concatenate((self.S31, obj.S31), axis=0)
+            self.S32 = np.concatenate((self.S32, obj.S32), axis=0)
+            self.S33 = np.concatenate((self.S33, obj.S33), axis=0)
+            self.S34 = np.concatenate((self.S34, obj.S34), axis=0)
+
+            self.S40 = np.concatenate((self.S40, obj.S40), axis=0)
+            self.S41 = np.concatenate((self.S41, obj.S41), axis=0)
+            self.S42 = np.concatenate((self.S42, obj.S42), axis=0)
+            self.S43 = np.concatenate((self.S43, obj.S43), axis=0)
+            self.S44 = np.concatenate((self.S44, obj.S44), axis=0)
+
+
 
     def assemble_fields_2(self):
         """

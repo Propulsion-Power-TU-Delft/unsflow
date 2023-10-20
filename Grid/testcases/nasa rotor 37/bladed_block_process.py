@@ -17,8 +17,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 10
-nspan = 10
+nstream = 20
+nspan = 15
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=0.01, x_ref=0.252)
@@ -114,7 +114,7 @@ data_process.contour_plot(field='T', save_filename='T_%2d_%2d' % (nstream, nspan
 
 
 delattr(data_process, 'data')  # before storing the pickle file deleted the CFD database from it
-# data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
+data_process.store_pickle(file_name='nasa_rotor_config_01_blade_%d_%d' %(nstream, nspan))
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))

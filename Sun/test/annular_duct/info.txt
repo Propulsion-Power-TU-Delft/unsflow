@@ -1,1 +1,1 @@
-this folder contains scripts to test the alternative matrices form developed by me, version 1. To check how results change with respect to what written in the original article
+this folder contains scripts to test the alternative matrices form developed by me, version 1. To check how results change with respect to what written in the original article.

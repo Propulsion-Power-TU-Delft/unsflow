@@ -1351,6 +1351,10 @@ class MeridionalProcess:
         compute the BFM fields, following Fang et al. 2023
         """
         self.compute_Floss(mode=mode)
+        self.compute_Ftheta()
+        self.compute_Fturn()
+        self.alpha = self.Floss / (self.u_mag_rel ** 2)
+        self.beta = self.Fturn / (self.u_meridional * self.ut_rel)
 
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
@@ -1394,8 +1398,6 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        self.compute_Ftheta()
-
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
         plt.colorbar()
@@ -1409,8 +1411,6 @@ class MeridionalProcess:
         plt.title(r'$F_{\theta}$')
         if save_fig:
             plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-
-        self.compute_Fturn()
 
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
@@ -1440,9 +1440,6 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        self.alpha = self.Floss / self.u_mag_rel ** 2
-        self.beta = self.Fturn / self.u_meridional / self.ut_rel
-
         plt.figure(figsize=self.picture_size)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
         plt.colorbar()
@@ -1457,6 +1454,84 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
+        self.compute_body_fource_S(domain='bladed')
+
+
+    def compute_body_fource_S(self, domain=None):
+        """
+        if the domain is bladed compute the body force steady state matrices. Otherwise instantiate zeros
+        for the related terms
+        """
+
+        if domain == 'bladed':
+            tr = self.Floss_r / self.Floss
+            ttheta = self.Floss_t / self.Floss
+            tz = self.Floss_z / self.Floss
+
+            nr = self.Fturn_r/self.Fturn
+            ntheta = self.Fturn_t / self.Fturn
+            nz = self.Fturn_z / self.Fturn
+
+            self.S00 = np.zeros_like(self.ur)
+            self.S01 = np.zeros_like(self.ur)
+            self.S02 = np.zeros_like(self.ur)
+            self.S03 = np.zeros_like(self.ur)
+            self.S04 = np.zeros_like(self.ur)
+
+            self.S10 = np.zeros_like(self.ur)
+            self.S11 = tr*2*self.alpha*self.ur + nr/ntheta*self.ur*self.beta*self.ut_rel/self.u_meridional
+            self.S12 = tr * 2 * self.alpha * self.ut_rel + nr / ntheta * self.beta * self.u_meridional
+            self.S13 = tr * 2 * self.alpha * self.uz + nr / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S14 = np.zeros_like(self.ur)
+
+            self.S20 = np.zeros_like(self.ur)
+            self.S21 = ttheta * 2 * self.alpha * self.ur + self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S22 = ttheta * 2 * self.alpha * self.ut_rel + self.beta * self.u_meridional
+            self.S23 = ttheta * 2 * self.alpha * self.uz + self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S24 = np.zeros_like(self.ur)
+
+            self.S30 = np.zeros_like(self.ur)
+            self.S31 = tz * 2 * self.alpha * self.ur + nz / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S32 = tz * 2 * self.alpha * self.ut_rel + nz / ntheta * self.beta * self.u_meridional
+            self.S33 = tz * 2 * self.alpha * self.uz + nz / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S34 = np.zeros_like(self.ur)
+
+            self.S40 = np.zeros_like(self.ur)
+            self.S41 = np.zeros_like(self.ur)
+            self.S42 = np.zeros_like(self.ur)
+            self.S43 = np.zeros_like(self.ur)
+            self.S44 = np.zeros_like(self.ur)
+
+        else:
+            self.S00 = np.zeros_like(self.ur)
+            self.S01 = np.zeros_like(self.ur)
+            self.S02 = np.zeros_like(self.ur)
+            self.S03 = np.zeros_like(self.ur)
+            self.S04 = np.zeros_like(self.ur)
+            self.S10 = np.zeros_like(self.ur)
+            self.S11 = np.zeros_like(self.ur)
+            self.S12 = np.zeros_like(self.ur)
+            self.S13 = np.zeros_like(self.ur)
+            self.S14 = np.zeros_like(self.ur)
+            self.S20 = np.zeros_like(self.ur)
+            self.S21 = np.zeros_like(self.ur)
+            self.S22 = np.zeros_like(self.ur)
+            self.S23 = np.zeros_like(self.ur)
+            self.S24 = np.zeros_like(self.ur)
+            self.S30 = np.zeros_like(self.ur)
+            self.S31 = np.zeros_like(self.ur)
+            self.S32 = np.zeros_like(self.ur)
+            self.S33 = np.zeros_like(self.ur)
+            self.S34 = np.zeros_like(self.ur)
+            self.S40 = np.zeros_like(self.ur)
+            self.S41 = np.zeros_like(self.ur)
+            self.S42 = np.zeros_like(self.ur)
+            self.S43 = np.zeros_like(self.ur)
+            self.S44 = np.zeros_like(self.ur)
+
+
+
+
     def compute_Floss(self, mode):
 
         # meridional flow velocity
@@ -1465,20 +1540,14 @@ class MeridionalProcess:
         if mode == 'global':
             # compute the modulus, and then the components, which are opposed to the relative flow velocity
             self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
+
+            # compute the components, which are opposite to the relative velocity
             self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
             self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
             self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
-        # if mode == 'averaged':
-        #     # we need to average also the other fields to make sure the global impact will be the same
-        #     self.T_avg = np.zeros_like(self.z_grid)
-        #     self.u_meridional_avg = np.zeros_like(self.z_grid)
-        #     self.u_mag_rel_avg = np.zeros_like(self.z_grid)
-        #
-        #     for ispan in range(0, self.nspan):
-        #         self.T_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.T[:, ispan])
-        #         self.u_meridional_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_meridional[:, ispan])
-        #         self.u_mag_rel_avg[:, ispan] = np.ones(self.nstream)*np.mean(self.u_mag_rel[:, ispan])
-        #     self.Floss = self.T_avg * self.u_meridional_avg * self.ds_dl / self.u_mag_rel_avg
+
+            self.Floss_check = self.Floss_r**2 + self.Floss_t**2 + self.Floss_z**2 - self.Floss**2
+
 
     def compute_ds_dl(self, mode):
         """
@@ -1507,6 +1576,8 @@ class MeridionalProcess:
         """
         dr_dl = self.ur / self.u_meridional
         dut_dl = np.zeros_like(dr_dl)
+
+        # find the derivative projecting the gradients along the meridional velocity direction
         for istream in range(self.nAxialNodes):
             for ispan in range(self.nRadialNodes):
                 dir_vector = np.array((self.uz[istream, ispan],
@@ -1525,6 +1596,7 @@ class MeridionalProcess:
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
+        self.Fturn_check = self.Fturn_r**2 + self.Fturn_t**2 + self.Fturn_z**2 - self.Fturn**2
 
     def compute_averaged_fluxes(self):
         """

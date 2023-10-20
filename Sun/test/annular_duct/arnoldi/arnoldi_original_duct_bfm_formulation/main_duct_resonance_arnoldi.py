@@ -16,10 +16,10 @@ from scipy.sparse.linalg import eigs
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
 r2 = 0.2487  # outer radius [m]
-M = 0.45  # Mach number
+M = 0.015  # Mach number
 p = 100e3  # pressure [Pa]
-T = 420  # temperature [K]
-L = 0.25  # length [m]
+T = 288  # temperature [K]
+L = 0.08  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p / (R * T)  # density [kg/m3]
@@ -118,8 +118,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 45
-Nr = 15
+Nz = 30
+Nr = 10
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -160,20 +160,29 @@ sun_obj.build_A_global_matrix()
 sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_Z_global_matrix()
+sun_obj.build_S_global_matrix()
 sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 12000
+omega_search = 23000
+Omega = 0
+tau = 0
 mode_name = r'$[R,Z] = [2, 3]$'
 sigma = omega_search / omega_ref
-A = sun_obj.Z_g
-M = sun_obj.A_g
-print('Transforming EVP in standard form...')
-C = np.linalg.inv(A - sigma * M)
-C = np.dot(C, M)
-number_search = 5
+L0 = sun_obj.Z_g * (1 + 1j * m * Omega * tau) + sun_obj.S_g
+L1 = sun_obj.A_g * (m * Omega * tau - 1j) - 1j * tau * sun_obj.Z_g
+L2 = -tau * sun_obj.A_g
+Y1 = np.concatenate((-L0, np.zeros_like(L0)), axis=1)
+Y2 = np.concatenate((np.zeros_like(L0), np.eye(L0.shape[0])), axis=1)
+Y = np.concatenate((Y1, Y2), axis=0)
+P1 = np.concatenate((L1, L2), axis=1)
+P2 = np.concatenate((np.eye(L0.shape[0]), np.zeros_like(L0)), axis=1)
+P = np.concatenate((P1, P2), axis=0)
+number_search = 10
 print('Searching Eigenvalues with ARPACK...')
-eigenvalues, eigenvectors = eigs(C, k=number_search)
+Y_tilde = np.linalg.inv(Y - sigma * P)
+Y_tilde = np.dot(Y_tilde, P)
+eigenvalues, eigenvectors = eigs(Y_tilde, k=number_search)
 eigenvalues = sigma + 1 / eigenvalues
 eigenvalues *= omega_ref
 
@@ -186,12 +195,12 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([4000, 25000])
-ax.set_ylim([-2000, 2000])
+ax.set_xlim([7500, 35000])
+ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
 # fig.savefig('pictures/%i/chi_map_arnoldi_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
-# # EIGENFUNCTIONS
+# EIGENFUNCTIONS
 # z_grid = sun_obj.data.zGrid
 # r_grid = sun_obj.data.rGrid
 # rho_eig = []
@@ -200,7 +209,7 @@ ax.grid(alpha=0.3)
 # uz_eig = []
 # p_eig = []
 #
-# for i in range(len(eigenvectors)):
+# for i in range(len(eigenvectors)//2):
 #     if (i) % 5 == 0:
 #         rho_eig.append(eigenvectors[i])
 #     elif (i - 1) % 5 == 0 and i != 0:

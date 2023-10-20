@@ -15,9 +15,9 @@ import pickle
 import numpy as np
 
 # Specify the path to your pickle file
-grid_inlet = '20_20'
-grid_blade = '20_20'
-grid_outlet = '40_20'
+grid_inlet = '10_15'
+grid_blade = '20_15'
+grid_outlet = '30_15'
 
 inlet_file_path = 'data/meta/nasa_rotor_config_01_inlet_'+grid_inlet+'.pickle'
 blade_file_path = 'data/meta/nasa_rotor_config_01_blade_'+grid_blade+'.pickle'
@@ -43,7 +43,7 @@ obj.show_grid(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_bl
 obj.assemble_field_gradients()
 obj.gauss_filtering_gradients()
 # obj.contour_field_gradients(save_filename='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
-
+obj.assemble_body_force_fields()
 obj.compute_streamline_length()
 obj.plot_averaged_fluxes(field='rho', save_filename='flux_rho_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
 obj.plot_averaged_fluxes(field='ur', save_filename='flux_ur_%s_%s_%s' %(grid_inlet, grid_blade, grid_outlet))
@@ -60,6 +60,6 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_%s_%s_%s' %(gr
 obj.compute_performance()
 obj.print_performance()
 
-# obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
+obj.store_pickle(file_name='inlet_%s_blade_%s_outlet_%s' % (grid_inlet, grid_blade, grid_outlet))
 plt.show()
 

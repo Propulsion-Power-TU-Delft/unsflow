@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
-nstream = 40
-nspan = 20
+nstream = 30
+nspan = 15
 stream_grid_sampling = 'default'
 span_grid_sampling = 'default'
 
@@ -63,6 +63,7 @@ data_process.circumferential_average(mode='cell centered', fix_borders=False, ga
 data_process.compute_regressed_fields()
 data_process.compute_derived_quantities()
 data_process.compute_averaged_fluxes()
+data_process.compute_body_fource_S()
 
 
 

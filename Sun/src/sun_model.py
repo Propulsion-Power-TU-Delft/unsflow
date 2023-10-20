@@ -615,35 +615,45 @@ class SunModel:
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-    def AddSMatrixToNodes(self):
+    def AddSMatrixToNodes(self, turbo=False):
         """
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                if 1 == 1:
-                    S = np.zeros((5, 5), dtype=complex)
-                else:
-                    S = np.zeros((5, 5), dtype=complex)
-                    S[1, 1] = self.data.meridional_obj.Fn_prime_ss_00[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_00[ii, jj]
-                    S[1, 2] = self.data.meridional_obj.Fn_prime_ss_01[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_01[ii, jj]
-                    S[1, 3] = self.data.meridional_obj.Fn_prime_ss_02[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_02[ii, jj]
-                    S[2, 1] = self.data.meridional_obj.Fn_prime_ss_10[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_10[ii, jj]
-                    S[2, 2] = self.data.meridional_obj.Fn_prime_ss_11[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_11[ii, jj]
-                    S[2, 3] = self.data.meridional_obj.Fn_prime_ss_12[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_12[ii, jj]
-                    S[2, 1] = self.data.meridional_obj.Fn_prime_ss_20[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_20[ii, jj]
-                    S[2, 2] = self.data.meridional_obj.Fn_prime_ss_21[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_21[ii, jj]
-                    S[2, 3] = self.data.meridional_obj.Fn_prime_ss_22[ii, jj] - \
-                              2 * self.data.meridional_obj.mu[ii, jj] * self.data.meridional_obj.Ft_prime_ss_22[ii, jj]
+                S = np.zeros((5, 5), dtype=complex)
+
+                if turbo:
+                    S[0, 0] = self.data.meridional_obj.S00[ii, jj]
+                    S[0, 1] = self.data.meridional_obj.S01[ii, jj]
+                    S[0, 2] = self.data.meridional_obj.S02[ii, jj]
+                    S[0, 3] = self.data.meridional_obj.S03[ii, jj]
+                    S[0, 4] = self.data.meridional_obj.S04[ii, jj]
+
+                    S[1, 0] = self.data.meridional_obj.S10[ii, jj]
+                    S[1, 1] = self.data.meridional_obj.S11[ii, jj]
+                    S[1, 2] = self.data.meridional_obj.S12[ii, jj]
+                    S[1, 3] = self.data.meridional_obj.S13[ii, jj]
+                    S[1, 4] = self.data.meridional_obj.S14[ii, jj]
+
+                    S[2, 0] = self.data.meridional_obj.S20[ii, jj]
+                    S[2, 1] = self.data.meridional_obj.S21[ii, jj]
+                    S[2, 2] = self.data.meridional_obj.S22[ii, jj]
+                    S[2, 3] = self.data.meridional_obj.S23[ii, jj]
+                    S[2, 4] = self.data.meridional_obj.S24[ii, jj]
+
+                    S[3, 0] = self.data.meridional_obj.S30[ii, jj]
+                    S[3, 1] = self.data.meridional_obj.S31[ii, jj]
+                    S[3, 2] = self.data.meridional_obj.S32[ii, jj]
+                    S[3, 3] = self.data.meridional_obj.S33[ii, jj]
+                    S[3, 4] = self.data.meridional_obj.S34[ii, jj]
+
+                    S[4, 0] = self.data.meridional_obj.S40[ii, jj]
+                    S[4, 1] = self.data.meridional_obj.S41[ii, jj]
+                    S[4, 2] = self.data.meridional_obj.S42[ii, jj]
+                    S[4, 3] = self.data.meridional_obj.S43[ii, jj]
+                    S[4, 4] = self.data.meridional_obj.S44[ii, jj]
 
                 S = self.NormalizeMatrix(S)  # normalization
                 self.data.dataSet[ii, jj].AddSMatrix(S)
@@ -1195,7 +1205,7 @@ class SunModel:
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_A_g(diag_block_ij*1j, row, column)
+                self.add_to_A_g(diag_block_ij, row, column)
 
     def build_C_global_matrix(self):
         """
@@ -1241,7 +1251,7 @@ class SunModel:
 
     def build_Z_global_matrix(self):
         """
-        build the Z global matrix. Z = (B_d + C + E_d + R + S), such that Z*phi = (j*omega*A)*phi
+        build the Z global matrix. J = Z = (B_d + C + E_d + R + S), such that Z*phi = (j*omega*A)*phi
         """
         self.Z_g = (self.Q_const + self.C_g + self.R_g)
 
