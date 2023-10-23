@@ -92,7 +92,7 @@ plt.title('P')
 print("Transforming generalized EVP in standard one...")
 Y_tilde = np.linalg.inv(Y - sigma * P)
 Y_tilde = np.dot(Y_tilde, P)
-number_search = 50
+number_search = 2
 print("Solving EVP...")
 eigenvalues, eigenvectors = eigs(Y_tilde, k=number_search)
 eigenvalues = sigma + 1 / eigenvalues

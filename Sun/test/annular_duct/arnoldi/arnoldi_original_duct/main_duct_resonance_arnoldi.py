@@ -167,7 +167,7 @@ omega_search = 51350
 mode_name = r'$[R,Z] = [2, 3]$'
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
-M = sun_obj.A_g
+M = 1j*sun_obj.A_g
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
 number_search = 1
@@ -280,7 +280,7 @@ plt.colorbar()
 # # second axial order
 plt.figure(figsize=(7, 5))
 plt.plot(z_grid[:, 0], p_eig_r[:, 0], '--o', label='numerical')
-plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(-2 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
+plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(3 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
 plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(mode_name)
@@ -291,7 +291,7 @@ plt.legend()
 
 
 # RADIAL CUT
-LAMBDA = roots[1]
+LAMBDA = roots[2]
 ALPHA = jvp(m, LAMBDA*r1, n=1) / yvp(m, LAMBDA*r1, n=1)
 ALPHA2 = jvp(m, LAMBDA*r2, n=1) / yvp(m, LAMBDA*r2, n=1)
 r_var = np.linspace(r1, r2, 100)
@@ -311,4 +311,24 @@ plt.xlabel(r'$r$ [-]')
 plt.title(mode_name)
 plt.legend()
 # plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+
+plt.figure(figsize=(7, 5))
+# if opposite signs
+plt.plot(z_grid[:, 0], ur_eig_r[:, 0], '--o', label='hub')
+plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(mode_name)
+plt.legend()
+# plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+
+plt.figure(figsize=(7, 5))
+# if opposite signs
+plt.plot(z_grid[:, Nr//2], uz_eig_r[:, Nr//2], '--o', label='hub')
+# plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(mode_name)
+plt.legend()
+
 plt.show()
