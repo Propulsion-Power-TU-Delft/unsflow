@@ -35,6 +35,12 @@ class MeridionalProcessGroup:
         """
         assemble together the fields contained in all the blocks
         """
+        self.x_ref = self.group[0].x_ref
+        self.u_ref = self.group[0].u_ref
+        self.t_ref = self.x_ref / self.u_ref
+        self.omega_ref = self.group[0].omega_ref
+        self.omega_shaft = self.group[0].omega_shaft
+
         self.z_cg = self.group[0].z_cg
         self.r_cg = self.group[0].r_cg
         self.z_grid = self.group[0].z_grid
@@ -318,7 +324,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
 
-    def show_grid(self, save_filename=None):
+    def show_grid(self, save_filename=None, grid_centers=False):
         """
         contour of the grid. Non-Dimensional quantities
         """
@@ -326,22 +332,23 @@ class MeridionalProcessGroup:
         self.AR = (np.max(self.r_cg) - np.min(self.r_cg)) / \
                   (np.max(self.z_cg) - np.min(self.z_cg))
         self.picture_size = (7, 7 * self.AR)
-        self.nstream = np.shape(self.z_cg)[0]
-        self.nspan = np.shape(self.z_cg)[1]
+        nstream = np.shape(self.z_grid)[0]
+        nspan = np.shape(self.z_grid)[1]
 
         plt.figure(figsize=self.picture_size)
 
         # external grid
-        for istream in range(0, self.nstream+1):
+        for istream in range(0, nstream):
             plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
-        for ispan in range(0, self.nspan+1):
+        for ispan in range(0, nspan):
             plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
 
         # grid centers
-        # for istream in range(0, self.nstream):
-        #     plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], 'r.')
-        # for ispan in range(0, self.nspan):
-        #     plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], 'r.')
+        if grid_centers:
+            for istream in range(0, nstream-3):
+                plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], 'r.')
+            for ispan in range(0, nspan-3):
+                plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], 'r.')
 
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
@@ -584,6 +591,8 @@ class MeridionalProcessGroup:
         """
         compute pressure ratio and efficiency given the averaged fluxes of total quantities
         """
+        self.nstream = np.shape(self.z_cg)[0]
+        self.nspan = np.shape(self.z_cg)[1]
         GMMA = 1.4
 
         T1 = self.group[0].T_flux[0]

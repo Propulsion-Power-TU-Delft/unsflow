@@ -49,7 +49,7 @@ font_colorbar = 24
 font_colorbar_axes = 18
 
 # Set marker size for all line markers:
-marker_size = 50
+marker_size = 25
 
 # Set the scale for marker size plotted in the legend entries:
 marker_scale_legend = 1
@@ -65,6 +65,8 @@ light_line_width = 0.5
 
 # set number of levels in contourf plots
 N_levels = 50
+N_levels_fine = 250
+
 
 # set colormap for contourf plots
 color_map = cm.jet

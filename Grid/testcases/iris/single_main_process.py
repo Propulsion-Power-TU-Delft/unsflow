@@ -20,13 +20,13 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 5
-BLADE_NZ = 20
-OUTLET_NZ = 10
-NR = 10
+INLET_NZ = 15
+BLADE_NZ = 50
+OUTLET_NZ = 25
+NR = 25
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
-MULTIBLOCK_FILTERING = False
+MULTIBLOCK_FILTERING = True
 
 
 
@@ -98,6 +98,7 @@ if REGRESSION:
     inlet_process.compute_regressed_fields()
 inlet_process.compute_derived_quantities()
 inlet_process.compute_averaged_fluxes()
+inlet_process.compute_body_fource_S('unbladed')
 delattr(inlet_process, 'data')  # release useless memory
 
 
@@ -148,6 +149,7 @@ if REGRESSION:
 blade_process.compute_derived_quantities()
 blade_process.compute_bfm_axial(mode='global', save_fig=True)
 blade_process.compute_averaged_fluxes()
+blade_process.compute_body_fource_S('bladed')
 delattr(blade_process, 'data')
 
 
@@ -189,6 +191,7 @@ if REGRESSION:
     outlet_process.compute_regressed_fields()
 outlet_process.compute_derived_quantities()
 outlet_process.compute_averaged_fluxes()
+outlet_process.compute_body_fource_S('unbladed')
 delattr(outlet_process, 'data')
 
 
@@ -205,9 +208,11 @@ obj.add_to_group(blade_process)
 obj.add_to_group(outlet_process)
 obj.assemble_fields()
 obj.assemble_field_gradients()
+obj.assemble_body_force_fields()
 if MULTIBLOCK_FILTERING:
     obj.gauss_filtering()
     obj.gauss_filtering_gradients()
+obj.compute_streamline_length()
 obj.show_grid()
 
 obj.contour_fields(save_filename='filt_%s_%i_%i_%i_%i'

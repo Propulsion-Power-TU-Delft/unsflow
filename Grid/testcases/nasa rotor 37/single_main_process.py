@@ -19,14 +19,14 @@ print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
-REGRESSION = False
-INLET_NZ = 30
-BLADE_NZ = 30
-OUTLET_NZ = 60
-NR = 30
+REGRESSION = True
+INLET_NZ = 25
+BLADE_NZ = 25
+OUTLET_NZ = 45
+NR = 25
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
-MULTIBLOCK_FILTERING = False
+MULTIBLOCK_FILTERING = True
 
 
 
@@ -34,7 +34,7 @@ MULTIBLOCK_FILTERING = False
 
 
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GLOBAL DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INPUT DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data_folder_path = 'nasa_rotor_37/cordinates/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
@@ -98,6 +98,7 @@ if REGRESSION:
     inlet_process.compute_regressed_fields()
 inlet_process.compute_derived_quantities()
 inlet_process.compute_averaged_fluxes()
+inlet_process.compute_body_fource_S('unbladed')
 delattr(inlet_process, 'data')  # release useless memory
 
 
@@ -148,6 +149,7 @@ if REGRESSION:
 blade_process.compute_derived_quantities()
 blade_process.compute_bfm_axial(mode='global', save_fig=True)
 blade_process.compute_averaged_fluxes()
+blade_process.compute_body_fource_S('bladed')
 delattr(blade_process, 'data')
 
 
@@ -189,6 +191,7 @@ if REGRESSION:
     outlet_process.compute_regressed_fields()
 outlet_process.compute_derived_quantities()
 outlet_process.compute_averaged_fluxes()
+outlet_process.compute_body_fource_S('unbladed')
 delattr(outlet_process, 'data')
 
 
@@ -205,9 +208,11 @@ obj.add_to_group(blade_process)
 obj.add_to_group(outlet_process)
 obj.assemble_fields()
 obj.assemble_field_gradients()
+obj.assemble_body_force_fields()
 if MULTIBLOCK_FILTERING:
     obj.gauss_filtering()
     obj.gauss_filtering_gradients()
+obj.compute_streamline_length()
 obj.show_grid()
 
 obj.contour_fields(save_filename='filt_%s_%i_%i_%i_%i'
@@ -238,7 +243,7 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_filt_%s_%i_%i_
                                                       %(MULTIBLOCK_FILTERING, INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 obj.compute_performance()
 obj.print_performance()
-# obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
+obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 
 

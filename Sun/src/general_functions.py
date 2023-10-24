@@ -197,3 +197,11 @@ def GaussLobattoPoints(N):
         xnew = np.cos(i * np.pi / (N - 1))  # gauss lobatto points
         x = np.append(x, xnew)
     return x
+
+
+def scaled_eigenvector_real(eig_list, Nz, Nr):
+    array = np.array(eig_list, dtype=complex)
+    array = np.reshape(array, (Nz, Nr))
+    array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
+    return array_real_scaled
+

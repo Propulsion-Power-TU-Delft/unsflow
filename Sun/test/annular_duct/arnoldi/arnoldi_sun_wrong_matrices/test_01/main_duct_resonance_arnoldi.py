@@ -5,6 +5,7 @@ Created on Wed May  3 09:29:59 2023
 @author: F. Neri, TU Delft
 """
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import jv, yv, jvp, yvp
@@ -24,6 +25,7 @@ R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p / (R * T)  # density [kg/m3]
 a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
+formulation = 'Sun'
 
 # non-dimensionalization terms:
 x_ref = r1
@@ -148,19 +150,26 @@ sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
 gradient_order = 6
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
-sun_obj.AddAMatrixToNodesFrancesco2()
-sun_obj.AddBMatrixToNodesFrancesco2()
-sun_obj.AddCMatrixToNodesFrancesco2(m=m)
-sun_obj.AddEMatrixToNodesFrancesco2()
-sun_obj.AddRMatrixToNodesFrancesco2()
-sun_obj.AddSMatrixToNodes(turbo=False)
+if formulation=='Francesco':
+    sun_obj.AddAMatrixToNodesFrancesco2()
+    sun_obj.AddBMatrixToNodesFrancesco2()
+    sun_obj.AddCMatrixToNodesFrancesco2(m=m)
+    sun_obj.AddEMatrixToNodesFrancesco2()
+    sun_obj.AddRMatrixToNodesFrancesco2()
+elif formulation=='Sun':
+    sun_obj.AddAMatrixToNodes()
+    sun_obj.AddBMatrixToNodes()
+    sun_obj.AddCMatrixToNodes(m=m)
+    sun_obj.AddEMatrixToNodes()
+    sun_obj.AddRMatrixToNodes()
+sun_obj.AddSMatrixToNodes()
 sun_obj.AddHatMatricesToNodes()
 sun_obj.ApplySpectralDifferentiation()
 sun_obj.build_A_global_matrix()
 sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_Z_global_matrix()
-sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
+sun_obj.impose_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
 omega_search = 51350
@@ -176,6 +185,13 @@ eigenvalues, eigenvectors = eigs(C, k=number_search)
 eigenvalues = sigma + 1 / eigenvalues
 eigenvalues *= omega_ref
 
+name_folder = 'pictures/' + str(int(eigenvalues[0].real))
+isExist = os.path.exists(name_folder)
+if not isExist:
+    os.makedirs(name_folder)
+else:
+    pass
+
 marker_size = 100
 fig, ax = plt.subplots(figsize=(7, 5))
 ax.scatter(omega_analytical.real, omega_analytical.imag, marker='x', facecolors='blue',
@@ -185,10 +201,10 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([7500, 35000])
-ax.set_ylim([-8000, 8000])
+ax.set_xlim([45000, 55000])
+ax.set_ylim([-2000, 2000])
 ax.grid(alpha=0.3)
-# fig.savefig('pictures/%i/chi_map_arnoldi_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+fig.savefig('pictures/%i/chi_map_arnoldi_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -220,50 +236,47 @@ def scaled_eigenvector_real(eig_list):
     array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
     return array_real_scaled
 
-
 rho_eig_r = scaled_eigenvector_real(rho_eig)
 ur_eig_r = scaled_eigenvector_real(ur_eig)
 ut_eig_r = scaled_eigenvector_real(ut_eig)
 uz_eig_r = scaled_eigenvector_real(uz_eig)
 p_eig_r = scaled_eigenvector_real(p_eig)
 
-
-
 plt.figure(figsize=(7, 5))
-plt.contourf(z_grid, r_grid, rho_eig_r, levels=200, cmap='RdBu')
+plt.contourf(z_grid, r_grid, rho_eig_r, levels=30, cmap='RdBu')
 plt.ylabel(r'$r$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(r'$\tilde{\rho} \quad$'+mode_name)
 plt.colorbar()
-# plt.savefig('pictures/%i/eigenfunction_rho_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_rho_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 plt.figure(figsize=(7, 5))
-plt.contourf(z_grid, r_grid, ur_eig_r, levels=200, cmap='RdBu')
+plt.contourf(z_grid, r_grid, ur_eig_r, levels=30, cmap='RdBu')
 plt.ylabel(r'$r$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(r'$\tilde{u}_r \quad$' + mode_name)
 plt.colorbar()
-# plt.savefig('pictures/%i/eigenfunction_ur_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_ur_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 plt.figure(figsize=(7, 5))
-plt.contourf(z_grid, r_grid, ut_eig_r, levels=200, cmap='RdBu')
+plt.contourf(z_grid, r_grid, ut_eig_r, levels=30, cmap='RdBu')
 plt.ylabel(r'$r$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(r'$\tilde{u}_{\theta} \quad$' + mode_name)
 plt.colorbar()
-# plt.savefig('pictures/%i/eigenfunction_ut_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_ut_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 plt.figure(figsize=(7, 5))
-plt.contourf(z_grid, r_grid, uz_eig_r, levels=200, cmap='RdBu')
+plt.contourf(z_grid, r_grid, uz_eig_r, levels=30, cmap='RdBu')
 plt.ylabel(r'$r$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(r'$\tilde{u}_z \quad$' + mode_name)
 plt.colorbar()
-# plt.savefig('pictures/%i/eigenfunction_uz_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_uz_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 plt.figure(figsize=(7, 5))
-plt.contourf(z_grid, r_grid, p_eig_r, levels=200, cmap='RdBu')
+plt.contourf(z_grid, r_grid, p_eig_r, levels=30, cmap='RdBu')
 plt.ylabel(r'$r$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(r'$\tilde{p} \quad$' + mode_name)
 plt.colorbar()
-# plt.savefig('pictures/%i/eigenfunction_p_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_p_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
 
 
@@ -285,7 +298,7 @@ plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(mode_name)
 plt.legend()
-# plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
 
 
@@ -310,7 +323,7 @@ plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$r$ [-]')
 plt.title(mode_name)
 plt.legend()
-# plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
 plt.figure(figsize=(7, 5))
 # if opposite signs
@@ -320,15 +333,16 @@ plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(mode_name)
 plt.legend()
-# plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.savefig('pictures/%i/ur_bc_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
-plt.figure(figsize=(7, 5))
-# if opposite signs
-plt.plot(z_grid[:, Nr//2], uz_eig_r[:, Nr//2], '--o', label='hub')
-# plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
-plt.ylabel(r'$p$ [-]')
-plt.xlabel(r'$z$ [-]')
-plt.title(mode_name)
-plt.legend()
+
+# plt.figure(figsize=(7, 5))
+# # if opposite signs
+# plt.plot(z_grid[:, Nr//2], uz_eig_r[:, Nr//2], '--o', label='hub')
+# # plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
+# plt.ylabel(r'$p$ [-]')
+# plt.xlabel(r'$z$ [-]')
+# plt.title(mode_name)
+# plt.legend()
 
 plt.show()

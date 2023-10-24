@@ -10,10 +10,12 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker, cm
 import time
 from scipy.ndimage import minimum_filter
+from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
 from .styles import *
+from .eigenmode import Eigenmode
 
 
 class SunModel:
@@ -22,11 +24,9 @@ class SunModel:
     Matrix elements are taken from Aerodynamic Instabilities of Swept Airfoil Design in Transonic Axial-Flow Compressors,
     He et Al.
     The general stability equation is:
-        (-j*omega*A + hat{B}*ddXi + j*m*C/r + hat{E}*ddEta + R + S)*Phi' = 0
+        (-j*omega*A + B*ddr + j*m*C/r + E*ddz + R + S)*Phi' = 0
     
-    ATTRIBUTES:
-        data : grid object contaning the CFD results
-        nPoints : total number of grid points (boundaries included)
+    MATRICES:
         A : coefficient matrix of temporal derivatives
         B : coefficient matrix of radial derivatives
         C : coefficient matrix of azimuthal derivative s
@@ -586,19 +586,6 @@ class SunModel:
                 R[3, 2] = 0
                 R[3, 3] = self.data.dataSet[ii, jj].duz_dz
                 R[3, 4] = 0
-                # R[4, 0] = (1 / self.gmma) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
-                #                              self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
-                #
-                # R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr + \
-                #           self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dr
-                #
-                # R[4, 2] = 0
-                # R[4, 3] = self.data.dataSet[ii, jj].rho * self.data.dataSet[ii, jj].dp_dz / self.gmma - \
-                #           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
-                #
-                # R[4, 4] = -self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr - \
-                #           self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz
-
                 R[4, 0] = (1 / self.data.dataSet[ii, jj].rho) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
                                              self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
 
@@ -609,13 +596,14 @@ class SunModel:
                 R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma/self.data.dataSet[ii, jj].rho * \
                           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
 
-                R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr - \
-                          self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * self.gmma/self.data.dataSet[ii, jj].rho
+                R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr -
+                          self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * \
+                          self.gmma/self.data.dataSet[ii, jj].rho
 
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-    def AddSMatrixToNodes(self, turbo=False):
+    def AddSMatrixToNodes(self, turbo=True):
         """
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model
@@ -1280,7 +1268,7 @@ class SunModel:
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
 
-    def impose_boundary_conditions(self, inlet_bc, outlet_bc, hub_bc='euler wall', shroud_bc='euler wall'):
+    def set_boundary_conditions(self, inlet_bc, outlet_bc, hub_bc='euler wall', shroud_bc='euler wall'):
         """
         store in the object the information related to the boundary conditions to use for the problem
         Args:
@@ -1296,7 +1284,7 @@ class SunModel:
         """
 
         # recognized boundary conditions type
-        bc_list = ['zero pressure', 'zero perturbation', 'euler wall']
+        bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet']
 
         if not inlet_bc in bc_list:
             raise ValueError('Inlet boundary condition not found.')
@@ -1331,6 +1319,20 @@ class SunModel:
             self.Z_g[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
 
             self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+
+        elif condition == 'compressor inlet':
+            # BCs are zero for every variable except the pressure at inlet
+            self.Z_g[row:row + 4, :] = np.zeros(self.Z_g[row:row + 4, :].shape, dtype=complex)
+            self.Z_g[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
+
+            self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+
+        elif condition == 'compressor outlet':
+            # BC for zero pressure perturbation
+            self.Z_g[row + 4, :] = np.zeros(self.Z_g[row + 4, :].shape, dtype=complex)
+            self.Z_g[row + 4, row + 4] = 1  # zero pressure at that node
+
+            self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'euler wall':
             # BC for non-penetration condition at the walls, tangential velocity equation overwritten
@@ -1369,3 +1371,174 @@ class SunModel:
 
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+
+
+    def solve_evp_arnoldi(self, m, omega_search=0, number_search=10):
+        """
+        Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy
+        """
+        Omega = self.data.meridional_obj.omega_shaft  # dimensional algebraic omega of the shaft
+        omega_ref = self.data.meridional_obj.omega_ref  # dimensional omega of reference
+        x_ref = self.data.meridional_obj.x_ref
+        u_ref = self.data.meridional_obj.u_ref
+        t_ref = x_ref / u_ref
+        tau = x_ref / u_ref  # time delay of the body force model (it could also be through flow time)
+        sigma = omega_search/omega_ref  # non-dimensional center point of research
+
+        L0 = self.Z_g * (1 + 1j * m * Omega/omega_ref * tau/t_ref) + self.S_g
+        L1 = self.A_g * (m * Omega/omega_ref * tau/t_ref - 1j) - 1j*tau/t_ref * self.Z_g
+        L2 = -tau / t_ref * self.A_g
+
+        Y1 = np.concatenate((-L0, np.zeros_like(L0)), axis=1)
+        Y2 = np.concatenate((np.zeros_like(L0), np.eye(L0.shape[0])), axis=1)
+        Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
+
+        P1 = np.concatenate((L1, L2), axis=1)
+        P2 = np.concatenate((np.eye(L0.shape[0]), np.zeros_like(L0)), axis=1)
+        P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
+
+        print("Transforming generalized EVP in standard one...")
+        Y_tilde = np.linalg.inv(Y - sigma * P)
+        Y_tilde = np.dot(Y_tilde, P)
+
+        print("Solving standard EVP...")
+        self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=number_search)
+        self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
+        self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
+        self.eigenfreqs_df = self.eigenfreqs.imag/omega_ref
+        self.eigenfreqs_rs = self.eigenfreqs.real/omega_ref
+
+
+    def plot_eigenfrequencies(self, delimit=False, save_filename=None):
+        """
+        plot the eigenfrequencies obtained with the Arnoldi Method
+        """
+        fig, ax = plt.subplots(figsize=fig_size)
+        ax.scatter(self.eigenfreqs_rs, self.eigenfreqs_df, marker='o', facecolors='red', edgecolors='red',
+                   s=marker_size)
+        ax.set_xlabel(r'RS [-]')
+        ax.set_ylabel(r'DF [-]')
+        # ax.legend()
+        if delimit:
+            ax.set_xlim([-1.5, 1.5])
+            ax.set_ylim([-1, 0.5])
+        ax.grid(alpha=grid_opacity)
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+
+    def extract_eigenfields(self, n=None):
+        """
+        from the eigenvectors obtained with Arnoldi Method, extract the first n eigenfields
+        """
+        if n is None:
+            n = len(self.eigenfreqs)
+        elif n>len(self.eigenfreqs):
+            print("parameter n must be lower than the eigenvector number. n set to max allowed")
+            n = len(self.eigenfreqs)
+
+        Nz = self.data.nAxialNodes
+        Nr = self.data.nRadialNodes
+        self.eigenfields = []
+        for mode in range(n):
+            eigenfrequency = self.eigenfreqs[mode]
+            eigenvector = self.eigenmodes[:, mode]
+
+            rho_eig = []
+            ur_eig = []
+            ut_eig = []
+            uz_eig = []
+            p_eig = []
+            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled in this Alg.
+                if (i) % 5 == 0:
+                    rho_eig.append(eigenvector[i])
+                elif (i - 1) % 5 == 0 and i != 0:
+                    ur_eig.append(eigenvector[i])
+                elif (i - 2) % 5 == 0 and i != 0:
+                    ut_eig.append(eigenvector[i])
+                elif (i - 3) % 5 == 0 and i != 0:
+                    uz_eig.append(eigenvector[i])
+                elif (i - 4) % 5 == 0 and i != 0:
+                    p_eig.append(eigenvector[i])
+                else:
+                    raise ValueError("Not correct indexing for eigenvector retrieval!")
+
+            rho_eig_r = scaled_eigenvector_real(rho_eig, Nz, Nr)
+            ur_eig_r = scaled_eigenvector_real(ur_eig, Nz, Nr)
+            ut_eig_r = scaled_eigenvector_real(ut_eig, Nz, Nr)
+            uz_eig_r = scaled_eigenvector_real(uz_eig, Nz, Nr)
+            p_eig_r = scaled_eigenvector_real(p_eig, Nz, Nr)
+
+            self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
+
+
+    def plot_eigenmodes(self, n=None, save_filename=None):
+        """
+        plot the first n eigenmodes structures
+        """
+        z = self.data.meridional_obj.z_cg
+        r = self.data.meridional_obj.r_cg
+        Nz = np.shape(z)[0]
+        Nr = np.shape(z)[1]
+        modes_map = cm.coolwarm
+
+        if n is None:
+            n = len(self.eigenfields)
+        elif n > len(self.eigenfields):
+            print("parameter n must be lower than the eigenfields number. n set to max allowed!")
+            n = len(self.eigenfreqs)
+        elif n < 1:
+            raise ValueError("Select a positive number of modes to show")
+        else:
+            pass
+
+        imode = 0
+        for mode in self.eigenfields[0:n]:
+            imode += 1
+
+            plt.figure(figsize=fig_size)
+            plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{\rho}_{%i}$' %(imode))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+
+            plt.figure(figsize=fig_size)
+            plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{r,%i}$' % (imode))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+
+            plt.figure(figsize=fig_size)
+            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{\theta,%i}$' % (imode))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+
+            plt.figure(figsize=fig_size)
+            plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{z,%i}$' % (imode))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+
+            plt.figure(figsize=fig_size)
+            plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{p}_{%i}$' % (imode))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+

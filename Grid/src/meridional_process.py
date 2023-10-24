@@ -12,8 +12,6 @@ from scipy.ndimage import gaussian_filter
 from scipy.interpolate import Rbf
 import pickle
 import sympy as sp
-from scipy.interpolate import griddata
-
 from .styles import *
 from .polynomial_ls_regression import *
 from .functions import compute_picture_size
@@ -48,6 +46,7 @@ class MeridionalProcess:
         self.s_ref = data.s_ref
         self.x_ref = data.x_ref
         self.omega_ref = data.omega_ref
+        self.omega_shaft = data.omega_shaft*self.omega_ref
         self.p_ref = data.p_ref
 
     def compute_camber_angles(self):
@@ -66,7 +65,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=100):
+    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
         perform circumferential averages
         Args:
@@ -155,31 +154,31 @@ class MeridionalProcess:
 
                 # body force model quantities
                 if bfm == 'radial':
-                    self.k[istream, ispan] = self.mass_average(self.data.k, idx)
-                    self.F_ntheta[istream, ispan] = self.mass_average(self.data.F_ntheta, idx)
-                    self.F_nr[istream, ispan] = self.mass_average(self.data.F_nr, idx)
-                    self.F_nz[istream, ispan] = self.mass_average(self.data.F_nz, idx)
-                    self.a1[istream, ispan] = self.mass_average(self.data.a1, idx)
-                    self.a2[istream, ispan] = self.mass_average(self.data.a2, idx)
-                    self.a3[istream, ispan] = self.mass_average(self.data.a3, idx)
-                    self.Fn_prime_ss_00[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_00, idx)
-                    self.Fn_prime_ss_01[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_01, idx)
-                    self.Fn_prime_ss_02[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_02, idx)
-                    self.Fn_prime_ss_10[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_10, idx)
-                    self.Fn_prime_ss_11[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_11, idx)
-                    self.Fn_prime_ss_12[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_12, idx)
-                    self.Fn_prime_ss_20[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_20, idx)
-                    self.Fn_prime_ss_21[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_21, idx)
-                    self.Fn_prime_ss_22[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_22, idx)
-                    self.Ft_prime_ss_00[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_00, idx)
-                    self.Ft_prime_ss_01[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_01, idx)
-                    self.Ft_prime_ss_02[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_02, idx)
-                    self.Ft_prime_ss_10[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_10, idx)
-                    self.Ft_prime_ss_11[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_11, idx)
-                    self.Ft_prime_ss_12[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_12, idx)
-                    self.Ft_prime_ss_20[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_20, idx)
-                    self.Ft_prime_ss_21[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_21, idx)
-                    self.Ft_prime_ss_22[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_22, idx)
+                    self.k[istream, ispan] = self.mass_average(self.data.k, idx, istream, ispan)
+                    self.F_ntheta[istream, ispan] = self.mass_average(self.data.F_ntheta, idx, istream, ispan)
+                    self.F_nr[istream, ispan] = self.mass_average(self.data.F_nr, idx, istream, ispan)
+                    self.F_nz[istream, ispan] = self.mass_average(self.data.F_nz, idx, istream, ispan)
+                    self.a1[istream, ispan] = self.mass_average(self.data.a1, idx, istream, ispan)
+                    self.a2[istream, ispan] = self.mass_average(self.data.a2, idx, istream, ispan)
+                    self.a3[istream, ispan] = self.mass_average(self.data.a3, idx, istream, ispan)
+                    self.Fn_prime_ss_00[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_00, idx, istream, ispan)
+                    self.Fn_prime_ss_01[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_01, idx, istream, ispan)
+                    self.Fn_prime_ss_02[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_02, idx, istream, ispan)
+                    self.Fn_prime_ss_10[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_10, idx, istream, ispan)
+                    self.Fn_prime_ss_11[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_11, idx, istream, ispan)
+                    self.Fn_prime_ss_12[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_12, idx, istream, ispan)
+                    self.Fn_prime_ss_20[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_20, idx, istream, ispan)
+                    self.Fn_prime_ss_21[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_21, idx, istream, ispan)
+                    self.Fn_prime_ss_22[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_22, idx, istream, ispan)
+                    self.Ft_prime_ss_00[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_00, idx, istream, ispan)
+                    self.Ft_prime_ss_01[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_01, idx, istream, ispan)
+                    self.Ft_prime_ss_02[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_02, idx, istream, ispan)
+                    self.Ft_prime_ss_10[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_10, idx, istream, ispan)
+                    self.Ft_prime_ss_11[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_11, idx, istream, ispan)
+                    self.Ft_prime_ss_12[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_12, idx, istream, ispan)
+                    self.Ft_prime_ss_20[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_20, idx, istream, ispan)
+                    self.Ft_prime_ss_21[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_21, idx, istream, ispan)
+                    self.Ft_prime_ss_22[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_22, idx, istream, ispan)
 
         if fix_borders:
             self.fix_borders()
@@ -356,7 +355,7 @@ class MeridionalProcess:
 
     def mass_average(self, field, idx, istream, ispan, RBF=False):
         """
-        mass weighted average of a fluid dynamics field[idx], weighted also as a RBF
+        mass weighted average of a fluid dynamics field[idx]
         """
         field = field[idx]
         rho = self.data.rho[idx]
@@ -1454,12 +1453,11 @@ class MeridionalProcess:
         if save_fig:
             plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        self.compute_body_fource_S(domain='bladed')
 
 
-    def compute_body_fource_S(self, domain=None):
+    def compute_body_fource_S(self, domain):
         """
-        if the domain is bladed compute the body force steady state matrices. Otherwise instantiate zeros
+        if the domain is bladed compute the body force steady state matrices. Otherwise, instantiate zeros
         for the related terms
         """
 
@@ -1479,7 +1477,7 @@ class MeridionalProcess:
             self.S04 = np.zeros_like(self.ur)
 
             self.S10 = np.zeros_like(self.ur)
-            self.S11 = tr*2*self.alpha*self.ur + nr/ntheta*self.ur*self.beta*self.ut_rel/self.u_meridional
+            self.S11 = tr * 2 * self.alpha * self.ur + nr / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
             self.S12 = tr * 2 * self.alpha * self.ut_rel + nr / ntheta * self.beta * self.u_meridional
             self.S13 = tr * 2 * self.alpha * self.uz + nr / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S14 = np.zeros_like(self.ur)
@@ -1502,7 +1500,7 @@ class MeridionalProcess:
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
 
-        else:
+        elif domain=='unbladed':
             self.S00 = np.zeros_like(self.ur)
             self.S01 = np.zeros_like(self.ur)
             self.S02 = np.zeros_like(self.ur)
@@ -1528,6 +1526,9 @@ class MeridionalProcess:
             self.S42 = np.zeros_like(self.ur)
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
+
+        else:
+            raise ValueError("Unknown domain type for body force calculation. Available choices: bladed or unbladed!")
 
 
 
