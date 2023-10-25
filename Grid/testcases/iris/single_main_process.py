@@ -20,10 +20,10 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 15
-BLADE_NZ = 50
-OUTLET_NZ = 25
-NR = 25
+INLET_NZ = 10
+BLADE_NZ = 40
+OUTLET_NZ = 20
+NR = 20
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
 MULTIBLOCK_FILTERING = True

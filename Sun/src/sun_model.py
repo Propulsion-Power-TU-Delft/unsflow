@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import ticker, cm
 import time
+import csv
+import pickle
 from scipy.ndimage import minimum_filter
 from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
@@ -1287,13 +1289,13 @@ class SunModel:
         bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet']
 
         if not inlet_bc in bc_list:
-            raise ValueError('Inlet boundary condition not found.')
+            raise ValueError('Incorrect Inlet boundary condition type.')
         if not outlet_bc in bc_list:
-            raise ValueError('Outlet boundary condition not found.')
+            raise ValueError('Incorrect Outlet boundary condition type.')
         if not hub_bc in bc_list:
-            raise ValueError('Hub boundary condition not found.')
+            raise ValueError('Incorrect Hub boundary condition type.')
         if not shroud_bc in bc_list:
-            raise ValueError('Shroud boundary condition not found.')
+            raise ValueError('Incorrect Shroud boundary condition type.')
 
         self.inlet_bc = inlet_bc
         self.outlet_bc = outlet_bc
@@ -1374,10 +1376,11 @@ class SunModel:
 
 
 
-    def solve_evp_arnoldi(self, m, omega_search=0, number_search=10):
+    def solve_evp_arnoldi(self, m, omega_search=0, number_search=10, inspect_matrices=False):
         """
         Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy
         """
+        # if turbo:
         Omega = self.data.meridional_obj.omega_shaft  # dimensional algebraic omega of the shaft
         omega_ref = self.data.meridional_obj.omega_ref  # dimensional omega of reference
         x_ref = self.data.meridional_obj.x_ref
@@ -1398,6 +1401,28 @@ class SunModel:
         P2 = np.concatenate((np.eye(L0.shape[0]), np.zeros_like(L0)), axis=1)
         P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
+        if inspect_matrices:
+            plt.figure()
+            plt.spy(L0)
+            plt.title(r'$\mathbf{L}_{0}$')
+
+            plt.figure()
+            plt.spy(L1)
+            plt.title(r'$\mathbf{L}_{1}$')
+
+            plt.figure()
+            plt.spy(L2)
+            plt.title(r'$\mathbf{L}_{2}$')
+
+            plt.figure()
+            plt.spy(Y)
+            plt.title(r'$\mathbf{Y}$')
+
+            plt.figure()
+            plt.spy(P)
+            plt.title(r'$\mathbf{P}$')
+
+
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(Y - sigma * P)
         Y_tilde = np.dot(Y_tilde, P)
@@ -1408,6 +1433,27 @@ class SunModel:
         self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
         self.eigenfreqs_df = self.eigenfreqs.imag/omega_ref
         self.eigenfreqs_rs = self.eigenfreqs.real/omega_ref
+
+
+    def sort_eigensolution(self):
+        """
+        sort the eigenmodes from the most unstable to the least one
+        """
+        # make copies of the arrays to sort
+        eigenfreqs = np.copy(self.eigenfreqs)
+        df = np.copy(self.eigenfreqs_df)
+        rs = np.copy(self.eigenfreqs_rs)
+        eigenvectors = np.copy(self.eigenmodes)
+
+        # get the sorting indices following descending order of the damping factor
+        sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
+
+        # order the original arrays following the sorting indices
+        for i in range(len(sorted_indices)):
+            self.eigenfreqs[i] = eigenfreqs[sorted_indices[i]]
+            self.eigenfreqs_df[i] = df[sorted_indices[i]]
+            self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
+            self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
 
 
     def plot_eigenfrequencies(self, delimit=False, save_filename=None):
@@ -1473,7 +1519,7 @@ class SunModel:
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
 
-    def plot_eigenmodes(self, n=None, save_filename=None):
+    def plot_eigenfields(self, n=None, save_filename=None):
         """
         plot the first n eigenmodes structures
         """
@@ -1541,4 +1587,34 @@ class SunModel:
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+
+
+    def write_results(self, save_filename=None, extension='csv'):
+        """
+        print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
+        Possible file types are (csv, pickle).
+        csv: write only DF and RS in a csv file, organized in two columns
+        pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions
+        """
+        if save_filename is not None:
+            filename = save_filename
+        else:
+            filename = 'eigenvalues'
+
+        eigenvalue_array = self.eigenfreqs_rs + 1j*self.eigenfreqs_df
+
+        if extension == 'csv':
+            with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
+                fieldnames = ['RS', 'DF']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for num in eigenvalue_array:
+                    writer.writerow({'RS': num.real, 'DF': num.imag})
+        elif extension == 'pickle':
+            with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
+                pickle.dump(self.eigenfields, picklefile)
+        else:
+            raise ValueError("Incorrect Extension of the output file.")
+
+
 
