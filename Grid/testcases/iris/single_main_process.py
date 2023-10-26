@@ -18,15 +18,18 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
-REGRESSION = True
-INLET_NZ = 10
-BLADE_NZ = 40
-OUTLET_NZ = 20
+MESH_TYPE = 'sigmoid'
+ORTHOGONALITY = True
+SIGMOID_STREAM = 9
+SIGMOID_SPAN = 7
+REGRESSION = False
+INLET_NZ = 15
+BLADE_NZ = 30
+OUTLET_NZ = 15
 NR = 20
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
-MULTIBLOCK_FILTERING = True
+MULTIBLOCK_FILTERING = False
 
 
 
@@ -74,15 +77,15 @@ block.inlet_zone_trim()
 block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud()
-block.sample_outlet()
+block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False,
                               x_stretching=False, y_stretching=False,
-                              sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='minimize')
 else:
     block.compute_grid_points(grid_mode='elliptic', orthogonality=True,
                               x_stretching='sigmoid_right', y_stretching='sigmoid',
-                              sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='minimize')
 block.compute_grid_centers()
 
 # instantiate cfd data object and perform processing removing the outliers
@@ -124,15 +127,15 @@ bladed_block.bladed_zone_trim(machine_type='radial')
 bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud()
-bladed_block.sample_leading_trailing_edges()
+bladed_block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
-                                     sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
-                                     inlet_meridional_obj=inlet_process)
+                                     sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
+                                     inlet_meridional_obj=inlet_process, method='minimize')
 else:
     bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
-                                 sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
-                                 inlet_meridional_obj=inlet_process)
+                                 sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
+                                 inlet_meridional_obj=inlet_process, method='minimize')
 bladed_block.compute_grid_centers()
 
 blade.find_camber_surface(bladed_block)
@@ -163,7 +166,7 @@ nstream = OUTLET_NZ
 nspan = NR
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3,
                      rescale_factor=rescale_factor, x_ref=x_ref)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3,
+shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=1,
                         rescale_factor=rescale_factor, x_ref=x_ref)
 block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
@@ -173,15 +176,15 @@ block.outlet_zone_trim(mode='radial')
 block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud()
-block.sample_inlet()
+block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
-                              sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
-                              inlet_meridional_obj=blade_process)
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
+                              inlet_meridional_obj=blade_process, method='minimize')
 else:
     block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left', y_stretching='sigmoid',
-                              sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
-                              inlet_meridional_obj=blade_process)
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
+                              inlet_meridional_obj=blade_process, method='minimize')
 block.compute_grid_centers()
 
 outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)

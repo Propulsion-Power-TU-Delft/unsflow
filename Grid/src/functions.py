@@ -6,6 +6,7 @@ Created on Wed Jun 14 18:29:29 2023
 """
 import numpy as np
 from numpy import sin, cos
+import pickle
 from .styles import *
 import math
 from scipy.optimize import fsolve
@@ -140,7 +141,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
                              pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
-                             method='minimize', fix_inlet=False, fix_outlet=False):
+                             method='minimize', fix_inlet=False, fix_outlet=False, save_animation=False):
     """
     create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way. Think about meridional sector, inlet=left border, hub=bottom border,
@@ -232,6 +233,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
     if show:
         plt.figure(figsize=pic_size)
+
+    if save_animation:
+        X_animation = np.zeros((nx, ny, maxit))
+        Y_animation = np.zeros((nx, ny, maxit))
 
     it = 0
     for it in range(maxit):
@@ -418,11 +423,18 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     X[-1, ispan] = xb_new
                     Y[-1, ispan] = yb_new
 
+        if save_animation:
+            X_animation[:, :, it] = X
+            Y_animation[:, :, it] = Y
+
         # compute differences from last iteration
         err_x = np.linalg.norm(X_old - X)
         err_y = np.linalg.norm(Y_old - Y)
         if err_x < tol and err_y < tol and it > it_orth:
             print('convergence reached in %d sweeps' % (it))
+            if save_animation:
+                X_animation = X_animation[:, :, 0:it]
+                Y_animation = Y_animation[:, :, 0:it]
             break
 
         # give an indication that convergence was not reached even if exiting the loop
@@ -439,6 +451,13 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         plt.ylabel(r'$y$')
         plt.title('iteration %d' % (it))
         plt.savefig('pictures/' + save_filename + '_%d_%d.pdf' % (nx, ny), bbox_inches='tight')
+
+    if save_animation:
+        # Open the file in binary write mode and save the arrays
+        with open('X_grid_animation.pickle', 'wb') as file:
+            pickle.dump(X_animation, file)
+        with open('Y_grid_animation.pickle', 'wb') as file:
+            pickle.dump(Y_animation, file)
 
     return X, Y
 
@@ -578,7 +597,7 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     xb_old, yb_old are the cordinates of the previous iteration
     """
     u = np.linspace(0, 1, len(x))  # curve parameterization
-    degree = 12
+    degree = 7
 
     # Perform polynomial interpolation
     coefficients = np.polyfit(u, x, degree)
@@ -587,20 +606,15 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     coefficients = np.polyfit(u, y, degree)
     interp_y = np.poly1d(coefficients)
 
-    def objective(u, xp_new, yp_new):
-        y_u = interp_y(u)
-        x_u = interp_x(u)
-        obj = (y_u - yp_new) ** 2 + (x_u - xp_new) ** 2
+    def objective(u_param, xpoint, ypoint):
+        y_u = interp_y(u_param)
+        x_u = interp_x(u_param)
+        obj = (y_u - ypoint) ** 2 + (x_u - xpoint) ** 2
         return obj
 
     initial_guess = np.mean(u)  # initial guess for u
     u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
-
-    if xb_new is not None:
-        u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
-    else:
-        u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
-
+    u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
     xb_new = interp_x(u_result.x)
     yb_new = interp_y(u_result.x)
     return xb_new, yb_new

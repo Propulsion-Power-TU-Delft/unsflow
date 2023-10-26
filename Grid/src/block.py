@@ -141,8 +141,9 @@ class Block:
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
     def compute_grid_points(self, grid_mode, orthogonality, x_stretching,
-                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='fzero',
-                            sampling_mode='default', curved_border='both', inlet_meridional_obj=None, outlet_meridional_obj=None):
+                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='minimize',
+                            sampling_mode='default', curved_border='both',
+                            inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """
         compute the internal grid points with a certain algorithm, specified by grid_mode:
             spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
@@ -238,7 +239,8 @@ class Block:
                                                                               sigmoid_coeff_x=sigmoid_coeff_x,
                                                                               sigmoid_coeff_y=sigmoid_coeff_y,
                                                                               method=method,
-                                                                              fix_inlet = fix_inlet, fix_outlet = fix_outlet)
+                                                                              fix_inlet = fix_inlet, fix_outlet = fix_outlet,
+                                                                              save_animation=save_animation)
         else:
             raise ValueError('Grid method not recognized!')
 
