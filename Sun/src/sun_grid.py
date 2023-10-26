@@ -88,6 +88,7 @@ class SunGrid():
             for jj in range(0, self.nRadialNodes):
                 self.dataSet[ii, jj].PrintInfo(datafile)
 
+
     def ComputeBoundaryNormals(self):
         """
         for every node on the hub and shroud it computes the normal vectors, and store them at the node level.

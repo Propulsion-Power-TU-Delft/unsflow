@@ -71,7 +71,7 @@ class Block:
     def spline_of_outlet(self):
         """
         make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge.
-        At the same time prepare the straight spline for the inlet edge
+        At the same time prepare the straight spline for the inlet (called leading edge)
         """
         self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                       self.inlet[1:-1, :],
@@ -133,21 +133,7 @@ class Block:
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
 
-    def sample_leading_trailing_edges(self, sampling_mode='default'):
-        """
-        sample the inlet and outlet edge splines (trimmed correctly) with a certain sampling mode
-        """
-        self.leading_edge.sample(sampling_mode=sampling_mode)
-        self.trailing_edge.sample(sampling_mode=sampling_mode)
-
-    def sample_outlet(self, sampling_mode='default'):
-        """
-        sample the outlet edge for the inlet block
-        """
-        self.trailing_edge.sample(sampling_mode=sampling_mode)
-        self.leading_edge.sample(sampling_mode=sampling_mode)
-
-    def sample_inlet(self, sampling_mode='default'):
+    def sample_inlet_outlet(self, sampling_mode='default'):
         """
         sample the inlet edge for the outlet block
         """

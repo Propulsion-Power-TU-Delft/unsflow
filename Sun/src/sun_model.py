@@ -44,7 +44,30 @@ class SunModel:
         self.data = gridObject  # grid object containing also the meridional object with the data
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
         self.gmma = 1.4  # cp/cv for standard air for the moment
+        print('Gamma set to default value: 1.4')
         self.substituted_equation = 'ur'  # decides which equation overwrite with the euler wall condition
+        print('Default equation to overwrite with Euler Wall condition: Radial Momentum')
+        print("\n")
+
+
+    def set_overwriting_equation_euler_wall(self, equation):
+        """
+        select an equation to overwrite with the euler wall. Avilable options: ur, utheta, uz
+        """
+        if equation=='ur':
+            self.substituted_equation = 'ur'
+            print("Equation to overwrite with Euler Wall condition set to: Radial Momentum!")
+        elif equation=='utheta':
+            self.substituted_equation = 'utheta'
+            print("Equation to overwrite with Euler Wall condition set to: Tangential Momentum!")
+        elif equation=='uz':
+            self.substituted_equation = 'ur'
+            print("Equation to overwrite with Euler Wall condition set to: Axial Momentum!")
+        else:
+            raise ValueError("Not recognized option")
+
+        print("\n")
+
 
     def AddNormalizationQuantities(self, rho_ref, u_ref, x_ref):
         """
@@ -59,12 +82,30 @@ class SunModel:
         self.p_ref = rho_ref * u_ref ** 2
         self.x_ref = x_ref
         self.t_ref = 1 / self.omega_ref
+        self.print_normalization_information()
 
-        # normalization terms = inverse of advections, to be used for governing equations normalization. They are correct
-        # only for the form of the equations used. Otherwise they must be changed
+        # normalization terms = inverse of advections, to be used for governing equations' normalization. They are correct
+        # only for the form of the equations used. Otherwise, they must be changed
         self.continuity_norm = self.x_ref / self.rho_ref / self.u_ref
         self.momentum_norm = self.x_ref / self.u_ref ** 2
         self.pressure_norm = self.x_ref / self.rho_ref / self.u_ref ** 3
+
+
+
+    def print_normalization_information(self):
+        """
+        print information on non-dimensionalization in the sun module. It should provide only ones if the data
+        were already normalized in the meridional process
+        """
+        print("+----------------- NORMALIZATION -----------------+")
+        print("Reference Length: %.2f [m]" % (self.x_ref))
+        print("Reference Velocity: %.2f [m/s]" %(self.u_ref))
+        print("Reference Density: %.2f [kg/m3]" % (self.rho_ref))
+        print("Reference Pressure: %.2f [Pa]" % (self.p_ref))
+        print("Reference Time: %.6f [s]" % (self.t_ref))
+        print("Reference Angular Rate: %.2f [rad/s]" % (self.omega_ref))
+        print("+--------------------------------------------------+")
+        print("\n")
 
     def add_shaft_rpm(self, rpm):
         """
@@ -116,6 +157,12 @@ class SunModel:
         It computes the transformation derivatives for every grid point, and stores the value at the node level.
         NOTE: this approach is the only one correct if the nodes are set on curvilinear grids (as in compressors)
         """
+        print("+-------------- TRANSFORMATION GRADIENTS --------------+")
+        print("Routine used: %s" % routine)
+        print("Order used: %i" %(order))
+        print("Artificial Refinement: %s" %(refinement))
+        print("+------------------------------------------------------+")
+        print("\n")
 
         if not refinement:
             # grids (original)
@@ -178,11 +225,11 @@ class SunModel:
         else:
             raise Exception('Wrong refinement. Select a positive integer!')
 
-    def ContourTransformation(self, formatFig=(10, 6), save_filename=None):
+    def ContourTransformation(self, save_filename=None):
         """
         Show the spectral gradients info as a function of the spectral grid cordinates.
         """
-        plt.figure(figsize=formatFig)
+        plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
@@ -192,7 +239,7 @@ class SunModel:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=formatFig)
+        plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
@@ -202,7 +249,7 @@ class SunModel:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=formatFig)
+        plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
@@ -212,7 +259,7 @@ class SunModel:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=formatFig)
+        plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
@@ -222,7 +269,7 @@ class SunModel:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=formatFig)
+        plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
@@ -386,6 +433,7 @@ class SunModel:
         compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
         my version, checked
         """
+        self.harmonic_order = m
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 C = np.zeros((5, 5), dtype=complex)
@@ -589,18 +637,18 @@ class SunModel:
                 R[3, 3] = self.data.dataSet[ii, jj].duz_dz
                 R[3, 4] = 0
                 R[4, 0] = (1 / self.data.dataSet[ii, jj].rho) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
-                                             self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
+                                                                 self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
 
                 R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr * self.gmma / \
                           self.data.dataSet[ii, jj].rho + self.data.dataSet[ii, jj].dp_dr
 
                 R[4, 2] = 0
-                R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma/self.data.dataSet[ii, jj].rho * \
+                R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma / self.data.dataSet[ii, jj].rho * \
                           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
 
                 R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr -
-                          self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * \
-                          self.gmma/self.data.dataSet[ii, jj].rho
+                           self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * \
+                          self.gmma / self.data.dataSet[ii, jj].rho
 
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
@@ -610,6 +658,7 @@ class SunModel:
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model
         """
+        print("S Body Force Matrix: %s" %(turbo))
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
@@ -731,7 +780,7 @@ class SunModel:
 
     def AddToQ_const(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix, specifying the first element location
+        add elements to the Bddxi+Eddeta matrix, specifying the first element location
         """
         self.Q_const[row:row + 5, column:column + 5] += block
 
@@ -1185,7 +1234,7 @@ class SunModel:
 
     def build_A_global_matrix(self):
         """
-        build the A global matrix
+        build the A global matrix, stacking together the A matrices of all the nodes
         """
         self.A_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -1199,9 +1248,9 @@ class SunModel:
 
     def build_C_global_matrix(self):
         """
-        build the C*j*m/r global matrix, which doesn't depend on omega, to be used by the Arnoldi Algorithm
+        build the C*j*m/r global matrix, stacking together the C*j*m/r matrices of all the nodes
         """
-        self.C_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)  # this is different, must be modified
+        self.C_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
                 # add all the remaining terms on the diagonal
@@ -1215,7 +1264,7 @@ class SunModel:
         """
         build the R global matrix
         """
-        self.R_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)  # this is different, must be modified
+        self.R_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
                 # add all the remaining terms on the diagonal
@@ -1229,7 +1278,7 @@ class SunModel:
         """
         build the S global matrix
         """
-        self.S_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)  # this is different, must be modified
+        self.S_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
                 # add all the remaining terms on the diagonal
@@ -1241,7 +1290,7 @@ class SunModel:
 
     def build_Z_global_matrix(self):
         """
-        build the Z global matrix. J = Z = (B_d + C + E_d + R + S), such that Z*phi = (j*omega*A)*phi
+        build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R)
         """
         self.Z_g = (self.Q_const + self.C_g + self.R_g)
 
@@ -1256,16 +1305,16 @@ class SunModel:
                 counter = self.data.dataSet[ii, jj].nodeCounter
                 row = counter * 5  # 5 equations per node
                 if marker == 'inlet':
-                    self.apply_bc_condition(row, self.inlet_bc)
+                    self.apply_bc_condition(row, self.inlet_bc, ii, jj)
 
                 elif marker == 'outlet':
-                    self.apply_bc_condition(row, self.outlet_bc)
+                    self.apply_bc_condition(row, self.outlet_bc, ii, jj)
 
                 elif (marker == 'hub'):
-                    self.apply_bc_condition(row, self.hub_bc)
+                    self.apply_bc_condition(row, self.hub_bc, ii, jj)
 
                 elif (marker == 'shroud'):
-                    self.apply_bc_condition(row, self.shroud_bc)
+                    self.apply_bc_condition(row, self.shroud_bc, ii, jj)
 
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
@@ -1302,10 +1351,23 @@ class SunModel:
         self.hub_bc = hub_bc
         self.shroud_bc = shroud_bc
 
-    def apply_bc_condition(self, row, condition, wall_normal=np.array([1, 0, 0])):
+        print("+-------------- BOUNDARY CONDITIONS --------------+")
+        print("Inlet: %s" % (self.inlet_bc))
+        print("Outlet: %s" % (self.outlet_bc))
+        print("Hub: %s" % (self.hub_bc))
+        print("Shroud: %s" % (self.shroud_bc))
+        print("+-------------------------------------------------+")
+        print("\n")
+
+
+
+    def apply_bc_condition(self, row, condition, ii, jj):
         """
         for the considered grid node, it modifes the 5 governing equations starting from row index,
         which is related to its continuity eq.
+        (ii,jj) is the node index, necessary to impose the wall boundary conditions. The considered system at hand is currently:
+        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z, and A and S must be filled with zeros
+        in correspondance of those BCs
         """
 
         if condition == 'zero pressure':
@@ -1314,6 +1376,7 @@ class SunModel:
             self.Z_g[row + 4, row + 4] = 1  # zero pressure at that node
 
             self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
+            self.S_g[row + 4, :] = np.zeros(self.S_g[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'zero perturbation':
             # BC for zero pressure perturbation
@@ -1321,6 +1384,7 @@ class SunModel:
             self.Z_g[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
 
             self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.S_g[row:row + 5, :] = np.zeros(self.S_g[row:row + 5, :].shape, dtype=complex)  # zero rows
 
         elif condition == 'compressor inlet':
             # BCs are zero for every variable except the pressure at inlet
@@ -1328,6 +1392,7 @@ class SunModel:
             self.Z_g[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
 
             self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.S_g[row:row + 5, :] = np.zeros(self.S_g[row:row + 5, :].shape, dtype=complex)  # zero rows
 
         elif condition == 'compressor outlet':
             # BC for zero pressure perturbation
@@ -1335,62 +1400,57 @@ class SunModel:
             self.Z_g[row + 4, row + 4] = 1  # zero pressure at that node
 
             self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
+            self.S_g[row + 4, :] = np.zeros(self.S_g[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'euler wall':
-            # BC for non-penetration condition at the walls, tangential velocity equation overwritten
-            self.Z_g[row + 2, :] = np.zeros(self.Z_g[row + 2, :].shape, dtype=complex)
-            self.Z_g[row + 2, row + 1:row + 4] = wall_normal
+            # BC for non-penetration condition at the walls, the equation overwritten depends on configs
+            if self.substituted_equation == 'ur':
+                loc = 1
+            elif self.substituted_equation == 'utheta':
+                loc = 2
+            elif self.substituted_equation == 'uz':
+                loc = 3
+            else:
+                raise ValueError("Subsituted equation parameter not recognized.")
 
-            self.A_g[row + 2, :] = np.zeros(self.A_g[row + 2, :].shape, dtype=complex)  # zero known term
+            wall_normal = self.data.dataSet[ii, jj].n_wall
+
+            self.Z_g[row + loc, :] = np.zeros(self.Z_g[row + loc, :].shape, dtype=complex)
+            self.Z_g[row + loc, row + 1:row + 4] = wall_normal
+
+            self.A_g[row + loc, :] = np.zeros(self.A_g[row + loc, :].shape, dtype=complex)  # zero known term
+            self.S_g[row + loc, :] = np.zeros(self.S_g[row + loc, :].shape, dtype=complex)  # zero known term
 
         else:
             raise ValueError('unknown boundary condition type')
 
-    def inspect_matrix(self, matrix_name=None, save_filename=None, precision=None):
-        """
 
-        Args:
-            matrix_name: (str), name of the matrix to inspect
-            save_filename: file to save
-            precision: plot the elements having value > precision
-
-        Returns:
-            plt.spy of the matrix
-
-        """
-        if precision is None:
-            precision = 1e-3
-
-        plt.figure(figsize=fig_size)
-        if matrix_name == 'Y':
-            plt.spy(self.Y, precision=precision)
-            plt.title(r'$\mathbf{Y} = \frac{\mathbf{\hat{B} + \hat{C} + \hat{E} + R}}{j}}$')
-        elif matrix_name == 'A_g':
-            plt.spy(self.A_g, precision=precision)
-            plt.title(r'$\mathbf{A}_{g}$')
-        else:
-            raise ValueError('insert a valid matrix name')
-
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
-
-    def solve_evp_arnoldi(self, m, omega_search=0, number_search=10, inspect_matrices=False):
+    def solve_evp_arnoldi(self, omega_search=0, number_search=10, inspect_matrices=False):
         """
         Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy
         """
-        # if turbo:
+
+        m = self.harmonic_order
         Omega = self.data.meridional_obj.omega_shaft  # dimensional algebraic omega of the shaft
         omega_ref = self.data.meridional_obj.omega_ref  # dimensional omega of reference
         x_ref = self.data.meridional_obj.x_ref
         u_ref = self.data.meridional_obj.u_ref
         t_ref = x_ref / u_ref
         tau = x_ref / u_ref  # time delay of the body force model (it could also be through flow time)
-        sigma = omega_search/omega_ref  # non-dimensional center point of research
+        sigma = omega_search / omega_ref  # non-dimensional center point of research
 
-        L0 = self.Z_g * (1 + 1j * m * Omega/omega_ref * tau/t_ref) + self.S_g
-        L1 = self.A_g * (m * Omega/omega_ref * tau/t_ref - 1j) - 1j*tau/t_ref * self.Z_g
+        print("+-------------- ARNOLDI EVP SOLVER --------------+")
+        print("Circumferential Harmonic Order: %i" %(m))
+        print("Shaft Angular Rate: %.2f [rad/s]" %(Omega))
+        print("Reference Angular Rate: %.2f [rad/s]" %(omega_ref))
+        print("Time Delay Tau: %.6f [s]" % (tau))
+        print("Initial Searching Point: %.2f+%.2fj [rad/s]" % (sigma.real, sigma.imag))
+        print("Number of Eigenvalues to find: %i" % (number_search))
+        print("+------------------------------------------------+")
+        print("\n")
+
+        L0 = self.Z_g * (1 + 1j * m * Omega / omega_ref * tau / t_ref) + self.S_g
+        L1 = self.A_g * (m * Omega / omega_ref * tau / t_ref - 1j) - 1j * tau / t_ref * self.Z_g
         L2 = -tau / t_ref * self.A_g
 
         Y1 = np.concatenate((-L0, np.zeros_like(L0)), axis=1)
@@ -1422,7 +1482,6 @@ class SunModel:
             plt.spy(P)
             plt.title(r'$\mathbf{P}$')
 
-
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(Y - sigma * P)
         Y_tilde = np.dot(Y_tilde, P)
@@ -1431,9 +1490,8 @@ class SunModel:
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=number_search)
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
         self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
-        self.eigenfreqs_df = self.eigenfreqs.imag/omega_ref
-        self.eigenfreqs_rs = self.eigenfreqs.real/omega_ref
-
+        self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
+        self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
 
     def sort_eigensolution(self):
         """
@@ -1455,7 +1513,6 @@ class SunModel:
             self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
             self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
 
-
     def plot_eigenfrequencies(self, delimit=False, save_filename=None):
         """
         plot the eigenfrequencies obtained with the Arnoldi Method
@@ -1473,14 +1530,13 @@ class SunModel:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
     def extract_eigenfields(self, n=None):
         """
         from the eigenvectors obtained with Arnoldi Method, extract the first n eigenfields
         """
         if n is None:
             n = len(self.eigenfreqs)
-        elif n>len(self.eigenfreqs):
+        elif n > len(self.eigenfreqs):
             print("parameter n must be lower than the eigenvector number. n set to max allowed")
             n = len(self.eigenfreqs)
 
@@ -1518,7 +1574,6 @@ class SunModel:
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-
     def plot_eigenfields(self, n=None, save_filename=None):
         """
         plot the first n eigenmodes structures
@@ -1547,7 +1602,7 @@ class SunModel:
             plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{\rho}_{%i}$' %(imode))
+            plt.title(r'$\tilde{\rho}_{%i}$' % (imode))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
@@ -1588,7 +1643,6 @@ class SunModel:
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
-
     def write_results(self, save_filename=None, extension='csv'):
         """
         print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
@@ -1601,7 +1655,7 @@ class SunModel:
         else:
             filename = 'eigenvalues'
 
-        eigenvalue_array = self.eigenfreqs_rs + 1j*self.eigenfreqs_df
+        eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
 
         if extension == 'csv':
             with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
@@ -1615,6 +1669,3 @@ class SunModel:
                 pickle.dump(self.eigenfields, picklefile)
         else:
             raise ValueError("Incorrect Extension of the output file.")
-
-
-

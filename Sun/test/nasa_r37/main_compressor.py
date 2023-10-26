@@ -8,8 +8,8 @@ with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
 m = 1
-gradient_routine = 'findiff'
-gradient_order = 6
+gradient_routine = 'numpy'
+gradient_order = 2
 
 
 
@@ -40,7 +40,7 @@ sun_obj.build_S_global_matrix()
 sun_obj.build_Z_global_matrix()
 sun_obj.set_boundary_conditions('compressor inlet', 'compressor outlet', 'euler wall', 'euler wall')
 sun_obj.apply_boundary_conditions_generalized()
-sun_obj.solve_evp_arnoldi(m=m, number_search=5)
+sun_obj.solve_evp_arnoldi(number_search=15)
 sun_obj.plot_eigenfrequencies(save_filename='eigenfrequencies')
 sun_obj.extract_eigenfields()
 sun_obj.sort_eigensolution()

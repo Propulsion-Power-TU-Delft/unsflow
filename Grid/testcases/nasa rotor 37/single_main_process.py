@@ -20,10 +20,10 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 25
-BLADE_NZ = 25
-OUTLET_NZ = 45
-NR = 25
+INLET_NZ = 5
+BLADE_NZ = 10
+OUTLET_NZ = 15
+NR = 10
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
 MULTIBLOCK_FILTERING = True
@@ -74,7 +74,7 @@ block.inlet_zone_trim()
 block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud()
-block.sample_outlet()
+block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False,
                               x_stretching=False, y_stretching=False,
@@ -124,7 +124,7 @@ bladed_block.bladed_zone_trim(machine_type='axial')
 bladed_block.spline_of_hub_shroud()
 bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud()
-bladed_block.sample_leading_trailing_edges()
+bladed_block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
@@ -173,7 +173,7 @@ block.outlet_zone_trim(mode='axial')
 block.spline_of_hub_shroud()
 block.spline_of_inlet()
 block.sample_hub_shroud()
-block.sample_inlet()
+block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
                               sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,

@@ -140,13 +140,15 @@ duct_grid.ShowGrid()
 
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
+sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ComputeBoundaryNormals()
+sun_obj.ShowNormals()
 sun_obj.add_shaft_rpm(omega_ref)
 sun_obj.AddNormalizationQuantities(rho_ref, u_ref, x_ref)
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
-gradient_order = 6
+gradient_order = 2
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
 sun_obj.AddAMatrixToNodesFrancesco2()
 sun_obj.AddBMatrixToNodesFrancesco2()
@@ -163,8 +165,8 @@ sun_obj.build_Z_global_matrix()
 sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 51350
-mode_name = r'$[R,Z] = [3, 3]$'
+omega_search = 24000
+mode_name = r'$[R,Z] = [1, 4]$'
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
 M = 1j*sun_obj.A_g
@@ -280,7 +282,7 @@ plt.colorbar()
 # # second axial order
 plt.figure(figsize=(7, 5))
 plt.plot(z_grid[:, 0], p_eig_r[:, 0], '--o', label='numerical')
-plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(3 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
+plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(-2 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
 plt.ylabel(r'$p$ [-]')
 plt.xlabel(r'$z$ [-]')
 plt.title(mode_name)
@@ -291,7 +293,7 @@ plt.legend()
 
 
 # RADIAL CUT
-LAMBDA = roots[2]
+LAMBDA = roots[0]
 ALPHA = jvp(m, LAMBDA*r1, n=1) / yvp(m, LAMBDA*r1, n=1)
 ALPHA2 = jvp(m, LAMBDA*r2, n=1) / yvp(m, LAMBDA*r2, n=1)
 r_var = np.linspace(r1, r2, 100)
@@ -312,23 +314,23 @@ plt.title(mode_name)
 plt.legend()
 # plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
-plt.figure(figsize=(7, 5))
-# if opposite signs
-plt.plot(z_grid[:, 0], ur_eig_r[:, 0], '--o', label='hub')
-plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
-plt.ylabel(r'$p$ [-]')
-plt.xlabel(r'$z$ [-]')
-plt.title(mode_name)
-plt.legend()
-# plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-
-plt.figure(figsize=(7, 5))
-# if opposite signs
-plt.plot(z_grid[:, Nr//2], uz_eig_r[:, Nr//2], '--o', label='hub')
+# plt.figure(figsize=(7, 5))
+# # if opposite signs
+# plt.plot(z_grid[:, 0], ur_eig_r[:, 0], '--o', label='hub')
 # plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
-plt.ylabel(r'$p$ [-]')
-plt.xlabel(r'$z$ [-]')
-plt.title(mode_name)
-plt.legend()
+# plt.ylabel(r'$p$ [-]')
+# plt.xlabel(r'$z$ [-]')
+# plt.title(mode_name)
+# plt.legend()
+# # plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+#
+# plt.figure(figsize=(7, 5))
+# # if opposite signs
+# plt.plot(z_grid[:, Nr//2], uz_eig_r[:, Nr//2], '--o', label='hub')
+# # plt.plot(z_grid[:, -1], ur_eig_r[:, -1], '--o', label='shroud')
+# plt.ylabel(r'$p$ [-]')
+# plt.xlabel(r'$z$ [-]')
+# plt.title(mode_name)
+# plt.legend()
 
 plt.show()
