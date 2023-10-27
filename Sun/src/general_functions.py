@@ -1,5 +1,5 @@
 import numpy as np
-
+from .styles import total_chars
 
 def JacobianTransform(X, Y, Z, R):
     """
@@ -205,3 +205,19 @@ def scaled_eigenvector_real(eig_list, Nz, Nr):
     array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
     return array_real_scaled
 
+
+def print_banner_begin(string):
+    """
+    print the banner begin, including string in the middle
+    """
+    n = total_chars - 2
+    print("+", f"{string:-^{n}}", "+", sep='')
+
+
+def print_banner_end(string=''):
+    """
+    print the banner end
+    """
+    n = total_chars - 2
+    print("+", f"{string:-^{n}}", "+", sep='')
+    # print("\n")

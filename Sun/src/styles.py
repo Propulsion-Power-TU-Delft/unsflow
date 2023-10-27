@@ -70,3 +70,7 @@ N_levels_fine = 250
 
 # set colormap for contourf plots
 color_map = cm.jet
+
+# number of chars for the banners
+total_chars = 60
+total_chars_mid = total_chars//2

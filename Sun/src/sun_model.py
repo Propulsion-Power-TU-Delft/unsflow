@@ -43,12 +43,12 @@ class SunModel:
         """
         self.data = gridObject  # grid object containing also the meridional object with the data
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
-        self.gmma = 1.4  # cp/cv for standard air for the moment
-        print('Gamma set to default value: 1.4')
-        self.substituted_equation = 'ur'  # decides which equation overwrite with the euler wall condition
-        print('Default equation to overwrite with Euler Wall condition: Radial Momentum')
-        print("\n")
 
+        self.gmma = 1.4  # cp/cv for standard air for the moment
+        print(f"Gamma set to Default Value: {self.gmma}")
+
+        self.substituted_equation = 'ur'  # decides which equation overwrite with the euler wall condition
+        print(f"Default Equation Substitude by Euler Wall: {self.substituted_equation}")
 
     def set_overwriting_equation_euler_wall(self, equation):
         """
@@ -97,15 +97,14 @@ class SunModel:
         print information on non-dimensionalization in the sun module. It should provide only ones if the data
         were already normalized in the meridional process
         """
-        print("+----------------- NORMALIZATION -----------------+")
-        print("Reference Length: %.2f [m]" % (self.x_ref))
-        print("Reference Velocity: %.2f [m/s]" %(self.u_ref))
-        print("Reference Density: %.2f [kg/m3]" % (self.rho_ref))
-        print("Reference Pressure: %.2f [Pa]" % (self.p_ref))
-        print("Reference Time: %.6f [s]" % (self.t_ref))
-        print("Reference Angular Rate: %.2f [rad/s]" % (self.omega_ref))
-        print("+--------------------------------------------------+")
-        print("\n")
+        print_banner_begin('NORMALIZATION')
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.2f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.2f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.2f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.omega_ref:>{total_chars_mid}.2f}")
+        print_banner_end()
 
     def add_shaft_rpm(self, rpm):
         """
@@ -157,12 +156,11 @@ class SunModel:
         It computes the transformation derivatives for every grid point, and stores the value at the node level.
         NOTE: this approach is the only one correct if the nodes are set on curvilinear grids (as in compressors)
         """
-        print("+-------------- TRANSFORMATION GRADIENTS --------------+")
-        print("Routine used: %s" % routine)
-        print("Order used: %i" %(order))
-        print("Artificial Refinement: %s" %(refinement))
-        print("+------------------------------------------------------+")
-        print("\n")
+        print_banner_begin('TRANSFORMATION GRADIENTS')
+        print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
+        print(f"{'Order Used:':<{total_chars_mid}}{order:>{total_chars_mid}}")
+        print(f"{'Artificial Refinement:':<{total_chars_mid}}{refinement:>{total_chars_mid}}")
+        print_banner_end()
 
         if not refinement:
             # grids (original)
@@ -658,7 +656,7 @@ class SunModel:
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model
         """
-        print("S Body Force Matrix: %s" %(turbo))
+        print(f"{'Body Force Active:':<{total_chars_mid}}{turbo:>{total_chars_mid}}")
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
@@ -1351,13 +1349,12 @@ class SunModel:
         self.hub_bc = hub_bc
         self.shroud_bc = shroud_bc
 
-        print("+-------------- BOUNDARY CONDITIONS --------------+")
-        print("Inlet: %s" % (self.inlet_bc))
-        print("Outlet: %s" % (self.outlet_bc))
-        print("Hub: %s" % (self.hub_bc))
-        print("Shroud: %s" % (self.shroud_bc))
-        print("+-------------------------------------------------+")
-        print("\n")
+        print_banner_begin('BOUNDARY CONDITIONS')
+        print(f"{'Inlet Boundary set to:':<{total_chars_mid}}{inlet_bc:>{total_chars_mid}}")
+        print(f"{'Outlet Boundary set to:':<{total_chars_mid}}{outlet_bc:>{total_chars_mid}}")
+        print(f"{'Hub Boundary set to:':<{total_chars_mid}}{hub_bc:>{total_chars_mid}}")
+        print(f"{'Shroud Boundary set to:':<{total_chars_mid}}{shroud_bc:>{total_chars_mid}}")
+        print_banner_end()
 
 
 
@@ -1439,15 +1436,14 @@ class SunModel:
         tau = x_ref / u_ref  # time delay of the body force model (it could also be through flow time)
         sigma = omega_search / omega_ref  # non-dimensional center point of research
 
-        print("+-------------- ARNOLDI EVP SOLVER --------------+")
-        print("Circumferential Harmonic Order: %i" %(m))
-        print("Shaft Angular Rate: %.2f [rad/s]" %(Omega))
-        print("Reference Angular Rate: %.2f [rad/s]" %(omega_ref))
-        print("Time Delay Tau: %.6f [s]" % (tau))
-        print("Initial Searching Point: %.2f+%.2fj [rad/s]" % (sigma.real, sigma.imag))
-        print("Number of Eigenvalues to find: %i" % (number_search))
-        print("+------------------------------------------------+")
-        print("\n")
+        print_banner_begin('ARNOLDI SOLVER')
+        print(f"{'Circumferential Harmonic:':<{total_chars_mid}}{m:>{total_chars_mid}}")
+        print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{Omega:>{total_chars_mid}.2f}")
+        print(f"{'Ref. Angular Speed [rad/s]:':<{total_chars_mid}}{omega_ref:>{total_chars_mid}.2f}")
+        print(f"{'Time Lag [s]:':<{total_chars_mid}}{tau:>{total_chars_mid}.6f}")
+        print(f"{'Initial Searching Point [-]:':<{total_chars_mid}}{sigma:>{total_chars_mid}.2f}")
+        print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
+        print_banner_end()
 
         L0 = self.Z_g * (1 + 1j * m * Omega / omega_ref * tau / t_ref) + self.S_g
         L1 = self.A_g * (m * Omega / omega_ref * tau / t_ref - 1j) - 1j * tau / t_ref * self.Z_g

@@ -18,17 +18,17 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'sigmoid'
-ORTHOGONALITY = True
+MESH_TYPE = 'default'
+ORTHOGONALITY = False
 SIGMOID_STREAM = 9
 SIGMOID_SPAN = 7
 REGRESSION = False
-INLET_NZ = 15
-BLADE_NZ = 30
-OUTLET_NZ = 15
+INLET_NZ = 10
+BLADE_NZ = 40
+OUTLET_NZ = 10
 NR = 20
 AVG_MODE = 'cell centered'
-file_name = 'data/meta/iris_85krpm_0.11kgs_slim.csv'
+file_name = 'data/meta/iris_94krpm_0.10kgs_slim.csv'
 MULTIBLOCK_FILTERING = False
 
 
@@ -42,7 +42,7 @@ data_folder_path = 'data/geo/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
 x_ref = 0.0228  # reference length, tip radius [m]
-rpm_ref = +85e3  # shaft rpm with sign
+rpm_ref = +94e3  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 1  # cordinates of data files are in [cm]
 sigmoid_coeff_stream = 8
