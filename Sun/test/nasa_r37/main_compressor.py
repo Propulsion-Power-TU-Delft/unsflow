@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 import Sun
 
 # INPUT
-filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_25_blade_25_outlet_45_nspan_25.pickle'
+filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_15_blade_20_outlet_30_nspan_20.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
 m = 1
 gradient_routine = 'findiff'
-gradient_order = 2
+gradient_order = 6
 
 
 

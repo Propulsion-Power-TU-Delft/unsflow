@@ -21,10 +21,10 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 5
-BLADE_NZ = 5
-OUTLET_NZ = 5
-NR = 5
+INLET_NZ = 15
+BLADE_NZ = 20
+OUTLET_NZ = 30
+NR = 20
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
 MULTIBLOCK_FILTERING = True
@@ -251,4 +251,4 @@ obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BL
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-# plt.show()
+plt.show()
