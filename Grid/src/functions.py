@@ -629,3 +629,5 @@ def compute_picture_size(x, y):
     else:
         pic_size = (6 * WH_ratio, 6)
     return pic_size
+
+

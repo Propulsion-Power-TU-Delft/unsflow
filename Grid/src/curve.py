@@ -21,7 +21,13 @@ class Curve:
         """
         overloaded constructor. You can give both the z and r cordinates (mode=cordinates), or you can provide 
         the filepath of the .curve files obtained from BladeGen (mode=filedata). 
-        Units keep track of the units employed, rot_axis is usually the z axis.
+        :param rescale_factor: scaling factor to pass from the cordinates to [m]
+        :param x_ref: reference length used to non-dimensionalize the cordinates. It should be the blade inlet tip radius [m]
+        :param z,r: if provided, generate the curve directly from those cordinates
+        :param curve_filepath: generate the curve from the .curve file
+        :param units: to keep track of the units
+        :param mode: to decide which way to use for the curve generation
+        :param degree_spline: decide between 1 and 3, to decide the order of the splines between the points
         """
         if mode == 'filedata':
             self.read_from_curve_file(curve_filepath)
@@ -30,6 +36,7 @@ class Curve:
             self.r = r
             self.z = z
 
+        self.x_ref = x_ref
         self.r *= rescale_factor/x_ref
         self.z *= rescale_factor/x_ref
 

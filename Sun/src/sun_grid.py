@@ -20,10 +20,11 @@ class SunGrid():
 
     def __init__(self, meridional_obj, mode='physical'):
         """
-        instantiate the Sun Grid object
+        instantiate the Sun Grid object, that contains the grids (physical and spectral), and the arrays of nodes objects
+        contaning the fields and the matrices necessary for the instability model
         Args:
-            meridional_obj: object storing the 2D meridional flow fields
-            mode: if physical it stores physical cordinates, if spectral it stores spectral cordinates
+            meridional_obj: object storing the 2D meridional flow fields, processed from CFD
+            mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates
         """
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
         self.n_stream = meridional_obj.nstream

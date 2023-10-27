@@ -7,7 +7,8 @@ Created on Thu Jun 15 16:53:11 2023
 from numpy import sqrt
 import pandas as pd
 from .functions import *
-
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
 
 class CfdData:
     """
@@ -16,7 +17,7 @@ class CfdData:
     """
     
     
-    def __init__(self, filepath, rho_ref, x_ref, rpm_ref, rpm_drag, T_ref, cut_block = None, blade = None,
+    def __init__(self, filepath, rho_ref, x_ref, rpm_drag, T_ref, cut_block = None, blade = None,
                  normalize = True, file_type='Ansys .csv', verbose=False, ):
         """
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
@@ -25,6 +26,17 @@ class CfdData:
         omega_ref: angular speed of the shaft [rpm], with algebraic sign
         x_ref: tip radius of the blade at leading edge [m]
         T_ref: can be standard temperature [K]
+
+        :param filepath: path the file contaning the CFD volumetric data.
+        :param rho_ref: reference density [kg/m3].
+        :param x_ref: reference length [m].
+        :param rpm_drag: rpm used in the CFD, with algebraic sign [rpm].
+        :param T_ref: reference Temperature [K].
+        :param cut_block: provide a block object if you wish to cut the dataset with it.
+        :param blade: provide the blade file, to get some info from it.
+        :param normalize: set to True if you wish to produce non-dimesional CFD dataset.
+        :param file_type: filetype of the file storing the CFD dataset.
+        :param verbose: to print some info to screen
         """
         self.filepath = filepath
         self.omega_shaft = rpm_drag*2*np.pi/60
@@ -32,11 +44,19 @@ class CfdData:
         self.cut_block = cut_block
         self.normalize = normalize
         if self.normalize:
+            #compute fundamental quantities, and then compute the derived ones
             self.rho_ref = rho_ref
             self.x_ref = x_ref
-            self.rpm_ref = np.abs(rpm_ref)
+            self.rpm_ref = np.abs(rpm_drag)
             self.T_ref = T_ref
-            self.compute_normalization_quantities()
+            self.compute_derived_normalization_quantities()
+        else:
+            print("Attention: CFD data Not normalized")
+            self.rho_ref = 1
+            self.x_ref = 1
+            self.rpm_ref = 1
+            self.T_ref = 1
+            self.compute_derived_normalization_quantities()
         if blade is not None:
             self.blade = blade
         self.file_type = file_type
@@ -44,13 +64,31 @@ class CfdData:
             if self.verbose:
                 print('reading CFD data...')
             self.read_from_ansys_csv(normalize = normalize)
+
+        print_banner_begin('CFD DATA PROCESSING')
+        print(f"{'CFD filepath:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
+        print(f"{'CFD filetype:':<{total_chars_mid}}{file_type:>{total_chars_mid}}")
+        print(f"{'Shaft Omega [rpm]:':<{total_chars_mid}}{rpm_drag:>{total_chars_mid}.3f}")
+        print(f"{'Reference Omega [rpm]:':<{total_chars_mid}}{self.rpm_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{x_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
+        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{T_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
+        print(f"{'Dataset Normalized:':<{total_chars_mid}}{normalize:>{total_chars_mid}}")
+        print_banner_end()
+
+
         
         
         
-    def read_from_ansys_csv(self, normalize = False):
+    def read_from_ansys_csv(self, normalize = True):
         """
         read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
-        as well as the correct names of the variables
+        as well as the correct names of the variables.
+        :param normalize: if true, normalized the full dataset
         """
         self.data = pd.read_csv(self.filepath, skiprows=range(5))
         self.x = self.data[' X [ m ]'].values
@@ -340,7 +378,7 @@ class CfdData:
 
 
 
-    def compute_normalization_quantities(self):
+    def compute_derived_normalization_quantities(self):
         """
         given the fundamental quantities, compute all the reference quantities for following non-dimensionalization
         """

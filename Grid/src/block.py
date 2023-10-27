@@ -9,6 +9,8 @@ from scipy.spatial import KDTree
 from .styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size
 from .curve import Curve
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
 
 
 class Block:
@@ -16,7 +18,7 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, hub_curve, shroud_curve, nstream=10, nspan=10, x_ref=1):
+    def __init__(self, hub_curve, shroud_curve, nstream=10, nspan=10):
         """
         provide the two curve objects related to hub and shroud, and in how many number of points 
         you want to discretize the streamwise and spanwise direction
@@ -26,7 +28,7 @@ class Block:
         self.nstream = nstream
         self.nspan = nspan
         self.units = self.hub.units
-        self.x_ref = x_ref
+
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -145,12 +147,37 @@ class Block:
                             sampling_mode='default', curved_border='both',
                             inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """
-        compute the internal grid points with a certain algorithm, specified by grid_mode:
-            spanwise: means connecting the hub and shroud points spanwise with straight lines sampled with a certain alg.
-            streamwise: means connecting inlet and outlet edge splines with straight lines sampled with a certain alg.
-        If smoothing = 'elliptic' it provides an elliptic smoothing of the grid. To be implemented yet
-        inlet and outlet meridional objects contain the cordinates of grid points that should be kept constant
+        compute the internal grid points with a certain algorithm, specified by grid_mode.
+        :param grid_mode: mode used for the grid generation algorithm. Suggested 'elliptic'.
+        :param orthogonality: to impose orthogonality at borders, if elliptic mode is used.
+        :param x_stretching: stretching type of the grid in the streamwise direction.
+        :param y_stretching: stretching type of the grid in the spanwise direction.
+        :param sigmoid_coeff_x: coefficient of the sigmoid in the streamwise direction.
+        :param sigmoid_coeff_y: coefficient of the sigmoid in the spanwise direction.
+        :param method: if elliptic mode, choose the method used to shift the nodes on the borders.
+        :param sampling_mode: if algebrai, sample in a certain way
+        :param curved_border: if algebraic, specify which borders are curved.
+        :param inlet_meridional_obj: provide inlet meridional object if you wish to mantain consistency of the shared nodes
+        :param outlet_meridional_obj: provide outlet meridional object if you wish to mantain consistency of the shared nodes
+        :param save_animation: if True store the Matrix necessary for the animation of the elliptic grid generation.
         """
+        print_banner_begin('GRID GENERATION SETTINGS')
+        print(f"{'Grid Generation Mode:':<{total_chars_mid}}{grid_mode:>{total_chars_mid}}")
+        if grid_mode=='elliptic':
+            print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{orthogonality:>{total_chars_mid}}")
+            print(f"{'X Stretching Function:':<{total_chars_mid}}{x_stretching:>{total_chars_mid}}")
+            print(f"{'X Stretching Coefficient:':<{total_chars_mid}}{sigmoid_coeff_x:>{total_chars_mid}}")
+            print(f"{'Y Stretching Function:':<{total_chars_mid}}{y_stretching:>{total_chars_mid}}")
+            print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}{sigmoid_coeff_y:>{total_chars_mid}}")
+            if inlet_meridional_obj is not None:
+                print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
+            if outlet_meridional_obj is not None:
+                print(f"{'Outlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
+        else:
+            print(f"{'Border Nodes Selection Method:':<{total_chars_mid}}{method:>{total_chars_mid}}")
+            print(f"{'Border Nodes Sampling Mode:':<{total_chars_mid}}{sampling_mode:>{total_chars_mid}}")
+            print(f"{'Curved Borders:':<{total_chars_mid}}{curved_border:>{total_chars_mid}}")
+        print_banner_end()
 
         if sampling_mode == 'default':
             self.u_span = np.linspace(0, 1, self.nspan)
@@ -244,8 +271,8 @@ class Block:
         else:
             raise ValueError('Grid method not recognized!')
 
-        self.z_grid_points /= self.x_ref
-        self.r_grid_points /= self.x_ref
+
+
 
     def compute_grid_centers(self):
         """
@@ -286,6 +313,8 @@ class Block:
     def find_intersections(self, tol=1e-2, visual_check=False):
         """
         having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
+        :param tol: tolerance of the algorithm to find intersection. If too small, it doesn't find the correct intersections
+        :param visual_check: Set to True to graphically see the linest and the intersections found
         """
 
         hub_curve = np.stack((self.hub.z, self.hub.r), axis=1)

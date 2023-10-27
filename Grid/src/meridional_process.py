@@ -15,6 +15,8 @@ import sympy as sp
 from .styles import *
 from .polynomial_ls_regression import *
 from .functions import compute_picture_size
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
 
 
 class MeridionalProcess:
@@ -24,7 +26,15 @@ class MeridionalProcess:
     cordinates variables (related to r,z). In the future we will non-dimensionalize everything from the beginning.
     """
 
-    def __init__(self, data, block=None, blade=None, verbose=False):
+    def __init__(self, data, block=None, blade=None, verbose=False, GAMMA=1.4):
+        """
+        Build the MeridionalProcess Object.
+        :param data: CfdData object contaning the 3D CFD dataset.
+        :param block: Block Object contaning the grid, needed for circumferential averaging.
+        :param blade: Blade Object.
+        :param verbose: to print some info.
+        :param GAMMA: cp/cv ratio.
+        """
         self.data = data
         self.block = block
         self.nstream = block.nstream - 1  # how many grid points
@@ -39,15 +49,30 @@ class MeridionalProcess:
         self.z_cg = block.z_grid_cg  # elements centers points
         self.r_cg = block.r_grid_cg
         self.picture_size = compute_picture_size(self.z_cg, self.r_cg)
-
+        self.normalize = data.normalize
         self.rho_ref = data.rho_ref
         self.u_ref = data.u_ref
         self.T_ref = data.T_ref
         self.s_ref = data.s_ref
         self.x_ref = data.x_ref
         self.omega_ref = data.omega_ref
+        self.t_ref = data.t_ref
         self.omega_shaft = data.omega_shaft*self.omega_ref
         self.p_ref = data.p_ref
+        self.GAMMA = GAMMA
+
+        print_banner_begin('MERIDIONAL DATA PROCESSING')
+        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.omega_shaft:>{total_chars_mid}.3f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.omega_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
+        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.T_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
+        print(f"{'Dataset Normalized:':<{total_chars_mid}}{self.normalize:>{total_chars_mid}}")
+        print_banner_end()
 
     def compute_camber_angles(self):
         """
@@ -67,25 +92,26 @@ class MeridionalProcess:
 
     def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
-        perform circumferential averages
-        Args:
-            mode: type of algorithm.
+        Rerform circumferential averages of the CFD dataset on the Block grid.
+        :param mode: type of algorithm selected.
                 rectangular: take all the points in the rectangle identified by the secondary grid.
                 circular: take all the points inside a circle
                 cell centered: associate to every grid element cg, the average of what lies in its domain
-            fix_borders: if True, the values on the borders are copied from the values in the inner nodes
-            bfm: if True, enables calculation of BFM related quantities (depending on the type of BFM specified)
-            gauss_filter: if True enables gauss filtering of the 2D fields, to smooth it down
-            threshold: minimum amount of points found in one element projection, in order to accept the average
+        :param fix_borders: if True, the values on the borders are copied from the values of the inner nodes. Deprecated
+        :param bfm: if True instantiate BFM fields. (Deprecated)
+        :param gauss_filter: if True enables gauss filtering of the 2D fields, to smooth it down
+        :param threshold: minimum amount of points found in one element projection, in order to accept the average
         """
-        self.bfm = bfm
-        self.instantiate_2d_fields()
-        if self.bfm == 'radial':
-            self.instantiate_2d_bfm_fields()
+        print_banner_begin("CIRCUMFERENTIAL AVG. METHOD")
+        print(f"{'Averaging Method:':<{total_chars_mid}}{mode:>{total_chars_mid}}")
+        print(f"{'Threshold Number Set At:':<{total_chars_mid}}{threshold:>{total_chars_mid}}")
+        print(f"{'Borders Artificially Fixed:':<{total_chars_mid}}{fix_borders:>{total_chars_mid}}")
+        print(f"{'Fields Artificially Filtered:':<{total_chars_mid}}{gauss_filter:>{total_chars_mid}}")
+        print_banner_end()
 
+        self.instantiate_2d_fields()
         if self.verbose:
             print('performing circumferential averages...')
-
         # loop over all the elements in the meridional grid
         for istream in range(0, self.nstream):
             for ispan in range(0, self.nspan):
@@ -129,8 +155,8 @@ class MeridionalProcess:
                 self.p[istream, ispan] = self.mass_average(self.data.p, idx, istream, ispan)
                 self.T[istream, ispan] = self.mass_average(self.data.T, idx, istream, ispan)
                 self.s[istream, ispan] = self.mass_average(self.data.s, idx, istream, ispan)
-                self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx, istream, ispan)
-                self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx, istream, ispan)
+                # self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx, istream, ispan)
+                # self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx, istream, ispan)
 
                 # gradients
                 # self.drho_dr[istream, ispan] = self.mass_average(self.data.drho_dr, idx)
@@ -181,32 +207,37 @@ class MeridionalProcess:
                     self.Ft_prime_ss_22[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_22, idx, istream, ispan)
 
         if fix_borders:
+            print("WARNING: borders have been artifically fixed")
             self.fix_borders()
 
         if gauss_filter:
+            print("WARNING: the fields have been artificially smoothed")
             self.gauss_filtering()
 
+        self.u_mag = np.sqrt(self.ur**2 + self.ut**2 + self.uz**2)
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
-
-        self.ut_drag = self.ut - self.ut_rel
-        self.M = self.u_mag / sqrt(1.4 * self.p / self.rho)
+        self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+        self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
+        self.M = self.u_mag / sqrt(self.GAMMA * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.GAMMA * self.p / self.rho)
         self.compute_stagnation_quantities()
         if bfm == 'radial':
+            print("WARNING: deprecated method, check the code")
             self.mu = self.compute_mu()
             self.F_t = self.mu * self.u_mag_rel ** 2
 
     def compute_derived_quantities(self):
         """
-        from the primary averaged fields, compute derived fields
+        from the primary averaged fields, compute derived fields.
         """
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
-        self.M = self.u_mag / sqrt(self.gmma * self.p / self.rho)
-        self.M_rel = self.u_mag_rel / sqrt(self.gmma * self.p / self.rho)
+        self.M = self.u_mag / sqrt(self.GAMMA * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.GAMMA * self.p / self.rho)
         self.compute_stagnation_quantities()
 
     def instantiate_2d_fields(self):
@@ -494,8 +525,12 @@ class MeridionalProcess:
 
     def compute_regressed_fields(self, order=4):
         """
-        compute the third order polynomial regressed fields
+        compute the fourth order polynomial regressed fields, as described in the original papers
+        :param order: order of the regression. For now tested only 4.
         """
+        print("Regression of the Flow Fields, order: %i" %(order))
+        if order!=4:
+            raise ValueError("Choose the regression order equal to 4!")
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
 
@@ -667,7 +702,7 @@ class MeridionalProcess:
 
     def compute_streamline_length(self):
         """
-        compute the length along each streamline. Dimensional, same dimensions of cordinates
+        compute the length along each streamline. If the data was normalized, the length is already non-dimensional
         """
         self.stream_line_length = np.zeros((self.nstream, self.nspan))
         for ispan in range(0, self.nspan):
@@ -1238,13 +1273,12 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_stagnation_quantities(self, gmma=1.4):
+    def compute_stagnation_quantities(self):
         """
         compute the 2D fields of the stagnation quantities
         """
-        self.gmma = gmma  # typical value for air
-        self.p_tot = self.p * (1 + (self.gmma - 1) / 2 * self.M ** 2) ** (self.gmma / (self.gmma - 1))
-        self.T_tot = self.T * (1 + (self.gmma - 1) / 2 * self.M ** 2)
+        self.p_tot = self.p * (1 + (self.GAMMA - 1) / 2 * self.M ** 2) ** (self.GAMMA / (self.GAMMA - 1))
+        self.T_tot = self.T * (1 + (self.GAMMA - 1) / 2 * self.M ** 2)
 
         # rotary total pressure
         self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.data.omega_shaft * self.ut
@@ -1462,6 +1496,7 @@ class MeridionalProcess:
         """
 
         if domain == 'bladed':
+            print("Body Force: Active")
             tr = self.Floss_r / self.Floss
             ttheta = self.Floss_t / self.Floss
             tz = self.Floss_z / self.Floss
@@ -1501,6 +1536,7 @@ class MeridionalProcess:
             self.S44 = np.zeros_like(self.ur)
 
         elif domain=='unbladed':
+            print("Body Force: Zero")
             self.S00 = np.zeros_like(self.ur)
             self.S01 = np.zeros_like(self.ur)
             self.S02 = np.zeros_like(self.ur)
@@ -1601,8 +1637,7 @@ class MeridionalProcess:
 
     def compute_averaged_fluxes(self):
         """
-        on the meridional plane, compute the fluxes for each cell, in order to show a 1D plot, comprehensive
-        of the machine
+        on the meridional plane, compute the averaged fluxed for each streamwise position
         """
         self.dA = np.zeros_like(self.z_cg)
         self.dA_nz = np.zeros_like(self.z_cg)
@@ -1633,7 +1668,8 @@ class MeridionalProcess:
 
     def compute_flux(self, field):
         """
-        average the terms along the span, and store it in the stream index
+        average the terms along the span, and store it in the stream index.
+        :param field: field to compute the flux of.
         """
         fluxes = np.zeros(self.nstream)
         for istream in range(self.nstream):

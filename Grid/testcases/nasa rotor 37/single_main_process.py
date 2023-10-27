@@ -13,6 +13,7 @@ sys.path.append('../../Grid')
 import Grid
 import pickle
 import numpy as np
+plt.rcParams.update({'figure.max_open_warning': 0})
 
 start_time = time.time()
 print('Start execution:')
@@ -21,9 +22,9 @@ print('Start execution:')
 MESH_TYPE = 'default'
 REGRESSION = True
 INLET_NZ = 5
-BLADE_NZ = 10
-OUTLET_NZ = 15
-NR = 10
+BLADE_NZ = 5
+OUTLET_NZ = 5
+NR = 5
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
 MULTIBLOCK_FILTERING = True
@@ -87,11 +88,11 @@ block.compute_grid_centers()
 
 # instantiate cfd data object and perform processing removing the outliers
 data = Grid.src.CfdData(file_name, rpm_drag=rpm_ref, blade=blade, cut_block=block, verbose=True, normalize=True,
-                        rho_ref=rho_ref, x_ref=x_ref, rpm_ref=rpm_ref, T_ref=T_ref)
+                        rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref)
 data.process_from_ansys_csv()
 
 # instantiate meridional process object and avg
-inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True)
+inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
 inlet_process.compute_streamline_length()
 inlet_process.circumferential_average(mode=AVG_MODE)
 if REGRESSION:
@@ -250,4 +251,4 @@ obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BL
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()

@@ -8,7 +8,7 @@ with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
 m = 1
-gradient_routine = 'numpy'
+gradient_routine = 'findiff'
 gradient_order = 2
 
 
@@ -18,8 +18,8 @@ gradient_order = 2
 compressor_grid = Sun.src.sun_grid.SunGrid(meridional_obj)
 sun_obj = Sun.src.SunModel(compressor_grid)
 sun_obj.ComputeBoundaryNormals()
-sun_obj.add_shaft_rpm(rpm)
-sun_obj.AddNormalizationQuantities(1, 1, 1)
+# sun_obj.add_shaft_rpm(rpm)
+sun_obj.set_normalization_quantities()
 sun_obj.ShowPhysicalGrid(save_filename='physical_grid', mode='lines')
 sun_obj.ComputeSpectralGrid()
 sun_obj.ShowSpectralGrid(save_filename='computational_grid', mode='lines')
@@ -40,10 +40,9 @@ sun_obj.build_S_global_matrix()
 sun_obj.build_Z_global_matrix()
 sun_obj.set_boundary_conditions('compressor inlet', 'compressor outlet', 'euler wall', 'euler wall')
 sun_obj.apply_boundary_conditions_generalized()
-sun_obj.solve_evp_arnoldi(number_search=30)
+sun_obj.solve_evp_arnoldi(number_search=20)
 sun_obj.plot_eigenfrequencies(save_filename='eigenfrequencies')
 sun_obj.extract_eigenfields()
-sun_obj.sort_eigensolution()
 sun_obj.plot_eigenfields(save_filename='eigenmode')
 sun_obj.write_results()
 

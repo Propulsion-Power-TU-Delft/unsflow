@@ -9,6 +9,8 @@ import numpy as np
 from .styles import *
 from scipy.ndimage import gaussian_filter
 import pickle
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
 
 
 class MeridionalProcessGroup:
@@ -17,18 +19,29 @@ class MeridionalProcessGroup:
     """
 
     def __init__(self):
+        """
+        construct the object contaning all the meridional objects related to the subdomains.
+        """
         self.group = []
         self.nstream = 0
         self.nspan = 0
+        self.items_number = 0
 
 
     def add_to_group(self, meridional_obj):
         """
-        add component to the group, follow streamwise order
+        add component to the group, following streamwise order.
         """
         self.group.append(meridional_obj)
         self.nstream += meridional_obj.nstream
-        self.nspan = meridional_obj.nspan
+        if self.nspan==0:
+            self.nspan = meridional_obj.nspan
+        else:
+            if self.nspan!=meridional_obj.nspan:
+                raise ValueError("Blocks with different number of spanwise points!")
+            else:
+                pass
+        self.items_number += 1
 
 
     def assemble_fields(self):
@@ -37,9 +50,51 @@ class MeridionalProcessGroup:
         """
         self.x_ref = self.group[0].x_ref
         self.u_ref = self.group[0].u_ref
-        self.t_ref = self.x_ref / self.u_ref
+        self.t_ref = self.group[0].t_ref
+        self.T_ref = self.group[0].T_ref
+        self.s_ref = self.group[0].s_ref
+        self.p_ref = self.group[0].p_ref
+        self.rho_ref = self.group[0].rho_ref
         self.omega_ref = self.group[0].omega_ref
         self.omega_shaft = self.group[0].omega_shaft
+        self.GAMMA = self.group[0].GAMMA
+
+        # check that reference quantities were coherent:
+        for block in self.group[1:]:
+            if (block.x_ref != self.x_ref):
+                raise ValueError("The blocks have different reference Length!")
+            elif (block.u_ref != self.u_ref):
+                raise ValueError("The blocks have different reference Velocity!")
+            elif (block.t_ref != self.t_ref):
+                raise ValueError("The blocks have different reference Time!")
+            elif (block.T_ref != self.T_ref):
+                raise ValueError("The blocks have different reference Temperatures!")
+            elif (block.s_ref != self.s_ref):
+                raise ValueError("The blocks have different reference Entropies!")
+            elif (block.p_ref != self.p_ref):
+                raise ValueError("The blocks have different reference Pressures!")
+            elif (block.rho_ref != self.rho_ref):
+                raise ValueError("The blocks have different reference Density!")
+            elif (block.omega_ref != self.omega_ref):
+                raise ValueError("The blocks have different reference Omega!")
+            elif (block.omega_shaft != self.omega_shaft):
+                raise ValueError("The blocks have different shaft Omega!")
+            elif (block.GAMMA != self.GAMMA):
+                raise ValueError("The blocks have different Gamma!")
+            else:
+                pass
+
+        print_banner_begin('GLOBAL REFERENCE QUANTITIES')
+        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.omega_shaft:>{total_chars_mid}.3f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.omega_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
+        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.T_ref:>{total_chars_mid}.3f}")
+        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
+        print_banner_end()
 
         self.z_cg = self.group[0].z_cg
         self.r_cg = self.group[0].r_cg
@@ -167,6 +222,7 @@ class MeridionalProcessGroup:
 
 
     def gauss_filtering(self):
+        print("WARNING: the fields have been artificially filtered!")
         self.rho = self.apply_gaussian_filter(self.rho)
         self.ur = self.apply_gaussian_filter(self.ur)
         self.ut = self.apply_gaussian_filter(self.ut)
@@ -177,6 +233,7 @@ class MeridionalProcessGroup:
         self.M = self.apply_gaussian_filter(self.M)
 
     def gauss_filtering_gradients(self):
+        print("WARNING: the gradients have been artificially filtered!")
         self.drho_dr = self.apply_gaussian_filter(self.drho_dr)
         self.drho_dz = self.apply_gaussian_filter(self.drho_dz)
         self.dur_dr = self.apply_gaussian_filter(self.dur_dr)
@@ -593,7 +650,7 @@ class MeridionalProcessGroup:
         """
         self.nstream = np.shape(self.z_cg)[0]
         self.nspan = np.shape(self.z_cg)[1]
-        GMMA = 1.4
+        GMMA = self.GAMMA
 
         T1 = self.group[0].T_flux[0]
         Tt1 = self.group[0].T_tot_flux[0]
@@ -617,10 +674,10 @@ class MeridionalProcessGroup:
         """
         print on terminal the performance of the machine. only total to total
         """
-        print("---------PERFORMANCE---------")
-        print("Beta_ts: %.2f" % (self.beta_ts))
-        print("Beta_tt: %.2f" %(self.beta_tt))
-        print("Eta_ts: %.2f" % (self.eta_ts))
-        print("Eta_tt: %.2f" % (self.eta_tt))
-        print("-----------------------------")
+        print_banner_begin('MACHINE PERFORMANCE')
+        print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Beta_tt:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
+        print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
+        print_banner_end()
 

@@ -9,6 +9,8 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
 
 # import Grid.src.functions
 from .styles import *
@@ -21,7 +23,11 @@ class Blade:
 
     def __init__(self, blade_file_path, rescale_factor, x_ref, format_file='.curve'):
         """
-        reads the info from the blade file .curve, which is created during blade generation
+        reads the info from the blade file .curve, which is created during blade generation.
+        :param blade_file_path: filepath to blade.curve file, storing cordinates of the various profiles
+        :param rescale_factor: factor to convert cordinates in the blade.curve file to [m]
+        :param x_ref: reference length with which non-dimensionalize the cordinates. It should be the tip radius at inlet
+        :param format_file: for now only .curve file, as provided by Bladegen, or Parablade
         """
         self.file_path = blade_file_path
         self.rescale_factor = rescale_factor
@@ -36,6 +42,7 @@ class Blade:
         if format_file == '.curve':
             self.read_from_curve_file()
 
+        self.print_blade_info()
 
 
     def read_from_curve_file(self):
@@ -108,6 +115,16 @@ class Blade:
             self.z_splitter = self.z[self.idx_splitter]
             self.theta_splitter = self.theta[self.idx_splitter]
             self.r_splitter = self.r[self.idx_splitter]
+
+    def print_blade_info(self):
+        """
+        print information of the blade object during construction
+        """
+        print_banner_begin('BLADE')
+        print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.rescale_factor:>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
+        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+        print_banner_end()
 
 
 
@@ -367,6 +384,7 @@ class Blade:
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
+        :param geometry_type: needed to know how to find the inlet points
         """
         self.inlet_z = []
         self.inlet_r = []
@@ -401,6 +419,7 @@ class Blade:
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
+        :param geometry_type: needed to know how to find the outlet points
         """
         self.outlet_z = []
         self.outlet_r = []
