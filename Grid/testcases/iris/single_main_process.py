@@ -22,14 +22,14 @@ MESH_TYPE = 'default'
 ORTHOGONALITY = False
 SIGMOID_STREAM = 9
 SIGMOID_SPAN = 7
-REGRESSION = False
+REGRESSION = True
 INLET_NZ = 10
 BLADE_NZ = 40
 OUTLET_NZ = 10
 NR = 20
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/iris_94krpm_0.10kgs_slim.csv'
-MULTIBLOCK_FILTERING = False
+MULTIBLOCK_FILTERING = True
 
 
 
@@ -90,7 +90,7 @@ block.compute_grid_centers()
 
 # instantiate cfd data object and perform processing removing the outliers
 data = Grid.src.CfdData(file_name, rpm_drag=rpm_ref, blade=blade, cut_block=block, verbose=True, normalize=True,
-                        rho_ref=rho_ref, x_ref=x_ref, rpm_ref=rpm_ref, T_ref=T_ref)
+                        rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref)
 data.process_from_ansys_csv()
 
 # instantiate meridional process object and avg
@@ -152,7 +152,7 @@ if REGRESSION:
 blade_process.compute_derived_quantities()
 blade_process.compute_bfm_axial(mode='global', save_fig=True)
 blade_process.compute_averaged_fluxes()
-blade_process.compute_body_fource_S('bladed')
+blade_process.compute_body_fource_S('rotor')
 delattr(blade_process, 'data')
 
 
@@ -212,6 +212,7 @@ obj.add_to_group(outlet_process)
 obj.assemble_fields()
 obj.assemble_field_gradients()
 obj.assemble_body_force_fields()
+
 if MULTIBLOCK_FILTERING:
     obj.gauss_filtering()
     obj.gauss_filtering_gradients()
@@ -246,6 +247,7 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_filt_%s_%i_%i_
                                                       %(MULTIBLOCK_FILTERING, INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 obj.compute_performance()
 obj.print_performance()
+obj.compose_global_sun_Omega_tau()
 obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 

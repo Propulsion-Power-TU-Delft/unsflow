@@ -4,7 +4,7 @@ import Sun
 
 
 # INPUT
-filename = '../../../Grid/testcases/iris/data/meta/inlet_10_blade_40_outlet_20_nspan_20.pickle'
+filename = '../../../Grid/testcases/iris/data/meta/inlet_10_blade_40_outlet_10_nspan_20.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = 85e3
@@ -21,7 +21,7 @@ compressor_grid.ShowGrid(save_filename='grid')
 sun_obj = Sun.src.SunModel(compressor_grid)
 sun_obj.ComputeBoundaryNormals()
 sun_obj.add_shaft_rpm(rpm)
-sun_obj.AddNormalizationQuantities(1, 1, 1)
+sun_obj.set_normalization_quantities()
 sun_obj.ShowPhysicalGrid(save_filename='physical_grid', mode='lines')
 sun_obj.ComputeSpectralGrid()
 sun_obj.ShowSpectralGrid(save_filename='computational_grid', mode='lines')

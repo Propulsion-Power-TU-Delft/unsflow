@@ -23,26 +23,26 @@ class MeridionalProcessGroup:
         construct the object contaning all the meridional objects related to the subdomains.
         """
         self.group = []
+        self.domains_type = []
         self.nstream = 0
         self.nspan = 0
         self.items_number = 0
 
-
     def add_to_group(self, meridional_obj):
         """
         add component to the group, following streamwise order.
+        :param meridional_obj: meridional object to add
         """
         self.group.append(meridional_obj)
         self.nstream += meridional_obj.nstream
-        if self.nspan==0:
+        if self.nspan == 0:
             self.nspan = meridional_obj.nspan
         else:
-            if self.nspan!=meridional_obj.nspan:
+            if self.nspan != meridional_obj.nspan:
                 raise ValueError("Blocks with different number of spanwise points!")
             else:
                 pass
         self.items_number += 1
-
 
     def assemble_fields(self):
         """
@@ -57,6 +57,8 @@ class MeridionalProcessGroup:
         self.rho_ref = self.group[0].rho_ref
         self.omega_ref = self.group[0].omega_ref
         self.omega_shaft = self.group[0].omega_shaft
+        self.Omega = self.group[0].Omega
+        self.tau = self.group[0].tau
         self.GAMMA = self.group[0].GAMMA
 
         # check that reference quantities were coherent:
@@ -122,7 +124,8 @@ class MeridionalProcessGroup:
             self.T = np.concatenate((self.T, obj.T), axis=0)
             self.s = np.concatenate((self.s, obj.s), axis=0)
             self.M = np.concatenate((self.M, obj.M), axis=0)
-
+            self.Omega = np.concatenate((self.Omega, obj.Omega), axis=0)
+            self.tau = np.concatenate((self.tau, obj.tau), axis=0)
 
     def assemble_body_force_fields(self):
         """
@@ -158,7 +161,6 @@ class MeridionalProcessGroup:
         self.S43 = self.group[0].S43
         self.S44 = self.group[0].S44
 
-
         for obj in self.group[1:]:
             self.S00 = np.concatenate((self.S00, obj.S00), axis=0)
             self.S01 = np.concatenate((self.S01, obj.S01), axis=0)
@@ -190,8 +192,6 @@ class MeridionalProcessGroup:
             self.S43 = np.concatenate((self.S43, obj.S43), axis=0)
             self.S44 = np.concatenate((self.S44, obj.S44), axis=0)
 
-
-
     def assemble_fields_2(self):
         """
         assemble together the fields contained in all the blocks, but superposing the cordinates and fields,
@@ -220,7 +220,6 @@ class MeridionalProcessGroup:
             self.s = np.concatenate((self.s, obj.s[0:-1, :]), axis=0)
             self.M = np.concatenate((self.M, obj.M[0:-1, :]), axis=0)
 
-
     def gauss_filtering(self):
         print("WARNING: the fields have been artificially filtered!")
         self.rho = self.apply_gaussian_filter(self.rho)
@@ -244,8 +243,6 @@ class MeridionalProcessGroup:
         self.duz_dz = self.apply_gaussian_filter(self.duz_dz)
         self.dp_dr = self.apply_gaussian_filter(self.dp_dr)
         self.dp_dz = self.apply_gaussian_filter(self.dp_dz)
-
-
 
     def assemble_field_gradients(self):
         """
@@ -274,7 +271,6 @@ class MeridionalProcessGroup:
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
 
-
     def assemble_field_gradients_2(self):
         """
         assemble the gradients field, superposing the coincident nodes
@@ -302,15 +298,13 @@ class MeridionalProcessGroup:
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr[0:-1, :]), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz[0:-1, :]), axis=0)
 
-
-
     def contour_fields(self, save_filename=None):
         """
         contour of the fields. Dimensional quantities
         """
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_cg, self.r_cg, self.rho*self.group[0].rho_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.rho * self.group[0].rho_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -319,7 +313,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_cg, self.r_cg, self.ur*self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.ur * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -328,7 +322,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut)*self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -337,7 +331,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_cg, self.r_cg, self.uz*self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.uz * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -346,7 +340,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.z_cg, self.r_cg, self.p*self.group[0].p_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.p * self.group[0].p_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -381,6 +375,24 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
 
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.z_cg, self.r_cg, self.Omega, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$\Omega_{SUN} \ \mathrm{[rad/s]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_OmegaSun.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.z_cg, self.r_cg, self.tau, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$\tau_{SUN} \ \mathrm{[rad/s]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_tauSun.pdf', bbox_inches='tight')
+
     def show_grid(self, save_filename=None, grid_centers=False):
         """
         contour of the grid. Non-Dimensional quantities
@@ -402,9 +414,9 @@ class MeridionalProcessGroup:
 
         # grid centers
         if grid_centers:
-            for istream in range(0, nstream-3):
+            for istream in range(0, nstream - 3):
                 plt.plot(self.z_cg[istream, :], self.r_cg[istream, :], 'r.')
-            for ispan in range(0, nspan-3):
+            for ispan in range(0, nspan - 3):
                 plt.plot(self.z_cg[:, ispan], self.r_cg[:, ispan], 'r.')
 
         plt.xlabel(r'$z \ \mathrm{[-]}$')
@@ -412,8 +424,6 @@ class MeridionalProcessGroup:
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_grid.pdf', bbox_inches='tight')
-
-
 
     def contour_field_gradients(self, save_filename=None):
         """
@@ -519,8 +529,6 @@ class MeridionalProcessGroup:
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
         return smoothed_array
 
-
-
     def store_pickle(self, file_name=None, folder=None):
         """
         store the object conent in a pickle
@@ -536,7 +544,6 @@ class MeridionalProcessGroup:
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
 
-
     def compute_streamline_length(self):
         """
         compute the length along each streamline. Dimensional, same dimensions of cordinates
@@ -550,10 +557,9 @@ class MeridionalProcessGroup:
                 tmp_len += np.sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
                 self.stream_line_length[istream, ispan] = tmp_len
 
-        #reports to zero the first length of the bladed zone
-        self.middle_line_length = self.stream_line_length[:, self.nspan//2]
-        self.middle_line_length /= self.group[1].stream_line_length[-1, self.group[1].nspan//2]
-
+        # reports to zero the first length of the bladed zone
+        self.middle_line_length = self.stream_line_length[:, self.nspan // 2]
+        self.middle_line_length /= self.group[1].stream_line_length[-1, self.group[1].nspan // 2]
 
     def plot_stream_line(self, field, n, save_filename=None):
         """
@@ -562,25 +568,25 @@ class MeridionalProcessGroup:
         sl_max = self.stream_line_length[:, n].max()
         fig, ax = plt.subplots(figsize=fig_size)
         if field == 'rho':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.rho[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.rho[:, n], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
         elif field == 'ur':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.ur[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.ur[:, n], '--s')
             ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
         elif field == 'ut':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.ut[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.ut[:, n], '--s')
             ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
         elif field == 'uz':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.uz[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.uz[:, n], '--s')
             ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
         elif field == 'p':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.p[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.p[:, n], '--s')
             ax.set_ylabel(r'$p \ \mathrm{[-]}$')
         elif field == 'T':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.T[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.T[:, n], '--s')
             ax.set_ylabel(r'$T \ \mathrm{[-]}$')
         elif field == 's':
-            ax.plot(self.stream_line_length[:, n]/sl_max, self.s[:, n], '--s')
+            ax.plot(self.stream_line_length[:, n] / sl_max, self.s[:, n], '--s')
             ax.set_ylabel(r'$s \ \mathrm{[-]}$')
         else:
             raise ValueError("Field name unknown!")
@@ -589,7 +595,6 @@ class MeridionalProcessGroup:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
 
     def plot_averaged_fluxes(self, field, save_filename=None):
         old_value = 0
@@ -643,7 +648,6 @@ class MeridionalProcessGroup:
             if save_filename is not None:
                 fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
     def compute_performance(self):
         """
         compute pressure ratio and efficiency given the averaged fluxes of total quantities
@@ -662,22 +666,64 @@ class MeridionalProcessGroup:
         P2 = self.group[-1].p_flux[-1]
         Pt2 = self.group[-1].p_tot_flux[-1]
 
-        self.beta_ss = P2/P1
-        self.beta_ts = P2/Pt1
-        self.beta_tt = Pt2/Pt1
+        # self.beta_ss = P2 / P1
+        # self.beta_ts = P2 / Pt1
+        self.beta_tt = Pt2 / Pt1
 
-        self.eta_ts = ((P2 / Pt1)**((GMMA-1)/GMMA) -1) / (Tt2/Tt1 - 1)
-        self.eta_tt = ((Pt2 / Pt1)**((GMMA-1)/GMMA) -1) / (Tt2/Tt1 - 1)
-
+        # self.eta_ts = ((P2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
+        # self.eta_tt = ((Pt2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
 
     def print_performance(self):
         """
         print on terminal the performance of the machine. only total to total
         """
         print_banner_begin('MACHINE PERFORMANCE')
-        print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
+        # print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
         print(f"{'Beta_tt:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
-        print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
-        print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
+        # print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
+        # print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
         print_banner_end()
 
+    # def compute_unsteady_model_terms(self):
+    #     """
+    #     compute Omega and tau, needed for the sun model, depending on the type of domain
+    #     """
+    #     i = 0
+    #     for group in self.group:
+    #         domain_type = self.domains_type[i]
+    #         if domain_type == 'rotor':
+    #             ...
+    #         elif domain_type == 'stator':
+    #             ...
+    #         elif domain_type == 'unbladed':
+    #             ...
+    #
+    #
+    #         i +=1
+
+    def compose_global_sun_Omega_tau(self):
+        """
+        given Omega and tau of the Sun Model of the whole domain, build the global matrices, enlarged by a factor 5, that
+        will be needed in the sun Model. The order of the point is for istream -> for ispan
+        """
+
+        def enlarge_matrix_for_sun(Z):
+            nstream = np.shape(Z)[0]
+            nspan = np.shape(Z)[1]
+
+            nrows = nstream*nspan*5
+            ncols = nrows
+            enlarged_matrix = np.zeros((nrows, ncols))
+
+            irow = 0
+            for i in range(nstream):
+                for j in range(nspan):
+                    block = np.zeros((5, ncols)) + Z[i, j]
+                    enlarged_matrix[irow:irow+5, :] = block
+                    irow +=5
+
+            return enlarged_matrix
+
+        # enlarge_matrix_for_sun(self.Omega)
+        self.Omega_sun = enlarge_matrix_for_sun(self.Omega)
+        self.tau_sun = enlarge_matrix_for_sun(self.tau)

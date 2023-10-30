@@ -150,7 +150,7 @@ if REGRESSION:
 blade_process.compute_derived_quantities()
 blade_process.compute_bfm_axial(mode='global', save_fig=True)
 blade_process.compute_averaged_fluxes()
-blade_process.compute_body_fource_S('bladed')
+blade_process.compute_body_fource_S('rotor')
 delattr(blade_process, 'data')
 
 
@@ -244,6 +244,7 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_filt_%s_%i_%i_
                                                       %(MULTIBLOCK_FILTERING, INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 obj.compute_performance()
 obj.print_performance()
+obj.compose_global_sun_Omega_tau()
 obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 
@@ -251,4 +252,4 @@ obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BL
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()

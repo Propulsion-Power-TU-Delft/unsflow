@@ -93,12 +93,14 @@ class SunModel:
             self.p_ref = self.data.meridional_obj.group[0].p_ref
             self.omega_ref = self.data.meridional_obj.group[0].omega_ref
             self.t_ref = 1/self.omega_ref
-        else:
+        elif mode =='duct object':
             self.rho_ref = rho_ref
             self.u_ref = u_ref
             self.x_ref = x_ref
             self.p_ref = rho_ref * u_ref ** 2
             self.t_ref = x_ref / u_ref
+        else:
+            raise ValueError("unknown type of object")
 
         self.print_normalization_information()
 
@@ -331,8 +333,13 @@ class SunModel:
                 A[4, 0] = -self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].rho
 
                 if normalize:
-                    A = self.NormalizeMatrix(A)  # normalization
+                    # if data is still dimensional, divide every equation for each reference dimensionalization factor
+                    A = self.NormalizeMatrix(A)
                 else:
+                    # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
+                    # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+                    # should be 1 by construction. In this case the non-dimensional equations are exactly the same
+                    # of the dimensional ones
                     strouhal = self.x_ref/(self.u_ref*self.t_ref)
                     A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
@@ -1497,19 +1504,19 @@ class SunModel:
         """
 
         m = self.harmonic_order
-        Omega = self.data.meridional_obj.omega_shaft  # dimensional algebraic omega of the shaft
+        Omega = self.data.meridional_obj.Omega_sun  # dimensional algebraic omega of the shaft
+        omega_shaft = self.data.meridional_obj.omega_shaft  # dimensional omega of reference
         omega_ref = self.omega_ref  # dimensional omega of reference
         x_ref = self.x_ref
         u_ref = self.u_ref
         t_ref = self.t_ref
-        tau = x_ref / u_ref  # time delay of the body force model (it could also be through flow time)
+        tau = self.data.meridional_obj.tau_sun  # time delay of the body force model (it could also be through flow time)
         sigma = omega_search / omega_ref  # non-dimensional center point of research
 
         print_banner_begin('ARNOLDI SOLVER')
         print(f"{'Circumferential Harmonic:':<{total_chars_mid}}{m:>{total_chars_mid}}")
-        print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{Omega:>{total_chars_mid}.2f}")
+        print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{omega_shaft:>{total_chars_mid}.2f}")
         print(f"{'Ref. Angular Speed [rad/s]:':<{total_chars_mid}}{omega_ref:>{total_chars_mid}.2f}")
-        print(f"{'Time Lag [s]:':<{total_chars_mid}}{tau:>{total_chars_mid}.6f}")
         print(f"{'Initial Searching Point [-]:':<{total_chars_mid}}{sigma:>{total_chars_mid}.2f}")
         print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
         print_banner_end()

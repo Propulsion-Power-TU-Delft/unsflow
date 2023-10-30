@@ -1494,9 +1494,9 @@ class MeridionalProcess:
         if the domain is bladed compute the body force steady state matrices. Otherwise, instantiate zeros
         for the related terms
         """
-
-        if domain == 'bladed':
-            print("Body Force: Active")
+        self.domain = domain
+        if domain == 'rotor' or domain == 'stator':
+            print("%s Domain" %(domain))
             tr = self.Floss_r / self.Floss
             ttheta = self.Floss_t / self.Floss
             tz = self.Floss_z / self.Floss
@@ -1535,8 +1535,19 @@ class MeridionalProcess:
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
 
+            # compute quantities needed for the Sun Model Algorithm Variant
+            if domain == 'rotor':
+                self.Omega = np.zeros_like(self.z_cg)+self.omega_shaft
+            elif domain == 'stator':
+                self.Omega = np.zeros_like(self.z_cg)
+            else:
+                raise ValueError("Unknown domain type")
+            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length))*self.x_ref / \
+                              (np.max(self.u_meridional)*self.u_ref)
+            self.tau = np.zeros_like(self.z_cg) + tau_throughflow
+
         elif domain=='unbladed':
-            print("Body Force: Zero")
+            print("Unbladed Domain...")
             self.S00 = np.zeros_like(self.ur)
             self.S01 = np.zeros_like(self.ur)
             self.S02 = np.zeros_like(self.ur)
@@ -1563,8 +1574,10 @@ class MeridionalProcess:
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
 
+            self.Omega = np.zeros_like(self.z_cg)
+            self.tau = np.zeros_like(self.z_cg)
         else:
-            raise ValueError("Unknown domain type for body force calculation. Available choices: bladed or unbladed!")
+            raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed!")
 
 
 
