@@ -10,15 +10,15 @@ from .functions import *
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
 
+
 class CfdData:
     """
     Class storing the CFD data, extracted from a CFD software. For the moment only the constructor for csv files
     extracted from Ansys is implemented
     """
-    
-    
-    def __init__(self, filepath, rho_ref, x_ref, rpm_drag, T_ref, cut_block = None, blade = None,
-                 normalize = True, file_type='Ansys .csv', verbose=False, ):
+
+    def __init__(self, filepath, rho_ref, x_ref, rpm_drag, T_ref, cut_block=None, blade=None,
+                 normalize=True, file_type='Ansys .csv', verbose=False, ):
         """
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:
@@ -40,12 +40,12 @@ class CfdData:
         :param verbose: to print some info to screen
         """
         self.filepath = filepath
-        self.omega_shaft = rpm_drag*2*np.pi/60
+        self.omega_shaft = rpm_drag * 2 * np.pi / 60
         self.verbose = verbose
         self.cut_block = cut_block
         self.normalize = normalize
         if self.normalize:
-            #compute fundamental quantities, and then compute the derived ones
+            # compute fundamental quantities, and then compute the derived ones
             self.rho_ref = rho_ref
             self.x_ref = x_ref
             self.rpm_ref = np.abs(rpm_drag)
@@ -64,7 +64,7 @@ class CfdData:
         if self.file_type == 'Ansys .csv':
             if self.verbose:
                 print('reading CFD data...')
-            self.read_from_ansys_csv(normalize = normalize)
+            self.read_from_ansys_csv(normalize=normalize)
 
         print_banner_begin('CFD DATA PROCESSING')
         print(f"{'CFD filepath:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
@@ -81,11 +81,7 @@ class CfdData:
         print(f"{'Dataset Normalized:':<{total_chars_mid}}{normalize:>{total_chars_mid}}")
         print_banner_end()
 
-
-        
-        
-        
-    def read_from_ansys_csv(self, normalize = True):
+    def read_from_ansys_csv(self, normalize=True):
         """
         read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
         as well as the correct names of the variables.
@@ -95,7 +91,7 @@ class CfdData:
         self.x = self.data[' X [ m ]'].values
         self.y = self.data[' Y [ m ]'].values
         self.z = self.data[' Z [ m ]'].values
-        self.r = sqrt(self.x**2 + self.y**2)
+        self.r = sqrt(self.x ** 2 + self.y ** 2)
         self.theta = np.arctan2(self.y, self.x)
         self.rho = self.data[' Density [ kg m^-3 ]'].values
         self.ux = self.data[' Velocity in Stn Frame u [ m s^-1 ]'].values
@@ -107,7 +103,7 @@ class CfdData:
         self.volume = self.data[' Volume [ m^3 ]'].values
         self.finite_volume = self.data[' Volume of Finite Volumes [ m^3 ]'].values
 
-        #gradients
+        # gradients
         # self.drho_dx = self.data[' Density.Gradient X [ kg m^-4 ]'].values
         # self.drho_dy = self.data[' Density.Gradient Y [ kg m^-4 ]'].values
         # self.drho_dz = self.data[' Density.Gradient Z [ kg m^-4 ]'].values
@@ -127,7 +123,6 @@ class CfdData:
         # self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
         # self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
 
-
         if normalize:
             self.normalize_data()
             if self.verbose:
@@ -136,32 +131,28 @@ class CfdData:
             if self.verbose:
                 print('CFD data NOT normalized')
 
-
-
     def process_from_ansys_csv(self, cut=False):
         """
-        if cut==True, it cuts the domain thanks to the information contained in the cut_block border.
-        Then it computes the derived quantities (quantities in cylindrical cordinates)
+        It computes the derived quantities from the dataset, and the original ones all converted in cylindrical frame.
+        :param cut: if True, it cuts the domain thanks to the information contained in the cut_block border (if present).
         """
-        if (self.file_type == 'Ansys .csv' and self.cut_block is not None and cut=='True'):
+        if (self.file_type == 'Ansys .csv' and self.cut_block is not None and cut == 'True'):
             if self.verbose:
                 print('cutting domain...')
             self.cut_domain(self.cut_block.border)
 
         self.compute_derived_quantities()
-        
-        
-        
+
     def compute_derived_quantities(self):
         """
-        Compute other derived quantities, projecting in the radial and tangential direction when needed. Gradients are
+        Compute derived quantities, projecting in the radial and tangential direction when needed. Gradients are
         not actually needed since they will be calculated from the 2D regressed fields.
         """
 
         # velocity magnitude
         self.u_mag = sqrt(self.ux ** 2 + self.uy ** 2 + self.uz ** 2)
 
-        #velocity in cylindrical cordinates
+        # velocity in cylindrical cordinates
         self.ur, self.ut = project_vector_to_cylindrical(self.ux, self.uy, self.theta)
 
         # #gradients in cylindrical cordinates
@@ -180,17 +171,15 @@ class CfdData:
         self.ut_rel = self.ut - self.ut_drag  # relative velocity
         self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
-
-
     def compute_bfm_radial_fields(self):
         """
-        computes the 3D fields necessary for the radial body force model, as described in my draft appendix, Radial Machines
+        Computes the 3D fields necessary for the radial body force model, as described in my draft appendix, Radial Machines
         model. The 3D fields described here will be circumferentially averaged. Mu, coefficient of the resistant force
         is calculated directly in the 2D meridional object, because too expensive to be done in 3D.
 
-        To be checked
+        The model is still not validated, and could be implemented better directly working on the meridional data.
         """
-
+        print("WARNING: method not validated yet.")
         # ideal flow direction (following streamwise positions on the camber surface), in cartesian cordinates.
         # No need to save x,y component
         tau_x = np.array(self.streamline_vec)[:, 0]
@@ -202,7 +191,6 @@ class CfdData:
         n_y = np.array(self.normal_vec)[:, 1]
         self.n_z = np.array(self.normal_vec)[:, 2]
 
-
         # convert in cylindrical cordinates
         self.tau_r, self.tau_t = project_vector_to_cylindrical(tau_x, tau_y, self.theta)
         self.n_r, self.n_t = project_vector_to_cylindrical(n_x, n_y, self.theta)
@@ -213,16 +201,16 @@ class CfdData:
         self.t_z = self.uz / self.u_mag_rel
 
         # k-coeff as described in eq. 10 of article "Flow stability model of ceontrifugal compressors" - Sun et Al. 2016
-        self.k = (self.dut_dr+self.uz/self.ur*self.dut_dz+self.ut/self.r) / (self.u_mag_rel*self.tau_t-self.ut_rel)
+        self.k = (self.dut_dr + self.uz / self.ur * self.dut_dz + self.ut / self.r) / (self.u_mag_rel * self.tau_t - self.ut_rel)
 
         # F_{n,theta} as described in eq 9 of the same article
-        self.F_ntheta = self.k*self.ur*(self.u_mag_rel*self.tau_t-self.ut_rel)
+        self.F_ntheta = self.k * self.ur * (self.u_mag_rel * self.tau_t - self.ut_rel)
         self.F_nr = self.F_ntheta * self.n_r / self.n_t
         self.F_nz = self.F_ntheta * self.n_z / self.n_t
 
         # a1, a2, a3 as defined in equation 16 (corrected by me) of the same article (mu is computed on the meridional grid)
-        self.a1 = self.k * ((self.u_mag_rel + self.ur**2/self.u_mag_rel)*self.tau_t - self.ut_rel)
-        self.a2 = self.k * self.ur * (self.ut_rel/self.u_mag_rel*self.tau_t -1)
+        self.a1 = self.k * ((self.u_mag_rel + self.ur ** 2 / self.u_mag_rel) * self.tau_t - self.ut_rel)
+        self.a2 = self.k * self.ur * (self.ut_rel / self.u_mag_rel * self.tau_t - 1)
         self.a3 = self.k * self.ur * self.tau_t * self.uz / self.u_mag_rel
 
         # elements of the normal force perturbation (steady-state) coefficient matrix, as defined in my draft, eq C.20. So
@@ -251,11 +239,10 @@ class CfdData:
         self.Ft_prime_ss_21 = -2 * self.t_z * self.ut_rel
         self.Ft_prime_ss_22 = -2 * self.t_z * self.uz
 
-
-
     def cut_domain(self, border):
         """
-        cut the cfd domain inside the mesh defined by the block object
+        Cut the cfd domain inside the mesh defined by the block object.
+        :param border: block object describing the border for the cut.
         """
 
         from shapely.geometry import Point
@@ -310,8 +297,6 @@ class CfdData:
         # self.ds_dy = self.ds_dy[idx_cut]
         # self.ds_dz = self.ds_dz[idx_cut]
 
-
-
     def compute_flow_ideal_vectors(self):
         """
         the aim is to find for every point in the dataset, the ideal flow vectors (the equivalent of the normal to the camber
@@ -319,7 +304,7 @@ class CfdData:
         the vectors on the camber surface point equivalent to them (same r,z position), and rotating them along z-axis
         of an angle equal to the difference between the point and its projection on the camber surface.
         To speed up the computation, only the points making part of the meridional grid can be considered if the cut method
-        was previously applied
+        was previously applied.
         """
 
         # instantiate empty lists
@@ -335,19 +320,13 @@ class CfdData:
             self.streamline_vec.append(streamline)
             self.spanline_vec.append(spanline)
 
-
-
     def compute_flow_directions(self, i):
         """
-        for the i element, take the vectors on the equivalent camber surface point, rotate them along z of the
-        difference angle between the two
-        Args:
-            i: element of the dataset
-
-        Returns:
-            normal, streamline, spanline: flow vectors for each point
+        For the i element of the dataset, take the direction vectors on the equivalent camber surface point passing through that
+        point, in order to find camber normal and tangential local vectors. Method not validated.
+        :param i: i-th point of the dataset
         """
-
+        print("Method not validated yet.")
         # select the point in the dataset
         z = self.z[i]
         r = self.r[i]
@@ -377,22 +356,20 @@ class CfdData:
 
         return normal, stream, span
 
-
-
     def compute_derived_normalization_quantities(self):
         """
         Given the fundamental quantities, compute all the reference quantities for following non-dimensionalization.
+        The fundamental quantities are x_ref, omega_ref, T_ref, rho_ref. All the rest is computed from them.
         """
-        self.omega_ref = self.rpm_ref * 2*np.pi / 60  # convert to [rad/s]
+        self.omega_ref = self.rpm_ref * 2 * np.pi / 60  # convert to [rad/s]
         self.u_ref = self.omega_ref * self.x_ref  # tip speed of the machine
         self.t_ref = 1 / self.omega_ref  # to be coherent
-        self.p_ref = self.rho_ref * self.u_ref**2
+        self.p_ref = self.rho_ref * self.u_ref ** 2
         self.s_ref = self.u_ref ** 2 / self.T_ref  # reference entropy
-
 
     def normalize_data(self):
         """
-        normalize everything, in order to increase numerical accuracy
+        Normalize everything.
         """
 
         # non-dimensionalize cordinates
