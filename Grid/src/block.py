@@ -18,17 +18,20 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, hub_curve, shroud_curve, nstream=10, nspan=10):
+    def __init__(self, hub_curve, shroud_curve, nstream, nspan):
         """
-        provide the two curve objects related to hub and shroud, and in how many number of points 
-        you want to discretize the streamwise and spanwise direction
+        Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
+        dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
+        :param hub_curve: curve object for the hub
+        :param shroud_curve: curve object for the shroud
+        :param nstream: number of grid points along the streamwise direction
+        :param nspan: number of grid points along the spanwise direction
+
         """
         self.hub = hub_curve
         self.shroud = shroud_curve
         self.nstream = nstream
         self.nspan = nspan
-        self.units = self.hub.units
-
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -46,7 +49,7 @@ class Block:
 
     def spline_of_hub_shroud(self):
         """
-        compute hub,shroud splines, that are parameterized from 0 to 1 between the extremes.
+        Compute hub,shroud splines, that are parameterized from 0 to 1 between the extremes.
         """
         self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream,
                               mode='cordinates', rescale_factor=1, x_ref=1)
@@ -72,19 +75,19 @@ class Block:
 
     def spline_of_outlet(self):
         """
-        make splines of the outlet border for the inlet block, which coincides with self.Inlet, which is the blade leading edge.
-        At the same time prepare the straight spline for the inlet (called leading edge)
+        Make splines of the outlet border for the inlet block, which is the blade leading edge.
+        At the same time prepare the straight spline for the inlet (called leading edge). Sorry for the confusion.
         """
+        # outlet border
         self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                       self.inlet[1:-1, :],
                                       np.reshape(self.point_shroud_inlet, (1, 2))))
-
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan,
                                    mode='cordinates', x_ref=1, rescale_factor=1)
 
+        # inlet border
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
-
         self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
@@ -123,21 +126,21 @@ class Block:
 
     def sample_hub_shroud(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
+        Sample correctly the hub and shroud spline, already trimmed properly, with a certain sampling mode.
         """
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
 
     def sample_hub_shroud_full_block(self, sampling_mode='default'):
         """
-        sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
+        Sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
         """
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
 
     def sample_inlet_outlet(self, sampling_mode='default'):
         """
-        sample the inlet edge for the outlet block
+        Sample the inlet edge for the outlet block.
         """
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
@@ -147,7 +150,7 @@ class Block:
                             sampling_mode='default', curved_border='both',
                             inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """
-        compute the internal grid points with a certain algorithm, specified by grid_mode.
+        Compute the internal grid points with a certain algorithm, specified by grid_mode.
         :param grid_mode: mode used for the grid generation algorithm. Suggested 'elliptic'.
         :param orthogonality: to impose orthogonality at borders, if elliptic mode is used.
         :param x_stretching: stretching type of the grid in the streamwise direction.
@@ -276,7 +279,8 @@ class Block:
 
     def compute_grid_centers(self):
         """
-        once the main grid is computed find the nodes that lie in the baricenter of the geometry
+        Once the main grid is computed find the nodes that lie in the baricenter of the geometry. Note that the number of points
+        will be lower than the number of the main grid lines, varying the dimensions of the matrices.
         """
         self.r_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
         self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
@@ -305,14 +309,14 @@ class Block:
 
     def extend_inlet_outlet_curves(self):
         """
-        extend the inlet and outlet curves in order to later find the intersections with the hub and shroud.
+        extend the inlet and outlet curves in order to find the intersections with the hub and shroud curves.
         """
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
     def find_intersections(self, tol=1e-2, visual_check=False):
         """
-        having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
+        Having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         :param tol: tolerance of the algorithm to find intersection. If too small, it doesn't find the correct intersections
         :param visual_check: Set to True to graphically see the linest and the intersections found
         """
@@ -339,10 +343,14 @@ class Block:
             plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1])
 
     @staticmethod
-    def point_intersection(curve1, curve2, tol=1e-4):
+    def point_intersection(curve1, curve2, tol=1e-2):
         """
         find and return the intersection between 2 curves. static method because it is bound to the class, not to an instance
         of the class. It could also avoid to specify the self, since it is not used.
+        :param curve1: first curve
+        :param curve2: second curve
+        :param tol: tolerance threshold for the algorithm. 1e-2 seems like a good value, since at this point the cordinates
+        are already non-dimensional
         """
         tree = KDTree(curve1)
         distances, indices = tree.query(curve2)
@@ -368,16 +376,26 @@ class Block:
         else:
             raise ValueError('Insert a valid machine type')
 
-    def inlet_zone_trim(self):
+    def inlet_zone_trim(self, mode):
         """
-        trim the inlet block hub and shroud curves at the found intersections with the inlet curves of the blade
+        Trim method for the inlet block. Hub and shroud curves are trimmed at found intersections with the leading edge
+        intersections of the blade.
+        :param mode: axial or radial, used to distinguish trimming algorithm.
         """
-        self.hub.trim_outlet(z_trim=self.point_hub_inlet[0])
-        self.shroud.trim_outlet(z_trim=self.point_shroud_inlet[0])
+        if mode == 'axial':
+            self.hub.trim_outlet(z_trim=self.point_hub_inlet[0])
+            self.shroud.trim_outlet(z_trim=self.point_shroud_inlet[0])
+        elif mode == 'radial':
+            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
+            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
+        else:
+            raise ValueError("Unknown trimming method.")
 
-    def outlet_zone_trim(self, mode='radial'):
+    def outlet_zone_trim(self, mode):
         """
-        trim the outlet block hub and shroud curves at the found intersections with the trailing edge of the blade
+        Trim method for the outlet block. Hub and shroud curves are trimmed at found intersections with the trailing edge
+        intersections of the blade.
+        :param mode: axial or radial, used to distinguish trimming algorithm.
         """
         if mode == 'radial':
             self.hub.trim_inlet(r_trim=self.point_hub_outlet[1])
@@ -385,6 +403,8 @@ class Block:
         elif mode == 'axial':
             self.hub.trim_inlet(z_trim=self.point_hub_outlet[0])
             self.shroud.trim_inlet(z_trim=self.point_shroud_outlet[0])
+        else:
+            raise ValueError("Unknown trimming method.")
 
     def compute_double_grid(self):
         """

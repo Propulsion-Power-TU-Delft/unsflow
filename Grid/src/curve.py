@@ -63,7 +63,9 @@ class Curve:
 
     def compute_spline(self, u_ext, degree_spline=1):
         """
-        compute spline passing through the points. it returns the cordinates along the spline, parametrized normally
+        compute spline passing through the points. it returns the cordinates along the spline, parametrized normally.
+        :param u_ext: parametrization span of the spline
+        :param degree_spline: degree of the spline
         """
         self.tck, u = splprep([self.r, self.z], s=0, k=degree_spline)
         r_spline, z_spline = splev(u_ext, self.tck)
@@ -71,11 +73,15 @@ class Curve:
 
 
 
-    def extend(self, u_min=-0.5, u_max=1.5, degree_spline=3):
+    def extend(self, u_min=-0.5, u_max=1.5, degree_spline=3, num_points=10000):
         """
-        extend the spline out of the normal domain of definition
+        Extend the spline out of the normal domain of definition.
+        :param u_min: minimum value of curve parametrization. To extend must be less than zero.
+        :param u_max: maximum value of curve parametrization. To extend must be greater than one.
+        :param degree_spline: degree of the spline type.
+        :param num_points: number of sampled points of the extended spline. It should be fine enough to find intersections.
         """
-        u_spline_ext = np.linspace(u_min, u_max, 10000)  # parametrization of the spline. increase points if needed
+        u_spline_ext = np.linspace(u_min, u_max, num_points)  # parametrization of the spline. increase points if needed
         self.r_spline_ext, self.z_spline_ext = self.compute_spline(u_spline_ext, degree_spline=degree_spline)
 
 
@@ -115,8 +121,9 @@ class Curve:
     def sample(self, sampling_mode='default'):
         """
         having the spline data it computes a set of points on it, choosing an array of u values, from 0 (begin of 
-        the spline) to 1 (end of spline). In default mode u is obtained with a linspace, in clustering mode 
-        the points are clustered to a side, to highlight discontinuities        
+        the spline) to 1 (end of spline).
+        :param sampling_mode: in default mode u is obtained with a linspace, in clustering mode
+        the points are clustered to a side, to highlight discontinuities.
         """
         if sampling_mode == 'default':
             self.u_sample = np.linspace(0, 1, self.nstream)

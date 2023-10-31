@@ -164,7 +164,7 @@ sun_obj.build_S_global_matrix()
 sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 23000
+omega_search = 24000
 Omega = 0
 tau = 0
 mode_name = r'$[R,Z] = [2, 3]$'
@@ -195,130 +195,130 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([7500, 35000])
+ax.set_xlim([7500, 42000])
 ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
 # fig.savefig('pictures/%i/chi_map_arnoldi_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 
 # EIGENFUNCTIONS
-# z_grid = sun_obj.data.zGrid
-# r_grid = sun_obj.data.rGrid
-# rho_eig = []
-# ur_eig = []
-# ut_eig = []
-# uz_eig = []
-# p_eig = []
-#
-# for i in range(len(eigenvectors)//2):
-#     if (i) % 5 == 0:
-#         rho_eig.append(eigenvectors[i])
-#     elif (i - 1) % 5 == 0 and i != 0:
-#         ur_eig.append(eigenvectors[i])
-#     elif (i - 2) % 5 == 0 and i != 0:
-#         ut_eig.append(eigenvectors[i])
-#     elif (i - 3) % 5 == 0 and i != 0:
-#         uz_eig.append(eigenvectors[i])
-#     elif (i - 4) % 5 == 0 and i != 0:
-#         p_eig.append(eigenvectors[i])
-#     else:
-#         raise ValueError("Not correct indexing for eigenvector retrieval!")
-#
-#
-# def scaled_eigenvector_real(eig_list):
-#     array = np.array(eig_list, dtype=complex)
-#     array = np.reshape(array, (Nz, Nr))
-#     array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
-#     return array_real_scaled
-#
-#
-# rho_eig_r = scaled_eigenvector_real(rho_eig)
-# ur_eig_r = scaled_eigenvector_real(ur_eig)
-# ut_eig_r = scaled_eigenvector_real(ut_eig)
-# uz_eig_r = scaled_eigenvector_real(uz_eig)
-# p_eig_r = scaled_eigenvector_real(p_eig)
-#
-#
-#
+z_grid = sun_obj.data.zGrid
+r_grid = sun_obj.data.rGrid
+rho_eig = []
+ur_eig = []
+ut_eig = []
+uz_eig = []
+p_eig = []
+
+for i in range(len(eigenvectors)//2):
+    if (i) % 5 == 0:
+        rho_eig.append(eigenvectors[i])
+    elif (i - 1) % 5 == 0 and i != 0:
+        ur_eig.append(eigenvectors[i])
+    elif (i - 2) % 5 == 0 and i != 0:
+        ut_eig.append(eigenvectors[i])
+    elif (i - 3) % 5 == 0 and i != 0:
+        uz_eig.append(eigenvectors[i])
+    elif (i - 4) % 5 == 0 and i != 0:
+        p_eig.append(eigenvectors[i])
+    else:
+        raise ValueError("Not correct indexing for eigenvector retrieval!")
+
+
+def scaled_eigenvector_real(eig_list):
+    array = np.array(eig_list, dtype=complex)
+    array = np.reshape(array, (Nz, Nr))
+    array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
+    return array_real_scaled
+
+
+rho_eig_r = scaled_eigenvector_real(rho_eig)
+ur_eig_r = scaled_eigenvector_real(ur_eig)
+ut_eig_r = scaled_eigenvector_real(ut_eig)
+uz_eig_r = scaled_eigenvector_real(uz_eig)
+p_eig_r = scaled_eigenvector_real(p_eig)
+
+
+
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, rho_eig_r, levels=30, cmap='RdBu')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\tilde{\rho} \quad$'+mode_name)
+plt.colorbar()
+# plt.savefig('pictures/%i/eigenfunction_rho_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, ur_eig_r, levels=30, cmap='RdBu')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\tilde{u}_r \quad$' + mode_name)
+plt.colorbar()
+# plt.savefig('pictures/%i/eigenfunction_ur_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, ut_eig_r, levels=30, cmap='RdBu')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\tilde{u}_{\theta} \quad$' + mode_name)
+plt.colorbar()
+# plt.savefig('pictures/%i/eigenfunction_ut_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, uz_eig_r, levels=30, cmap='RdBu')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\tilde{u}_z \quad$' + mode_name)
+plt.colorbar()
+# plt.savefig('pictures/%i/eigenfunction_uz_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+plt.figure(figsize=(7, 5))
+plt.contourf(z_grid, r_grid, p_eig_r, levels=30, cmap='RdBu')
+plt.ylabel(r'$r$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(r'$\tilde{p} \quad$' + mode_name)
+plt.colorbar()
+# plt.savefig('pictures/%i/eigenfunction_p_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+
+
+
+# first axial order
 # plt.figure(figsize=(7, 5))
-# plt.contourf(z_grid, r_grid, rho_eig_r, levels=30, cmap='RdBu')
-# plt.ylabel(r'$r$ [-]')
-# plt.xlabel(r'$z$ [-]')
-# plt.title(r'$\tilde{\rho} \quad$'+mode_name)
-# plt.colorbar()
-# # plt.savefig('pictures/%i/eigenfunction_rho_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-# plt.figure(figsize=(7, 5))
-# plt.contourf(z_grid, r_grid, ur_eig_r, levels=30, cmap='RdBu')
-# plt.ylabel(r'$r$ [-]')
-# plt.xlabel(r'$z$ [-]')
-# plt.title(r'$\tilde{u}_r \quad$' + mode_name)
-# plt.colorbar()
-# # plt.savefig('pictures/%i/eigenfunction_ur_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-# plt.figure(figsize=(7, 5))
-# plt.contourf(z_grid, r_grid, ut_eig_r, levels=30, cmap='RdBu')
-# plt.ylabel(r'$r$ [-]')
-# plt.xlabel(r'$z$ [-]')
-# plt.title(r'$\tilde{u}_{\theta} \quad$' + mode_name)
-# plt.colorbar()
-# # plt.savefig('pictures/%i/eigenfunction_ut_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-# plt.figure(figsize=(7, 5))
-# plt.contourf(z_grid, r_grid, uz_eig_r, levels=30, cmap='RdBu')
-# plt.ylabel(r'$r$ [-]')
-# plt.xlabel(r'$z$ [-]')
-# plt.title(r'$\tilde{u}_z \quad$' + mode_name)
-# plt.colorbar()
-# # plt.savefig('pictures/%i/eigenfunction_uz_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-# plt.figure(figsize=(7, 5))
-# plt.contourf(z_grid, r_grid, p_eig_r, levels=30, cmap='RdBu')
-# plt.ylabel(r'$r$ [-]')
-# plt.xlabel(r'$z$ [-]')
-# plt.title(r'$\tilde{p} \quad$' + mode_name)
-# plt.colorbar()
-# # plt.savefig('pictures/%i/eigenfunction_p_2D_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-#
-#
-#
-# # first axial order
-# # plt.figure(figsize=(7, 5))
-# # plt.plot(z_grid[:, 0], np.abs(p_eig_r[:, 0].real), '--o', label='numerical')
-# # plt.plot(z_grid[:, 0], np.max(np.abs(p_eig_r[:, 0])) * np.sin(np.pi * z_grid[:, 0] / L * r1), label='analytical')
-# # plt.ylabel(r'$p$ [-]')
-# # plt.xlabel(r'$z$ [-]')
-# # plt.title(mode_name)
-# # plt.legend()
-# # plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-#
-# # # second axial order
-# plt.figure(figsize=(7, 5))
-# plt.plot(z_grid[:, 0], p_eig_r[:, 0], '--o', label='numerical')
-# plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(-2 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
+# plt.plot(z_grid[:, 0], np.abs(p_eig_r[:, 0].real), '--o', label='numerical')
+# plt.plot(z_grid[:, 0], np.max(np.abs(p_eig_r[:, 0])) * np.sin(np.pi * z_grid[:, 0] / L * r1), label='analytical')
 # plt.ylabel(r'$p$ [-]')
 # plt.xlabel(r'$z$ [-]')
 # plt.title(mode_name)
 # plt.legend()
-# # plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
-#
-#
-#
-#
-# # RADIAL CUT
-# LAMBDA = roots[1]
-# ALPHA = jvp(m, LAMBDA*r1, n=1) / yvp(m, LAMBDA*r1, n=1)
-# ALPHA2 = jvp(m, LAMBDA*r2, n=1) / yvp(m, LAMBDA*r2, n=1)
-# r_var = np.linspace(r1, r2, 100)
-# eigen_analyt_r = jv(m, LAMBDA*r_var) - ALPHA*yv(m, LAMBDA*r_var)
-# eigen_analyt_r_scaled = eigen_analyt_r / (np.max(eigen_analyt_r) - np.min(eigen_analyt_r))
-#
-#
-# plt.figure(figsize=(7, 5))
-# # if opposite signs
-# plt.plot(r_grid[Nz // 2, :], (p_eig_r[Nz // 2, :]) / (np.max(p_eig_r[Nz // 2, :]) - np.min(p_eig_r[Nz // 2, :])), '--o', label='numerical')
-# plt.plot(r_var/r1, eigen_analyt_r_scaled, label='analytical')
-# #if same signs
-# # plt.plot(r_grid[Nz // 2, :], np.abs(p_eig_r[Nz // 2, :])/np.max(np.abs(p_eig_r[Nz // 2, :])), '--o', label='numerical')
-# # plt.plot(r_var/r1, np.abs(eigen_analyt_r_scaled)/np.max(np.abs(eigen_analyt_r_scaled)), label='analytical')
-# plt.ylabel(r'$p$ [-]')
-# plt.xlabel(r'$r$ [-]')
-# plt.title(mode_name)
-# plt.legend()
-# # plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+# plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+
+# # second axial order
+plt.figure(figsize=(7, 5))
+plt.plot(z_grid[:, 0], p_eig_r[:, 0], '--o', label='numerical')
+plt.plot(z_grid[:, 0], np.max(p_eig_r[:, 0]) * np.sin(1 * np.pi * z_grid[:, 0] / L * r1), label='analytical')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$z$ [-]')
+plt.title(mode_name)
+plt.legend()
+# plt.savefig('pictures/%i/eigenfunction_z_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
+
+
+
+
+# RADIAL CUT
+LAMBDA = roots[2]
+ALPHA = jvp(m, LAMBDA*r1, n=1) / yvp(m, LAMBDA*r1, n=1)
+ALPHA2 = jvp(m, LAMBDA*r2, n=1) / yvp(m, LAMBDA*r2, n=1)
+r_var = np.linspace(r1, r2, 100)
+eigen_analyt_r = jv(m, LAMBDA*r_var) - ALPHA*yv(m, LAMBDA*r_var)
+eigen_analyt_r_scaled = eigen_analyt_r / (np.max(eigen_analyt_r) - np.min(eigen_analyt_r))
+
+
+plt.figure(figsize=(7, 5))
+# if opposite signs
+plt.plot(r_grid[Nz // 2, :], (p_eig_r[Nz // 2, :]) / (np.max(p_eig_r[Nz // 2, :]) - np.min(p_eig_r[Nz // 2, :])), '--o', label='numerical')
+plt.plot(r_var/r1, -eigen_analyt_r_scaled, label='analytical')
+#if same signs
+# plt.plot(r_grid[Nz // 2, :], np.abs(p_eig_r[Nz // 2, :])/np.max(np.abs(p_eig_r[Nz // 2, :])), '--o', label='numerical')
+# plt.plot(r_var/r1, np.abs(eigen_analyt_r_scaled)/np.max(np.abs(eigen_analyt_r_scaled)), label='analytical')
+plt.ylabel(r'$p$ [-]')
+plt.xlabel(r'$r$ [-]')
+plt.title(mode_name)
+plt.legend()
+# plt.savefig('pictures/%i/eigenfunction_r_%i_%i_%i.pdf' % (eigenvalues[0].real, Nz, Nr, eigenvalues[0].real), bbox_inches='tight')
 plt.show()

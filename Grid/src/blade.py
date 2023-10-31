@@ -11,6 +11,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
+from Grid.src.functions import compute_picture_size
 
 # import Grid.src.functions
 from .styles import *
@@ -23,7 +24,7 @@ class Blade:
 
     def __init__(self, blade_file_path, rescale_factor, x_ref, format_file='.curve'):
         """
-        reads the info from the blade file .curve, which is created during blade generation.
+        reads the info from the blade file .curve, which is created during blade generation, e.g. with BladeGen.
         :param blade_file_path: filepath to blade.curve file, storing cordinates of the various profiles
         :param rescale_factor: factor to convert cordinates in the blade.curve file to [m]
         :param x_ref: reference length with which non-dimensionalize the cordinates. It should be the tip radius at inlet
@@ -47,8 +48,7 @@ class Blade:
 
     def read_from_curve_file(self):
         """
-        reads from a specific format of file, which has been generated during blade generation. Please try to provide
-        the same kind of file
+        Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         """
         blade_type = 'MAIN'
         with open(self.file_path) as f:
@@ -92,8 +92,7 @@ class Blade:
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
-        self.AR = (np.max(self.r) - np.min(self.r)) / (np.max(self.z) - np.min(self.z))
-        self.blade_picture_size = (4, 4 * self.AR)
+        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z, self.r)
 
         # check if the blade has a splitter blade
         if np.unique(self.blade).shape[0] > 1:
@@ -118,7 +117,7 @@ class Blade:
 
     def print_blade_info(self):
         """
-        print information of the blade object during construction
+        Print information of the blade object during construction.
         """
         print_banner_begin('BLADE')
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.rescale_factor:>{total_chars_mid}.3f}")
@@ -130,7 +129,7 @@ class Blade:
 
     def convert_to_floats(self):
         """
-        convert the list of cordinates to a list of float variables
+        Convert the list of cordinates to a list of float variables
         """
         self.x = [float(a) for a in self.x]
         self.y = [float(a) for a in self.y]
@@ -140,7 +139,7 @@ class Blade:
 
     def convert_to_arrays(self):
         """
-        convert the data in numpy arrays for following process
+        Convert the data lists in numpy arrays.
         """
         self.x = array(self.x, dtype=float)
         self.y = array(self.y, dtype=float)
@@ -153,9 +152,9 @@ class Blade:
 
     def plot_blade_points(self, save_filename=None):
         """
-        plot the blade points. Distinguish between main or main and splitter blade
+        Plot the blade points. Distinguish between main or main and splitter blade
         """
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(self.x_main, self.y_main, self.z_main, label='main blade')
         if self.splitter:
@@ -171,17 +170,10 @@ class Blade:
 
     def find_camber_surface(self, blade_block, degree=4):
         """
-        find the camber surface via regression of theta = f(z, r), using only the main blade points.
-        Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade,
-        but it is not trimmed yet by the hub and shroud
-
-        Args:
-            blade_block: the block storing the meridional mesh of the bladed domain
-            degree: degree of the regression
-
-        Returns:
-            void: stores in the blade object the information relative to the camber surface, on the domain occupied
-            effectively by the blade
+        Find the camber surface via regression of the function theta = f(z, r), using only the main blade points.
+        Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
+        :param blade_block: the block storing the meridional mesh of the bladed domain
+        :param degree: degree of the regression
         """
 
         self.camber_degree = degree  # mixed polynomial order
@@ -209,7 +201,7 @@ class Blade:
         """
         plot the main blade points and the camber surface
         """
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(self.x_main, self.y_main, self.z_main, s=scatter_point_size, label='main blade points')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
@@ -225,7 +217,10 @@ class Blade:
     def compute_camber_vector(self, i, j, check=False):
         """
         for a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
-        of the vectors connecting streamwise and spanwise points. The streamline and spanline vectors are simply vec_1 and vec_2
+        of the vectors connecting streamwise and spanwise points.
+        :param i: i index of the point
+        :param j: j index of the point
+        :param check: if True plots the result
         """
         ni = self.z_camber.shape[0] - 1  # last element index
         nj = self.r_camber.shape[1] - 1  # last element index
@@ -336,7 +331,7 @@ class Blade:
         normal /= np.linalg.norm(normal)
 
         if check:
-            fig = plt.figure(figsize=self.blade_picture_size)
+            fig = plt.figure(figsize=self.picture_size_blank)
             ax = fig.add_subplot(111, projection='3d')
             ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
             ax.set_xlabel(r'$x$')
@@ -354,10 +349,13 @@ class Blade:
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None):
         """
-        it plots all the blades around the full annulus of the machine
+        it plots all the blades around the full annulus of the machine.
+        :param n_blades: how many blades the machines has.
+        :param render_splitter: if True plots also the splitter blade, if present
+        :param save_filename: if specified, saves the plots with the given name
         """
 
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         for i in range(0, n_blades):
             ax.scatter(self.r_main * np.cos(self.theta_main + i * 2 * np.pi / n_blades),
@@ -380,11 +378,10 @@ class Blade:
 
 
 
-    def find_inlet_points(self, geometry_type='radial'):
+    def find_inlet_points(self, geometry_type):
         """
-        find the points defining the inlet are taken as
-        the points with minimum z cordinates for each profile of the blade.
-        :param geometry_type: needed to know how to find the inlet points
+        Find the points defining the inlet from the cordinates of the blade points.
+        :param geometry_type: needed to choose the algorithm to find the inlet points
         """
         self.inlet_z = []
         self.inlet_r = []
@@ -415,7 +412,7 @@ class Blade:
 
 
 
-    def find_outlet_points(self, geometry_type='radial'):
+    def find_outlet_points(self, geometry_type):
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
@@ -453,7 +450,7 @@ class Blade:
     def compute_camber_vectors(self):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
-        spanline vector
+        spanline vector, all in cartesian and cylindrical reference systems.
         """
         # Create 2D NumPy array of empty arrays
         self.normal_vectors = np.empty(self.z_camber.shape, dtype=object)
@@ -481,10 +478,11 @@ class Blade:
 
     def show_normal_vectors(self, save_filename=None):
         """
-        show all the normal vectors on the camber surface
+        Show all the normal vectors on the camber surface.
+        :param save_filename: if specified, saves the plots with the given name
         """
         self.scale = (np.max(self.z_camber) - np.min(self.z_camber)) / 20
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
         for i in range(0, self.x_camber.shape[0]):
@@ -503,9 +501,10 @@ class Blade:
 
     def show_streamline_vectors(self, save_filename=None):
         """
-        show all the streamline vectors on the camber surface
+        Show all the streamline vectors on the camber surface.
+        :param save_filename: if specified, saves the plots with the given name
         """
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
         for i in range(0, self.x_camber.shape[0]):
@@ -524,9 +523,10 @@ class Blade:
 
     def show_spanline_vectors(self, save_filename=None):
         """
-        show all the spanline vectors on the camber surface
+        Show all the spanline vectors on the camber surface.
+        :param save_filename: if specified, saves the plots with the given name
         """
-        fig = plt.figure(figsize=self.blade_picture_size)
+        fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
         for i in range(0, self.x_camber.shape[0]):
@@ -543,14 +543,15 @@ class Blade:
 
 
 
-    def compute_blade_camber_angles(self, convention='neutral'):
+    def compute_blade_camber_angles(self, convention='rotation'):
         """
-        from the normal and streamline vectors of the camber compute:
-        gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)
-        blade_metal_angle: angle between the camber 3d streamline vector and its meridional projection
-        lean_angle: angle between the camber 3D spanwise direction and its meridional projection
-        blade_blockage: as defined by Kottapalli. For the moment not ready yet.
-        convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the direction of rotation
+        From the normal and streamline vectors of the camber compute:
+        -gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)
+        -blade_metal_angle: angle between the camber 3d streamline vector and its meridional projection
+        -lean_angle: angle between the camber 3D spanwise direction and its meridional projection
+        -blade_blockage: as defined by Kottapalli. For the moment not ready yet.
+        :param convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the
+        direction of rotation
         """
 
         self.gas_path_angle = np.zeros_like(self.x_camber)
@@ -581,10 +582,11 @@ class Blade:
 
     def show_blade_angles_contour(self, save_filename=None):
         """
-        contour of the blade angles
+        Contour of the blade angles.
+        :param save_filename: if specified, saves the plots with the given name
         """
 
-        fig, ax = plt.subplots(figsize=self.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_blank)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\varphi$')
         cb = fig.colorbar(cs)
@@ -592,7 +594,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots(figsize=self.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_blank)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\kappa$')
         cb = fig.colorbar(cs)
@@ -600,7 +602,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots(figsize=self.blade_picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_blank)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\lambda$')
         cb = fig.colorbar(cs)

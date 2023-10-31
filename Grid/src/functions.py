@@ -16,7 +16,10 @@ from scipy.optimize import minimize
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
-    it makes use of sigmoid function. Change the parameters if needed
+    it makes use of sigmoid functions.
+    :param n: total number of sampling points
+    :param shrink_effect: value of the shrink used in the sigmoid case. A higher value cluster the points more. 3.5 is good.
+    :param border: set the borders at which the points will be clustered. left, right, or default (both).
     """
     length = n
     # Generate the array with more points near the extremes
@@ -226,13 +229,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
     scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
     tol *= scale  # scale the tolerance threshold
-    if WH_ratio >= 1:
-        pic_size = (8, 8 / WH_ratio)
-    else:
-        pic_size = (6 * WH_ratio, 6)
+    pic_size_blank, pic_size_contour = compute_picture_size(X, Y)
 
     if show:
-        plt.figure(figsize=pic_size)
+        plt.figure(figsize=pic_size_blank)
 
     if save_animation:
         X_animation = np.zeros((nx, ny, maxit))
@@ -621,13 +621,22 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
 
 
 def compute_picture_size(x, y):
+    """
+    given the x and y dimension of a domain, compute the picture size in order to be scaled. Blank stands for the size
+    without using colorbars, contour for cases where a part of the width (e.g. 10%) is used for the colorbar.
+    :param x: grid of x cordinates
+    :param y: grid of y cordinates
+    """
     W = np.max(x) - np.min(x)
     H = np.max(y) - np.min(y)
     WH_ratio = W / H
+    color_bar_span = 0.15
     if WH_ratio >= 1:
-        pic_size = (8, 8 / WH_ratio)
+        pic_size_blank = (8, 8 / WH_ratio)
+        pic_size_contour = (8*(1+color_bar_span), 8 / WH_ratio)
     else:
-        pic_size = (6 * WH_ratio, 6)
-    return pic_size
+        pic_size_blank = (6 * WH_ratio, 6)
+        pic_size_contour = (6 * WH_ratio*(1+color_bar_span), 6)
+    return pic_size_blank, pic_size_contour
 
 

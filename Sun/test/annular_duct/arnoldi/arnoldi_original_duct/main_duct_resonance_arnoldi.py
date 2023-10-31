@@ -118,8 +118,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 60
-Nr = 20
+Nz = 30
+Nr = 10
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))
@@ -144,7 +144,7 @@ sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ComputeBoundaryNormals()
 sun_obj.ShowNormals()
 sun_obj.add_shaft_rpm(omega_ref)
-sun_obj.set_normalization_quantities(rho_ref, u_ref, x_ref, mode='duct')
+sun_obj.set_normalization_quantities(rho_ref, u_ref, x_ref, mode='duct object')
 sun_obj.NormalizeData()
 sun_obj.ComputeSpectralGrid()
 gradient_routine = 'findiff'
@@ -173,7 +173,7 @@ A = sun_obj.Z_g
 M = 1j*sun_obj.A_g
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
-number_search = 5
+number_search = 7
 print('Searching Eigenvalues with ARPACK...')
 eigenvalues, eigenvectors = eigs(C, k=number_search)
 eigenvalues = sigma + 1 / eigenvalues

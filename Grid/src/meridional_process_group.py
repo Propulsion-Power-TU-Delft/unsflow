@@ -11,6 +11,7 @@ from scipy.ndimage import gaussian_filter
 import pickle
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
+from Grid.src.functions import compute_picture_size
 
 
 class MeridionalProcessGroup:
@@ -303,7 +304,7 @@ class MeridionalProcessGroup:
         contour of the fields. Dimensional quantities
         """
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.rho * self.group[0].rho_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -312,7 +313,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ur * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -321,7 +322,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -330,7 +331,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.uz * self.group[0].u_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -339,7 +340,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.p * self.group[0].p_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -348,7 +349,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.T * self.group[0].T_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -357,7 +358,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.s * self.group[0].s_ref, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -366,7 +367,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -375,7 +376,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Omega, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -384,7 +385,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_OmegaSun.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.tau, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -398,13 +399,11 @@ class MeridionalProcessGroup:
         contour of the grid. Non-Dimensional quantities
         """
 
-        self.AR = (np.max(self.r_cg) - np.min(self.r_cg)) / \
-                  (np.max(self.z_cg) - np.min(self.z_cg))
-        self.picture_size = (7, 7 * self.AR)
+        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_cg, self.r_cg)
         nstream = np.shape(self.z_grid)[0]
         nspan = np.shape(self.z_grid)[1]
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_blank)
 
         # external grid
         for istream in range(0, nstream):
@@ -430,7 +429,7 @@ class MeridionalProcessGroup:
         contours of the gradients, non-dimensional quantities
         """
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drho_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -439,7 +438,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drho_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -448,7 +447,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -457,7 +456,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -466,7 +465,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -475,7 +474,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -484,7 +483,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -493,7 +492,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -502,7 +501,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -511,7 +510,7 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=fig_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
@@ -666,40 +665,24 @@ class MeridionalProcessGroup:
         P2 = self.group[-1].p_flux[-1]
         Pt2 = self.group[-1].p_tot_flux[-1]
 
-        # self.beta_ss = P2 / P1
-        # self.beta_ts = P2 / Pt1
+        self.beta_ss = P2 / P1
+        self.beta_ts = P2 / Pt1
         self.beta_tt = Pt2 / Pt1
 
-        # self.eta_ts = ((P2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
-        # self.eta_tt = ((Pt2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
+        self.eta_ts = ((P2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
+        self.eta_tt = ((Pt2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
 
     def print_performance(self):
         """
         print on terminal the performance of the machine. only total to total
         """
         print_banner_begin('MACHINE PERFORMANCE')
-        # print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
         print(f"{'Beta_tt:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
-        # print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
-        # print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
+        print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
         print_banner_end()
 
-    # def compute_unsteady_model_terms(self):
-    #     """
-    #     compute Omega and tau, needed for the sun model, depending on the type of domain
-    #     """
-    #     i = 0
-    #     for group in self.group:
-    #         domain_type = self.domains_type[i]
-    #         if domain_type == 'rotor':
-    #             ...
-    #         elif domain_type == 'stator':
-    #             ...
-    #         elif domain_type == 'unbladed':
-    #             ...
-    #
-    #
-    #         i +=1
 
     def compose_global_sun_Omega_tau(self):
         """

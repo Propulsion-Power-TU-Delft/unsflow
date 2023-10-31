@@ -28,7 +28,7 @@ class MeridionalProcess:
 
     def __init__(self, data, block=None, blade=None, verbose=False, GAMMA=1.4):
         """
-        Build the MeridionalProcess Object.
+        Build the MeridionalProcess Object, which contains data and methods for the CFD post-process on the meridional plane.
         :param data: CfdData object contaning the 3D CFD dataset.
         :param block: Block Object contaning the grid, needed for circumferential averaging.
         :param blade: Blade Object.
@@ -37,10 +37,10 @@ class MeridionalProcess:
         """
         self.data = data
         self.block = block
-        self.nstream = block.nstream - 1  # how many grid points
-        self.nspan = block.nspan - 1
-        self.nAxialNodes = block.nstream - 1  # how many grid element centers
-        self.nRadialNodes = block.nspan - 1
+        self.nstream = np.shape(block.z_grid_cg)[0]  # use the grid baricenters
+        self.nspan = np.shape(block.z_grid_cg)[1]
+        self.nAxialNodes = self.nstream  # how many grid element centers
+        self.nRadialNodes = self.nspan
         if blade is not None:
             self.blade = blade
         self.verbose = verbose
@@ -48,7 +48,7 @@ class MeridionalProcess:
         self.r_grid = block.r_grid_points
         self.z_cg = block.z_grid_cg  # elements centers points
         self.r_cg = block.r_grid_cg
-        self.picture_size = compute_picture_size(self.z_cg, self.r_cg)
+        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_cg, self.r_cg)
         self.normalize = data.normalize
         self.rho_ref = data.rho_ref
         self.u_ref = data.u_ref
@@ -90,7 +90,7 @@ class MeridionalProcess:
         self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
                                            self.camber_normal_z ** 2)
 
-    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
+    def circumferential_average(self, mode, fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
         Rerform circumferential averages of the CFD dataset on the Block grid.
         :param mode: type of algorithm selected.
@@ -229,7 +229,7 @@ class MeridionalProcess:
 
     def compute_derived_quantities(self):
         """
-        from the primary averaged fields, compute derived fields.
+        From the primary averaged fields, compute derived fields.
         """
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
@@ -544,6 +544,10 @@ class MeridionalProcess:
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
 
     def polynomial_regression_solution(self, field):
+        """
+        Given a 2D field, and the weight vector coefficients, compute the values of the regressed field and derivatives.
+        :param field: 2D array storing the values of the field to be regressed.
+        """
         Nz = np.shape(field)[0]
         Nr = np.shape(field)[1]
         coeff_vector = least_square_regression(self.W, field)
@@ -551,7 +555,6 @@ class MeridionalProcess:
         regr_field_dz = regression_evaluation(self.W_dz, coeff_vector, Nz, Nr)
         regr_field_dr = regression_evaluation(self.W_dr, coeff_vector, Nz, Nr)
         regr_field_dtheta = np.zeros_like(field)  # theta derivatives always zero
-
         return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
 
     def compute_rbf_gradients(self):
@@ -641,7 +644,7 @@ class MeridionalProcess:
         field[:, -1] = field[:, -2]
 
     def quiver_plot(self, save_filename=None, field=None):
-        fig, ax = plt.subplots(figsize=self.picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_contour)
         if field == 'p':
             cs = ax.contourf(self.z_cg, self.r_cg, self.p, N_levels, cmap=color_map)
             ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
@@ -702,7 +705,7 @@ class MeridionalProcess:
 
     def compute_streamline_length(self):
         """
-        compute the length along each streamline. If the data was normalized, the length is already non-dimensional
+        Compute the length along each streamline. If the data was normalized, the length is already non-dimensional.
         """
         self.stream_line_length = np.zeros((self.nstream, self.nspan))
         for ispan in range(0, self.nspan):
@@ -727,7 +730,7 @@ class MeridionalProcess:
                 self.span_wise_length[istream, ispan] = tmp_len
 
     def plot_spanline(self, field, n, save_filename=None):
-        fig, ax = plt.subplots(figsize=self.picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_blank)
         if field == 'rho':
             ax.plot(self.span_wise_length[n, :], self.rho[n, :], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
@@ -768,7 +771,7 @@ class MeridionalProcess:
             unit_factor: it could be needed in a second time to conver different unit systems
             quiver: if true superposes the veelocity vectors on the contours
         """
-        fig, ax = plt.subplots(figsize=self.picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
         if field == 'rho':
             cs = ax.contourf(self.z_grid * unit_factor, self.r_grid * unit_factor, self.rho, N_levels, cmap=color_map)
@@ -1016,7 +1019,7 @@ class MeridionalProcess:
             save_filename: name to save
             quiver: if true superpose the velocity vectors on the contours
         """
-        fig, ax = plt.subplots(figsize=self.picture_size)
+        fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
         if field == 'rho':
             cs = ax.contourf(self.z_cg, self.r_cg, self.rho, N_levels, cmap=color_map)
@@ -1389,98 +1392,98 @@ class MeridionalProcess:
         self.alpha = self.Floss / (self.u_mag_rel ** 2)
         self.beta = self.Fturn / (self.u_meridional * self.ut_rel)
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\hat{u}_{m}$')
         if save_fig:
             plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\frac{\partial s}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l}$')
         if save_fig:
             plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l,r}$')
         if save_fig:
             plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l,\theta}$')
         if save_fig:
             plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{l,z}$')
         if save_fig:
             plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{\theta}$')
         if save_fig:
             plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{t, r}$')
         if save_fig:
             plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{t, \theta}$')
         if save_fig:
             plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{t, z}$')
         if save_fig:
             plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$F_{t}$')
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\alpha$')
         if save_fig:
             plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size)
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\beta$')
@@ -1512,21 +1515,21 @@ class MeridionalProcess:
             self.S04 = np.zeros_like(self.ur)
 
             self.S10 = np.zeros_like(self.ur)
-            self.S11 = tr * 2 * self.alpha * self.ur + nr / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S12 = tr * 2 * self.alpha * self.ut_rel + nr / ntheta * self.beta * self.u_meridional
-            self.S13 = tr * 2 * self.alpha * self.uz + nr / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S11 = tr * 2 * self.alpha * self.ur + nr * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S12 = tr * 2 * self.alpha * self.ut_rel + nr * self.beta * self.u_meridional
+            self.S13 = tr * 2 * self.alpha * self.uz + nr * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S14 = np.zeros_like(self.ur)
 
             self.S20 = np.zeros_like(self.ur)
-            self.S21 = ttheta * 2 * self.alpha * self.ur + self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S22 = ttheta * 2 * self.alpha * self.ut_rel + self.beta * self.u_meridional
-            self.S23 = ttheta * 2 * self.alpha * self.uz + self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S21 = ttheta * 2 * self.alpha * self.ur + ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S22 = ttheta * 2 * self.alpha * self.ut_rel + ntheta * self.beta * self.u_meridional
+            self.S23 = ttheta * 2 * self.alpha * self.uz + ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S24 = np.zeros_like(self.ur)
 
             self.S30 = np.zeros_like(self.ur)
-            self.S31 = tz * 2 * self.alpha * self.ur + nz / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S32 = tz * 2 * self.alpha * self.ut_rel + nz / ntheta * self.beta * self.u_meridional
-            self.S33 = tz * 2 * self.alpha * self.uz + nz / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S31 = tz * 2 * self.alpha * self.ur + nz * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S32 = tz * 2 * self.alpha * self.ut_rel + nz * self.beta * self.u_meridional
+            self.S33 = tz * 2 * self.alpha * self.uz + nz * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S34 = np.zeros_like(self.ur)
 
             self.S40 = np.zeros_like(self.ur)
@@ -1681,15 +1684,15 @@ class MeridionalProcess:
 
     def compute_flux(self, field):
         """
-        average the terms along the span, and store it in the stream index.
-        :param field: field to compute the flux of.
+        Compute the averaged transported quantity along the span lines, and store it in the stream index.
+        :param field: transport variable.
         """
         fluxes = np.zeros(self.nstream)
         for istream in range(self.nstream):
             # projection of meridional velocity on the normal boundary of each cell
             normal_velocity = self.uz[istream, :] * self.dA_nz[istream, :] + self.ur[istream, :] * self.dA_nr[istream, :]
 
-            # flux calculation as sum{rho*u*A*phi}/sum{rho*u*A}
+            # flux calculation as sum{rho*u*A*field}/sum{rho*u*A}
             fluxes[istream] = np.sum(self.rho[istream, :] * self.dA[istream, :] * field[istream, :] * normal_velocity) / \
                               np.sum(self.rho[istream, :] * self.dA[istream, :] * normal_velocity)
         return fluxes

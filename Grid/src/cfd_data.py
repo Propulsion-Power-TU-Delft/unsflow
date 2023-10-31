@@ -26,6 +26,7 @@ class CfdData:
         omega_ref: angular speed of the shaft [rpm], with algebraic sign
         x_ref: tip radius of the blade at leading edge [m]
         T_ref: can be standard temperature [K]
+        All other non-dimensionalization quantities are obtained from these fundamental ones.
 
         :param filepath: path the file contaning the CFD volumetric data.
         :param rho_ref: reference density [kg/m3].
@@ -154,7 +155,7 @@ class CfdData:
     def compute_derived_quantities(self):
         """
         Compute other derived quantities, projecting in the radial and tangential direction when needed. Gradients are
-        not actually needed since they will be calculated from the 2D regressed fields, but that's okey for now.
+        not actually needed since they will be calculated from the 2D regressed fields.
         """
 
         # velocity magnitude
@@ -290,24 +291,24 @@ class CfdData:
         self.p = self.p[idx_cut]
         self.T = self.T[idx_cut]
         self.s = self.s[idx_cut]
-        self.drho_dx = self.drho_dx[idx_cut]
-        self.drho_dy = self.drho_dy[idx_cut]
-        self.drho_dz = self.drho_dz[idx_cut]
-        self.dux_dx = self.dux_dx[idx_cut]
-        self.dux_dy = self.dux_dy[idx_cut]
-        self.dux_dz = self.dux_dz[idx_cut]
-        self.duy_dx = self.duy_dx[idx_cut]
-        self.duy_dy = self.duy_dy[idx_cut]
-        self.duy_dz = self.duy_dz[idx_cut]
-        self.duz_dx = self.duz_dx[idx_cut]
-        self.duz_dy = self.duz_dy[idx_cut]
-        self.duz_dz = self.duz_dz[idx_cut]
-        self.dp_dx = self.dp_dx[idx_cut]
-        self.dp_dy = self.dp_dy[idx_cut]
-        self.dp_dz = self.dp_dz[idx_cut]
-        self.ds_dx = self.ds_dx[idx_cut]
-        self.ds_dy = self.ds_dy[idx_cut]
-        self.ds_dz = self.ds_dz[idx_cut]
+        # self.drho_dx = self.drho_dx[idx_cut]
+        # self.drho_dy = self.drho_dy[idx_cut]
+        # self.drho_dz = self.drho_dz[idx_cut]
+        # self.dux_dx = self.dux_dx[idx_cut]
+        # self.dux_dy = self.dux_dy[idx_cut]
+        # self.dux_dz = self.dux_dz[idx_cut]
+        # self.duy_dx = self.duy_dx[idx_cut]
+        # self.duy_dy = self.duy_dy[idx_cut]
+        # self.duy_dz = self.duy_dz[idx_cut]
+        # self.duz_dx = self.duz_dx[idx_cut]
+        # self.duz_dy = self.duz_dy[idx_cut]
+        # self.duz_dz = self.duz_dz[idx_cut]
+        # self.dp_dx = self.dp_dx[idx_cut]
+        # self.dp_dy = self.dp_dy[idx_cut]
+        # self.dp_dz = self.dp_dz[idx_cut]
+        # self.ds_dx = self.ds_dx[idx_cut]
+        # self.ds_dy = self.ds_dy[idx_cut]
+        # self.ds_dz = self.ds_dz[idx_cut]
 
 
 
@@ -380,12 +381,12 @@ class CfdData:
 
     def compute_derived_normalization_quantities(self):
         """
-        given the fundamental quantities, compute all the reference quantities for following non-dimensionalization
+        Given the fundamental quantities, compute all the reference quantities for following non-dimensionalization.
         """
         self.omega_ref = self.rpm_ref * 2*np.pi / 60  # convert to [rad/s]
         self.u_ref = self.omega_ref * self.x_ref  # tip speed of the machine
         self.t_ref = 1 / self.omega_ref  # to be coherent
-        self.p_ref = 0.5*self.rho_ref * self.u_ref**2
+        self.p_ref = self.rho_ref * self.u_ref**2
         self.s_ref = self.u_ref ** 2 / self.T_ref  # reference entropy
 
 

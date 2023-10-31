@@ -21,10 +21,10 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 15
-BLADE_NZ = 20
-OUTLET_NZ = 30
-NR = 20
+INLET_NZ = 5
+BLADE_NZ = 10
+OUTLET_NZ = 20
+NR = 15
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
 MULTIBLOCK_FILTERING = True
@@ -71,7 +71,7 @@ blade.find_outlet_points(geometry_type='axial')
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
 block.find_intersections()
-block.inlet_zone_trim()
+block.inlet_zone_trim(mode='axial')
 block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud()
@@ -97,7 +97,7 @@ inlet_process.compute_streamline_length()
 inlet_process.circumferential_average(mode=AVG_MODE)
 if REGRESSION:
     inlet_process.compute_regressed_fields()
-inlet_process.compute_derived_quantities()
+    inlet_process.compute_derived_quantities()  # to recompute the derived quantities based on the regressed values
 inlet_process.compute_averaged_fluxes()
 inlet_process.compute_body_fource_S('unbladed')
 delattr(inlet_process, 'data')  # release useless memory
@@ -252,4 +252,4 @@ obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BL
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-# plt.show()
+plt.show()

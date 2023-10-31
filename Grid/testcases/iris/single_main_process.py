@@ -44,7 +44,7 @@ rho_ref = 1.014  # reference density [kg/m3]
 x_ref = 0.0228  # reference length, tip radius [m]
 rpm_ref = +94e3  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
-rescale_factor = 1  # cordinates of data files are in [cm]
+rescale_factor = 1  # cordinates of data files are in [m]
 sigmoid_coeff_stream = 8
 sigmoid_coeff_span = 8
 
@@ -73,7 +73,7 @@ blade.find_outlet_points(geometry_type='axial')
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 block.extend_inlet_outlet_curves()
 block.find_intersections()
-block.inlet_zone_trim()
+block.inlet_zone_trim(mode='axial')
 block.spline_of_hub_shroud()
 block.spline_of_outlet()
 block.sample_hub_shroud()
@@ -88,7 +88,7 @@ else:
                               sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='minimize')
 block.compute_grid_centers()
 
-# instantiate cfd data object and perform processing removing the outliers
+# instantiate cfd data object and perform processing
 data = Grid.src.CfdData(file_name, rpm_drag=rpm_ref, blade=blade, cut_block=block, verbose=True, normalize=True,
                         rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref)
 data.process_from_ansys_csv()
