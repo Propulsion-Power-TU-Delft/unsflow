@@ -21,9 +21,8 @@ from Sun.src.styles import total_chars, total_chars_mid
 
 class MeridionalProcess:
     """
-    class that contains a multiblock grid object, and the CFD data results. It performs the circumferential averaging.
-    Important note: if the cfd data has been normalized, all the quantities are already non-dimensional except for the
-    cordinates variables (related to r,z). In the future we will non-dimensionalize everything from the beginning.
+    Class that contains a multiblock grid object, and the CFD data results. It performs the circumferential averaging.
+    Important note: if the cfd data has been normalized, all the quantities are already non-dimensional.
     """
 
     def __init__(self, data, block=None, blade=None, verbose=False, GAMMA=1.4):
@@ -33,7 +32,7 @@ class MeridionalProcess:
         :param block: Block Object contaning the grid, needed for circumferential averaging.
         :param blade: Blade Object.
         :param verbose: to print some info.
-        :param GAMMA: cp/cv ratio.
+        :param GAMMA: cp/cv ratio. It should be modified in a 2D array for non-ideal thermodynamics applications.
         """
         self.data = data
         self.block = block
@@ -76,7 +75,7 @@ class MeridionalProcess:
 
     def compute_camber_angles(self):
         """
-        starting from the angles in the blade object (if defined), store the normal camber angle
+        Starting from the angles in the blade object (if defined), store the normal camber angle.
         """
         self.camber_normal_r = np.zeros((self.nstream, self.nspan))
         self.camber_normal_theta = np.zeros((self.nstream, self.nspan))
@@ -87,12 +86,10 @@ class MeridionalProcess:
                 self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
                 self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
 
-        self.camber_normal_check = np.sqrt(self.camber_normal_r ** 2 + self.camber_normal_theta ** 2 +
-                                           self.camber_normal_z ** 2)
 
     def circumferential_average(self, mode, fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
-        Rerform circumferential averages of the CFD dataset on the Block grid.
+        Perform circumferential averages of the CFD dataset on the Block grid.
         :param mode: type of algorithm selected.
                 rectangular: take all the points in the rectangle identified by the secondary grid.
                 circular: take all the points inside a circle
@@ -242,7 +239,7 @@ class MeridionalProcess:
 
     def instantiate_2d_fields(self):
         """
-        instantiate the 2D fields that will be averaged starting from the CFD data
+        Instantiate the 2D fields that will be averaged from the CFD data
         """
         self.rho = np.zeros((self.nstream, self.nspan))
         self.ur = np.zeros((self.nstream, self.nspan))
@@ -274,45 +271,43 @@ class MeridionalProcess:
         self.theta_min = np.zeros((self.nstream, self.nspan))
         self.theta_max = np.zeros((self.nstream, self.nspan))
 
-    def instantiate_2d_bfm_fields(self):
-        """
-        instantiate the 2D fields necessary for the body force model, depending on the specific model used
-        """
-        if self.bfm == 'radial':
-            self.k = np.zeros((self.nstream, self.nspan))
-            self.F_ntheta = np.zeros((self.nstream, self.nspan))
-            self.F_nr = np.zeros((self.nstream, self.nspan))
-            self.F_nz = np.zeros((self.nstream, self.nspan))
-            self.a1 = np.zeros((self.nstream, self.nspan))
-            self.a2 = np.zeros((self.nstream, self.nspan))
-            self.a3 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_00 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_01 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_02 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_10 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_11 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_12 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_20 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_21 = np.zeros((self.nstream, self.nspan))
-            self.Fn_prime_ss_22 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_00 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_01 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_02 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_10 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_11 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_12 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_20 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_21 = np.zeros((self.nstream, self.nspan))
-            self.Ft_prime_ss_22 = np.zeros((self.nstream, self.nspan))
+    # def instantiate_2d_bfm_fields(self):
+    #     """
+    #     instantiate the 2D fields necessary for the body force model, depending on the specific model used
+    #     """
+    #     if self.bfm == 'radial':
+    #         self.k = np.zeros((self.nstream, self.nspan))
+    #         self.F_ntheta = np.zeros((self.nstream, self.nspan))
+    #         self.F_nr = np.zeros((self.nstream, self.nspan))
+    #         self.F_nz = np.zeros((self.nstream, self.nspan))
+    #         self.a1 = np.zeros((self.nstream, self.nspan))
+    #         self.a2 = np.zeros((self.nstream, self.nspan))
+    #         self.a3 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_00 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_01 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_02 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_10 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_11 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_12 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_20 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_21 = np.zeros((self.nstream, self.nspan))
+    #         self.Fn_prime_ss_22 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_00 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_01 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_02 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_10 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_11 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_12 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_20 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_21 = np.zeros((self.nstream, self.nspan))
+    #         self.Ft_prime_ss_22 = np.zeros((self.nstream, self.nspan))
 
     def find_rectangle(self, istream, ispan, A=0):
         """
-        Args:
-            istream: stream position
-            ispan: span position
-            A: number of attempts. if >1 it increases the research zone
-        Returns:
-            quadrilateral path
+        Given the grid location, find the rectangle surrounding the element.
+        :param istream: streamwise position.
+        :param ispan: spanwise position.
+        :param A: number of attempts. if >1 it increases the research zone.
         """
         # baricenter of the element
         z_cg = self.z_cg[istream, ispan]
@@ -341,20 +336,16 @@ class MeridionalProcess:
 
         if A != 0:
             # print warning regarding the enlarged research domain
-            print('research domain enlarged, point (%2d, %2d), attempt %2d' % (istream, ispan, A))
+            print('Research domain enlarged, point [%2d, %2d], Attempt %2d' % (istream, ispan, A))
         quadrilateral_path = mplpath.Path(np.column_stack((z_vertices, r_vertices)))
         return quadrilateral_path
 
     def find_points_inside_circle(self, istream, ispan, A):
         """
-
-        Args:
-            istream: index in the stremwise position on the meridional grid
-            ispan: index in the spanwise position on the meridional grid
-            A: number of attempt in the research
-
-        Returns:
-            idx: indices of the elements in the 3D dataset having position inside a circle around the meridional grid point
+        Given the grid location, find the indexes of the points lying inside a circle around the element.
+        :param istream: streamwise position.
+        :param ispan: spanwise position.
+        :param A: number of attempts. if >1 it increases the research zone.
         """
 
         distance = sqrt((self.data.z - self.z_grid[istream, ispan]) ** 2 +
@@ -386,7 +377,12 @@ class MeridionalProcess:
 
     def mass_average(self, field, idx, istream, ispan, RBF=False):
         """
-        mass weighted average of a fluid dynamics field[idx]
+        Mass weighted average of a generic 2D field.
+        :param field: field to be averaged
+        :param idx: indexes of the elements to be considered
+        :param istream: streamwise position
+        :param ispan: spanwise position
+        :param RBF: if True, perform radial basis function weigthed average (not validated yet).
         """
         field = field[idx]
         rho = self.data.rho[idx]
@@ -406,7 +402,7 @@ class MeridionalProcess:
 
     def gauss_filtering(self):
         """
-        apply the gauss filter to the field, overwriting the previous results
+        Apply the gauss filter to the specified fields, overwriting the original quantities
         """
         self.rho = self.apply_gaussian_filter(self.rho)
         self.ur = self.apply_gaussian_filter(self.ur)
@@ -435,37 +431,39 @@ class MeridionalProcess:
         self.ds_dr = self.apply_gaussian_filter(self.ds_dr)
         self.ds_dtheta = self.apply_gaussian_filter(self.ds_dtheta)
         self.ds_dz = self.apply_gaussian_filter(self.ds_dz)
-        if self.bfm == 'radial':
-            self.k = self.apply_gaussian_filter(self.k)
-            self.F_ntheta = self.apply_gaussian_filter(self.F_ntheta)
-            self.F_nr = self.apply_gaussian_filter(self.F_nr)
-            self.F_nz = self.apply_gaussian_filter(self.F_nz)
-            self.a1 = self.apply_gaussian_filter(self.a1)
-            self.a2 = self.apply_gaussian_filter(self.a2)
-            self.a3 = self.apply_gaussian_filter(self.a3)
-            self.Fn_prime_ss_00 = self.apply_gaussian_filter(self.Fn_prime_ss_00)
-            self.Fn_prime_ss_01 = self.apply_gaussian_filter(self.Fn_prime_ss_01)
-            self.Fn_prime_ss_02 = self.apply_gaussian_filter(self.Fn_prime_ss_02)
-            self.Fn_prime_ss_10 = self.apply_gaussian_filter(self.Fn_prime_ss_10)
-            self.Fn_prime_ss_11 = self.apply_gaussian_filter(self.Fn_prime_ss_11)
-            self.Fn_prime_ss_12 = self.apply_gaussian_filter(self.Fn_prime_ss_12)
-            self.Fn_prime_ss_20 = self.apply_gaussian_filter(self.Fn_prime_ss_20)
-            self.Fn_prime_ss_21 = self.apply_gaussian_filter(self.Fn_prime_ss_21)
-            self.Fn_prime_ss_22 = self.apply_gaussian_filter(self.Fn_prime_ss_22)
-            self.Ft_prime_ss_00 = self.apply_gaussian_filter(self.Fn_prime_ss_00)
-            self.Ft_prime_ss_01 = self.apply_gaussian_filter(self.Ft_prime_ss_01)
-            self.Ft_prime_ss_02 = self.apply_gaussian_filter(self.Ft_prime_ss_02)
-            self.Ft_prime_ss_10 = self.apply_gaussian_filter(self.Ft_prime_ss_10)
-            self.Ft_prime_ss_11 = self.apply_gaussian_filter(self.Ft_prime_ss_11)
-            self.Ft_prime_ss_12 = self.apply_gaussian_filter(self.Ft_prime_ss_12)
-            self.Ft_prime_ss_20 = self.apply_gaussian_filter(self.Ft_prime_ss_20)
-            self.Ft_prime_ss_21 = self.apply_gaussian_filter(self.Ft_prime_ss_21)
-            self.Ft_prime_ss_22 = self.apply_gaussian_filter(self.Ft_prime_ss_22)
+        # if self.bfm == 'radial':
+        #     self.k = self.apply_gaussian_filter(self.k)
+        #     self.F_ntheta = self.apply_gaussian_filter(self.F_ntheta)
+        #     self.F_nr = self.apply_gaussian_filter(self.F_nr)
+        #     self.F_nz = self.apply_gaussian_filter(self.F_nz)
+        #     self.a1 = self.apply_gaussian_filter(self.a1)
+        #     self.a2 = self.apply_gaussian_filter(self.a2)
+        #     self.a3 = self.apply_gaussian_filter(self.a3)
+        #     self.Fn_prime_ss_00 = self.apply_gaussian_filter(self.Fn_prime_ss_00)
+        #     self.Fn_prime_ss_01 = self.apply_gaussian_filter(self.Fn_prime_ss_01)
+        #     self.Fn_prime_ss_02 = self.apply_gaussian_filter(self.Fn_prime_ss_02)
+        #     self.Fn_prime_ss_10 = self.apply_gaussian_filter(self.Fn_prime_ss_10)
+        #     self.Fn_prime_ss_11 = self.apply_gaussian_filter(self.Fn_prime_ss_11)
+        #     self.Fn_prime_ss_12 = self.apply_gaussian_filter(self.Fn_prime_ss_12)
+        #     self.Fn_prime_ss_20 = self.apply_gaussian_filter(self.Fn_prime_ss_20)
+        #     self.Fn_prime_ss_21 = self.apply_gaussian_filter(self.Fn_prime_ss_21)
+        #     self.Fn_prime_ss_22 = self.apply_gaussian_filter(self.Fn_prime_ss_22)
+        #     self.Ft_prime_ss_00 = self.apply_gaussian_filter(self.Fn_prime_ss_00)
+        #     self.Ft_prime_ss_01 = self.apply_gaussian_filter(self.Ft_prime_ss_01)
+        #     self.Ft_prime_ss_02 = self.apply_gaussian_filter(self.Ft_prime_ss_02)
+        #     self.Ft_prime_ss_10 = self.apply_gaussian_filter(self.Ft_prime_ss_10)
+        #     self.Ft_prime_ss_11 = self.apply_gaussian_filter(self.Ft_prime_ss_11)
+        #     self.Ft_prime_ss_12 = self.apply_gaussian_filter(self.Ft_prime_ss_12)
+        #     self.Ft_prime_ss_20 = self.apply_gaussian_filter(self.Ft_prime_ss_20)
+        #     self.Ft_prime_ss_21 = self.apply_gaussian_filter(self.Ft_prime_ss_21)
+        #     self.Ft_prime_ss_22 = self.apply_gaussian_filter(self.Ft_prime_ss_22)
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=1.2):
+    def apply_gaussian_filter(field, sigma=2):
         """
-        Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
+        Gaussian filtering of a 2D field.
+        :param field: field to average.
+        :param sigma: standard deviation of the filtering. 2 looks good
         """
         smoothed_array = np.copy(field)
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
@@ -473,8 +471,9 @@ class MeridionalProcess:
 
     def fix_borders(self):
         """
-        Gaussian filtering of a 2D field, with a specified deviation (sigma)
+        Copy the information from the inner points to the borders. Not useful anymore
         """
+        print("WARNING: artificial fixing of the border values. Deprecated.")
         self.copy_borders(self.rho)
         self.copy_borders(self.ur)
         self.copy_borders(self.ut)
@@ -502,18 +501,18 @@ class MeridionalProcess:
         self.copy_borders(self.ds_dr)
         self.copy_borders(self.ds_dtheta)
         self.copy_borders(self.ds_dz)
-        if self.bfm == 'radial':
-            self.copy_borders(self.k)
-            self.copy_borders(self.F_ntheta)
-            self.copy_borders(self.F_nr)
-            self.copy_borders(self.F_nz)
-            self.copy_borders(self.a1)
-            self.copy_borders(self.a2)
-            self.copy_borders(self.a3)
+        # if self.bfm == 'radial':
+        #     self.copy_borders(self.k)
+        #     self.copy_borders(self.F_ntheta)
+        #     self.copy_borders(self.F_nr)
+        #     self.copy_borders(self.F_nz)
+        #     self.copy_borders(self.a1)
+        #     self.copy_borders(self.a2)
+        #     self.copy_borders(self.a3)
 
     def compute_rbf_fields(self):
         """
-        compute the rbf interpolation of the primary fields
+        Compute the rbf interpolation of the primary fields
         """
         self.rho = self.rbf_interpolation(self.rho)
         self.ur = self.rbf_interpolation(self.ur)
@@ -525,8 +524,8 @@ class MeridionalProcess:
 
     def compute_regressed_fields(self, order=4):
         """
-        compute the fourth order polynomial regressed fields, as described in the original papers
-        :param order: order of the regression. For now tested only 4.
+        Compute the fourth order polynomial regressed fields, as described in the original papers
+        :param order: order of the regression. 4 is the values used in the literature.
         """
         print("Regression of the Flow Fields, order: %i" %(order))
         if order!=4:
@@ -559,8 +558,9 @@ class MeridionalProcess:
 
     def compute_rbf_gradients(self):
         """
-        compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
+        Compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
         """
+        print("WARNING: deprecated method.")
         self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
         self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
         self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
@@ -571,11 +571,10 @@ class MeridionalProcess:
 
     def rbf_interpolation(self, field):
         """
-        Args:
-            field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
-        Returns: the three components of the field
+        2D RBF based interpolation of field.
+        :param field: field to interpolate.
         """
-
+        print("WARNING: deprecated method.")
         z_points_flat = self.z_cg.flatten()
         r_points_flat = self.r_cg.flatten()
         field_flat = field.flatten()
@@ -588,11 +587,10 @@ class MeridionalProcess:
 
     def rbf_finite_difference(self, field):
         """
-        Args:
-            field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
-        Returns: the three components of the field
+        Computes the gradients of field that is RBF interpolated with finite differences.
+        :param field: field used
         """
-
+        print("WARNING: deprecated method.")
         z_points_flat = self.z_cg.flatten()
         r_points_flat = self.r_cg.flatten()
         field_flat = field.flatten()
@@ -614,57 +612,26 @@ class MeridionalProcess:
 
         return dfield_dr, dfield_dtheta, dfield_dz
 
-    def rbf_symbolic_gradient(self, field):
-        """
-        Args:
-            field: 2D field of which we want to compute the gradients. The theta-gradient is artificially set to zero
-        Returns: the three components of the field
-        """
-        rbf = Rbf(self.z_cg, self.r_cg, field, function='multiquadric')  # You can choose the appropriate function
-
-        # Define symbolic variables for differentiation
-        x_sym = sp.Symbol('x')
-        y_sym = sp.Symbol('y')
-
-        # Define the symbolic expression for the RBF interpolant
-        rbf_expr = rbf(x_sym, y_sym)
-
-        # Compute partial derivatives
-        dfield_dz = sp.diff(rbf_expr, x_sym)
-        dfield_dr = sp.diff(rbf_expr, y_sym)
-        dfield_dtheta = np.zeros_like(dfield_dr)
-
-        return dfield_dr, dfield_dtheta, dfield_dz
 
     @staticmethod
     def copy_borders(field):
+        """
+        Copy the inner border values to the border of a generic 2D array. Deprecated.
+        :param field: field to modify.
+        """
+        print("WARNING: deprecated method.")
         field[0, :] = field[1, :]
         field[-1, :] = field[-2, :]
         field[:, 0] = field[:, 1]
         field[:, -1] = field[:, -2]
 
-    def quiver_plot(self, save_filename=None, field=None):
-        fig, ax = plt.subplots(figsize=self.picture_size_contour)
-        if field == 'p':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.p, N_levels, cmap=color_map)
-            ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
-            ax.set_title(r'$p$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[Pa]}$')
-        elif field is None:
-            ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
-            ax.set_title(r'$u_z, \ u_r$')
-        else:
-            raise ValueError('unknown field type, please specify')
-        ax.set_xlabel(r'$z \ \mathrm{[m]}$')
-        ax.set_ylabel(r'$r \ \mathrm{[m]}$')
-
-        if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_stream_line(self, field, n, save_filename=None):
         """
-        for the streamline n, plot the evolution of the flow field
+        Plot the quantity along a streamline.
+        :param field: quantitiy to plot
+        :param n: streamline to consider.
+        :param save_filename: if specified, saves the figure
         """
         sl_max = self.stream_line_length[:, n].max()
         fig, ax = plt.subplots(figsize=fig_size)
@@ -718,7 +685,7 @@ class MeridionalProcess:
 
     def compute_spanwise_length(self):
         """
-        compute the length along each span direction. Dimensional, same dimensions of cordinates
+        Compute the length along each span direction. If the data was normalized, the length is already non-dimensional.
         """
         self.span_wise_length = np.zeros((self.nstream, self.nspan))
         for istream in range(0, self.nstream):
@@ -730,6 +697,13 @@ class MeridionalProcess:
                 self.span_wise_length[istream, ispan] = tmp_len
 
     def plot_spanline(self, field, n, save_filename=None):
+        """
+        Plot the quantity along a spanline.
+        :param field: quantitiy to plot
+        :param n: streamline to consider.
+        :param save_filename: if specified, saves the figure
+        """
+
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
         if field == 'rho':
             ax.plot(self.span_wise_length[n, :], self.rho[n, :], '--s')
@@ -751,10 +725,14 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
+
     def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
-        decide if plotting dimensional or non-dimensional quantities, depending on the CFD dataset if it has been
-        non-dimensionalised or not
+        Contour plot of a 2D field.
+        :param field: field to plot
+        :param save_filename: if specified, saves the figure
+        :param unit_factor: factor to be used for dimensional plots
+        :param quiver: if True, superposes the quiver plots of the meridional velocity
         """
 
         if self.data.normalize:
@@ -764,12 +742,11 @@ class MeridionalProcess:
 
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
-        dimensional version of the contour plots
-        Args:
-            field: field to plot
-            save_filename: name to save
-            unit_factor: it could be needed in a second time to conver different unit systems
-            quiver: if true superposes the veelocity vectors on the contours
+        Contour plot of a 2D field.
+        :param field: field to plot
+        :param save_filename: if specified, saves the figure
+        :param unit_factor: factor to be used for dimensional plots
+        :param quiver: if True, superposes the quiver plots of the meridional velocity
         """
         fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
@@ -1013,11 +990,10 @@ class MeridionalProcess:
 
     def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False):
         """
-        non-dimensional version of the contour plots
-        Args:
-            field: field to plot
-            save_filename: name to save
-            quiver: if true superpose the velocity vectors on the contours
+        Contour plot of a 2D field.
+        :param field: field to plot
+        :param save_filename: if specified, saves the figure
+        :param quiver: if True, superposes the quiver plots of the meridional velocity
         """
         fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
@@ -1278,17 +1254,17 @@ class MeridionalProcess:
 
     def compute_stagnation_quantities(self):
         """
-        compute the 2D fields of the stagnation quantities
+        Compute the 2D fields of the stagnation quantities
         """
         self.p_tot = self.p * (1 + (self.GAMMA - 1) / 2 * self.M ** 2) ** (self.GAMMA / (self.GAMMA - 1))
         self.T_tot = self.T * (1 + (self.GAMMA - 1) / 2 * self.M ** 2)
 
-        # rotary total pressure
+        # rotary total pressure, as defined by Sun et al. (centrifugal compressor analysis 2016)
         self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.data.omega_shaft * self.ut
 
     def compute_mu(self):
         """
-        compute the parts of the radial BFM that can be computed directly on the meridional grid rather than the 3D dataset
+        Compute the parts of the radial BFM that can be computed directly on the meridional grid rather than the 3D dataset
         """
 
         # compute the mu constant of the model. for each point in the 2D domain. The last streamwise position inherits the data
@@ -1369,10 +1345,9 @@ class MeridionalProcess:
 
     def store_pickle(self, file_name=None, folder=None):
         """
-        store the object conent in a pickle
-        Args:
-            file_name: name to store. if None, default one is selected
-            folder: location to store. if None, default one is selected
+        Store the object content in a pickle.
+        :param file_name: name to store. if None, default one is selected
+        :param folder: location to store. if None, default one is selected
         """
         if folder is None:
             folder = folder_meta_data_default
@@ -1384,7 +1359,9 @@ class MeridionalProcess:
 
     def compute_bfm_axial(self, mode='global', save_fig=False):
         """
-        compute the BFM fields, following Fang et al. 2023
+        Compute the BFM fields, following the description in Fang et al. 2023.
+        :param mode: if global is the default one, without any artifical fixing.
+        :param save_fig: if specified, saves the figure
         """
         self.compute_Floss(mode=mode)
         self.compute_Ftheta()
@@ -1495,7 +1472,8 @@ class MeridionalProcess:
     def compute_body_fource_S(self, domain):
         """
         if the domain is bladed compute the body force steady state matrices. Otherwise, instantiate zeros
-        for the related terms
+        for the related terms.
+        :param domain: type of domain (stator, rotor, unbladed).
         """
         self.domain = domain
         if domain == 'rotor' or domain == 'stator':
@@ -1586,6 +1564,9 @@ class MeridionalProcess:
 
 
     def compute_Floss(self, mode):
+        """
+        Compute the Loss component of the body force
+        """
 
         # meridional flow velocity
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
@@ -1604,8 +1585,9 @@ class MeridionalProcess:
 
     def compute_ds_dl(self, mode):
         """
-        compute the derivative of the entropy along the meridional direction. In principle the increase should always be
-        positive, but in reality it can also decrease (as explained by Kottapalli, due to the meridional projection)
+        Compute the derivative of the entropy along the meridional direction. In principle the increase should always be
+        positive, but in reality it can also decrease (as explained by Kottapalli, due to the meridional projection).
+        :param mode: if global performs the physical calculation. Averaged artificially fixes some problems.
         """
         self.ds_dl = np.zeros_like(self.s)
 
@@ -1625,7 +1607,7 @@ class MeridionalProcess:
 
     def compute_Ftheta(self):
         """
-        compute the modulus of the gloabl theta component of the body force
+        Compute the modulus of the global theta component of the body force
         """
         dr_dl = self.ur / self.u_meridional
         dut_dl = np.zeros_like(dr_dl)
@@ -1643,7 +1625,7 @@ class MeridionalProcess:
 
     def compute_Fturn(self):
         """
-        starting from the Ftheta and camber normal vectors, compute the turning force
+        Starting from the Ftheta and camber normal vectors, compute the magnitude of the turning force
         """
         self.Fturn_t = self.Ftheta - self.Floss_t
         self.Fturn = self.Fturn_t / self.camber_normal_theta
@@ -1653,7 +1635,7 @@ class MeridionalProcess:
 
     def compute_averaged_fluxes(self):
         """
-        on the meridional plane, compute the averaged fluxed for each streamwise position
+        On the meridional plane, compute the averaged fluxed for each streamwise position.
         """
         self.dA = np.zeros_like(self.z_cg)
         self.dA_nz = np.zeros_like(self.z_cg)
@@ -1700,7 +1682,10 @@ class MeridionalProcess:
 
     def plot_averaged_fluxes(self, field, save_filename=None):
         """
-        plot the averaged fluxe value
+        Plot the averaged fluxes.
+        Contour plot of a 2D field.
+        :param field: field to plot
+        :param save_filename: if specified, saves the figure
         """
         sl_max = self.stream_line_length[:, 0].max()
         fig, ax = plt.subplots(figsize=fig_size)
