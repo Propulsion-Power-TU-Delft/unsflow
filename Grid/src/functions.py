@@ -39,7 +39,10 @@ def cluster_sample_u(n, shrink_effect=3.5, border='default'):
 
 def eliminate_duplicates(x, y, z):
     """
-    providing three arrays of cordinates, it returns the original arrays after deletion of the duplicates. 
+    providing three arrays of cordinates, it returns the original arrays after deletion of the duplicates.
+    :param x: array of x cordinates
+    :param y: array of y cordinates
+    :param z: array of z cordinates
     """
     matrix = np.array((x, y, z))
     unique_columns, indices = np.unique(matrix, axis=1, return_index=True)
@@ -51,7 +54,10 @@ def eliminate_duplicates(x, y, z):
 
 def project_vector_to_cylindrical(ux, uy, theta):
     """
-    project a vector written in x-y components in the equivalent vector written in r-theta components
+    Project a vector written in x-y components in the equivalent vector written in r-theta components.
+    :param ux: x-component of the vector
+    :param uy: y-component of the vector
+    :param theta: theta location of the considered point [rad]
     """
     ur = ux * cos(theta) + uy * sin(theta)  # radial component
     ut = -ux * sin(theta) + uy * cos(theta)  # tangential component
@@ -60,7 +66,11 @@ def project_vector_to_cylindrical(ux, uy, theta):
 
 def project_scalar_gradient_to_cylindrical(da_dx, da_dy, r, theta):
     """
-    project the x-y gradients of a scalar field "a" in r-theta gradients. 
+    Project the x-y gradients of a scalar field "a" in r-theta components.
+    :param da_dx: x-derivative of the scalar field
+    :param da_dy: y-derivative of the scalar field
+    :param r: radial cordinate of the point
+    :param theta: theta location of the considered point [rad]
     """
     da_dr = da_dx * cos(theta) + da_dy * sin(theta)
     da_dtheta = r * (-da_dx * sin(theta) + da_dy * cos(theta))
@@ -69,8 +79,14 @@ def project_scalar_gradient_to_cylindrical(da_dx, da_dy, r, theta):
 
 def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, theta):
     """
-    project the gradient of the velocity field in cylindrical cordinates
-    (tensor transformation law T_{r,theta} = Q^T * T_{x,y} * Q) where Q is the rotation matrix, sines and cosines of theta.
+    Project the x-y gradients of a vector field "a" in r-theta components.
+    :param dux_dx: x-derivative of the x-component field
+    :param dux_dy: y-derivative of the x-component field
+    :param duy_dx: x-derivative of the y-component field
+    :param duy_dy: y-derivative of the y-component field
+    :param r: radial cordinate of the point
+    :param theta: theta location of the considered point [rad]
+    (tensor transformation law T_{r,theta} = Q^T * T_{x,y} * Q) where Q is the rotation matrix (sines and cosines of theta).
     """
 
     dur_dr = dux_dx * cos(theta) ** 2 + (duy_dx + dux_dy) * sin(theta) * cos(theta) + duy_dy * sin(theta) ** 2
@@ -81,42 +97,37 @@ def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, 
     return dur_dr, dur_dtheta, dut_dr, dut_dtheta
 
 
-def second_order_finite_differences(x, y, z):
-    """
-    Args:
-        x: grid values of x
-        y: grid values of y
-        z: grid values of z(x, y)
-
-    Returns:
-        dzdx: grid value of partial derivative dzdx
-        dzdy: grid value of partial derivative dzdy
-    """
-    dim = z.shape
-    dzdx = np.zeros_like(z)
-    dzdy = np.zeros_like(z)
-
-    # Calculate derivatives in the center with second order
-    for i in range(1, dim[0] - 1):
-        for j in range(1, dim[1] - 1):
-            dzdx[i, j] = (z[i + 1, j] - z[i - 1, j]) / (x[i + 1, j] - x[i - 1, j])
-            dzdy[i, j] = (z[i, j + 1] - z[i, j - 1]) / (y[i, j + 1] - y[i, j - 1])
-
-    return dzdx, dzdy
+# def second_order_finite_differences(x, y, z):
+#     """
+#     Args:
+#         x: grid values of x
+#         y: grid values of y
+#         z: grid values of z(x, y)
+#
+#     Returns:
+#         dzdx: grid value of partial derivative dzdx
+#         dzdy: grid value of partial derivative dzdy
+#     """
+#     dim = z.shape
+#     dzdx = np.zeros_like(z)
+#     dzdy = np.zeros_like(z)
+#
+#     # Calculate derivatives in the center with second order
+#     for i in range(1, dim[0] - 1):
+#         for j in range(1, dim[1] - 1):
+#             dzdx[i, j] = (z[i + 1, j] - z[i - 1, j]) / (x[i + 1, j] - x[i - 1, j])
+#             dzdy[i, j] = (z[i, j + 1] - z[i, j - 1]) / (y[i, j + 1] - y[i, j - 1])
+#
+#     return dzdx, dzdy
 
 
 def cartesian_to_cylindrical(x, y, z, v):
     """
-    pass from the components in cartesian to cylindrical cordinate
-
-    Args:
-        x: x cordinate
-        y: y cordinate
-        z: z cordinate
-        v: vector (3D)
-
-    Returns:
-        v_cylindrical
+    Pass from the cordinates in cartesian to cylindrical cordinate.
+    :param x: x cordinate
+    :param y: y cordinate
+    :param z: z cordinate
+    :param v: vector in cartesian components
     """
     M = cartesian_to_cylindrical_matrix(x, y)
     v_cylindrical = np.dot(M, v)
@@ -125,13 +136,9 @@ def cartesian_to_cylindrical(x, y, z, v):
 
 def cartesian_to_cylindrical_matrix(x, y):
     """
-    returns the matrix of the transformation
-    Args:
-        x: x cordinate
-        y: y cordinate
-
-    Returns:
-        M: transformation matrix (3D)
+    Returns the 3D matrix of the transformation from cartesian to cylindrical for the point located in (x,y)
+    :param x: x cordinate
+    :param y: y cordinate
     """
     theta = np.arctan2(y, x)
     M = np.array([[np.cos(theta), np.sin(theta), 0],
@@ -146,10 +153,29 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                              pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
                              method='minimize', fix_inlet=False, fix_outlet=False, save_animation=False):
     """
-    create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
-    delimiting the figure, ordered in a certain way. Think about meridional sector, inlet=left border, hub=bottom border,
-    shroud of top border, outlet =right border.
-    The features comprehend orthogonality and stretching of the grid.
+    Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
+    delimiting the figure, ordered in a certain way.
+    :param c_left: left border of the domain, ordered from hub to shroud.
+    :param c_bottom: bottom border of the domain, ordered from inlet to outlet.
+    :param c_right: right border of the domain, ordered from hub to shroud.
+    :param c_top: upper border of the domain, ordered from inlet to outlet.
+    :param orthogonality: if True, enables orthogonality corrections, as well as border nodes update.
+    :param x_stretching: stretching type of the grid in the streamwise direction.
+    :param y_stretching: stretching type of the grid in the spanwise direction.
+    :param X0: if set, is the initial condition  of the x PDE.
+    :param Y0: if set, is the initial condition  of the y PDE.
+    :param tol: threshold to stop iteration.
+    :param save_filename: if set, saves the figure.
+    :param show: if True shows the animation
+    :param pol_order: polynomial order of the strecthing function (not validated yet.)
+    :param sigmoid_coeff_x: x-coefficient of the sigmoid along the streamwise direction.
+    :param sigmoid_coeff_y: y-coefficient of the sigmoid along the spanwise direction.
+    :param it_orth: iteration number from which orthogonality is enabled.
+    :param guardian: under-relaxation method
+    :param method: choose method used to update points on the border. Suggested minimize, as fzero frequently diverges
+    :param fix_inlet: if True, fixes the points on the inlet border
+    :param fix_outlet: if True, fixes the points on the outlet border.
+    :param save_animation: if specified,  saves figures with the defined filename path.
     """
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
@@ -226,9 +252,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     d = np.zeros((nx, ny))
     e = np.zeros((nx, ny))
 
-    WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
-    scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
-    tol *= scale  # scale the tolerance threshold
+    # WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
+    # scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
+    # tol *= scale  # scale the tolerance threshold
     pic_size_blank, pic_size_contour = compute_picture_size(X, Y)
 
     if show:
@@ -382,7 +408,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 Y[istream, -1] = yb_new
 
             # LEFT EDGE
-            if fix_inlet == False:
+            if not fix_inlet:
                 x = c_left[0, :]
                 y = c_left[1, :]
                 y_prime = np.gradient(y, x)
@@ -403,7 +429,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     Y[0, ispan] = yb_new
 
             # RIGHT EDGE
-            if fix_outlet == False:
+            if not fix_outlet:
                 x = c_right[0, :]
                 y = c_right[1, :]
                 y_prime = np.gradient(y, x)
@@ -442,6 +468,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             print('convergence not reached')
 
     if save_filename is not None:
+        pic_size, pic_size_contour = compute_picture_size(X, Y)
         plt.figure(figsize=pic_size)
         for ii in range(nx):
             plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
@@ -464,7 +491,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
 def scaled_sigmoid(x, alpha):
     """
-    return sigmoid scaled function, first derivative, and second derivative over an array x. alpha decides the slope
+    Return sigmoid scaled function, first derivative, and second derivative over an array x.
+    :param x: array of sigmoid argument
+    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     """
     f = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     f_prime = (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
@@ -475,8 +504,10 @@ def scaled_sigmoid(x, alpha):
 
 def scaled_sigmoid_right(x, alpha):
     """
-    return a straight line until half of the domain, and attach a sigmoid scaled function, first derivative,
-    and second derivative over an array x. alpha decides the slope of the sigmoid part
+    Return a straight line until half of the domain, and attach a sigmoid scaled function, first derivative,
+    and second derivative over an array x.
+    :param x: array of sigmoid argument
+    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     """
     f, f_prime, f_second = scaled_sigmoid(x, alpha)
 
@@ -490,8 +521,10 @@ def scaled_sigmoid_right(x, alpha):
 
 def scaled_sigmoid_left(x, alpha):
     """
-    return a straight line from half of the domain, and attach a sigmoid scaled function, first derivative,
-    and second derivative over an array x. alpha decides the slope of sigmoid part
+    Return a straight line from half of the domain, and attach a sigmoid scaled function, first derivative,
+    and second derivative over an array x.
+    :param x: array of sigmoid argument
+    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     """
     f, f_prime, f_second = scaled_sigmoid(x, alpha)
 
@@ -505,7 +538,9 @@ def scaled_sigmoid_left(x, alpha):
 
 def polynomial_function(x, n):
     """
-    return polynomial x^n function, first derivative, and second derivative over an array x. alpha decides the slope
+    return polynomial x^n function, first derivative, and second derivative over an array x.
+    :param x: array of polynomial argument
+    :param n: order of the polynomial
     """
     f = x ** n
     f_prime = n * x ** (n - 1)
@@ -515,7 +550,8 @@ def polynomial_function(x, n):
 
 def no_stretching_function(x):
     """
-    return the x function, first derivative, and second derivative over an array x. which defines the zero-stretching function
+    return the x function, first derivative, and second derivative over an array x that defines the zero-stretching function.
+    :param x: array of function argument
     """
     f = x
     f_prime = np.zeros(len(x)) + 1
@@ -525,7 +561,13 @@ def no_stretching_function(x):
 
 def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
     """
-    solve the linear system to fix the borders, handling zero,inf or nan slopes of the curves
+    Solve the linear system found to fix the borders during ellipti grid generation.
+    It handles zeros, inf or nan slopes of the curves.
+    :param yb_prime: derivative at the border point
+    :param yp_new: new y cordinate of inner point close to the border.
+    :param xp_new: new x cordinate of inner point close to the border.
+    :param yb_old: old y cordinate of the border point.
+    :param xb_old: new x cordinate of the border point.
     """
     if yb_prime == 0:
         # print('Horizontal point\n')
@@ -546,9 +588,17 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
 
 def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True):
     """
-    depending on which (xb_new, yb_new) of is different from none, find the other one constraining it on the original border.
-    xb_old, yb_old are the cordinates of the previous iteration
+    Depending on which (xb_new, yb_new) is different from none, find the other one constraining it on the original border
+    from fzero function.
+    :param xb_new: new x cordinate of the border point.
+    :param yb_new: new y cordinate of the border point.
+    :param x: set of x points of the border curve.
+    :param y: set of y points of the border curve.
+    :param yb_old: old y cordinate of the border point.
+    :param xb_old: old x cordinate of the border point.
+    :param guardian: if True it enables under-relaxation to improve stability
     """
+    print("WARNING: method not stable. If it diverges, consider passing to find_optimized_point()")
     Deltax = np.max(x) - np.min(x)
     Deltay = np.max(y) - np.min(y)
     tol_x = Deltax / 5
@@ -592,9 +642,15 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
 
 def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     """
-    depending on which (xb_new, yb_new) is different from none, find the other one constraining it on the original border curve.
-    through an optimization problem, minimizing the new point distance from the old point distance.
+    Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
+    minimizing the distance of the new point distance from the old point.
     xb_old, yb_old are the cordinates of the previous iteration
+    :param xb_new: new x cordinate of the border point.
+    :param yb_new: new y cordinate of the border point.
+    :param x: set of x points of the border curve.
+    :param y: set of y points of the border curve.
+    :param xp_new: new x cordinate of the inner point close to the border.
+    :param yp_new: new y cordinate of the inner point close to the border.
     """
     u = np.linspace(0, 1, len(x))  # curve parameterization
     degree = 7
@@ -638,5 +694,3 @@ def compute_picture_size(x, y):
         pic_size_blank = (6 * WH_ratio, 6)
         pic_size_contour = (6 * WH_ratio*(1+color_bar_span), 6)
     return pic_size_blank, pic_size_contour
-
-
