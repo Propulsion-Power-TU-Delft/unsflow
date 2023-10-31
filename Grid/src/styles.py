@@ -27,7 +27,7 @@ if not os.path.exists(folder_meta_data_default):
     os.makedirs(folder_meta_data_default)
 
 # default size of the figures
-fig_size = (8, 5)
+fig_size = (7, 5)
 
 # Set grid opacity:
 grid_opacity = 0.3
@@ -57,7 +57,8 @@ font_colorbar = 24
 font_colorbar_axes = 18
 
 # Set marker size for all line markers:
-marker_size = 50
+marker_size_big = 50
+marker_size = 20
 marker_size_small = 5
 
 # Set the scale for marker size plotted in the legend entries:
