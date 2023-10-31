@@ -21,7 +21,7 @@ class MeridionalProcessGroup:
 
     def __init__(self):
         """
-        construct the object contaning all the meridional objects related to the subdomains.
+        Construct the object contaning all the meridional objects related to the subdomains.
         """
         self.group = []
         self.domains_type = []
@@ -47,7 +47,7 @@ class MeridionalProcessGroup:
 
     def assemble_fields(self):
         """
-        assemble together the fields contained in all the blocks
+        Assemble together the fields contained in all the blocks.
         """
         self.x_ref = self.group[0].x_ref
         self.u_ref = self.group[0].u_ref
@@ -130,7 +130,7 @@ class MeridionalProcessGroup:
 
     def assemble_body_force_fields(self):
         """
-        assemble together the fields contained in all the blocks
+        Assemble together the fields contained in all the blocks
         """
         self.S00 = self.group[0].S00
         self.S01 = self.group[0].S01
@@ -193,35 +193,10 @@ class MeridionalProcessGroup:
             self.S43 = np.concatenate((self.S43, obj.S43), axis=0)
             self.S44 = np.concatenate((self.S44, obj.S44), axis=0)
 
-    def assemble_fields_2(self):
-        """
-        assemble together the fields contained in all the blocks, but superposing the cordinates and fields,
-        to avoid having two points coincidents, with two different field values
-        """
-        self.z_cg = self.group[0].z_cg[0:-1, :]
-        self.r_cg = self.group[0].r_cg[0:-1, :]
-        self.rho = self.group[0].rho[0:-1, :]
-        self.ur = self.group[0].ur[0:-1, :]
-        self.ut = self.group[0].ut[0:-1, :]
-        self.uz = self.group[0].uz[0:-1, :]
-        self.p = self.group[0].p[0:-1, :]
-        self.T = self.group[0].T[0:-1, :]
-        self.s = self.group[0].s[0:-1, :]
-        self.M = self.group[0].M[0:-1, :]
-
-        for obj in self.group[1:]:
-            self.z_cg = np.concatenate((self.z_cg, obj.z_cg[0:-1, :]), axis=0)
-            self.r_cg = np.concatenate((self.r_cg, obj.r_cg[0:-1, :]), axis=0)
-            self.rho = np.concatenate((self.rho, obj.rho[0:-1, :]), axis=0)
-            self.ur = np.concatenate((self.ur, obj.ur[0:-1, :]), axis=0)
-            self.ut = np.concatenate((self.ut, obj.ut[0:-1, :]), axis=0)
-            self.uz = np.concatenate((self.uz, obj.uz[0:-1, :]), axis=0)
-            self.p = np.concatenate((self.p, obj.p[0:-1, :]), axis=0)
-            self.T = np.concatenate((self.T, obj.T[0:-1, :]), axis=0)
-            self.s = np.concatenate((self.s, obj.s[0:-1, :]), axis=0)
-            self.M = np.concatenate((self.M, obj.M[0:-1, :]), axis=0)
-
     def gauss_filtering(self):
+        """
+        Artificially filter the fields contained in all the blocks
+        """
         print("WARNING: the fields have been artificially filtered!")
         self.rho = self.apply_gaussian_filter(self.rho)
         self.ur = self.apply_gaussian_filter(self.ur)
@@ -233,6 +208,9 @@ class MeridionalProcessGroup:
         self.M = self.apply_gaussian_filter(self.M)
 
     def gauss_filtering_gradients(self):
+        """
+        Artificially filter the field gradients contained in all the blocks
+        """
         print("WARNING: the gradients have been artificially filtered!")
         self.drho_dr = self.apply_gaussian_filter(self.drho_dr)
         self.drho_dz = self.apply_gaussian_filter(self.drho_dz)
@@ -247,7 +225,7 @@ class MeridionalProcessGroup:
 
     def assemble_field_gradients(self):
         """
-        assemble together the gradients of the various blocks
+        Assemble together the gradients of the various blocks
         """
         self.drho_dr = self.group[0].drho_dr
         self.drho_dz = self.group[0].drho_dz
@@ -272,36 +250,11 @@ class MeridionalProcessGroup:
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
 
-    def assemble_field_gradients_2(self):
-        """
-        assemble the gradients field, superposing the coincident nodes
-        """
-        self.drho_dr = self.group[0].drho_dr[0:-1, :]
-        self.drho_dz = self.group[0].drho_dz[0:-1, :]
-        self.dur_dr = self.group[0].dur_dr[0:-1, :]
-        self.dur_dz = self.group[0].dur_dz[0:-1, :]
-        self.dut_dr = self.group[0].dut_dr[0:-1, :]
-        self.dut_dz = self.group[0].dut_dz[0:-1, :]
-        self.duz_dr = self.group[0].duz_dr[0:-1, :]
-        self.duz_dz = self.group[0].duz_dz[0:-1, :]
-        self.dp_dr = self.group[0].dp_dr[0:-1, :]
-        self.dp_dz = self.group[0].dp_dz[0:-1, :]
-
-        for obj in self.group[1:]:
-            self.drho_dr = np.concatenate((self.drho_dr, obj.drho_dr[0:-1, :]), axis=0)
-            self.drho_dz = np.concatenate((self.drho_dz, obj.drho_dz[0:-1, :]), axis=0)
-            self.dur_dr = np.concatenate((self.dur_dr, obj.dur_dr[0:-1, :]), axis=0)
-            self.dur_dz = np.concatenate((self.dur_dz, obj.dur_dz[0:-1, :]), axis=0)
-            self.dut_dr = np.concatenate((self.dut_dr, obj.dut_dr[0:-1, :]), axis=0)
-            self.dut_dz = np.concatenate((self.dut_dz, obj.dut_dz[0:-1, :]), axis=0)
-            self.duz_dr = np.concatenate((self.duz_dr, obj.duz_dr[0:-1, :]), axis=0)
-            self.duz_dz = np.concatenate((self.duz_dz, obj.duz_dz[0:-1, :]), axis=0)
-            self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr[0:-1, :]), axis=0)
-            self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz[0:-1, :]), axis=0)
 
     def contour_fields(self, save_filename=None):
         """
-        contour of the fields. Dimensional quantities
+        Contour of all the fields. Plotted as dimensional for convenience.
+        :param save_filename: if you wish specify the prefix-names of the figure that will be saved.
         """
 
         plt.figure(figsize=self.picture_size_contour)
@@ -396,7 +349,9 @@ class MeridionalProcessGroup:
 
     def show_grid(self, save_filename=None, grid_centers=False):
         """
-        contour of the grid. Non-Dimensional quantities
+        Show the outer grid lines. Non-Dimensional quantities.
+        :param save_filename: if you wish specify the prefix-names of the figure that will be saved.
+        :param grid_centers: if True shows also the grid central nodes
         """
 
         self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_cg, self.r_cg)
@@ -426,7 +381,8 @@ class MeridionalProcessGroup:
 
     def contour_field_gradients(self, save_filename=None):
         """
-        contours of the gradients, non-dimensional quantities
+        Contours of the gradients, non-dimensional quantities.
+        :param save_filename: if you wish specify the prefix-names of the figure that will be saved.
         """
 
         plt.figure(figsize=self.picture_size_contour)
@@ -520,9 +476,11 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=1):
+    def apply_gaussian_filter(field, sigma=2):
         """
-        Gaussian filtering of a 2D field, with a specified deviation (sigma). 2 was a good value
+        Gaussian filtering of a 2D field.
+        :param field: field to filter
+        :param sigma: std deviation to filter with.
         """
         smoothed_array = np.copy(field)
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
@@ -530,10 +488,9 @@ class MeridionalProcessGroup:
 
     def store_pickle(self, file_name=None, folder=None):
         """
-        store the object conent in a pickle
-        Args:
-            file_name: name to store. if None, default one is selected
-            folder: location to store. if None, default one is selected
+        Store the object content in a pickle.
+        :param file_name: name to store. if None, default one is selected
+        :param folder: location to store. if None, default one is selected
         """
         if folder is None:
             folder = folder_meta_data_default
@@ -545,7 +502,7 @@ class MeridionalProcessGroup:
 
     def compute_streamline_length(self):
         """
-        compute the length along each streamline. Dimensional, same dimensions of cordinates
+        Compute the length along each streamline. The dimensions are the same of the ones in the single meridional blocks.
         """
         self.stream_line_length = np.zeros((self.nstream, self.nspan))
         for ispan in range(0, self.nspan):
@@ -562,7 +519,10 @@ class MeridionalProcessGroup:
 
     def plot_stream_line(self, field, n, save_filename=None):
         """
-        for the streamline n, plot the evolution of the flow field
+        For the streamline n, plot the evolution of the flow field.
+        :param field: field to plot
+        :param n: streamline number
+        :param save_filename: name of the figure to save
         """
         sl_max = self.stream_line_length[:, n].max()
         fig, ax = plt.subplots(figsize=fig_size)
@@ -596,6 +556,11 @@ class MeridionalProcessGroup:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_averaged_fluxes(self, field, save_filename=None):
+        """
+        Plots the averaged fluxes along the streamline positions.
+        :param field: field
+        :param save_filename: name of the figures to be saved
+        """
         old_value = 0
         reference_point = self.middle_line_length[self.group[0].nstream]  # initial reference is the leading edge of the blade
         fig, ax = plt.subplots(figsize=fig_size)
@@ -649,38 +614,42 @@ class MeridionalProcessGroup:
 
     def compute_performance(self):
         """
-        compute pressure ratio and efficiency given the averaged fluxes of total quantities
+        Compute pressure ratio and efficiency given the averaged fluxes of total quantities.
         """
         self.nstream = np.shape(self.z_cg)[0]
         self.nspan = np.shape(self.z_cg)[1]
         GMMA = self.GAMMA
 
-        T1 = self.group[0].T_flux[0]
-        Tt1 = self.group[0].T_tot_flux[0]
-        T2 = self.group[-1].T_flux[-1]
-        Tt2 = self.group[-1].T_tot_flux[-1]
+        self.T1 = self.group[0].T_flux[0]
+        self.Tt1 = self.group[0].T_tot_flux[0]
+        self.T2 = self.group[-1].T_flux[-1]
+        self.Tt2 = self.group[-1].T_tot_flux[-1]
 
-        P1 = self.group[0].p_flux[0]
-        Pt1 = self.group[0].p_tot_flux[0]
-        P2 = self.group[-1].p_flux[-1]
-        Pt2 = self.group[-1].p_tot_flux[-1]
+        self.P1 = self.group[0].p_flux[0]
+        self.Pt1 = self.group[0].p_tot_flux[0]
+        self.P2 = self.group[-1].p_flux[-1]
+        self.Pt2 = self.group[-1].p_tot_flux[-1]
 
-        self.beta_ss = P2 / P1
-        self.beta_ts = P2 / Pt1
-        self.beta_tt = Pt2 / Pt1
+        self.beta_ss = self.P2 / self.P1
+        self.beta_ts = self.P2 / self.Pt1
+        self.beta_tt = self.Pt2 / self.Pt1
 
-        self.eta_ts = ((P2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
-        self.eta_tt = ((Pt2 / Pt1) ** ((GMMA - 1) / GMMA) - 1) / (Tt2 / Tt1 - 1)
+        self.eta_ts = ((self.P2 / self.Pt1) ** ((GMMA - 1) / GMMA) - 1) / (self.Tt2 / self.Tt1 - 1)
+        self.eta_tt = ((self.Pt2 / self.Pt1) ** ((GMMA - 1) / GMMA) - 1) / (self.Tt2 / self.Tt1 - 1)
 
     def print_performance(self):
         """
         print on terminal the performance of the machine. only total to total
         """
         print_banner_begin('MACHINE PERFORMANCE')
-        print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
-        print(f"{'Beta_tt:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
-        print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
-        print(f"{'Eta_tt:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Pt [Pa]:':<{total_chars_mid}}{self.Pt1*self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Pt [Pa]:':<{total_chars_mid}}{self.Pt2 * self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Tt [K]:':<{total_chars_mid}}{self.Tt1*self.T_ref:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Tt [K]:':<{total_chars_mid}}{self.Tt2 * self.T_ref:>{total_chars_mid}.2f}")
+        # print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Beta_tt [-]:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
+        # print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Eta_tt [-]:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
         print_banner_end()
 
 
