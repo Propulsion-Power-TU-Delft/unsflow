@@ -8,7 +8,10 @@ def basis_function_matrix(X, Y, order=4):
     """
     given the matrices of cordinates x and y, build the basis function matrix, stacking
     all the basis column by column. Not elegant implementation but it works. Up to order 4, for a
-    2-dimensional problem
+    2-dimensional problem.
+    :param X: grid of X cordinates (along the axis of the machine)
+    :param Y: grid of Y cordinates (along the radius of the machine)
+    :param order: order of the regression. 4 is the values used in the literature.
     """
     x = X.flatten()
     y = Y.flatten()
@@ -67,8 +70,11 @@ def basis_function_matrix(X, Y, order=4):
 
 def basis_function_matrix_derivatives(W, X, Y):
     """
-    starting from the basis function matrix, calculate the basis function matrices corresponding to the x
-    and y derivatives. only fourth order implemented since is the one used in the instability model
+    Starting from the basis function matrix, calculate the basis function matrices corresponding to the x
+    and y derivatives. only fourth order implemented since is the one used in the instability model.
+    :param W: basis function matrix corresponding to X and Y cordinate grids.
+    :param X: grid of X cordinates (along the axis of the machine)
+    :param Y: grid of Y cordinates (along the radius of the machine)
     """
     if np.shape(W)[1] != 15:
         raise ValueError('Only fourth order regression derivatives are implemented')
@@ -116,7 +122,8 @@ def basis_function_matrix_derivatives(W, X, Y):
 
 def least_square_regression(W, Z):
     """
-    find the coefficient vector by means of the least square error minimization (analytical formula)
+    :param W: basis function matrix corresponding to X and Y cordinate grids.
+    :param Z: function values to regress, coherent with X and Y cordinate grids.
     """
     function_values = Z.flatten()
     weight_vector = np.linalg.inv(np.dot(W.T, W))
@@ -127,7 +134,11 @@ def least_square_regression(W, Z):
 
 def regression_evaluation(W, coeff_vector, nx, ny):
     """
-    evaluate the 2D function values matrix and return it in a good shape
+    Evaluate the 2D function values matrix and return it in the right 2D shape.
+    :param W: basis function matrix corresponding to X and Y cordinate grids.
+    :param coeff_vector: coefficient vector found with least-square-based regression.
+    :param nx: number of streamwise points in the original grid.
+    :param ny: numebr of spanwise points in the original grid.
     """
     z = np.dot(W, coeff_vector)
     Z = np.reshape(z, (nx, ny))
