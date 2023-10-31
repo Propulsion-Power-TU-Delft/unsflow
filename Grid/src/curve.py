@@ -16,7 +16,7 @@ class Curve:
     class that replicates a B-spline curve passing through points
     """
 
-    def __init__(self, rescale_factor, x_ref, z=None, r=None, nstream=10, curve_filepath=None, units='mm',
+    def __init__(self, rescale_factor, x_ref, z=None, r=None, nstream=10, curve_filepath=None, units='m',
                  mode='filedata', degree_spline=1):
         """
         overloaded constructor. You can give both the z and r cordinates (mode=cordinates), or you can provide 
@@ -90,7 +90,9 @@ class Curve:
         """
         it deletes the points from the original spline before a certain inlet position point. 
         The trim plane can be horizontal or vertical depending on which trim cordinate has been given. 
-        It OVERWRITES the original spline, losing the external points
+        It OVERWRITES the original spline, losing the external points.
+        :param z_trim: z-location of the trim
+        :param r_trim: r-location of the trim
         """
         if r_trim == 'span':
             idx = np.where(self.z_spline >= z_trim)
@@ -105,7 +107,9 @@ class Curve:
 
     def trim_outlet(self, z_trim='span', r_trim='span'):
         """
-        similar considerations of the trim_inlet, but deletes everything that comes after, not before.
+        Similar considerations of the trim_inlet, but deletes everything that comes after, not before.
+        :param z_trim: z-location of the trim
+        :param r_trim: r-location of the trim
         """
         if z_trim == 'span':
             idx = np.where(self.r_spline <= r_trim)
