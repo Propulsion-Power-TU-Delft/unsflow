@@ -35,14 +35,18 @@ class Block:
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
-        trim the inlet at a trim plane
+        Trim the inlet at a certain location.
+        :param z_trim: z cordinate of trim
+        :param r_trim: r cordinate of trim
         """
         self.hub.trim_inlet(z_trim, r_trim)
         self.shroud.trim_inlet(z_trim, r_trim)
 
     def trim_outlet(self, z_trim='span', r_trim='span'):
         """
-        trim the outlet at a trim plane
+        Trim the outlet at a certain location.
+        :param z_trim: z cordinate of trim
+        :param r_trim: r cordinate of trim
         """
         self.hub.trim_outlet(z_trim, r_trim)
         self.shroud.trim_outlet(z_trim, r_trim)
@@ -58,7 +62,7 @@ class Block:
 
     def spline_of_leading_trailing_edge(self):
         """
-        make splines of the inlet and outlet border of the domain of interest
+        Make splines of the inlet and outlet border of the domain considered
         """
         self.inlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                      self.inlet[1:-1, :],
@@ -93,7 +97,7 @@ class Block:
 
     def spline_of_inlet_outlet_full_block(self):
         """
-        make inlet and outlet splines for all the domain together. The inlet and outlet coincides with initial and last
+        Make inlet and outlet splines for the whole domain together. The inlet and outlet coincides with initial and last
         points of hub and shroud splines. Degree 1 because they are straight lines.
         """
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
@@ -127,6 +131,7 @@ class Block:
     def sample_hub_shroud(self, sampling_mode='default'):
         """
         Sample correctly the hub and shroud spline, already trimmed properly, with a certain sampling mode.
+        :param sampling_mode: type of sampling, default or clustered
         """
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
@@ -134,6 +139,7 @@ class Block:
     def sample_hub_shroud_full_block(self, sampling_mode='default'):
         """
         Sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
+        :param sampling_mode: type of sampling, default or clustered
         """
         self.hub_trim.sample(sampling_mode=sampling_mode)
         self.shroud_trim.sample(sampling_mode=sampling_mode)
@@ -141,6 +147,7 @@ class Block:
     def sample_inlet_outlet(self, sampling_mode='default'):
         """
         Sample the inlet edge for the outlet block.
+        :param sampling_mode: type of sampling, default or clustered
         """
         self.leading_edge.sample(sampling_mode=sampling_mode)
         self.trailing_edge.sample(sampling_mode=sampling_mode)
@@ -195,6 +202,7 @@ class Block:
         self.z_grid_points = np.zeros((self.nstream, self.nspan))
 
         if grid_mode == 'spanwise':
+            print("WARNING: deprecated method. Consider using elliptic mode.")
             # algorithm for internal points, connecting points on the hub and shroud along the span direction
             for istream in range(0, self.nstream):
                 for ispan in range(0, self.nspan):
@@ -220,6 +228,7 @@ class Block:
                 raise ValueError('curved_border parameter not recognized')
 
         elif grid_mode == 'streamwise':
+            print("WARNING: deprecated method. Consider using elliptic mode.")
             # algorithm for internal points, connecting points on the inlet and trailing edges along the stream direction
             for istream in range(0, self.nstream):
                 for ispan in range(0, self.nspan):
@@ -299,7 +308,7 @@ class Block:
 
     def add_inlet_outlet_curves(self, inlet, outlet):
         """
-        stores information regarding the inlet and outlet curve points, taken from blade object,
+        Stores information regarding the inlet and outlet curve points, taken from blade object,
         in order to compute the leading and trailing splines.
         """
         self.inlet = inlet
@@ -309,7 +318,7 @@ class Block:
 
     def extend_inlet_outlet_curves(self):
         """
-        extend the inlet and outlet curves in order to find the intersections with the hub and shroud curves.
+        Extend the inlet and outlet curves in order to find the intersections with the hub and shroud curves.
         """
         self.inlet_curve.extend()
         self.outlet_curve.extend()
@@ -360,8 +369,8 @@ class Block:
 
     def bladed_zone_trim(self, machine_type):
         """
-        trim the block hub and shroud curves at the found intersections with the inlet and outlet curves. Machine type is
-        needed to know what kind of cut to apply
+        Trim the block hub and shroud curves at the found intersections with the inlet and outlet curves.
+        :param machine_type: needed to know what kind of cut to apply
         """
         if machine_type == 'radial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
@@ -410,6 +419,7 @@ class Block:
         """
         compute a secondary grid, using the points that lie in the baricenter of 4 primary grid points
         """
+        print("WARNING: deprecated method")
         self.z_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
         self.r_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
 
@@ -470,14 +480,21 @@ class Block:
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
                        secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True, ticks=False):
         """
-        plot everything of the grid
+        Plot the obtained grid.
+        :param save_filename: specify path of the figures to be saved (if you want to save).
+        :param primary_grid: if True plots the primary grid lines
+        :param primary_grid_points: if True plots the primary grid points
+        :param secondary_grid: if True plots the secondary grid lines
+        :param secondary_grid_points: if True plots the secondary grid points
+        :param hub_shroud: if True plots hub and shroud highlighted
+        :param outline: if True plots the highlighted outline of the domain
+        :param grid_centers: if True plots the grid centers
+        :param ticks: if True allows ticks to be shown
         """
-        # self.AR = (np.max(self.r_grid_points) - np.min(self.r_grid_points)) / \
-        #           (np.max(self.z_grid_points) - np.min(self.z_grid_points))
 
-        self.blade_picture_size = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
+        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
 
-        plt.figure(figsize=self.blade_picture_size)
+        plt.figure(figsize=self.picture_size_blank)
 
         # hub and shroud plot
         if hub_shroud:
@@ -517,11 +534,11 @@ class Block:
 
         if (primary_grid_points or secondary_grid_points or outline):
             plt.legend()
-        plt.xlabel(r'$z \ \mathrm{%s}$' % (self.units))
-        plt.ylabel(r'$r \ \mathrm{%s}$' % (self.units))
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
 
-        if ticks==False:
+        if not ticks:
             plt.xticks([])
             plt.yticks([])
             plt.xlabel('')
@@ -532,7 +549,7 @@ class Block:
 
     def find_border(self):
         """
-        find the border delimiting the block. it stores the border info as (r,z) column arrays
+        Find the border delimiting the block. it stores the border info as (r,z) column arrays
         """
         border_z = []
         border_r = []
@@ -560,7 +577,7 @@ class Block:
 
     def show_outline_grid(self):
         """
-        show the outline grid, with the sampling points
+        Show the outline grid, with the sampling points
         """
 
         plt.figure()
