@@ -476,7 +476,7 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
 
     @staticmethod
-    def apply_gaussian_filter(field, sigma=2):
+    def apply_gaussian_filter(field, sigma=1.5):
         """
         Gaussian filtering of a 2D field.
         :param field: field to filter

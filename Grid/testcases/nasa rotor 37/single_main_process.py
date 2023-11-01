@@ -21,10 +21,10 @@ print('Start execution:')
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 30
-BLADE_NZ = 35
-OUTLET_NZ = 70
-NR = 35
+INLET_NZ = 15
+BLADE_NZ = 20
+OUTLET_NZ = 30
+NR = 15
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_slim.csv'
 MULTIBLOCK_FILTERING = True
