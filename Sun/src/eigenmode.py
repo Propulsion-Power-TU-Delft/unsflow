@@ -19,17 +19,21 @@ from .styles import *
 
 class Eigenmode:
     """
-    class used to store information related to an eigenmode. It will contain the fields of:
-    -eigenpressure
-    -eigenvelocities
-    -eigendensities
-    -eigenfrequency
+    Class used to store information related to an eigenmode.
     """
     def __init__(self, frequency, rho, ur, utheta, uz, p):
+        """
+        Builds an eigenmode object.
+        :param frequency: eigenfrequency
+        :param rho: density eigenfunction
+        :param ur: ur eigenfunction
+        :param utheta: utheta eigenfunction
+        :param uz: uz eigenfunction
+        :param p: p eigenfunction
+        """
         self.eigenfrequency = frequency
         self.eigen_rho = rho
         self.eigen_ur = ur
         self.eigen_utheta = utheta
         self.eigen_uz = uz
         self.eigen_p = p
-

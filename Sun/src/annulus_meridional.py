@@ -96,4 +96,3 @@ class AnnulusMeridional():
         self.dp_dr /= self.p_ref/self.x_ref
         self.dp_dtheta /= self.p_ref/self.x_ref
         self.dp_dz /= self.p_ref/self.x_ref
-

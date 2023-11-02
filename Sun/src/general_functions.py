@@ -1,16 +1,17 @@
 import numpy as np
 from .styles import total_chars
 
+
 def JacobianTransform(X, Y, Z, R):
     """
     It computes the jacobian of the transformation between two sets of cordinates. It uses central differences in the central
     points and first order at the borders.
-    X,Y are the cordinates of which we want the gradients
-    Z,R are the cordinates, used in the gradients. They need to be cartesian in order to be mathematically consistent
-    
-    It returns the gradients of the first as a function of the second cordinates
-    dxdz, dxdr, dydz, dydr
-    
+    :param X: x cordinates of which we want the gradients
+    :param Y: y cordinates of which we want the gradients
+    :param Z: z cordinates of which we want the gradients
+    :param R: r cordinates of which we want the gradients
+    Z,R are the cordinates, used in the gradients. The latter need to be cartesian in order to be mathematically consistent
+    It returns the gradients of the first as a function of the second cordinates dxdz, dxdr, dydz, dydr.
     Double-checked, with script "debug_finite_diff.py"
     """
     Nz, Nr = X.shape[0], X.shape[1]
@@ -77,14 +78,13 @@ def JacobianTransform(X, Y, Z, R):
 
 def JacobianTransform2(X, Y, Z, R):
     """
-    It computes the jacobian of the transformation between two sets of cordinates using the numpy gradient function.
-    X,Y are the function values of which we want the gradients.
-    Z,R are the cordinates. They need to be cartesian in order to be mathematically consistent
-
-    It returns the gradients of the first as a function of the second cordinates
-    dxdz, dxdr, dydz, dydr
-
-    Double-checked, with script "debug_finite_diff.py"
+    It computes the jacobian of the transformation between two sets of cordinates, using numpy.gradient().
+    :param X: x cordinates of which we want the gradients
+    :param Y: y cordinates of which we want the gradients
+    :param Z: z cordinates of which we want the gradients
+    :param R: r cordinates of which we want the gradients
+    Z,R are the cordinates, used in the gradients. The latter need to be cartesian in order to be mathematically consistent
+    It returns the gradients of the first as a function of the second cordinates dxdz, dxdr, dydz, dydr.
     """
     # Compute gradients with variable spacing
     dxdz, dxdr = np.gradient(X, Z[:, 0], R[0, :], edge_order=2)
@@ -94,14 +94,14 @@ def JacobianTransform2(X, Y, Z, R):
 
 def JacobianTransform3(X, Y, Z, R, order=2):
     """
-    It computes the jacobian of the transformation between two sets of cordinates using the findiff package.
-    X,Y are the function values of which we want the gradients.
-    Z,R are the cordinates. They need to be cartesian in order to be mathematically consistent
-
-    It returns the gradients of the first as a function of the second cordinates
-    dxdz, dxdr, dydz, dydr
-
-    Double-checked, with script "debug_finite_diff.py"
+    It computes the jacobian of the transformation between two sets of cordinates, using findiff library.
+    :param X: x cordinates of which we want the gradients
+    :param Y: y cordinates of which we want the gradients
+    :param Z: z cordinates of which we want the gradients
+    :param R: r cordinates of which we want the gradients
+    :param order: finite difference order
+    Z,R are the cordinates, used in the gradients. The latter need to be cartesian in order to be mathematically consistent
+    It returns the gradients of the first as a function of the second cordinates dxdz, dxdr, dydz, dydr.
     """
     # Compute gradients with variable spacing
 
@@ -118,9 +118,9 @@ def JacobianTransform3(X, Y, Z, R, order=2):
 
 def ChebyshevDerivativeMatrix(x):
     """
-    Define the first order derivative Chebyshev matrix, where x is the array of Gauss-Lobatto points. Expression from 
-    Peyret book, page 50
-    
+    Define the first order derivative Chebyshev operator, where x is the array of Gauss-Lobatto points along x.
+    Expression from Peyret book, page 50.
+    :param x: array of cordinates
     double-checked with script "debug_spectral_diff.py"
     """
     N = len(x)  # dimension of the square matrix
@@ -157,9 +157,9 @@ def ChebyshevDerivativeMatrix(x):
 
 def ChebyshevDerivativeMatrixBayliss(x):
     """
-    Define the first order derivative Chebyshev matrix, where x is the array of Gauss-Lobatto points. Expression from 
-    Peyret book, page 50. Bayliss formulation for the diagonal term, as suggested by Peyret to fix the extremes
-    
+    Define the first order derivative Chebyshev operator, where x is the array of Gauss-Lobatto points. Expression from
+    Peyret book, page 50. Bayliss formulation for the diagonal term, as suggested by Peyret to fix the extremes.
+    :param x: array of cordinates
     double-checked with script "debug_spectral_diff.py"
     """
     N = len(x)  # dimension of the square matrix
@@ -172,8 +172,10 @@ def ChebyshevDerivativeMatrixBayliss(x):
 
 def Refinement(x, add_points):
     """
-    it returns a refined array, which has an additional number add_points of equispaced points in every interval
+    It returns a refined array, which has an additional number add_points of equispaced points in every interval
     of the original array.
+    :param x: original array
+    :param add_points: number of points to add in every interval
     """
     refined_x = np.array(())
     n = len(x)
@@ -188,10 +190,10 @@ def Refinement(x, add_points):
 
 def GaussLobattoPoints(N):
     """
-    it returns an array of N Gauss-Lobatto points, between 1 and -1.
+    It returns an array of ordered Gauss-Lobatto points, between 1 and -1.
+    :param N: number of points (=maximum chebyshev polynomial order)
     """
     x = np.array(())
-
     # the difference in notation with respect to mathematics books is due to the python index notation, starting from 0 and not 1
     for i in range(0, N):
         xnew = np.cos(i * np.pi / (N - 1))  # gauss lobatto points
@@ -200,6 +202,12 @@ def GaussLobattoPoints(N):
 
 
 def scaled_eigenvector_real(eig_list, Nz, Nr):
+    """
+    Converts and scales an eigenvalue with max-min algorithm, to return a 2D eigenfunction.
+    :param eig_list: list contaning eigenfunction
+    :param Nz: number of z points.
+    :param Nr: number of r points.
+    """
     array = np.array(eig_list, dtype=complex)
     array = np.reshape(array, (Nz, Nr))
     array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
@@ -208,7 +216,8 @@ def scaled_eigenvector_real(eig_list, Nz, Nr):
 
 def print_banner_begin(string):
     """
-    print the banner begin, including string in the middle
+    Prints the initial banner.
+    :param string: string to include in the banner, in central position
     """
     n = total_chars - 2
     print("+", f"{string:-^{n}}", "+", sep='')
@@ -216,8 +225,7 @@ def print_banner_begin(string):
 
 def print_banner_end(string=''):
     """
-    print the banner end
+    Prints the final banner.
     """
     n = total_chars - 2
     print("+", f"{string:-^{n}}", "+", sep='')
-    # print("\n")
