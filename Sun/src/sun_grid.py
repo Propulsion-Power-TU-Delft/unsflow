@@ -15,16 +15,15 @@ from .general_functions import GaussLobattoPoints
 class SunGrid():
     """
     Class of Sun Grid. It contains a grid of Node objects, in which every node object contains the properties that we need
-    to apply the Sun instability model
+    to apply the Sun instability model.
     """
 
     def __init__(self, meridional_obj, mode='physical'):
         """
         instantiate the Sun Grid object, that contains the grids (physical and spectral), and the arrays of nodes objects
         contaning the fields and the matrices necessary for the instability model
-        Args:
-            meridional_obj: object storing the 2D meridional flow fields, processed from CFD
-            mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates
+        :param meridional_obj: object storing the 2D meridional flow fields, processed from CFD.
+        :param mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates.
         """
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
         self.n_stream = meridional_obj.nstream
@@ -83,7 +82,8 @@ class SunGrid():
 
     def PrintInfo(self, datafile='terminal'):
         """
-        print information about the nodes
+        Print information about the nodes.
+        :param datafile: set printing destination.
         """
         for ii in range(0, self.nAxialNodes):
             for jj in range(0, self.nRadialNodes):
@@ -92,8 +92,8 @@ class SunGrid():
 
     def ComputeBoundaryNormals(self):
         """
-        for every node on the hub and shroud it computes the normal vectors, and store them at the node level.
-        The components are in the {r, theta, zeta} reference frame
+        For every node on the hub and shroud it computes the normal vectors, and store them at the node level.
+        The components are in the {r, theta, zeta} reference frame.
         """
         for ii in range(0, self.nAxialNodes):
             for jj in range(0, self.nRadialNodes):
@@ -122,7 +122,7 @@ class SunGrid():
 
     def ShowNormals(self):
         """
-        print information about the normals to the walls. The reference frame is {r,theta,z}
+        Print information about the normals to the walls. The reference frame is {r,theta,z}.
         """
         self.ShowGrid(vector='wall normals')  # show only the boundaries with normal vector superposed
 
@@ -130,9 +130,9 @@ class SunGrid():
 
     def PhysicalToSpectralData(self):
         """
-        it returns a new Grid object with the same data of the original one, but with spectral cordinates
+        It returns a new Grid object with the same data of the original one, but with spectral cordinates
         located on the gauss-lobatto points between 1 and -1 in both the directions.
-        It conserves the same amount of grid nodes of the physical grid
+        It conserves the same amount of grid nodes of the physical grid.
         """
         newGridObj = SunGrid(self.meridional_obj, mode='spectral')
         return newGridObj
@@ -142,7 +142,11 @@ class SunGrid():
     def ShowGrid(self, formatFig=(10, 6), save_filename=None, mode=None, vector=None):
         """
         Show a scatter plots of the grid, with different colors for the different zones.
-        if mode is set to boundaries it plots only them with normal vectors superposed
+        if mode is set to boundaries it plots only them with normal vectors superposed.
+        :param formatFig: format of figure
+        :param save_filename: specify name of the figs to save
+        :param mode: type of visualization
+        :param vector: if True plots also the boundary normals.
         """
         mark = np.empty((self.nAxialNodes, self.nRadialNodes), dtype=str)
         for ii in range(0, self.nAxialNodes):
@@ -194,8 +198,11 @@ class SunGrid():
 
     def Normalize(self, rho_ref, u_ref, x_ref):
         """
-        taking reference magnitudes for density, velocity and length, it normalizes all the data
-        contained in the grid, and in the nodes
+        Taking reference magnitudes for density, velocity and length, it normalizes all the data
+        contained in the grid, and in the nodes.
+        :param rho_ref: reference density [kg/m3]
+        :param u_ref: reference velocity [m/s]
+        :param x_ref: reference length [m]
         """
         self.zGrid /= x_ref
         self.rGrid /= x_ref
