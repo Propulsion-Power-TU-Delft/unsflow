@@ -8,8 +8,8 @@ with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
 m = 1
-gradient_routine = 'findiff'
-gradient_order = 6
+gradient_routine = 'numpy'
+gradient_order = 2
 
 
 
@@ -18,7 +18,6 @@ gradient_order = 6
 compressor_grid = Sun.src.sun_grid.SunGrid(meridional_obj)
 sun_obj = Sun.src.SunModel(compressor_grid)
 sun_obj.ComputeBoundaryNormals()
-# sun_obj.add_shaft_rpm(rpm)
 sun_obj.set_normalization_quantities()
 sun_obj.ShowPhysicalGrid(save_filename='physical_grid', mode='lines')
 sun_obj.ComputeSpectralGrid()

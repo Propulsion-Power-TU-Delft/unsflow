@@ -9,7 +9,7 @@ with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = 85e3
 m = 1
-gradient_routine = 'findiff'
+gradient_routine = 'numpy'
 gradient_order = 2
 
 

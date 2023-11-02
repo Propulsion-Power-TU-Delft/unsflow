@@ -197,8 +197,12 @@ class SunModel:
         print_banner_end()
 
         # refined grids
-        Z = self.data.meridional_obj.z_cg_fine
-        R = self.data.meridional_obj.r_cg_fine
+        if self.data.meridional_obj.z_cg_fine is not None:
+            Z = self.data.meridional_obj.z_cg_fine
+            R = self.data.meridional_obj.r_cg_fine
+        else:
+            Z = self.data.meridional_obj.z_cg
+            R = self.data.meridional_obj.r_cg
         Nz_fine = np.shape(Z)[0]
         Nr_fine = np.shape(Z)[1]
         x = GaussLobattoPoints(Nz_fine)
@@ -238,7 +242,7 @@ class SunModel:
         :param save_filename: specify the names if you want to save the figs.
         """
         plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$J$')
@@ -247,7 +251,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels, cmap=color_map)
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
@@ -256,7 +260,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels, cmap=color_map)
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.colorbar()
@@ -265,7 +269,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels, cmap=color_map)
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.colorbar()
@@ -274,7 +278,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels, cmap=color_map)
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.colorbar()
@@ -283,7 +287,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -292,7 +296,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_5.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -301,7 +305,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_6.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -310,7 +314,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_7.pdf', bbox_inches='tight')
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels_fine, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -650,6 +654,11 @@ class SunModel:
                                                              self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdy)
                 Ehat = (1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdx -
                                                             self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdx)
+                # # alternative formulation, provides the same results. (Check)
+                # Bhat = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
+                #        self.data.dataSet[ii, jj].E * self.dxdz[ii, jj]
+                # Ehat = self.data.dataSet[ii, jj].B * self.dydr[ii, jj] + \
+                #        self.data.dataSet[ii, jj].E * self.dydz[ii, jj]
                 self.data.dataSet[ii, jj].AddHatMatrices(Bhat, Ehat)
 
     def ApplySpectralDifferentiation(self, verbose=False):

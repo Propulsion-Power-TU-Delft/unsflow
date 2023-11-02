@@ -119,7 +119,7 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 20
+Nz = 30
 Nr = 10
 number_search = 7
 gradient_routine = 'numpy'
