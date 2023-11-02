@@ -1,9 +1,16 @@
 class Node:
     """
-    Class of Node object, contaning cordinates, fluid dynamics field, markers and cordinates of the grid point
+    Class of Node object, contaning cordinates, fluid dynamics field, markers and cordinates of the grid point.
     """
 
     def __init__(self, z, r, marker, nodeCounter):
+        """
+        Builds the node object.
+        :param z: z cordinate
+        :param r: r cordinate
+        :param marker: type of node, to distinguish boundary conditions
+        :param nodeCounter: counter of the node.
+        """
         self.z = z  # axial cordinate
         self.r = r  # radial cordinate
         self.marker = marker  # type of node if belonging to boundaries
@@ -11,7 +18,10 @@ class Node:
 
     def AppendDensityInfo(self, rho, drho_dr, drho_dz):
         """
-        add density related information to the node
+        Ddd density related information to the node.
+        :param rho: density
+        :param drho_dr: drho_dr
+        :param drho_dz: drho_dz
         """
         self.rho = rho
         self.drho_dr = drho_dr
@@ -19,7 +29,16 @@ class Node:
 
     def AppendVelocityInfo(self, ur, ut, uz, dur_dr, dur_dz, dut_dr, dut_dz, duz_dr, duz_dz):
         """
-        add velocity related information to the node
+        Add velocity related information to the node.
+        :param ur: ur
+        :param ut: ut
+        :param uz: uz
+        :param dur_dr: dur_dr
+        :param dur_dz: dur_dz
+        :param dut_dr: dut_dr
+        :param dut_dz: dut_dz
+        :param duz_dr: duz_dr
+        :param duz_dz: duz_dz
         """
         self.ur = ur
         self.ut = ut
@@ -33,7 +52,10 @@ class Node:
 
     def AppendPressureInfo(self, p, dp_dr, dp_dz):
         """
-        add pressure related information to the node
+        Add pressure related information to the node.
+        :param p: pressure
+        :param dp_dr: dp_dr
+        :param dp_dz: dp_dz
         """
         self.p = p
         self.dp_dr = dp_dr
@@ -41,7 +63,8 @@ class Node:
 
     def PrintInfo(self, datafile='terminal'):
         """
-        print some info of the node
+        Print some info of the node.
+        :param datafile: specify terminal or datafile where printing the information.
         """
         if datafile == 'terminal':
             print('marker: ' + self.marker)
@@ -57,7 +80,10 @@ class Node:
 
     def Normalize(self, rho_ref, u_ref, x_ref):
         """
-        it normalizes all the data belonging to the nodes, with the reference quantities given in the problem
+        It normalizes all the data belonging to the nodes, with the reference quantities given in the problem.
+        :param rho_ref: reference density [kg/m3]
+        :param u_ref: reference velocity [m/s]
+        :param x_ref: reference length [m]
         """
         p_ref = rho_ref * u_ref ** 2  # ref pressure
 
@@ -84,60 +110,74 @@ class Node:
 
     def AddNormalVersor(self, n):
         """
-        adds the normal vector information to the node (used only for hub and shroud nodes)
+        Adds the normal vector information to the node (used only for hub and shroud nodes).
+        :param n: normal vector in (r,theta,z) ref. frame.
         """
         self.n_wall = n
 
     def AddAMatrix(self, A):
         """
-        It adds the A matrix, already multiplied by omega and j at the node level
+        It adds the A matrix.
+        :param A: matrix to add
         """
         self.A = A
 
     def AddBMatrix(self, B):
         """
-        It adds the B matrix at the node level
+        It adds the B matrix at the node level.
+        :param B: matrix to add
         """
         self.B = B
 
     def AddCMatrix(self, C):
         """
-        It adds the C matrix, already multiplied by m and j at the node level
+        It adds the C matrix, already multiplied by m and j at the node level.
+        :param C: matrix to add
         """
         self.C = C
 
     def AddEMatrix(self, E):
         """
-        It adds the E matrix at the node level
+        It adds the E matrix at the node level.
+        :param E: matrix to add
         """
         self.E = E
 
     def AddRMatrix(self, R):
         """
-        It adds the R matrix at the node level
+        It adds the R matrix at the node level.
+        :param R: matrix to add
         """
         self.R = R
 
     def AddSMatrix(self, S):
         """
-        It adds the S matrix at the node level
+        It adds the S matrix at the node level.
+        :param S: matrix to add
         """
         self.S = S
 
     def AddTransformationGradients(self, dzdx, dzdy, drdx, drdy):
         """
         It adds the physical jacobian as a function of the  spectral cordinates at the node level
+        :param dzdx: 2D array
+        :param dzdy: 2D array
+        :param drdx: 2D array
+        :param drdy: 2D array
         """
         self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
 
     def AddJacobian(self, J):
         """
-        It adds the inverse jacobian as a function of the  spectral cordinates at the node level
+        It adds the inverse jacobian as a function of the  spectral cordinates at the node level.
+        :param J: 2D array of Jacobian values
         """
         self.J = J
 
     def AddHatMatrices(self, Bhat, Ehat):
         """
-        It adds the hat{B}, hat{E} matrix at the node level
+        It adds the hat{B}, hat{E} matrix at the node level.
+        :param Bhat: 2D array
+        :param Ehat: 2D array
         """
         self.Bhat, self.Ehat = Bhat, Ehat
