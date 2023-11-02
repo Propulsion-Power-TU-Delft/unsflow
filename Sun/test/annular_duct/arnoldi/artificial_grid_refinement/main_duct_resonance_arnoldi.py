@@ -119,7 +119,7 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
+Nz = 20
 Nr = 10
 number_search = 7
 gradient_routine = 'numpy'
@@ -145,7 +145,9 @@ for ii in range(0, Nz):
         pressure[ii, jj] = p
 
 # create a meridional object, having the same information of the meridional post-process object of a compressor
-duct_Obj = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr, density, radialVel, tangentialVel, axialVel, pressure)
+duct_Obj = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
+                                     density, radialVel, tangentialVel, axialVel, pressure, grid_refinement=1)
+duct_Obj.normalize_data(rho_ref, u_ref, x_ref)
 duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj)
 duct_grid.ShowGrid()
 
@@ -155,17 +157,16 @@ sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ComputeBoundaryNormals()
 sun_obj.ShowNormals()
 sun_obj.add_shaft_rpm(omega_ref)
-sun_obj.set_normalization_quantities(rho_ref, u_ref, x_ref, mode='duct object')
-sun_obj.NormalizeData()
+sun_obj.set_normalization_quantities(mode='duct object')
 sun_obj.ComputeSpectralGrid()
-sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
+sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order, method='nearest')
 sun_obj.ContourTransformation(save_filename='%i_%i/transformation' %(Nz, Nr))
-sun_obj.AddAMatrixToNodesFrancesco2(normalize=True)
-sun_obj.AddBMatrixToNodesFrancesco2(normalize=True)
-sun_obj.AddCMatrixToNodesFrancesco2(m=m, normalize=True)
-sun_obj.AddEMatrixToNodesFrancesco2(normalize=True)
-sun_obj.AddRMatrixToNodesFrancesco2(normalize=True)
-sun_obj.AddSMatrixToNodes(turbo=False, normalize=True)
+sun_obj.AddAMatrixToNodesFrancesco2(normalize=False)
+sun_obj.AddBMatrixToNodesFrancesco2(normalize=False)
+sun_obj.AddCMatrixToNodesFrancesco2(m=m, normalize=False)
+sun_obj.AddEMatrixToNodesFrancesco2(normalize=False)
+sun_obj.AddRMatrixToNodesFrancesco2(normalize=False)
+sun_obj.AddSMatrixToNodes(turbo=False, normalize=False)
 sun_obj.AddHatMatricesToNodes()
 sun_obj.ApplySpectralDifferentiation()
 sun_obj.build_A_global_matrix()
@@ -177,7 +178,6 @@ sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
 
 omega_search = 24000
-mode_name = r'$[R,Z] = [1, 4]$'
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
 M = 1j*sun_obj.A_g
@@ -270,7 +270,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
 
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=200, cmap='RdBu')
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=200, cmap='bwr')
     for c in cnt.collections:
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
@@ -280,7 +280,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec+1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=200, cmap='RdBu')
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=200, cmap='bwr')
     for c in cnt.collections:
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
@@ -290,7 +290,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec+1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=200, cmap='RdBu')
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=200, cmap='bwr')
     for c in cnt.collections:
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
@@ -300,7 +300,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec+1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=200, cmap='RdBu')
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=200, cmap='bwr')
     for c in cnt.collections:
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
@@ -310,7 +310,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec+1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=200, cmap='RdBu')
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=200, cmap='bwr')
     for c in cnt.collections:
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')

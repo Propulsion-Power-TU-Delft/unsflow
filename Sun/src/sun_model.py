@@ -18,20 +18,19 @@ from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
 from .styles import *
 from .eigenmode import Eigenmode
+from scipy.interpolate import griddata
+from scipy.interpolate import Rbf
 
 
 class SunModel:
     """
-    Class used for Sun Model instability prediction based on the data contained in a Grid object containing the CFD results. 
-    Matrix elements are taken from Aerodynamic Instabilities of Swept Airfoil Design in Transonic Axial-Flow Compressors,
-    He et Al.
-    The general stability equation is:
-        (-j*omega*A + B*ddr + j*m*C/r + E*ddz + R + S)*Phi' = 0
+    Class used for Sun Model instability prediction based on the data contained in a Grid object containing the node grid.
+    The treated perturbation equations are: (-j*omega*A + B*ddr + j*m*C/r + E*ddz + R + S)*Phi' = 0
     
     MATRICES:
         A : coefficient matrix of temporal derivatives
         B : coefficient matrix of radial derivatives
-        C : coefficient matrix of azimuthal derivative s
+        C : coefficient matrix of circumferential derivatives
         E : coefficient matrix of axial derivatives
         R : coefficient matrix of the known mean flow terms
         S : coefficient matrix of the body force model
@@ -39,8 +38,8 @@ class SunModel:
 
     def __init__(self, gridObject):
         """
-        instantiate the sun model Object, contaning all the attributes and methods necessary for the instability analysis.
-        gridObject is the SunGrid object contaning all the data, physical and spectral
+        Instantiate the sun model Object, contaning all the attributes and methods necessary for the instability analysis.
+        :param gridObject: is the object contaning all the data, physical and spectral organized in a grid of Node objects.
         """
         self.data = gridObject  # grid object containing also the meridional object with the data
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
@@ -53,7 +52,8 @@ class SunModel:
 
     def set_overwriting_equation_euler_wall(self, equation):
         """
-        select an equation to overwrite with the euler wall. Avilable options: ur, utheta, uz
+        Select an equation to overwrite with the euler wall. Avilable options: ur, utheta, uz.
+        :param equation: specify which equation will be overwritten from the euler wall condition.
         """
         if equation=='ur':
             self.substituted_equation = 'ur'
@@ -66,11 +66,10 @@ class SunModel:
             print("Equation to overwrite with Euler Wall condition set to: Axial Momentum!")
         else:
             raise ValueError("Not recognized option")
+        print()
 
-        print("\n")
 
-
-    def set_normalization_quantities(self, rho_ref=None, u_ref=None, x_ref=None, mode='meridional object'):
+    def set_normalization_quantities(self, mode='meridional object'):
         """
         Quantities needed to non-dimensionalize the governing equations, in order to make the system better posed numerically.
         If the data obtained from CFD post-process was already non-dimensional just set unity values.
@@ -80,25 +79,33 @@ class SunModel:
             [x]/[rho][u]^3 for the pressure equation.
         The fundamental entities selected for non-dimensionalization are:
             a reference density,
-            a reference velocity, generally taken as the blade inlet tip speed
+            a reference omega, generally taken as the shaft angular velocity
             reference length, generally taken as the blade inlet tip radius
         All the rest is obtained from these 3 fundamental quantities (pressure, time, etc...).
-        :param mode: decides if taking the reference quantities from the meridional object, or if hard coding them (e.g. for
-        annular duct test-case)
+        :param mode: decides if taking the reference quantities are related to the annular duct (test-case), or to a meridional
+        object in the general case
         """
-        if mode == 'meridional object':
+        if mode == 'meridional multiblock object':
             self.rho_ref = self.data.meridional_obj.group[0].rho_ref
             self.u_ref = self.data.meridional_obj.group[0].u_ref
             self.x_ref = self.data.meridional_obj.group[0].x_ref
             self.p_ref = self.data.meridional_obj.group[0].p_ref
             self.omega_ref = self.data.meridional_obj.group[0].omega_ref
             self.t_ref = 1/self.omega_ref
+        elif mode == 'meridional object':
+            self.rho_ref = self.data.meridional_obj.rho_ref
+            self.u_ref = self.data.meridional_obj.u_ref
+            self.x_ref = self.data.meridional_obj.x_ref
+            self.p_ref = self.data.meridional_obj.p_ref
+            self.omega_ref = self.data.meridional_obj.omega_ref
+            self.t_ref = 1/self.omega_ref
         elif mode =='duct object':
-            self.rho_ref = rho_ref
-            self.u_ref = u_ref
-            self.x_ref = x_ref
-            self.p_ref = rho_ref * u_ref ** 2
-            self.t_ref = x_ref / u_ref
+            self.rho_ref = self.data.meridional_obj.rho_ref
+            self.u_ref = self.data.meridional_obj.u_ref
+            self.x_ref = self.data.meridional_obj.x_ref
+            self.p_ref = self.data.meridional_obj.p_ref
+            self.omega_ref = self.data.meridional_obj.omega_ref
+            self.t_ref = self.data.meridional_obj.t_ref
         else:
             raise ValueError("unknown type of object")
 
@@ -114,8 +121,8 @@ class SunModel:
 
     def print_normalization_information(self):
         """
-        print information on non-dimensionalization in the sun module. It should provide only ones if the data
-        were already normalized in the meridional process
+        Print information on non-dimensionalization in the sun module. It should provide only ones if the data
+        were already normalized in the meridional process.
         """
         print_banner_begin('NORMALIZATION')
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.2f}")
@@ -128,31 +135,32 @@ class SunModel:
 
     def add_shaft_rpm(self, rpm):
         """
-        add the rpm of the shaft, in order to set the reference angular rate of the analysis (omega [rad/s]).
+        Add the rpm of the shaft, in order to set the reference angular rate of the analysis (omega [rad/s]).
         If the shaft rotest in the negative z-direction, the reference omega is still positive, but omega shaft is
         kept with algebraic sign
-        Args:
-            rpm: revolutions per minute
+        :param rpm: rpm of the shaft, with sign according to z.
         """
         self.omega_shaft = 2 * np.pi * rpm / 60
         self.omega_ref = np.abs(np.copy(self.omega_shaft))
 
     def NormalizeData(self):
         """
-        non-dimensionalise the node quantities
+        Non-dimensionalise the node quantities, if they were not already non-dimensional
         """
         self.data.Normalize(self.rho_ref, self.u_ref, self.x_ref)
 
     def ComputeSpectralGrid(self):
         """
-        it instanties a new grid object which has the same flow data of the original grid, but stored 
-        on a computational grid suitable for spectral differentiation (grid poinst located on Gauss-Lobatto points)
+        It instanties a new grid object which has the computational grid suitable for spectral differentiation, with
+        grid poinst located on Gauss-Lobatto points.
         """
         self.dataSpectral = self.data.PhysicalToSpectralData()
 
     def ShowPhysicalGrid(self, save_filename=None, mode=None):
         """
-        it shows the physical grid points, with different colors for the different parts of the domain
+        It shows the physical grid points, with different colors for the different parts of the domain.
+        :param save_filename: specify name if you want to save the figs.
+        :param mode: mode used for visualization.
         """
         self.data.ShowGrid(mode=mode)
         plt.title('physical grid')
@@ -163,7 +171,9 @@ class SunModel:
 
     def ShowSpectralGrid(self, save_filename=None, mode=None):
         """
-        it shows the physical grid points, with different colors for the different parts of the domain
+        It shows the spectral grid points, with different colors for the different parts of the domain.
+        :param save_filename: specify name if you want to save the figs.
+        :param mode: mode used for visualization.
         """
         self.dataSpectral.ShowGrid(mode=mode)
         plt.title('spectral grid')
@@ -172,92 +182,67 @@ class SunModel:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def ComputeJacobianPhysical(self, routine='numpy', order=2, refinement=False):
+    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf'):
         """
-        The Jacobian for the physical grid as a function of the spectral grid cordinates is implemented here. 
-        It computes the transformation derivatives for every grid point, and stores the value at the node level.
-        NOTE: this approach is the only one correct if the nodes are set on curvilinear grids (as in compressors).
-        possible rutines: numpy, findiff, hard-coded.
-        suggestions: numpy and order 2, findiff and order 6
+        It computes the transformation gradients for every grid point, and stores the value at the node level.
+        It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
+        found by inversion (usgin the Jacobian).
+        :param routine: routine used to compute the finite differences between the grids.
+        :param order: order of the finite differences (only for findiff routine)
+        :param method: method used to interpolate on the operating grid the gradients calculated on the refined grid.
         """
         print_banner_begin('TRANSFORMATION GRADIENTS')
         print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
         print(f"{'Order Used:':<{total_chars_mid}}{order:>{total_chars_mid}}")
-        print(f"{'Artificial Refinement:':<{total_chars_mid}}{refinement:>{total_chars_mid}}")
         print_banner_end()
 
-        if not refinement:
-            # grids (original)
-            Z = self.data.zGrid
-            R = self.data.rGrid
-            X = self.dataSpectral.zGrid
-            Y = self.dataSpectral.rGrid
+        # refined grids
+        Z = self.data.meridional_obj.z_cg_fine
+        R = self.data.meridional_obj.r_cg_fine
+        Nz_fine = np.shape(Z)[0]
+        Nr_fine = np.shape(Z)[1]
+        x = GaussLobattoPoints(Nz_fine)
+        y = GaussLobattoPoints(Nr_fine)
+        Y, X = np.meshgrid(y, x)
 
-            if routine == 'numpy':
-                self.dzdx, self.dzdy, self.drdx, self.drdy = JacobianTransform2(Z, R, X, Y)
-            elif routine == 'hard-coded':
-                self.dzdx, self.dzdy, self.drdx, self.drdy = JacobianTransform(Z, R, X, Y)
-            elif routine == 'findiff':
-                self.dzdx, self.dzdy, self.drdx, self.drdy = JacobianTransform3(Z, R, X, Y, order=order)
-            else:
-                raise ValueError('select an available routine for the transformation gradient!')
-
-            self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
-            for ii in range(0, self.data.nAxialNodes):
-                for jj in range(0, self.data.nRadialNodes):
-                    # add the inverse gradients information to every node
-                    self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj],
-                                                                         self.drdx[ii, jj], self.drdy[ii, jj])
-                    self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
-
-        elif (isinstance(refinement, int) and refinement > 0):
-            print('WARNING: refinement method is not validated and produces wrong results!')
-
-            # refined physical grid
-            ref_points = refinement  # refinement coefficient. additional points for every interval
-            r = Refinement(self.data.rGrid[0, :], ref_points)  # it adds additional ref_points to every interval
-            z = Refinement(self.data.zGrid[:, 0], ref_points)
-            self.R_fine, self.Z_fine = np.meshgrid(r, z)
-
-            # refined spectral grid
-            x = GaussLobattoPoints(len(z))  # refined set of gauss lobatto points
-            y = GaussLobattoPoints(len(r))
-            self.Y_fine, self.X_fine = np.meshgrid(y, x)
-
-            # compute jacobian
-            self.dzdx_fine, self.dzdy_fine, self.drdx_fine, self.drdy_fine = JacobianTransform(self.Z_fine, self.R_fine,
-                                                                                               self.X_fine,
-                                                                                               self.Y_fine)
-            self.J_fine = self.dzdx_fine * self.drdy_fine - self.dzdy_fine * self.drdx_fine
-
-            # pick-up the values on the coarse grid points
-            self.dzdx = self.dzdx_fine[::ref_points + 1, ::ref_points + 1]
-            self.dzdy = self.dzdy_fine[::ref_points + 1, ::ref_points + 1]
-            self.drdx = self.drdx_fine[::ref_points + 1, ::ref_points + 1]
-            self.drdy = self.drdy_fine[::ref_points + 1, ::ref_points + 1]
-            self.J = self.J_fine[::ref_points + 1, ::ref_points + 1]
-
-            for ii in range(0, self.data.nAxialNodes):
-                for jj in range(0, self.data.nRadialNodes):
-                    # add the inverse gradients information to every node
-                    self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj],
-                                                                         self.drdx[ii, jj], self.drdy[ii, jj])
-                    self.data.dataSet[ii, jj].AddJacobian(self.dzdx[ii, jj] * self.drdy[ii, jj]
-                                                          - self.dzdy[ii, jj] * self.drdx[ii, jj])
+        if routine == 'numpy':
+            dzdx, dzdy, drdx, drdy = JacobianTransform2(Z, R, X, Y)
+        elif routine == 'hard-coded':
+            dzdx, dzdy, drdx, drdy = JacobianTransform(Z, R, X, Y)
+        elif routine == 'findiff':
+            dzdx, dzdy, drdx, drdy = JacobianTransform3(Z, R, X, Y, order=order)
         else:
-            raise Exception('Wrong refinement. Select a positive integer!')
+            raise ValueError('select an available routine for the transformation gradient!')
+
+        self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
+        self.dzdy = self.interpolation_on_original_grid(dzdy, X, Y, method=method)
+        self.drdx = self.interpolation_on_original_grid(drdx, X, Y, method=method)
+        self.drdy = self.interpolation_on_original_grid(drdy, X, Y, method=method)
+        self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
+        self.dxdz = (1/self.J) * (self.drdy*1 - self.drdx*0)
+        self.dxdr = (1/self.J) * (self.dzdx*0 - self.dzdy*1)
+        self.dydz = (1/self.J) * (self.drdy*0 - self.drdx*1)
+        self.dydr =(1/self.J) * (self.dzdx*1 - self.dzdy*0)
+
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                # add the inverse gradients information to every node
+                self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj],
+                                                                     self.drdx[ii, jj], self.drdy[ii, jj])
+                self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
+
 
     def ContourTransformation(self, save_filename=None):
         """
-        Show the spectral gradients info as a function of the spectral grid cordinates.
+        Show the gradient contours.
+        :param save_filename: specify the names if you want to save the figs.
         """
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$J$')
-        cb = plt.colorbar()
-        cb.set_label(r'$\frac{\partial \hat{z}}{\partial \xi} \ \mathrm{[-]}$')
+        plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
 
@@ -266,8 +251,7 @@ class SunModel:
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
-        cb = plt.colorbar()
-        cb.set_label(r'$\frac{\partial \hat{z}}{\partial \xi} \ \mathrm{[-]}$')
+        plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
 
@@ -275,9 +259,8 @@ class SunModel:
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        cb = plt.colorbar()
+        plt.colorbar()
         plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
-        cb.set_label(r'$\frac{\partial \hat{z}}{\partial \eta} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
 
@@ -285,9 +268,8 @@ class SunModel:
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        cb = plt.colorbar()
+        plt.colorbar()
         plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
-        cb.set_label(r'$\frac{\partial \hat{r}}{\partial \xi} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
 
@@ -295,26 +277,50 @@ class SunModel:
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        cb = plt.colorbar()
+        plt.colorbar()
         plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
-        cb.set_label(r'$\frac{\partial \hat{r}}{\partial \eta} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
 
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.colorbar()
+        plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_5.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.colorbar()
+        plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_6.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.colorbar()
+        plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_7.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=fig_size)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$z \ \mathrm{[-]}$')
+        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.colorbar()
+        plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_8.pdf', bbox_inches='tight')
+
     def AddAMatrixToNodes(self):
         """
-        compute and store at the node level the A matrix, not multiplied yet by j*omega. 
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                A = np.eye(5, dtype=complex)
-                A = self.NormalizeMatrix(A)  # normalization
-                self.data.dataSet[ii, jj].AddAMatrix(A)
-
-    def AddAMatrixToNodesFrancesco(self):
-        """
-        compute and store at the node level the A matrix, not multiplied yet by j*omega.
-        My version, checked
+        Compute and store at the node level the A matrix. Sun Formulation
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -324,16 +330,14 @@ class SunModel:
 
     def AddAMatrixToNodesFrancesco2(self, normalize=False):
         """
-        compute and store at the node level the A matrix, not yet multiplied by j*omega.
-        My version of the equations, checked with the article of the annular duct and sympy.
+        Compute and store at the node level the A matrix. My Formulation.
+        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 A = np.eye(5, dtype=complex)
                 A[4, 0] = -self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].rho
-
                 if normalize:
-                    # if data is still dimensional, divide every equation for each reference dimensionalization factor
                     A = self.NormalizeMatrix(A)
                 else:
                     # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
@@ -354,64 +358,35 @@ class SunModel:
 
     def AddBMatrixToNodes(self):
         """
-        compute and store at the node level the B matrix, needed to compute hat{B} later
+        Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 B = np.zeros((5, 5), dtype=complex)
-
                 B[0, 0] = self.data.dataSet[ii, jj].ur
                 B[1, 1] = self.data.dataSet[ii, jj].ur
                 B[2, 2] = self.data.dataSet[ii, jj].ur
                 B[3, 3] = self.data.dataSet[ii, jj].ur
                 B[4, 4] = self.data.dataSet[ii, jj].ur
-
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
-
-                B = self.NormalizeMatrix(B)  # normalization
-                self.data.dataSet[ii, jj].AddBMatrix(B)
-
-    def AddBMatrixToNodesFrancesco(self):
-        """
-        compute and store at the node level the B matrix, needed to compute hat{B} later.
-        my version checked
-
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                B = np.zeros((5, 5), dtype=complex)
-
-                B[0, 0] = self.data.dataSet[ii, jj].ur
-                B[1, 1] = self.data.dataSet[ii, jj].ur
-                B[2, 2] = self.data.dataSet[ii, jj].ur
-                B[3, 3] = self.data.dataSet[ii, jj].ur
-                B[4, 4] = self.data.dataSet[ii, jj].ur
-
-                B[0, 1] = self.data.dataSet[ii, jj].rho
-                B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
-                B[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].rho
-                B[4, 1] = self.data.dataSet[ii, jj].p * (self.gmma - 1)
-
                 B = self.NormalizeMatrix(B)  # normalization
                 self.data.dataSet[ii, jj].AddBMatrix(B)
 
     def AddBMatrixToNodesFrancesco2(self, normalize=False):
         """
-        compute and store at the node level the B matrix, needed to compute hat{B} later.
-        My version of the equations, checked with the article of the annular duct and sympy.
+        Compute and store at the node level the B matrix, needed to compute hat{B} later. My Formulation.
+        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 B = np.zeros((5, 5), dtype=complex)
-
                 B[0, 0] = self.data.dataSet[ii, jj].ur
                 B[1, 1] = self.data.dataSet[ii, jj].ur
                 B[2, 2] = self.data.dataSet[ii, jj].ur
                 B[3, 3] = self.data.dataSet[ii, jj].ur
                 B[4, 4] = self.data.dataSet[ii, jj].ur
-
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 0] = - self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ur * self.gmma / self.data.dataSet[ii, jj].rho
@@ -426,56 +401,33 @@ class SunModel:
 
     def AddCMatrixToNodes(self, m=1):
         """
-        compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
+        Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
+        Sun Formulation.
+        :param m: circumferential harmonic order of the analysis
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 C = np.zeros((5, 5), dtype=complex)
-
                 C[0, 0] = self.data.dataSet[ii, jj].ut
                 C[1, 1] = self.data.dataSet[ii, jj].ut
                 C[2, 2] = self.data.dataSet[ii, jj].ut
                 C[3, 3] = self.data.dataSet[ii, jj].ut
                 C[4, 4] = self.data.dataSet[ii, jj].ut
-
                 C[0, 2] = self.data.dataSet[ii, jj].rho
                 C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
                 C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
 
                 C = self.NormalizeMatrix(C)  # normalization
                 C = C * 1j * m / self.data.dataSet[ii, jj].r
-
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
-    def AddCMatrixToNodesFrancesco(self, m=1):
-        """
-        compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
-        my version, checked
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                C = np.zeros((5, 5), dtype=complex)
-
-                C[0, 0] = self.data.dataSet[ii, jj].ut
-                C[1, 1] = self.data.dataSet[ii, jj].ut
-                C[2, 2] = self.data.dataSet[ii, jj].ut
-                C[3, 3] = self.data.dataSet[ii, jj].ut
-                C[4, 4] = self.data.dataSet[ii, jj].ut
-
-                C[0, 2] = self.data.dataSet[ii, jj].rho
-                C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
-                C[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].rho
-                C[4, 2] = self.data.dataSet[ii, jj].p * (self.gmma - 1)
-
-                C = self.NormalizeMatrix(C)  # normalization
-                C = C * 1j * m / self.data.dataSet[ii, jj].r
-
-                self.data.dataSet[ii, jj].AddCMatrix(C)
 
     def AddCMatrixToNodesFrancesco2(self, m=1, normalize=False):
         """
-        compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
-        My version of the equations, checked with the article of the annular duct and sympy.
+        Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
+        My Formulation.
+        :param m: circumferential harmonic order of the analysis
+        :param normalize: True normalize also the data. If the data were already non-dimensional, use False.
         """
         self.harmonic_order = m
         print(f"Circumferential Harmonic Order set to: {m}")
@@ -483,21 +435,18 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 C = np.zeros((5, 5), dtype=complex)
-
                 C[0, 0] = self.data.dataSet[ii, jj].ut
                 C[1, 1] = self.data.dataSet[ii, jj].ut
                 C[2, 2] = self.data.dataSet[ii, jj].ut
                 C[3, 3] = self.data.dataSet[ii, jj].ut
                 C[4, 4] = self.data.dataSet[ii, jj].ut
-
                 C[0, 2] = self.data.dataSet[ii, jj].rho
                 C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
                 C[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ut * self.gmma / self.data.dataSet[ii, jj].rho
 
+                C = C * 1j * m / self.data.dataSet[ii, jj].r
                 if normalize:
                     C = self.NormalizeMatrix(C)  # normalization
-                C = C * 1j * m / self.data.dataSet[ii, jj].r
-
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
         if normalize:
@@ -506,7 +455,7 @@ class SunModel:
 
     def AddEMatrixToNodes(self):
         """
-        compute and store at the node level the E matrix, needed to compute hat{E}
+        Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -525,47 +474,22 @@ class SunModel:
                 E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
 
-    def AddEMatrixToNodesFrancesco(self):
-        """
-        compute and store at the node level the E matrix, needed to compute hat{E}. my version, checked
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                E = np.zeros((5, 5), dtype=complex)
-
-                E[0, 0] = self.data.dataSet[ii, jj].uz
-                E[1, 1] = self.data.dataSet[ii, jj].uz
-                E[2, 2] = self.data.dataSet[ii, jj].uz
-                E[3, 3] = self.data.dataSet[ii, jj].uz
-                E[4, 4] = self.data.dataSet[ii, jj].uz
-
-                E[0, 3] = self.data.dataSet[ii, jj].rho
-                E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
-                E[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].uz / self.data.dataSet[ii, jj].rho
-                E[4, 3] = self.data.dataSet[ii, jj].p * (self.gmma - 1)
-
-                E = self.NormalizeMatrix(E)  # normalization
-                self.data.dataSet[ii, jj].AddEMatrix(E)
-
     def AddEMatrixToNodesFrancesco2(self, normalize = False):
         """
-        compute and store at the node level the E matrix.
-        My version of the equations, checked with the article of the annular duct and sympy.
+        Compute and store at the node level the E matrix, needed to compute hat{E}. My Formulation.
+        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 E = np.zeros((5, 5), dtype=complex)
-
                 E[0, 0] = self.data.dataSet[ii, jj].uz
                 E[1, 1] = self.data.dataSet[ii, jj].uz
                 E[2, 2] = self.data.dataSet[ii, jj].uz
                 E[3, 3] = self.data.dataSet[ii, jj].uz
                 E[4, 4] = self.data.dataSet[ii, jj].uz
-
                 E[0, 3] = self.data.dataSet[ii, jj].rho
                 E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
                 E[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].uz * self.gmma / self.data.dataSet[ii, jj].rho
-
                 if normalize:
                     E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
@@ -576,12 +500,11 @@ class SunModel:
 
     def AddRMatrixToNodes(self):
         """
-        compute and store at the node level the R matrix, ready to be used in the final system of eqs.
+        Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
-
                 R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
                                                                                                  / self.data.dataSet[ii, jj].r)
                 R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
@@ -612,69 +535,18 @@ class SunModel:
                 R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-    def AddRMatrixToNodesFrancesco(self):
-        """
-        compute and store at the node level the R matrix, ready to be used in the final system of eqs.
-        my version, checked
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                R = np.zeros((5, 5), dtype=complex)
-
-                R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
-                                                                                                 / self.data.dataSet[ii, jj].r)
-                R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
-                R[0, 2] = 0
-                R[0, 3] = self.data.dataSet[ii, jj].drho_dz
-                R[0, 4] = 0
-                R[1, 0] = self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
-                R[1, 1] = self.data.dataSet[ii, jj].dur_dr
-                R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[1, 3] = self.data.dataSet[ii, jj].dur_dz
-                R[1, 4] = 0
-                R[2, 0] = 0
-                R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
-                R[2, 3] = self.data.dataSet[ii, jj].dut_dz
-                R[2, 4] = 0
-                R[3, 0] = self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
-                R[3, 1] = self.data.dataSet[ii, jj].duz_dr
-                R[3, 2] = 0
-                R[3, 3] = self.data.dataSet[ii, jj].duz_dz
-                R[3, 4] = 0
-
-                R[4, 0] = -self.data.dataSet[ii, jj].p / self.data.dataSet[ii, jj].rho ** 2 * (
-                        self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr +
-                        self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz
-                )
-                R[4, 1] = self.data.dataSet[ii, jj].dp_dr - self.data.dataSet[ii, jj].p / self.data.dataSet[ii, jj].rho * \
-                          self.data.dataSet[ii, jj].drho_dr + (self.gmma - 1) * self.data.dataSet[ii, jj].p / self.data.dataSet[
-                              ii, jj].r
-                R[4, 2] = 0
-                R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.data.dataSet[ii, jj].p / self.data.dataSet[ii, jj].rho * \
-                          self.data.dataSet[ii, jj].drho_dz
-                R[4, 4] = -1 / self.data.dataSet[ii, jj].rho * (
-                        self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr + self.data.dataSet[ii, jj].uz *
-                        self.data.dataSet[ii, jj].drho_dz
-                ) + (self.gmma - 1) * (self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r + self.data.dataSet[
-                    ii, jj].dur_dr +
-                                       self.data.dataSet[ii, jj].duz_dz)
-
-                R = self.NormalizeMatrix(R)  # normalization
-                self.data.dataSet[ii, jj].AddRMatrix(R)
 
     def AddRMatrixToNodesFrancesco2(self, normalize=False):
         """
         Compute and store at the node level the R matrix.
-        My version of the equations, checked with the article of the annular duct and sympy.
+        My version of the equations.
+        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
-
                 R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
                                                                                                  / self.data.dataSet[ii, jj].r)
-
                 R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
                 R[0, 2] = 0
                 R[0, 3] = self.data.dataSet[ii, jj].drho_dz
@@ -696,14 +568,11 @@ class SunModel:
                 R[3, 4] = 0
                 R[4, 0] = (1 / self.data.dataSet[ii, jj].rho) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
                                                                  self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
-
                 R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr * self.gmma / \
                           self.data.dataSet[ii, jj].rho + self.data.dataSet[ii, jj].dp_dr
-
                 R[4, 2] = 0
                 R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma / self.data.dataSet[ii, jj].rho * \
                           self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
-
                 R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr -
                            self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * \
                           self.gmma / self.data.dataSet[ii, jj].rho
@@ -716,10 +585,13 @@ class SunModel:
             print("R Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                   "parameter to false")
 
-    def AddSMatrixToNodes(self, turbo=True, normalize=False):
+    def AddSMatrixToNodes(self, turbo, normalize=False):
         """
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
-        depends on the selected body-force model
+        depends on the selected body-force model.
+        :param turbo: if True, takes the values from the meridional object of the compressor analysis. If false, everything set
+        to zero. Zero body force.
+        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         print(f"Body Force Active: {turbo}")
         for ii in range(0, self.data.nAxialNodes):
@@ -756,6 +628,8 @@ class SunModel:
                     S[4, 2] = self.data.meridional_obj.S42[ii, jj]
                     S[4, 3] = self.data.meridional_obj.S43[ii, jj]
                     S[4, 4] = self.data.meridional_obj.S44[ii, jj]
+                else:
+                    pass
 
                 if normalize:
                     S = self.NormalizeMatrix(S)  # normalization
@@ -767,55 +641,49 @@ class SunModel:
 
     def AddHatMatricesToNodes(self):
         """
-        compute and store at the node level the hat{B}, hat{E} matrix, needed for following multiplication with the spectral
+        Compute and store at the node level the hat{B}, hat{E} matrix, needed for following multiplication with the spectral
         differential operators.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 Bhat = -(1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdy -
                                                              self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdy)
-
                 Ehat = (1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdx -
                                                             self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdx)
-
                 self.data.dataSet[ii, jj].AddHatMatrices(Bhat, Ehat)
 
     def ApplySpectralDifferentiation(self, verbose=False):
         """
        This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
        derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
-       which is a part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
+       which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
        The spectral differentiation formula has been double-checked in the respective debug file.
+       :param verbose: print additional info.
        """
 
-        # the cordinates on the spectral grid directions the spectral matrix Dx and Dy
+        # the cordinates on the spectral grid directions, necessary for the differentiation matrices Dx and Dy
         x = self.dataSpectral.z
         y = self.dataSpectral.r
 
         # compute the spectral Matrices for x and y direction with the Bayliss formulation
-        Dx = ChebyshevDerivativeMatrixBayliss(x)  # derivative operator in xi, Bayliss formulation
-        Dy = ChebyshevDerivativeMatrixBayliss(y)  # derivative operator in eta, Bayliss formulation
+        Dx = ChebyshevDerivativeMatrixBayliss(x)  # derivative operator in xi
+        Dy = ChebyshevDerivativeMatrixBayliss(y)  # derivative operator in eta
 
-        # Q_const is the global matrix storing B and E effects after spectral differentiation
-        self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5),
-                                dtype=complex)  # instantiate the full stability matrix, that will be filled block by block
+        # Q_const is the global matrix storing B and E elements after spectral differentiation.
+        self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
 
         # differentiation of a general perturbation vector (for the node (i,j)) along xi  and eta. (formula double-checked)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
                 B_ij = self.data.dataSet[ii, jj].Bhat  # Bhat matrix of the ij node
                 E_ij = self.data.dataSet[ii, jj].Ehat  # Ehat matrix of the ij node
-                node_counter = self.data.dataSet[
-                    ii, jj].nodeCounter  # needed to keep track of the row in the stability equations.
-                # every new node, increase the row number by 5
+                node_counter = self.data.dataSet[ii, jj].nodeCounter
 
                 # xi differentiation. m is in the range of axial nodes, first axis of the matrix
                 for m in range(0, self.dataSpectral.nAxialNodes):
                     tmp = Dx[ii, m] * B_ij  # 5x5 matrix to be added to a certain block of Q
                     row = node_counter * 5  # this selects the correct block along i of Q
                     column = (m * self.dataSpectral.nRadialNodes + jj) * 5  # it selects the correct block along
-                    # the second axis the matrix
-
                     if verbose:
                         print('Node [i,j] = (%.1d,%.1d)' % (ii, jj))
                         print('Element along i [m,j] = (%.1d,%.1d)' % (m, jj))
@@ -823,11 +691,11 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
-                # xi differentiation. n is in the range of radial nodes, second axis of the matrix
+                # eta differentiation. n is in the range of radial nodes, second axis of the matrix
                 for n in range(0, self.dataSpectral.nRadialNodes):
-                    tmp = Dy[jj, n] * E_ij  # 5x5 matrix to be added to a certain block of Q
-                    row = node_counter * 5  # this selects the correct block along i of Q
-                    column = (ii * self.dataSpectral.nRadialNodes + n) * 5  # this is the important point
+                    tmp = Dy[jj, n] * E_ij
+                    row = node_counter * 5
+                    column = (ii * self.dataSpectral.nRadialNodes + n) * 5
                     if verbose:
                         print('Node [i,j] = (%.1d,%.1d)' % (ii, jj))
                         print('Element along j [i,n] = (%.1d,%.1d)' % (jj, n))
@@ -837,10 +705,12 @@ class SunModel:
 
     def NormalizeMatrix(self, M):
         """
-        normalize every 5x5 matrix, where the first row is continuity coeffs, then 3 equations for momentum, and one for pressure.
+        Normalize a 5x5 matrix, where the first row is continuity, then 3 equations for momentum, and one for pressure.
         The multiplication factors guarantee that the final equations are non-dimensional (only if the matrix coefficients
-        are taken from the same source)
+        are taken from the same source). If the data used in the analysis were already non-dimensional, there is no need for this.
         """
+        print("WARNING: Normalization of matrices elements has been called. Your data were dimensional? Consider passing to "
+              "non-dimensional formulation")
         M[0, :] = M[0, :] * self.continuity_norm
         M[1:4, :] = M[1:4, :] * self.momentum_norm
         M[4, :] = M[4, :] * self.pressure_norm
@@ -848,49 +718,70 @@ class SunModel:
 
     def AddToQ_const(self, block, row, column):
         """
-        add elements to the Bddxi+Eddeta matrix, specifying the first element location
+        Add 5x5 block to the Qconst matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.Q_const[row:row + 5, column:column + 5] += block
 
     def AddToQ_var(self, block, row, column):
         """
-        add elements to the variable part of the stability matrix specifying the first telement location
+        Add 5x5 block to the Q_var matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.Q_var[row:row + 5, column:column + 5] += block
 
     def add_to_Y(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix specifying the first element location
+        Add 5x5 block to the Y matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.Y[row:row + 5, column:column + 5] += block
 
     def add_to_A_g(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix specifying the first element location
+        Add 5x5 block to the A_g matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.A_g[row:row + 5, column:column + 5] += block
 
     def add_to_C_g(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix specifying the first element location
+        Add 5x5 block to the C_g matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.C_g[row:row + 5, column:column + 5] += block
 
     def add_to_R_g(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix specifying the first element location
+        Add 5x5 block to the R_g matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.R_g[row:row + 5, column:column + 5] += block
 
     def add_to_S_g(self, block, row, column):
         """
-        add elements to the constant part of the stability matrix specifying the first element location
+        Add 5x5 block to the S_g matrix, specifying the first element location.
+        :param block: 5x5 block to add
+        :param row: row index of the first element for positioning.
+        :param column: column index of the first element for positioning.
         """
         self.S_g[row:row + 5, column:column + 5] += block
 
     def ApplyBoundaryConditions(self):
         """
-        it applies the correct set of boundary conditions to all the points marked with a boundary marker. 
+        It applies the correct set of boundary conditions to all the points marked with a boundary marker.
         Every BC will modify the 5 equations for the respective node. The BCs are taken from what previously given.
         Boundary matching conditions could be given here.
         """
@@ -917,9 +808,11 @@ class SunModel:
     def AddRemainingMatrices(self, omega):
         """
         it adds the remaning diagonal block matrices to the full Qtot = Q_const + Q_var. Q_const is constant for every model,
-        while Q_var depends on omega, which should be already provided as non-dimensional
+        while Q_var depends on omega, which should be already provided as non-dimensional.
+        :param omega: dicrete omega value for the SVD calculation.
         """
         # Q_var is composed by A, C, R, S. Q_const is composed by B,E spectrally differentiated. Q_tot is the global sum
+        print("WARNING: deprecated method")
         self.Q_var = np.zeros((self.Q_const.shape),
                               dtype=complex)  # variable part of the stability matrix. Instantiated for every new value of omega
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -937,14 +830,11 @@ class SunModel:
         """
         for the considered grid node, it modifes the 5 governing equations starting from row index,
         which is related to its continuity eq.
-        Args:
-            row: row index, specifying which grid node equations will be modified
-            condition: type of boundary condition
-            wall_normal: normal to the wall at that point
-
-        Returns:
-
+        :param row: row index of equation to overwrite with BC
+        :param condition: boundary condition.
+        :param wall_normal: normal to the wall (r,theta,z) ref frame.
         """
+        print("WARNING: deprecated method.")
         if condition == 'zero perturbation':
             # BC for zero perturbation vector
             self.Q_tot[row:row + 5, :] = np.zeros(self.Q_tot[row:row + 5, :].shape, dtype=complex)  # make it zero first
@@ -998,12 +888,14 @@ class SunModel:
 
     def ComputeSVD(self, omega_domain=None, grid_omega=None):
         """
-        compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
+        Compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
         every time the part of Q that depends on omega (-j*omega*A), and computes the boundary conditions.
         Then it computes the singular values, and store the inverse of the condition number in the chi attribute. Singular values 
         max and min are also stored for code test.
+        :param omega_domain: omega domain of research.
+        :param grid_omega: discretization of the domain of research.
         """
-
+        print("WARNING: deprecated method.")
         if omega_domain is None:
             omega_domain = np.array([-1, 1, -1, 0.5])
 
@@ -1057,11 +949,14 @@ class SunModel:
 
     def ComputeSVD2(self, omega_domain=None, grid_omega=None):
         """
-        compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
+        Compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
         every time the part of Q that depends on omega (-j*omega*A), and computes the boundary conditions.
         Then it computes the singular values, and store the inverse of the condition number in the chi attribute. Singular values
         max and min are also stored for code test.
+        :param omega_domain: omega domain of research.
+        :param grid_omega: discretization of the domain of research.
         """
+        print("WARNING: deprecated method.")
         if omega_domain is None:
             omega_domain = [-1, 1, -1, 1]
         if grid_omega is None:
@@ -1113,16 +1008,20 @@ class SunModel:
     def ComputeSVDcompressor(self, RS_domain=np.array([-1, 1]), DF_domain=np.array([-1, 1]),
                              grid=np.array([10, 10]), verbose=True):
         """
-        compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
+        Compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
         every time the part of Q that depends on omega (-j*omega*A), and computes the boundary conditions.
         Then it computes the singular values, and store the inverse of the condition number in the chi attribute. Singular values 
         max and min are also stored for code test.
+        :param RS_domain: domain of research for RS
+        :param DF_domain: domain of research for DF
+        :param grid: discretization of domain of research
+        :param verbose: print some info
         """
         # find the limits of the non-dimensional omega of reserach = omega/omega_ref, where omega real and imaginary are
         # defined starting from the Rotational Speed RS and Damping Factor DF of the instability lobe (m=1)
         # omega_{dimensional}=omega_shaft*RS+1j*U*DF/r where U and r taken where we want.
         # omega_{non-dimensinoal}=omega_{dimensional}/omega_ref
-
+        print("WARNING: deprecated method.")
         omR_min = RS_domain[0]
         omR_max = RS_domain[1]
         omI_min = DF_domain[0]
@@ -1183,10 +1082,13 @@ class SunModel:
         if (verbose):
             print('Total SVD time: \t %1.d hrs %1.d mins %1.d sec' % (hrs, mins, sec))
 
-    def PlotInverseConditionNumberCompressor(self, sing_val=False, scale=None, save_filename=None, formatFig=(10, 6),
-                                             ref_solution=None):
+    def PlotInverseConditionNumberCompressor(self, sing_val=False, scale=None, save_filename=None, formatFig=(10, 6)):
         """
-        plots the chi map for the problem modeled. Log scale can be applied to see better the valleys
+        Plots the chi map for the problem modeled. Log scale can be applied to see better the valleys.
+        :param sing_val: if true plots also the singular values contours
+        :param scale: if 'log' plots the contours with log scale, to improve visibility
+        :param save_filename: specify names of the figs to save
+        :param formatFig: figure size of the contours
         """
         x = np.linspace(self.RS_domain[0], self.RS_domain[1])
         y = np.linspace(self.DF_domain[0], self.DF_domain[1])
@@ -1201,7 +1103,7 @@ class SunModel:
         ax.set_xlabel(r'$RS \ \mathrm{[-]}$')
         ax.set_ylabel(r'$DF \ \mathrm{[-]}$')
         ax.set_title(r'$\chi$')
-        cbar = fig.colorbar(cs)
+        fig.colorbar(cs)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
@@ -1210,7 +1112,8 @@ class SunModel:
 
     def FindLocalMinima(self, field):
         """
-        Locate the local minima of the chi map
+        Locate the local minima of a 2D array.
+        :param field: 2D array
         """
 
         def find_local_minima(array):
@@ -1233,7 +1136,11 @@ class SunModel:
 
     def PlotInverseConditionNumber(self, scale=None, save_filename=None, formatFig=(10, 6), ref_solution=None):
         """
-        plots the chi map for the problem modeled. Log scale can be applied to see better the valleys
+        Plots the chi map for the problem modeled.
+        :param scale: if 'log' plots the contours with log scale, to improve visibility
+        :param save_filename: specify names of the figs to save
+        :param formatFig: figure size of the contours
+        :param ref_solution: specify analytical solution if available
         """
         x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
         critical_line = np.zeros(len(x))
@@ -1251,15 +1158,18 @@ class SunModel:
         ax.set_ylabel(r'$\omega_{I} \quad [rad/s]$')
         ax.set_title(r'$\log \chi$')
         ax.set_xlim([np.min(self.omegaR * self.omega_ref), np.max(self.omegaR * self.omega_ref)])
-        cbar = fig.colorbar(cs)
+        fig.colorbar(cs)
         if ref_solution is not None:
-            cs = ax.plot(ref_solution.real, ref_solution.imag, 'ws')
+            ax.plot(ref_solution.real, ref_solution.imag, 'ws')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def PlotSingularValues(self, scale=None, save_filename=None, formatFig=(15, 6)):
         """
-        plot of the singular values max and min, to check if their magnitude is within machine accuracy
+        Plots the singular values for the problem modeled. Log scale can be applied to see better the valleys.
+        :param scale: if 'log' plots the contours with log scale, to improve visibility
+        :param save_filename: specify names of the figs to save
+        :param formatFig: figure size of the contours
         """
         x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
         critical_line = np.zeros(len(x))
@@ -1279,30 +1189,30 @@ class SunModel:
         ax[0].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
         ax[0].set_ylabel(r'$\omega_{I} \quad [rad/s]$')
         ax[0].set_title(r'$\sigma_{max}$')
-        cbar = fig.colorbar(cs0)
+        fig.colorbar(cs0)
         ax[1].plot(x, critical_line, '--r')
         ax[1].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
         ax[1].set_title(r'$\sigma_{min}$')
-        cbar = fig.colorbar(cs1)
+        fig.colorbar(cs1)
 
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def ComputeBoundaryNormals(self):
         """
-       compute the normal vectors on the edges of the domain.
-       """
+        Compute the normal vectors on the edges of the domain.
+        """
         self.data.ComputeBoundaryNormals()
 
     def ShowNormals(self):
         """
-       plots the boundary nodes and the normals
+       Plots the boundary nodes and the normals
        """
         self.data.ShowNormals()  # method belonging to compressor_grid object
 
     def build_A_global_matrix(self):
         """
-        build the A global matrix, stacking together the A matrices of all the nodes
+        Build the A global matrix, stacking together the A matrices of all the nodes.
         """
         self.A_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -1316,7 +1226,7 @@ class SunModel:
 
     def build_C_global_matrix(self):
         """
-        build the C*j*m/r global matrix, stacking together the C*j*m/r matrices of all the nodes
+        Build the C*j*m/r global matrix, stacking together the C*j*m/r matrices of all the nodes.
         """
         self.C_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -1330,7 +1240,7 @@ class SunModel:
 
     def build_R_global_matrix(self):
         """
-        build the R global matrix
+        Build the R global matrix.
         """
         self.R_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -1344,7 +1254,7 @@ class SunModel:
 
     def build_S_global_matrix(self):
         """
-        build the S global matrix
+        Build the S global matrix.
         """
         self.S_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
@@ -1358,14 +1268,14 @@ class SunModel:
 
     def build_Z_global_matrix(self):
         """
-        build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R), where B_d+E_d=Q_const have been obtained with
+        Build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R), where B_d+E_d=Q_const have been obtained with
         the spectral differentiation method.
         """
         self.Z_g = (self.Q_const + self.C_g + self.R_g)
 
     def apply_boundary_conditions_generalized(self):
         """
-        The considered system at hand is currently:
+        Apply the boundary conditions for the considered system, whose equations are:
         (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z (the only constant matrix), and A and S
         (omega dependent) filled with zeros in correspondance of those BCs.
         """
@@ -1374,6 +1284,18 @@ class SunModel:
                 marker = self.data.dataSet[ii, jj].marker
                 counter = self.data.dataSet[ii, jj].nodeCounter
                 row = counter * 5  # 5 equations per node
+                # if ii==0 and jj ==0:
+                #     # self.apply_bc_condition(row, self.inlet_bc, ii, jj)
+                #     self.apply_bc_condition(row, self.hub_bc, ii, jj)
+                # elif ii==0 and jj ==self.data.nRadialNodes-1:
+                #     # self.apply_bc_condition(row, self.inlet_bc, ii, jj)
+                #     self.apply_bc_condition(row, self.shroud_bc, ii, jj)
+                # elif ii==self.data.nAxialNodes-1 and jj ==0:
+                #     # self.apply_bc_condition(row, self.outlet_bc, ii, jj)
+                #     self.apply_bc_condition(row, self.hub_bc, ii, jj)
+                # elif ii==self.data.nAxialNodes-1 and jj ==self.data.nRadialNodes-1:
+                #     # self.apply_bc_condition(row, self.outlet_bc, ii, jj)
+                #     self.apply_bc_condition(row, self.shroud_bc, ii, jj)
                 if marker == 'inlet':
                     self.apply_bc_condition(row, self.inlet_bc, ii, jj)
 
@@ -1391,8 +1313,7 @@ class SunModel:
 
     def set_boundary_conditions(self, inlet_bc, outlet_bc, hub_bc='euler wall', shroud_bc='euler wall'):
         """
-        store in the object the information related to the boundary conditions to use for the problem
-
+        Store in the object the information related to the boundary conditions to use for the problem
         :param inlet_bc: string explaining which boundary condition apply to the inlet points
         :param outlet_bc: string explaining which boundary condition apply to the outlet points
         :param hub_bc: string explaining which boundary condition apply to the hub points
@@ -1407,13 +1328,13 @@ class SunModel:
         # recognized boundary conditions type
         bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet']
 
-        if not inlet_bc in bc_list:
+        if inlet_bc not in bc_list:
             raise ValueError('Incorrect Inlet boundary condition type.')
-        if not outlet_bc in bc_list:
+        if outlet_bc not in bc_list:
             raise ValueError('Incorrect Outlet boundary condition type.')
-        if not hub_bc in bc_list:
+        if hub_bc not in bc_list:
             raise ValueError('Incorrect Hub boundary condition type.')
-        if not shroud_bc in bc_list:
+        if shroud_bc not in bc_list:
             raise ValueError('Incorrect Shroud boundary condition type.')
 
         self.inlet_bc = inlet_bc
@@ -1432,11 +1353,14 @@ class SunModel:
 
     def apply_bc_condition(self, row, condition, ii, jj):
         """
-        for the considered grid node, it modifes the 5 governing equations starting from row index,
+        For the considered grid node, it modifes the 5 governing equations starting from row index,
         which is related to its continuity eq.
-        (ii,jj) is the node index, necessary to impose the wall boundary conditions. The considered system at hand is currently:
-        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z, and A and S must be filled with zeros
-        in correspondance of those BCs
+        The considered system at hand is: (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z,
+        and A and S must be filled with zeros (since they are dependent on omega).
+        :param row: row index of the equation to modify
+        :param condition: type of boundary condition
+        :param ii: i-th element of the node grid
+        :param jj: j-th element of the node grid
         """
 
         if condition == 'zero pressure':
@@ -1497,7 +1421,6 @@ class SunModel:
     def solve_evp_arnoldi(self, omega_search=0, number_search=10, inspect_matrices=False):
         """
         Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy.
-
         :param omega_search: central location of research, in [rad/s]
         :param number_search: number of eigenvalues to retrieve from the algorithm
         :param inspect_matrices: plot the structure of the involved matrices, to check sparsity
@@ -1568,7 +1491,7 @@ class SunModel:
 
     def sort_eigensolution(self):
         """
-        sort the eigenvalues and eigenvectors from the most unstable to the least one.
+        Sort the eigenvalues and eigenvectors from the most unstable to the least one.
         """
         # make copies of the arrays to sort
         eigenfreqs = np.copy(self.eigenfreqs)
@@ -1588,7 +1511,7 @@ class SunModel:
 
     def plot_eigenfrequencies(self, delimit=False, save_filename=None):
         """
-        plot the eigenfrequencies obtained with the Arnoldi Method
+        Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
         :param save_filename: if not None, save figure files
         """
@@ -1607,9 +1530,9 @@ class SunModel:
 
     def extract_eigenfields(self, n=None):
         """
-        from the eigenvectors obtained with Arnoldi Method, extract the eigenfields (density, velocity, pressure).
+        From the eigenvectors obtained with Arnoldi Method, extract the eigenfields (density, velocity, pressure).
+        The eigensolution should be sorted before applying this method, otherwise the modes are randomly ordered.
         :param n: number of eigenfields to extract
-        The eigensolution should be sorted before applying this method, otherwise the modes are randomly ordered
         """
         if n is None:
             n = len(self.eigenfreqs)
@@ -1653,13 +1576,15 @@ class SunModel:
 
     def plot_eigenfields(self, n=None, save_filename=None):
         """
-        plot the first n eigenmodes structures
+        Plot the first n eigenmodes structures.
+        :param n: specify the first n eigenfunctions to plot
+        :param save_filename: specify name of the figs to save
         """
         z = self.data.meridional_obj.z_cg
         r = self.data.meridional_obj.r_cg
         Nz = np.shape(z)[0]
         Nr = np.shape(z)[1]
-        modes_map = cm.coolwarm
+        modes_map = cm.bwr
 
         if n is None:
             n = len(self.eigenfields)
@@ -1722,7 +1647,7 @@ class SunModel:
 
     def write_results(self, save_filename=None, extension='csv'):
         """
-        print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
+        Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
         Possible file types are (csv, pickle).
         csv: write only DF and RS in a csv file, organized in two columns
         pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
@@ -1746,3 +1671,27 @@ class SunModel:
                 pickle.dump(self.eigenfields, picklefile)
         else:
             raise ValueError("Incorrect Extension of the output file.")
+
+
+    def interpolation_on_original_grid(self, df, X, Y, method='rbf'):
+        """
+        Interpolate the gradient field df compute on the fine grid, on the original one.
+        :param df: gradient 2D array
+        :param X: 2D array of the x cordinates of the fine grid
+        :param Y: 2D array of the y cordinates of the fine grid
+        :param method: method used for the interpolation
+        """
+        Xnew = self.dataSpectral.zGrid  # original grid
+        Ynew = self.dataSpectral.rGrid  # original grid
+        if method=='linear':
+            df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='linear')
+        elif method=='cubic':
+            df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='cubic')
+        elif method=='nearest':
+            df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='nearest')
+        elif method=='rbf':
+            rbf_interpolator = Rbf(X, Y, df, function='multiquadric')
+            df_new = rbf_interpolator(Xnew, Ynew)
+        else:
+            raise ValueError("Method unknown")
+        return df_new

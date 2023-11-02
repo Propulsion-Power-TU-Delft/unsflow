@@ -188,7 +188,7 @@ def Refinement(x, add_points):
 
 def GaussLobattoPoints(N):
     """
-    it returns an array of N Gauss-Lobatto points, between -1 and +1.
+    it returns an array of N Gauss-Lobatto points, between 1 and -1.
     """
     x = np.array(())
 
