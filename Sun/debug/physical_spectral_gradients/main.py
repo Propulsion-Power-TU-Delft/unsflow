@@ -5,7 +5,7 @@ from numpy import cos, sin, pi, linspace
 from findiff import FinDiff
 
 ALPHA_GRID = 0.2
-N = 50  # number of grid points
+N = 150  # number of grid points
 L = 1
 
 i = linspace(0, N - 1, N)
@@ -94,4 +94,4 @@ plt.legend()
 plt.grid(alpha=ALPHA_GRID)
 plt.title(r'N:%i' %(N))
 plt.savefig('pictures/dxi_dx_%i.pdf' %(N), bbox_inches='tight')
-# plt.show()
+plt.show()
