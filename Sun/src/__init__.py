@@ -1,6 +1,7 @@
 from .sun_grid import SunGrid
 from .general_functions import *
 from .annulus_meridional import AnnulusMeridional
+from .diffuser_meridional import DiffuserMeridional
 from .node import Node
 from .styles import *
 from .sun_model import SunModel

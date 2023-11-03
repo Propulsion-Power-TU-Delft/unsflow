@@ -15,107 +15,27 @@ from scipy.sparse.linalg import eigs
 import os
 
 # input data of the problem (SI units)
-r1 = 0.1826  # inner radius [m]
-r2 = 0.2487  # outer radius [m]
-M = 0.015  # Mach number
-p = 100e3  # pressure [Pa]
-T = 288  # temperature [K]
-L = 0.08  # length [m]
-R = 287.058  # air gas constant [kJ/kgK]
-gmma = 1.4  # cp/cv ratio of air
-rho = p / (R * T)  # density [kg/m3]
-a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
+R1 = 1  # diffuser inlet radius [m]
+R2 = 2  # diffuser outlet radius [m]
+P = 101.325e3  # constant diffuser pressure [Pa], or maybe Bernoulli?
+RHO = 1.014  # constand density [kg/m3]
+W = R1/5  # air gas constant [kJ/kgK]
+VR = 0.05  # diffuser inlet radial velocity [m/s]
+VTHETA = np.sqrt(1-VR**2)  # diffuser inlet tangential velocity [m/s]
+VZ = 0  # diffuser inlet axial velocity [m/s]
+Nr = 50
+Nz = Nr//5
+M_HARMONIC = 1
 
 # non-dimensionalization terms:
-x_ref = r1
-u_ref = M * a
-rho_ref = rho
+x_ref = R1
+u_ref = 1
+rho_ref = RHO
 t_ref = x_ref / u_ref
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
-# %% ANALYTICAL PART OF THE PROBLEM
-from scipy.optimize import fsolve
-
-# radial cordinate array span
-r = np.linspace(r1, r2, 300)
-lambda_span = np.linspace(1, 300, 300)  # we will do a loop for every possible value of lambda
-m = 1  # second circumferential mode
-
-
-def Bessel_determinant(lmbda, r1=r1, r2=r2):
-    r = np.linspace(r1, r2)
-    dJ1dr = jvp(m, lmbda * r, n=1)
-    dN1dr = yvp(m, lmbda * r, n=1)
-    det = dJ1dr[0] * dN1dr[-1] - dN1dr[0] * dJ1dr[-1]
-    return det
-
-
-def lambda_root(lmbda_span, r1=r1, r2=r2):
-    det = np.array(())
-    for s in range(0, len(lambda_span)):
-        lmbda = lambda_span[s]
-        det = np.append(det, Bessel_determinant(lmbda, r1, r2))
-    return det
-
-
-def find_multiple_zeros(f, xmin, xmax, intervals=9):
-    roots = []
-    x = np.linspace(xmin, xmax, intervals)
-    for i in range(0, intervals):
-        root = fsolve(Bessel_determinant, x[i])
-        roots.append(root)
-    roots = np.array(roots)
-    return np.unique(roots.round(decimals=2))
-
-
-def compute_omega(alphas, lmbdas, M, L, a):
-    print('{:<8s} {:<8s} {:<8s} {:<8s}'.format('THETA', 'R', 'Z', 'OMEGA'))
-    omega_list = []
-
-    for alpha in alphas:
-        i = 1
-        for lmbda in lmbdas:
-            omega = a * np.sqrt(((1 - M ** 2) * alpha * np.pi / L) ** 2 + (1 - M ** 2) * lmbda ** 2)
-            omega_list.append(omega)
-            print('{:<8.0f} {:<8.0f} {:<8.0f} {:<8.0f}'.format(m, i, alpha, omega))
-            i += 1  # radial mode order
-    omega_list = np.array(omega_list)
-    return np.sort(omega_list)
-
-
-det = lambda_root(lambda_span)
-zeros = np.zeros(len(det))
-roots = find_multiple_zeros(lambda_root, 1, 300)
-roots_y = np.zeros_like(roots)
-alpha = [1, 2, 3, 4, 5, 6, 7, 8]  # possible axial wavenumbers
-omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
-omega_analytical_zero = np.zeros_like(omega_analytical)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
-# number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
-number_search = 7
+number_search = 50
 gradient_routine = 'numpy'
 gradient_order = 2
 folder_path = "pictures/" + str(Nz) + "_" + str(Nr)  # Replace with the desired folder path
@@ -123,29 +43,36 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 # implement a constant uniform flow in the annulus duct
+radius = np.linspace(R1, R2, Nr)
 density = np.zeros((Nz, Nr))
-axialVel = np.zeros((Nz, Nr))
 radialVel = np.zeros((Nz, Nr))
-tangentialVel = np.zeros((Nz, Nr))
+azimuthalVel = np.zeros((Nz, Nr))
+axialVel = np.zeros((Nz, Nr))
 pressure = np.zeros((Nz, Nr))
+dur_dr = np.zeros((Nz, Nr))
+dut_dr = np.zeros((Nz, Nr))
 for ii in range(0, Nz):
     for jj in range(0, Nr):
-        density[ii, jj] = rho
-        axialVel[ii, jj] = M * a
-        pressure[ii, jj] = p
+        density[ii, jj] = RHO
+        radialVel[ii, jj] = VR*R1/radius[jj]
+        azimuthalVel[ii, jj] = VTHETA * R1 / radius[jj]
+        axialVel[ii, jj] = VZ
+        pressure[ii, jj] = P
+        dur_dr[ii, jj] = -VR*R1/(radius[jj]**2)
+        dut_dr[ii, jj] = -VTHETA * R1 / (radius[jj] ** 2)
 
 # create a meridional object, having the same information of the meridional post-process object of a compressor
-duct_Obj = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, grid_refinement=1)
+duct_Obj = Sun.src.DiffuserMeridional(R1, R2, W, density, radialVel, azimuthalVel, axialVel, pressure,
+                                      dur_dr, dut_dr, grid_refinement=1)
 duct_Obj.normalize_data(rho_ref, u_ref, x_ref)
-duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj)
+duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj, geometry='radial')
 duct_grid.ShowGrid()
 
 # general workflow of the sun model
 sun_obj = Sun.src.SunModel(duct_grid)
-sun_obj.set_overwriting_equation_euler_wall('utheta')
-sun_obj.ComputeBoundaryNormals()
-sun_obj.ShowNormals()
+sun_obj.set_overwriting_equation_euler_wall('uz')
+# sun_obj.ComputeBoundaryNormals()
+# sun_obj.ShowNormals()
 sun_obj.add_shaft_rpm(omega_ref)
 sun_obj.set_normalization_quantities(mode='duct object')
 sun_obj.ComputeSpectralGrid()
@@ -153,7 +80,7 @@ sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order, 
 sun_obj.ContourTransformation(save_filename='%i_%i/transformation' % (Nz, Nr))
 sun_obj.AddAMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddBMatrixToNodesFrancesco2(normalize=False)
-sun_obj.AddCMatrixToNodesFrancesco2(m=m, normalize=False)
+sun_obj.AddCMatrixToNodesFrancesco2(m=M_HARMONIC, normalize=False)
 sun_obj.AddEMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddRMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddSMatrixToNodes(turbo=False, normalize=False)
@@ -164,7 +91,7 @@ sun_obj.build_C_global_matrix()
 sun_obj.build_R_global_matrix()
 sun_obj.build_Z_global_matrix()
 sun_obj.build_S_global_matrix()
-sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
+sun_obj.set_boundary_conditions('zero pressure', 'zero pressure', 'zero axial', 'zero axial')
 sun_obj.apply_boundary_conditions_generalized()
 
 omega_search = 24000
@@ -197,15 +124,13 @@ for i in range(len(sorted_indices)):
 # PLOT RESULTS
 marker_size = 100
 fig, ax = plt.subplots(figsize=(7, 5))
-ax.scatter(omega_analytical.real, omega_analytical.imag, marker='x', facecolors='blue',
-           s=marker_size, label=r'analytical')
 ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([7500, 38000])
-ax.set_ylim([-8000, 8000])
+# ax.set_xlim([7500, 38000])
+# ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
 fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
@@ -299,4 +224,4 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-plt.show()
+# plt.show()

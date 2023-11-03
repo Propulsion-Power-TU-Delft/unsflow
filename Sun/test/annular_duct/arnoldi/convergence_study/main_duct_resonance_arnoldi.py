@@ -87,20 +87,6 @@ det = lambda_root(lambda_span)
 zeros = np.zeros(len(det))
 roots = find_multiple_zeros(lambda_root, 1, 300)
 roots_y = np.zeros_like(roots)
-
-# plot the determinant value
-# fig, ax = plt.subplots(figsize=(10, 7))
-# ax.plot(lambda_span, det, label=r'$m=%d$' % (m))
-# ax.plot(roots, roots_y, 'ro', label='zeros')
-# ax.plot(lambda_span, zeros, '--k', lw=0.5)
-# ax.set_title(r'$\lambda$ roots')
-# ax.set_xlabel(r'$\lambda$')
-# ax.set_xlim([0, 300])
-# ax.set_ylim([-0.25, 0.25])
-# ax.set_ylabel(r'$\det{\mathbf{Q}(\lambda)}$')
-# ax.legend()
-# fig.savefig('pictures/lambda_roots_m%d.pdf' % (m), bbox_inches='tight')
-
 alpha = [1, 2, 3, 4, 5, 6, 7, 8]  # possible axial wavenumbers
 omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
 omega_analytical_zero = np.zeros_like(omega_analytical)
@@ -116,10 +102,12 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 
 
+
+
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 5
+Nr = 3
 
 # implement a constant uniform flow in the annulus duct
 density = np.zeros((Nz, Nr))

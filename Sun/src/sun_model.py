@@ -1335,7 +1335,7 @@ class SunModel:
         """
 
         # recognized boundary conditions type
-        bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet']
+        bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet', 'zero axial']
 
         if inlet_bc not in bc_list:
             raise ValueError('Incorrect Inlet boundary condition type.')
@@ -1379,6 +1379,14 @@ class SunModel:
 
             self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
             self.S_g[row + 4, :] = np.zeros(self.S_g[row + 4, :].shape, dtype=complex)  # zero row
+
+        elif condition == 'zero axial':
+            # BC for zero pressure perturbation
+            self.Z_g[row + 3, :] = np.zeros(self.Z_g[row + 3, :].shape, dtype=complex)
+            self.Z_g[row + 3, row + 3] = 1  # zero pressure at that node
+
+            self.A_g[row + 3, :] = np.zeros(self.A_g[row + 3, :].shape, dtype=complex)  # zero row
+            self.S_g[row + 3, :] = np.zeros(self.S_g[row + 3, :].shape, dtype=complex)  # zero row
 
         elif condition == 'zero perturbation':
             # BC for zero pressure perturbation
