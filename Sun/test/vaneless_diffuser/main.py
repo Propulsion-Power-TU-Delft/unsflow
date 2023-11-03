@@ -17,14 +17,15 @@ import os
 # input data of the problem (SI units)
 R1 = 1  # diffuser inlet radius [m]
 R2 = 2  # diffuser outlet radius [m]
-P = 101.325e3  # constant diffuser pressure [Pa], or maybe Bernoulli?
-RHO = 1.014  # constand density [kg/m3]
+P = 1  # constant diffuser pressure [Pa], or maybe Bernoulli?
+RHO = 1  # constand density [kg/m3]
 W = R1/5  # air gas constant [kJ/kgK]
+V = 1  # magnitude of velocity at inlet
 VR = 0.05  # diffuser inlet radial velocity [m/s]
 VTHETA = np.sqrt(1-VR**2)  # diffuser inlet tangential velocity [m/s]
 VZ = 0  # diffuser inlet axial velocity [m/s]
-Nr = 50
-Nz = Nr//5
+Nr = 10
+Nz = 50
 M_HARMONIC = 1
 
 # non-dimensionalization terms:
@@ -35,7 +36,7 @@ t_ref = x_ref / u_ref
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
-number_search = 50
+number_search = 10
 gradient_routine = 'numpy'
 gradient_order = 2
 folder_path = "pictures/" + str(Nz) + "_" + str(Nr)  # Replace with the desired folder path
@@ -43,7 +44,7 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 # implement a constant uniform flow in the annulus duct
-radius = np.linspace(R1, R2, Nr)
+radius = np.linspace(R1, R2, Nz)
 density = np.zeros((Nz, Nr))
 radialVel = np.zeros((Nz, Nr))
 azimuthalVel = np.zeros((Nz, Nr))
@@ -51,21 +52,23 @@ axialVel = np.zeros((Nz, Nr))
 pressure = np.zeros((Nz, Nr))
 dur_dr = np.zeros((Nz, Nr))
 dut_dr = np.zeros((Nz, Nr))
+dp_dr = np.zeros((Nz, Nr))
 for ii in range(0, Nz):
     for jj in range(0, Nr):
         density[ii, jj] = RHO
-        radialVel[ii, jj] = VR*R1/radius[jj]
-        azimuthalVel[ii, jj] = VTHETA * R1 / radius[jj]
-        axialVel[ii, jj] = VZ
-        pressure[ii, jj] = P
-        dur_dr[ii, jj] = -VR*R1/(radius[jj]**2)
-        dut_dr[ii, jj] = -VTHETA * R1 / (radius[jj] ** 2)
+        radialVel[ii, jj] = VR*R1/radius[ii]
+        azimuthalVel[ii, jj] = VTHETA * R1 / radius[ii]
+        pressure[ii, jj] = P +0.5*(V**2 - radialVel[ii, jj]**2 - azimuthalVel[ii, jj]**2)
+        dur_dr[ii, jj] = -VR*R1/(radius[ii]**2)
+        dut_dr[ii, jj] = -VTHETA * R1 / (radius[ii] ** 2)
+        dp_dr[ii, jj] = R1/(radius[ii]**2) * (radialVel[ii, jj]*VR + azimuthalVel[ii, jj]*VTHETA)
 
 # create a meridional object, having the same information of the meridional post-process object of a compressor
 duct_Obj = Sun.src.DiffuserMeridional(R1, R2, W, density, radialVel, azimuthalVel, axialVel, pressure,
-                                      dur_dr, dut_dr, grid_refinement=1)
+                                      dur_dr, dut_dr, dp_dr, grid_refinement=1)
+duct_Obj.contour_fields()
 duct_Obj.normalize_data(rho_ref, u_ref, x_ref)
-duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj, geometry='radial')
+duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj)
 duct_grid.ShowGrid()
 
 # general workflow of the sun model
@@ -94,7 +97,7 @@ sun_obj.build_S_global_matrix()
 sun_obj.set_boundary_conditions('zero pressure', 'zero pressure', 'zero axial', 'zero axial')
 sun_obj.apply_boundary_conditions_generalized()
 
-omega_search = 24000
+omega_search = 0
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
 M = 1j * sun_obj.A_g

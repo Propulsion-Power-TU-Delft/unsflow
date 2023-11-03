@@ -18,13 +18,12 @@ class SunGrid():
     to apply the Sun instability model.
     """
 
-    def __init__(self, meridional_obj, mode='physical', geometry='axial'):
+    def __init__(self, meridional_obj, mode='physical'):
         """
         instantiate the Sun Grid object, that contains the grids (physical and spectral), and the arrays of nodes objects
         contaning the fields and the matrices necessary for the instability model
         :param meridional_obj: object storing the 2D meridional flow fields, processed from CFD.
         :param mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates.
-        :param geometry: if it's set to radial, it modifies boundary conditions, to take care of purely radial configurations
         """
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
         self.n_stream = meridional_obj.nstream
@@ -41,39 +40,25 @@ class SunGrid():
 
         self.dataSet = np.empty((self.n_stream, self.n_span), dtype=Node)  # an array of Node elements
         counter = 0
+
+        Nz = self.n_stream
+        Nr = self.n_span
         for ii in range(0, self.n_stream):
             for jj in range(0, self.n_span):
-                Nz = self.n_stream
-                Nr = self.n_span
-
                 # add first topological quantities
-                if geometry == 'axial':
-                    if ii == 0:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'inlet', counter)
-                    elif ii == Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'outlet', counter)
-                    elif jj == 0 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'hub', counter)
-                    elif jj == Nr - 1 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'shroud', counter)
-                    elif ii != 0 and ii != Nz - 1 and jj != 0 and jj != Nr - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'internal', counter)
-                    else:
-                        raise ValueError("The constructor of the grid has some problems")
-                elif geometry == 'radial':
-                    if jj == 0 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'inlet', counter)
-                    elif jj == Nr - 1 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'outlet', counter)
-                    elif ii == 0:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'shroud', counter)
-                    elif ii == Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'hub', counter)
+                if ii == 0:
+                    self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'inlet', counter)
+                elif ii == Nz - 1:
+                    self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'outlet', counter)
+                elif jj == 0 and ii != 0 and ii != Nz - 1:
+                    self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'hub', counter)
+                elif jj == Nr - 1 and ii != 0 and ii != Nz - 1:
+                    self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'shroud', counter)
+                elif ii != 0 and ii != Nz - 1 and jj != 0 and jj != Nr - 1:
+                    self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'internal', counter)
+                else:
+                    raise ValueError("The constructor of the grid has some problems")
 
-                    elif ii != 0 and ii != Nz - 1 and jj != 0 and jj != Nr - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'internal', counter)
-                    else:
-                        raise ValueError("The constructor of the grid has some problems")
                 counter = counter + 1
 
                 # add the fluid dynamic field if is a physical grid
