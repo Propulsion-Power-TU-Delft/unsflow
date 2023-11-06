@@ -19,12 +19,12 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'sigmoid'
+MESH_TYPE = 'default'
 REGRESSION = True
-INLET_NZ = 25
-BLADE_NZ = 25
-OUTLET_NZ = 50
-NR = 25
+INLET_NZ = 40
+BLADE_NZ = 40
+OUTLET_NZ = 80
+NR = 40
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_02_meridional_data.csv'
 MULTIBLOCK_FILTERING = False

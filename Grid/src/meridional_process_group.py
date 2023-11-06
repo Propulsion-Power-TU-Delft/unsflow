@@ -572,37 +572,37 @@ class MeridionalProcessGroup:
 
             # plots
             if field == 'rho':
-                ax.plot(x, obj.rho_flux, '--s')
+                ax.plot(x, obj.rho_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
             elif field == 'ur':
-                ax.plot(x, obj.ur_flux, '--s')
+                ax.plot(x, obj.ur_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
             elif field == 'ut':
-                ax.plot(x, obj.ut_flux, '--s')
+                ax.plot(x, obj.ut_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
             elif field == 'uz':
-                ax.plot(x, obj.uz_flux, '--s')
+                ax.plot(x, obj.uz_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
             elif field == 'p':
-                ax.plot(x, obj.p_flux, '--s')
+                ax.plot(x, obj.p_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$p \ \mathrm{[-]}$')
             elif field == 'T':
-                ax.plot(x, obj.T_flux, '--s')
+                ax.plot(x, obj.T_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$T \ \mathrm{[-]}$')
             elif field == 's':
-                ax.plot(x, obj.s_flux, '--s')
+                ax.plot(x, obj.s_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$s \ \mathrm{[-]}$')
             elif field == 'p_tot':
-                ax.plot(x, obj.p_tot_flux, '--s')
+                ax.plot(x, obj.p_tot_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$p_t \ \mathrm{[-]}$')
             elif field == 'T_tot':
-                ax.plot(x, obj.T_tot_flux, '--s')
+                ax.plot(x, obj.T_tot_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$T_t \ \mathrm{[-]}$')
             elif field == 'M':
-                ax.plot(x, obj.M_flux, '--s')
+                ax.plot(x, obj.M_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$M \ \mathrm{[-]}$')
             elif field == 'M_rel':
-                ax.plot(x, obj.M_rel_flux, '--s')
+                ax.plot(x, obj.M_rel_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
             else:
                 raise ValueError("Field name unknown!")

@@ -20,8 +20,8 @@ print('Start execution:')
 # compute the bladed domain block object
 data_folder_path = 'data/geo/'
 units = '[m]'
-nstream = 50
-nspan = 20
+nstream = 30
+nspan = 15
 grid_sampling = 'default'
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_hub.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'iris_shroud.curve', units=units, degree_spline=3, rescale_factor=1, x_ref=0.0228)
@@ -42,10 +42,10 @@ bladed_block.spline_of_leading_trailing_edge()
 bladed_block.sample_hub_shroud(sampling_mode=grid_sampling)
 bladed_block.sample_inlet_outlet(sampling_mode=grid_sampling)
 bladed_block.compute_grid_points(grid_mode='elliptic',
-                                 orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+                                 orthogonality=False, x_stretching=False, y_stretching=False,
                                  sigmoid_coeff_x=10, sigmoid_coeff_y=7, method='minimize', save_animation=True)
-# bladed_block.compute_grid_centers()
-# bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=False)
+bladed_block.compute_grid_centers()
+bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=False)
 #
 # # find the camber surface, using the (z,r) grid found in the bladed block
 # blade.find_camber_surface(bladed_block)
