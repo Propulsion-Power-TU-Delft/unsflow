@@ -17,6 +17,7 @@ from .polynomial_ls_regression import *
 from .functions import compute_picture_size
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
+from scipy.interpolate import griddata
 
 
 class MeridionalProcess:
@@ -85,6 +86,25 @@ class MeridionalProcess:
                 self.camber_normal_r[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][0]
                 self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
                 self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
+
+
+    def get_data_from_meridional_dataset(self):
+        """
+        Read 2D dataset related to the meridional post-processed results in anysis, and obtain the 2D field by regression of
+        it
+        """
+        self.instantiate_2d_fields()
+        self.W = basis_function_matrix(self.data.z, self.data.r)
+        self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.data.z, self.data.r)
+
+        self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.data.rho)
+        self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.data.ur)
+        self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.data.ut)
+        self.uz, self.duz_dr, self.duz_dtheta, self.duz_dz = self.polynomial_regression_solution(self.data.uz)
+        self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.data.p)
+        self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.data.T)
+        self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.data.s)
+
 
 
     def circumferential_average(self, mode, fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
@@ -522,7 +542,7 @@ class MeridionalProcess:
         self.T = self.rbf_interpolation(self.T)
         self.s = self.rbf_interpolation(self.s)
 
-    def compute_regressed_fields(self, order=4):
+    def compute_regressed_fields(self, order=4, data_type='flat'):
         """
         Compute the fourth order polynomial regressed fields, as described in the original papers
         :param order: order of the regression. 4 is the values used in the literature.
@@ -533,7 +553,6 @@ class MeridionalProcess:
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
 
-        # compute the regressed fields and gradients
         self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
         self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
         self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
@@ -542,19 +561,23 @@ class MeridionalProcess:
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
 
+
     def polynomial_regression_solution(self, field):
         """
         Given a 2D field, and the weight vector coefficients, compute the values of the regressed field and derivatives.
         :param field: 2D array storing the values of the field to be regressed.
         """
-        Nz = np.shape(field)[0]
-        Nr = np.shape(field)[1]
+        Nz = np.shape(self.z_cg)[0]
+        Nr = np.shape(self.r_cg)[1]
         coeff_vector = least_square_regression(self.W, field)
-        regr_field = regression_evaluation(self.W, coeff_vector, Nz, Nr)
-        regr_field_dz = regression_evaluation(self.W_dz, coeff_vector, Nz, Nr)
-        regr_field_dr = regression_evaluation(self.W_dr, coeff_vector, Nz, Nr)
+        W = self.W
+        W_dz, W_dr = self.W_dz, self.W_dr
+        regr_field = regression_evaluation(W, coeff_vector, Nz, Nr)
+        regr_field_dz = regression_evaluation(W_dz, coeff_vector, Nz, Nr)
+        regr_field_dr = regression_evaluation(W_dr, coeff_vector, Nz, Nr)
         regr_field_dtheta = np.zeros_like(field)  # theta derivatives always zero
         return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
+
 
     def compute_rbf_gradients(self):
         """
@@ -598,8 +621,8 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / 50)
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / 50)
+        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / 30)
+        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / 30)
 
         # Perform the RBF interpolation of the left points
         field_interp_right = rbf(self.z_cg + dz, self.r_cg)
@@ -1729,3 +1752,44 @@ class MeridionalProcess:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+    def interpolate_on_working_grid(self, method):
+        self.instantiate_2d_fields()
+        self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
+        self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
+        self.ut = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
+        self.uz = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
+        self.p = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
+        self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
+        self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
+
+
+    def compute_field_gradients(self):
+        self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
+        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
+        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
+        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
+        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
+        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
+        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
+
+
+
+    def interpolate_function(self, f, z, r, method):
+        """
+
+        """
+        Xnew = self.z_cg  # original grid
+        Ynew = self.r_cg  # original grid
+        if method=='linear':
+            f_new = griddata((z, r), f, (Xnew, Ynew), method='linear')
+        elif method=='cubic':
+            f_new = griddata((z, r), f, (Xnew, Ynew), method='cubic')
+        elif method=='nearest':
+            f_new = griddata((z, r), f, (Xnew, Ynew), method='nearest')
+        elif method=='rbf':
+            rbf_interpolator = Rbf(z, r, f, function='multiquadric')
+            f_new = rbf_interpolator(Xnew, Ynew)
+        else:
+            raise ValueError("Method unknown")
+        return f_new

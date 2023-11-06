@@ -18,7 +18,7 @@ class CfdData:
     """
 
     def __init__(self, filepath, rho_ref, x_ref, rpm_drag, T_ref, cut_block=None, blade=None,
-                 normalize=True, file_type='Ansys .csv', verbose=False, ):
+                 normalize=True, file_type='Ansys3D', verbose=False, ):
         """
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:
@@ -58,13 +58,18 @@ class CfdData:
             self.rpm_ref = 1
             self.T_ref = 1
             self.compute_derived_normalization_quantities()
+
         if blade is not None:
             self.blade = blade
+
         self.file_type = file_type
-        if self.file_type == 'Ansys .csv':
-            if self.verbose:
-                print('reading CFD data...')
-            self.read_from_ansys_csv(normalize=normalize)
+        if self.file_type == 'Ansys3D':
+            self.read_from_ansys_3D_csv(normalize=normalize)
+        elif self.file_type == 'Ansys2D':
+            self.read_from_ansys_2D_csv(normalize=normalize)
+        else:
+            raise ValueError("File type not recognized.")
+
 
         print_banner_begin('CFD DATA PROCESSING')
         print(f"{'CFD filepath:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
@@ -81,7 +86,7 @@ class CfdData:
         print(f"{'Dataset Normalized:':<{total_chars_mid}}{normalize:>{total_chars_mid}}")
         print_banner_end()
 
-    def read_from_ansys_csv(self, normalize=True):
+    def read_from_ansys_3D_csv(self, normalize=True):
         """
         read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
         as well as the correct names of the variables.
@@ -131,12 +136,39 @@ class CfdData:
             if self.verbose:
                 print('CFD data NOT normalized')
 
+    def read_from_ansys_2D_csv(self, normalize=True):
+        """
+        read the data from a CSV file extracted from Ansys, meridionally processed.
+        :param normalize: if true, normalized the full dataset
+        """
+        self.data = pd.read_csv(self.filepath, skiprows=range(5))
+        self.x = self.data[' X [ m ]'].values
+        self.y = self.data[' Y [ m ]'].values
+        self.z = self.data[' Z [ m ]'].values
+        self.r = sqrt(self.x ** 2 + self.y ** 2)
+        self.theta = np.arctan2(self.y, self.x)
+        self.rho = self.data[' Density MCA on Meridional Surface [ kg m^-3 ]'].values
+        self.ux = self.data[' Velocity in Stn Frame u MCA on Meridional Surface [ m s^-1 ]'].values
+        self.uy = self.data[' Velocity in Stn Frame v MCA on Meridional Surface [ m s^-1 ]'].values
+        self.uz = self.data[' Velocity in Stn Frame w MCA on Meridional Surface [ m s^-1 ]'].values
+        self.p = self.data[' Pressure MCA on Meridional Surface [ Pa ]'].values
+        self.T = self.data[' Temperature MCA on Meridional Surface [ K ]'].values
+        self.s = self.data[' Static Entropy MCA on Meridional Surface [ J kg^-1 K^-1 ]'].values
+
+        if normalize:
+            self.normalize_data()
+            if self.verbose:
+                print('CFD data normalized')
+        else:
+            if self.verbose:
+                print('CFD data NOT normalized')
+
     def process_from_ansys_csv(self, cut=False):
         """
         It computes the derived quantities from the dataset, and the original ones all converted in cylindrical frame.
         :param cut: if True, it cuts the domain thanks to the information contained in the cut_block border (if present).
         """
-        if (self.file_type == 'Ansys .csv' and self.cut_block is not None and cut == 'True'):
+        if (self.file_type == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
             if self.verbose:
                 print('cutting domain...')
             self.cut_domain(self.cut_block.border)
