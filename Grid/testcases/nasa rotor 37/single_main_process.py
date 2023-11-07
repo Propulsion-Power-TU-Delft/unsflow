@@ -19,15 +19,16 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
-REGRESSION = True
-INLET_NZ = 40
-BLADE_NZ = 40
-OUTLET_NZ = 80
-NR = 40
+MESH_TYPE = 'sigmoid'
+REGRESSION = False
+INLET_NZ = 20
+BLADE_NZ = 20
+OUTLET_NZ = 40
+NR = 20
 AVG_MODE = 'cell centered'
-file_name = 'data/meta/config_02_meridional_data.csv'
+file_name = 'data/meta/config_09_meridional_data.csv'
 MULTIBLOCK_FILTERING = False
+SHOCK_SMOOTHING = False
 INTERP_METHOD = 'cubic'
 
 
@@ -216,11 +217,16 @@ delattr(outlet_process, 'data')
 print("\nASSEMBLY PROCESSING...")
 obj = Grid.src.meridional_process_group.MeridionalProcessGroup()
 obj.add_to_group(inlet_process)
+inlet_process = None
 obj.add_to_group(blade_process)
+blade_process = None
 obj.add_to_group(outlet_process)
+outlet_process = None
 obj.assemble_fields()
 obj.assemble_field_gradients()
 obj.assemble_body_force_fields()
+if SHOCK_SMOOTHING:
+    obj.shock_smoothing((0,))
 if MULTIBLOCK_FILTERING:
     obj.gauss_filtering()
     obj.gauss_filtering_gradients()
@@ -263,4 +269,3 @@ obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BL
 end_time = time.time()
 delta_time = end_time-start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()

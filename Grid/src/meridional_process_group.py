@@ -265,6 +265,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\rho \ \mathrm{[kg/m^3]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ur * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -274,6 +275,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_r \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -283,6 +285,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{\theta} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.uz * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -292,6 +295,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{z} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.p * self.group[0].p_ref, cmap=color_map, levels=N_levels)
@@ -301,6 +305,7 @@ class MeridionalProcessGroup:
         plt.title(r'$p \ \mathrm{[Pa]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.T * self.group[0].T_ref, cmap=color_map, levels=N_levels)
@@ -310,6 +315,7 @@ class MeridionalProcessGroup:
         plt.title(r'$T \ \mathrm{[K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.s * self.group[0].s_ref, cmap=color_map, levels=N_levels)
@@ -319,6 +325,7 @@ class MeridionalProcessGroup:
         plt.title(r'$s \ \mathrm{[J/kgK]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
@@ -328,6 +335,7 @@ class MeridionalProcessGroup:
         plt.title(r'$M \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Omega, cmap=color_map, levels=N_levels)
@@ -337,6 +345,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\Omega_{SUN} \ \mathrm{[rad/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_OmegaSun.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.tau, cmap=color_map, levels=N_levels)
@@ -346,6 +355,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\tau_{SUN} \ \mathrm{[rad/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_tauSun.pdf', bbox_inches='tight')
+        plt.close()
 
     def show_grid(self, save_filename=None, grid_centers=False):
         """
@@ -378,6 +388,7 @@ class MeridionalProcessGroup:
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_grid.pdf', bbox_inches='tight')
+        plt.close()
 
     def contour_field_gradients(self, save_filename=None):
         """
@@ -393,6 +404,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drho_dz, cmap=color_map, levels=N_levels)
@@ -402,6 +414,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dr, cmap=color_map, levels=N_levels)
@@ -411,6 +424,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dz, cmap=color_map, levels=N_levels)
@@ -420,6 +434,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dr, cmap=color_map, levels=N_levels)
@@ -429,6 +444,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dz, cmap=color_map, levels=N_levels)
@@ -438,6 +454,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dr, cmap=color_map, levels=N_levels)
@@ -447,6 +464,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dz, cmap=color_map, levels=N_levels)
@@ -456,6 +474,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dr, cmap=color_map, levels=N_levels)
@@ -465,6 +484,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
+        plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dz, cmap=color_map, levels=N_levels)
@@ -474,6 +494,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
+        plt.close()
 
     @staticmethod
     def apply_gaussian_filter(field, sigma=1.5):
@@ -554,6 +575,7 @@ class MeridionalProcessGroup:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+        plt.close()
 
     def plot_averaged_fluxes(self, field, save_filename=None):
         """
@@ -611,6 +633,7 @@ class MeridionalProcessGroup:
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
                 fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def compute_performance(self):
         """
@@ -679,3 +702,50 @@ class MeridionalProcessGroup:
         # enlarge_matrix_for_sun(self.Omega)
         self.Omega_sun = enlarge_matrix_for_sun(self.Omega)
         self.tau_sun = enlarge_matrix_for_sun(self.tau)
+
+
+    def shock_smoothing(self, blocks):
+        """
+        Apply shock smoothing method to the interface between 2 blocks.
+        :param blocks: tuple specifying among which blocks apply the smoothing
+        """
+        for block in blocks:
+            idx = self.group[block].nstream
+            self.rho = self.smooth_field(self.rho, idx)
+            self.ur = self.smooth_field(self.ur, idx)
+            self.ut = self.smooth_field(self.ut, idx)
+            self.uz = self.smooth_field(self.uz, idx)
+            self.p = self.smooth_field(self.p, idx)
+            self.T = self.smooth_field(self.T, idx)
+            self.s = self.smooth_field(self.s, idx)
+
+            self.drho_dr = self.smooth_field(self.drho_dr, idx)
+            self.dur_dr = self.smooth_field(self.dur_dr, idx)
+            self.dur_dz = self.smooth_field(self.dur_dz, idx)
+            self.duz_dr = self.smooth_field(self.duz_dr, idx)
+            self.duz_dz = self.smooth_field(self.duz_dz, idx)
+            self.dut_dr = self.smooth_field(self.dut_dr, idx)
+            self.dut_dz = self.smooth_field(self.dut_dz, idx)
+            self.dp_dr = self.smooth_field(self.dp_dr, idx)
+            self.dp_dz = self.smooth_field(self.dp_dz, idx)
+
+    @staticmethod
+    def smooth_field(f, idx, c=0.1, Nsc=15):
+        """
+        Smoothing Algorithm.
+        :param f: field to smooth
+        :param idx: streamwise index of the point upstream of the discontinuity to smooth
+        :param c: smoothing coefficient. Suggested value=0.1 from He et al.
+        :param Nsc: number of smoothing cycles. Suggested value=15 from He et al.
+        """
+        g = f.copy()  # copy of the initial field
+        for _ in range(Nsc):
+            f[idx, :] = g[idx, :] + 0.5*c*(g[idx+1, :] - 2*g[idx, :] + g[idx-1, :])  # upstream point smoothing
+            idx +=1
+            f[idx, :] = g[idx, :] + 0.5 * c * (g[idx + 1, :] - 2 * g[idx, :] + g[idx - 1, :])  # downstream point smoothing
+            g = f.copy()
+        return f
+
+
+
+

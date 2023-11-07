@@ -613,7 +613,6 @@ class MeridionalProcess:
         Computes the gradients of field that is RBF interpolated with finite differences.
         :param field: field used
         """
-        print("WARNING: deprecated method.")
         z_points_flat = self.z_cg.flatten()
         r_points_flat = self.r_cg.flatten()
         field_flat = field.flatten()
@@ -621,8 +620,8 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / 30)
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / 30)
+        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)
+        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)
 
         # Perform the RBF interpolation of the left points
         field_interp_right = rbf(self.z_cg + dz, self.r_cg)
