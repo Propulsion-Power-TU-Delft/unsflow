@@ -31,6 +31,7 @@ class AnnulusMeridional():
         self.nPoints = Nz * Nr
         self.z = np.linspace(zmin, zmax, Nz)
         self.r = np.linspace(rmin, rmax, Nr)
+        # self.r = np.logspace(np.log10(rmin), np.log10(rmax), Nr)
         self.z_finegrid = np.linspace(zmin, zmax, Nz*grid_refinement)  # for transformation gradient computation
         self.r_finegrid = np.linspace(rmin, rmax, Nr*grid_refinement)
         self.r_grid, self.z_grid = np.meshgrid(self.r, self.z)

@@ -19,8 +19,8 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'sigmoid'
-REGRESSION = False
+MESH_TYPE = 'default'
+REGRESSION = True
 INLET_NZ = 20
 BLADE_NZ = 20
 OUTLET_NZ = 40
@@ -98,10 +98,10 @@ inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMM
 inlet_process.compute_streamline_length()
 # inlet_process.circumferential_average(mode=AVG_MODE)
 inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-inlet_process.compute_field_gradients()
 if REGRESSION:
-    # inlet_process.get_data_from_meridional_dataset()
     inlet_process.compute_regressed_fields()
+else:
+    inlet_process.compute_field_gradients()
 inlet_process.compute_derived_quantities()  # to recompute the derived quantities based on the regressed values
 inlet_process.compute_averaged_fluxes()
 inlet_process.compute_body_fource_S('unbladed')
@@ -151,10 +151,10 @@ blade_process.compute_camber_angles()
 blade_process.compute_streamline_length()
 # blade_process.circumferential_average(mode=AVG_MODE)
 blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
-blade_process.compute_field_gradients()
 if REGRESSION:
-    # blade_process.get_data_from_meridional_dataset()
     blade_process.compute_regressed_fields()
+else:
+    blade_process.compute_field_gradients()
 blade_process.compute_derived_quantities()
 blade_process.compute_bfm_axial(mode='global', save_fig=True)
 blade_process.compute_body_fource_S('rotor')
@@ -198,10 +198,10 @@ outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verb
 outlet_process.compute_streamline_length()
 # outlet_process.circumferential_average(mode=AVG_MODE)
 outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-outlet_process.compute_field_gradients()
 if REGRESSION:
-    # outlet_process.get_data_from_meridional_dataset()
     outlet_process.compute_regressed_fields()
+else:
+    outlet_process.compute_field_gradients()
 outlet_process.compute_derived_quantities()
 outlet_process.compute_averaged_fluxes()
 outlet_process.compute_body_fource_S('unbladed')
@@ -217,11 +217,8 @@ delattr(outlet_process, 'data')
 print("\nASSEMBLY PROCESSING...")
 obj = Grid.src.meridional_process_group.MeridionalProcessGroup()
 obj.add_to_group(inlet_process)
-inlet_process = None
 obj.add_to_group(blade_process)
-blade_process = None
 obj.add_to_group(outlet_process)
-outlet_process = None
 obj.assemble_fields()
 obj.assemble_field_gradients()
 obj.assemble_body_force_fields()
@@ -262,6 +259,7 @@ obj.plot_averaged_fluxes(field='M_rel', save_filename='flux_M_rel_filt_%s_%i_%i_
 obj.compute_performance()
 obj.print_performance()
 obj.compose_global_sun_Omega_tau()
+delattr(obj, 'group')
 obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' %(INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 
