@@ -20,6 +20,7 @@ from .styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
+from Grid.src.functions import compute_picture_size
 
 
 class SunModel:
@@ -168,6 +169,7 @@ class SunModel:
         plt.ylabel(r'$\hat{r} \quad  [-]$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def ShowSpectralGrid(self, save_filename=None, mode=None):
         """
@@ -181,8 +183,9 @@ class SunModel:
         plt.ylabel(r'$\eta \quad  [-]$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
-    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf'):
+    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf', artificial_refinement=False):
         """
         It computes the transformation gradients for every grid point, and stores the value at the node level.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
@@ -190,6 +193,7 @@ class SunModel:
         :param routine: routine used to compute the finite differences between the grids.
         :param order: order of the finite differences (only for findiff routine)
         :param method: method used to interpolate on the operating grid the gradients calculated on the refined grid.
+        :param artificial_refinement: True to set artifical refinement method for grid differentiation
         """
         print_banner_begin('TRANSFORMATION GRADIENTS')
         print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
@@ -197,7 +201,7 @@ class SunModel:
         print_banner_end()
 
         # refined grids
-        if self.data.meridional_obj.z_cg_fine is not None:
+        if artificial_refinement:
             Z = self.data.meridional_obj.z_cg_fine
             R = self.data.meridional_obj.r_cg_fine
         else:
@@ -218,10 +222,13 @@ class SunModel:
         else:
             raise ValueError('select an available routine for the transformation gradient!')
 
-        self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
-        self.dzdy = self.interpolation_on_original_grid(dzdy, X, Y, method=method)
-        self.drdx = self.interpolation_on_original_grid(drdx, X, Y, method=method)
-        self.drdy = self.interpolation_on_original_grid(drdy, X, Y, method=method)
+        if artificial_refinement:
+            self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
+            self.dzdy = self.interpolation_on_original_grid(dzdy, X, Y, method=method)
+            self.drdx = self.interpolation_on_original_grid(drdx, X, Y, method=method)
+            self.drdy = self.interpolation_on_original_grid(drdy, X, Y, method=method)
+        else:
+            self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
         self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
         self.dxdz = (1/self.J) * (self.drdy*1 - self.drdx*0)
         self.dxdr = (1/self.J) * (self.dzdx*0 - self.dzdy*1)
@@ -249,6 +256,7 @@ class SunModel:
         plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
@@ -258,6 +266,7 @@ class SunModel:
         plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
@@ -267,6 +276,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
@@ -276,6 +286,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
@@ -285,6 +296,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels_fine, cmap=color_map)
@@ -294,6 +306,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_5.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels_fine, cmap=color_map)
@@ -303,6 +316,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_6.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels_fine, cmap=color_map)
@@ -312,6 +326,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_7.pdf', bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels_fine, cmap=color_map)
@@ -321,6 +336,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_8.pdf', bbox_inches='tight')
+            plt.close()
 
     def AddAMatrixToNodes(self):
         """
@@ -1115,6 +1131,7 @@ class SunModel:
         fig.colorbar(cs)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
         if sing_val:
             self.PlotSingularValues()
@@ -1172,6 +1189,7 @@ class SunModel:
             ax.plot(ref_solution.real, ref_solution.imag, 'ws')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def PlotSingularValues(self, scale=None, save_filename=None, formatFig=(15, 6)):
         """
@@ -1206,6 +1224,7 @@ class SunModel:
 
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def ComputeBoundaryNormals(self):
         """
@@ -1544,6 +1563,7 @@ class SunModel:
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def extract_eigenfields(self, n=None):
         """
@@ -1599,6 +1619,7 @@ class SunModel:
         """
         z = self.data.meridional_obj.z_cg
         r = self.data.meridional_obj.r_cg
+        self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
         Nz = np.shape(z)[0]
         Nr = np.shape(z)[1]
         modes_map = cm.bwr
@@ -1616,51 +1637,68 @@ class SunModel:
         imode = 0
         for mode in self.eigenfields[0:n]:
             imode += 1
+            rs = mode.eigenfrequency.real / self.omega_ref
+            df = mode.eigenfrequency.imag / self.omega_ref
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{\rho}_{%i}$' % (imode))
+            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{r,%i}$' % (imode))
+            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{\theta,%i}$' % (imode))
+            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{z,%i}$' % (imode))
+            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{p}_{%i}$' % (imode))
+            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
     def write_results(self, save_filename=None, extension='csv'):
         """
@@ -1692,7 +1730,7 @@ class SunModel:
 
     def interpolation_on_original_grid(self, df, X, Y, method='rbf'):
         """
-        Interpolate the gradient field df compute on the fine grid, on the original one.
+        Interpolate the gradient field df compute of the fine grid on the original one.
         :param df: gradient 2D array
         :param X: 2D array of the x cordinates of the fine grid
         :param Y: 2D array of the y cordinates of the fine grid

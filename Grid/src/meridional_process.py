@@ -691,6 +691,7 @@ class MeridionalProcess:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def compute_streamline_length(self):
         """
@@ -746,6 +747,7 @@ class MeridionalProcess:
         ax.set_xlabel(r'$s \ \mathrm{[m]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
 
     def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
@@ -1009,6 +1011,7 @@ class MeridionalProcess:
         ax.set_ylabel(r'$r \ \mathrm{[mm]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False):
         """
@@ -1273,6 +1276,7 @@ class MeridionalProcess:
             ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def compute_stagnation_quantities(self):
         """
@@ -1397,6 +1401,7 @@ class MeridionalProcess:
         plt.title(r'$\hat{u}_{m}$')
         if save_fig:
             plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
@@ -1404,6 +1409,7 @@ class MeridionalProcess:
         plt.title(r'$\frac{\partial s}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
@@ -1411,6 +1417,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l}$')
         if save_fig:
             plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
@@ -1418,6 +1425,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,r}$')
         if save_fig:
             plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
@@ -1425,6 +1433,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,\theta}$')
         if save_fig:
             plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
@@ -1432,6 +1441,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,z}$')
         if save_fig:
             plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
@@ -1439,6 +1449,7 @@ class MeridionalProcess:
         plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
@@ -1446,6 +1457,7 @@ class MeridionalProcess:
         plt.title(r'$F_{\theta}$')
         if save_fig:
             plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
@@ -1453,6 +1465,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, r}$')
         if save_fig:
             plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
@@ -1460,6 +1473,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, \theta}$')
         if save_fig:
             plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
@@ -1467,6 +1481,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, z}$')
         if save_fig:
             plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
@@ -1474,6 +1489,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t}$')
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
@@ -1481,6 +1497,7 @@ class MeridionalProcess:
         plt.title(r'$\alpha$')
         if save_fig:
             plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
@@ -1488,6 +1505,7 @@ class MeridionalProcess:
         plt.title(r'$\beta$')
         if save_fig:
             plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
 
 
@@ -1751,6 +1769,7 @@ class MeridionalProcess:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
     def interpolate_on_working_grid(self, method):
         self.instantiate_2d_fields()

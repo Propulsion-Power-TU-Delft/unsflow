@@ -194,6 +194,7 @@ class SunGrid():
 
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
 
 
 

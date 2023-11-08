@@ -265,7 +265,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\rho \ \mathrm{[kg/m^3]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ur * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -275,7 +275,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_r \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -285,7 +285,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{\theta} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.uz * self.group[0].u_ref, cmap=color_map, levels=N_levels)
@@ -295,7 +295,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{z} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.p * self.group[0].p_ref, cmap=color_map, levels=N_levels)
@@ -305,7 +305,7 @@ class MeridionalProcessGroup:
         plt.title(r'$p \ \mathrm{[Pa]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.T * self.group[0].T_ref, cmap=color_map, levels=N_levels)
@@ -315,7 +315,7 @@ class MeridionalProcessGroup:
         plt.title(r'$T \ \mathrm{[K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.s * self.group[0].s_ref, cmap=color_map, levels=N_levels)
@@ -325,7 +325,7 @@ class MeridionalProcessGroup:
         plt.title(r'$s \ \mathrm{[J/kgK]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
@@ -335,7 +335,7 @@ class MeridionalProcessGroup:
         plt.title(r'$M \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Omega, cmap=color_map, levels=N_levels)
@@ -345,7 +345,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\Omega_{SUN} \ \mathrm{[rad/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_OmegaSun.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.tau, cmap=color_map, levels=N_levels)
@@ -355,7 +355,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\tau_{SUN} \ \mathrm{[rad/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_tauSun.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
     def show_grid(self, save_filename=None, grid_centers=False):
         """
@@ -388,7 +388,7 @@ class MeridionalProcessGroup:
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_grid.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
     def contour_field_gradients(self, save_filename=None):
         """
@@ -404,7 +404,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drho_dz, cmap=color_map, levels=N_levels)
@@ -414,7 +414,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dr, cmap=color_map, levels=N_levels)
@@ -424,7 +424,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dz, cmap=color_map, levels=N_levels)
@@ -434,7 +434,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dr, cmap=color_map, levels=N_levels)
@@ -444,7 +444,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dz, cmap=color_map, levels=N_levels)
@@ -454,7 +454,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dr, cmap=color_map, levels=N_levels)
@@ -464,7 +464,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dz, cmap=color_map, levels=N_levels)
@@ -474,7 +474,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dr, cmap=color_map, levels=N_levels)
@@ -484,7 +484,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial r \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dz, cmap=color_map, levels=N_levels)
@@ -494,7 +494,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
     @staticmethod
     def apply_gaussian_filter(field, sigma=1.5):
@@ -575,7 +575,7 @@ class MeridionalProcessGroup:
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-        plt.close()
+            plt.close()
 
     def plot_averaged_fluxes(self, field, save_filename=None):
         """
@@ -633,7 +633,7 @@ class MeridionalProcessGroup:
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
                 fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+                plt.close()
 
     def compute_performance(self):
         """
@@ -665,13 +665,17 @@ class MeridionalProcessGroup:
         print on terminal the performance of the machine. only total to total
         """
         print_banner_begin('MACHINE PERFORMANCE')
-        print(f"{'Inlet Pt [Pa]:':<{total_chars_mid}}{self.Pt1*self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Inlet P [Pa]:':<{total_chars_mid}}{self.P1*self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Pt [Pa]:':<{total_chars_mid}}{self.Pt1 * self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Outlet P [Pa]:':<{total_chars_mid}}{self.P2 * self.p_ref:>{total_chars_mid}.2f}")
         print(f"{'Outlet Pt [Pa]:':<{total_chars_mid}}{self.Pt2 * self.p_ref:>{total_chars_mid}.2f}")
+        print(f"{'Inlet T [K]:':<{total_chars_mid}}{self.T1 * self.T_ref:>{total_chars_mid}.2f}")
         print(f"{'Inlet Tt [K]:':<{total_chars_mid}}{self.Tt1*self.T_ref:>{total_chars_mid}.2f}")
+        print(f"{'Outlet T [K]:':<{total_chars_mid}}{self.T2 * self.T_ref:>{total_chars_mid}.2f}")
         print(f"{'Outlet Tt [K]:':<{total_chars_mid}}{self.Tt2 * self.T_ref:>{total_chars_mid}.2f}")
-        # print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
         print(f"{'Beta_tt [-]:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
-        # print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
+        print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
         print(f"{'Eta_tt [-]:':<{total_chars_mid}}{self.eta_tt:>{total_chars_mid}.2f}")
         print_banner_end()
 
