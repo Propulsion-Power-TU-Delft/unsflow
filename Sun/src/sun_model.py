@@ -230,10 +230,10 @@ class SunModel:
         else:
             self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
         self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
-        self.dxdz = (1/self.J) * (self.drdy*1 - self.drdx*0)
-        self.dxdr = (1/self.J) * (self.dzdx*0 - self.dzdy*1)
-        self.dydz = (1/self.J) * (self.drdy*0 - self.drdx*1)
-        self.dydr =(1/self.J) * (self.dzdx*1 - self.dzdy*0)
+        self.dxdz = (1/self.J) * (self.drdy)
+        self.dxdr = (1/self.J) * (-self.dzdy)
+        self.dydz = (1/self.J) * (-self.drdx)
+        self.dydr =(1/self.J) * (self.dzdx)
 
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -565,37 +565,37 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
-                R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
-                                                                                                 / self.data.dataSet[ii, jj].r)
-                R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
+                node = self.data.dataSet[ii, jj]
+
+                R[0, 0] = node.dur_dr + node.duz_dz + node.ur/node.r
+                R[0, 1] = node.rho / node.r + node.drho_dr
                 R[0, 2] = 0
-                R[0, 3] = self.data.dataSet[ii, jj].drho_dz
+                R[0, 3] = node.drho_dz
                 R[0, 4] = 0
-                R[1, 0] = self.data.dataSet[ii, jj].dp_dr / (self.data.dataSet[ii, jj].rho ** 2)
-                R[1, 1] = self.data.dataSet[ii, jj].dur_dr
-                R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[1, 3] = self.data.dataSet[ii, jj].dur_dz
+
+                R[1, 0] = node.dp_dr / (node.rho ** 2)
+                R[1, 1] = node.dur_dr
+                R[1, 2] = -2 * node.ut / node.r
+                R[1, 3] = node.dur_dz
                 R[1, 4] = 0
+
                 R[2, 0] = 0
-                R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
-                R[2, 3] = self.data.dataSet[ii, jj].dut_dz
+                R[2, 1] = node.dut_dr + node.ut / node.r
+                R[2, 2] = node.ur / node.r
+                R[2, 3] = node.dut_dz
                 R[2, 4] = 0
-                R[3, 0] = self.data.dataSet[ii, jj].dp_dz / (self.data.dataSet[ii, jj].rho ** 2)
-                R[3, 1] = self.data.dataSet[ii, jj].duz_dr
+
+                R[3, 0] = node.dp_dz / (node.rho ** 2)
+                R[3, 1] = node.duz_dr
                 R[3, 2] = 0
-                R[3, 3] = self.data.dataSet[ii, jj].duz_dz
+                R[3, 3] = node.duz_dz
                 R[3, 4] = 0
-                R[4, 0] = (1 / self.data.dataSet[ii, jj].rho) * (self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].dp_dr +
-                                                                 self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].dp_dz)
-                R[4, 1] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dr * self.gmma / \
-                          self.data.dataSet[ii, jj].rho + self.data.dataSet[ii, jj].dp_dr
+
+                R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz)
+                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho
                 R[4, 2] = 0
-                R[4, 3] = self.data.dataSet[ii, jj].dp_dz - self.gmma / self.data.dataSet[ii, jj].rho * \
-                          self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].drho_dz
-                R[4, 4] = (-self.data.dataSet[ii, jj].ur * self.data.dataSet[ii, jj].drho_dr -
-                           self.data.dataSet[ii, jj].uz * self.data.dataSet[ii, jj].drho_dz) * \
-                          self.gmma / self.data.dataSet[ii, jj].rho
+                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz
+                R[4, 4] = (-node.ur * node.drho_dr - node.uz * node.drho_dz) * self.gmma / node.rho
 
                 if normalize:
                     R = self.NormalizeMatrix(R)  # normalization

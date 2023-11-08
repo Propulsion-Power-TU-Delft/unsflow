@@ -43,19 +43,14 @@ class AnnulusMeridional():
         self.uz = w
         self.p = p
         self.drho_dr = np.zeros_like(self.rho)
-        self.drho_dtheta = np.zeros_like(self.rho)
         self.drho_dz = np.zeros_like(self.rho)
         self.dur_dr = np.zeros_like(self.rho)
-        self.dur_dtheta = np.zeros_like(self.rho)
         self.dur_dz = np.zeros_like(self.rho)
         self.dut_dr = np.zeros_like(self.rho)
-        self.dut_dtheta = np.zeros_like(self.rho)
         self.dut_dz = np.zeros_like(self.rho)
         self.duz_dr = np.zeros_like(self.rho)
-        self.duz_dtheta = np.zeros_like(self.rho)
         self.duz_dz = np.zeros_like(self.rho)
         self.dp_dr = np.zeros_like(self.rho)
-        self.dp_dtheta = np.zeros_like(self.rho)
         self.dp_dz = np.zeros_like(self.rho)
 
 
@@ -83,17 +78,12 @@ class AnnulusMeridional():
         self.p /= self.p_ref
 
         self.drho_dr /= self.rho_ref/self.x_ref
-        self.drho_dtheta /= self.rho_ref/self.x_ref
         self.drho_dz /= self.rho_ref/self.x_ref
         self.dur_dr /= self.u_ref/self.x_ref
-        self.dur_dtheta /= self.u_ref/self.x_ref
         self.dur_dz /= self.u_ref/self.x_ref
         self.dut_dr /= self.u_ref/self.x_ref
-        self.dut_dtheta /= self.u_ref/self.x_ref
         self.dut_dz /= self.u_ref/self.x_ref
         self.duz_dr /= self.u_ref/self.x_ref
-        self.duz_dtheta /= self.u_ref/self.x_ref
         self.duz_dz /= self.u_ref/self.x_ref
         self.dp_dr /= self.p_ref/self.x_ref
-        self.dp_dtheta /= self.p_ref/self.x_ref
         self.dp_dz /= self.p_ref/self.x_ref

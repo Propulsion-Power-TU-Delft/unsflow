@@ -25,6 +25,7 @@ R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p / (R * T)  # density [kg/m3]
 a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
+HARMONIC_ORDER = 1
 
 # non-dimensionalization terms:
 x_ref = r1
@@ -34,63 +35,66 @@ t_ref = x_ref / u_ref
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
-# %% ANALYTICAL PART OF THE PROBLEM
-from scipy.optimize import fsolve
+COMPUTE_ANALYTICAL = False
 
-# radial cordinate array span
-r = np.linspace(r1, r2, 300)
-lambda_span = np.linspace(1, 300, 300)  # we will do a loop for every possible value of lambda
-m = 1  # second circumferential mode
+if COMPUTE_ANALYTICAL:
+    # %% ANALYTICAL PART OF THE PROBLEM
+    from scipy.optimize import fsolve
 
-
-def Bessel_determinant(lmbda, r1=r1, r2=r2):
-    r = np.linspace(r1, r2)
-    dJ1dr = jvp(m, lmbda * r, n=1)
-    dN1dr = yvp(m, lmbda * r, n=1)
-    det = dJ1dr[0] * dN1dr[-1] - dN1dr[0] * dJ1dr[-1]
-    return det
+    # radial cordinate array span
+    r = np.linspace(r1, r2, 300)
+    lambda_span = np.linspace(1, 300, 300)  # we will do a loop for every possible value of lambda
+    m = 1  # second circumferential mode
 
 
-def lambda_root(lmbda_span, r1=r1, r2=r2):
-    det = np.array(())
-    for s in range(0, len(lambda_span)):
-        lmbda = lambda_span[s]
-        det = np.append(det, Bessel_determinant(lmbda, r1, r2))
-    return det
+    def Bessel_determinant(lmbda, r1=r1, r2=r2):
+        r = np.linspace(r1, r2)
+        dJ1dr = jvp(m, lmbda * r, n=1)
+        dN1dr = yvp(m, lmbda * r, n=1)
+        det = dJ1dr[0] * dN1dr[-1] - dN1dr[0] * dJ1dr[-1]
+        return det
 
 
-def find_multiple_zeros(f, xmin, xmax, intervals=9):
-    roots = []
-    x = np.linspace(xmin, xmax, intervals)
-    for i in range(0, intervals):
-        root = fsolve(Bessel_determinant, x[i])
-        roots.append(root)
-    roots = np.array(roots)
-    return np.unique(roots.round(decimals=2))
+    def lambda_root(lmbda_span, r1=r1, r2=r2):
+        det = np.array(())
+        for s in range(0, len(lambda_span)):
+            lmbda = lambda_span[s]
+            det = np.append(det, Bessel_determinant(lmbda, r1, r2))
+        return det
 
 
-def compute_omega(alphas, lmbdas, M, L, a):
-    print('{:<8s} {:<8s} {:<8s} {:<8s}'.format('THETA', 'R', 'Z', 'OMEGA'))
-    omega_list = []
-
-    for alpha in alphas:
-        i = 1
-        for lmbda in lmbdas:
-            omega = a * np.sqrt(((1 - M ** 2) * alpha * np.pi / L) ** 2 + (1 - M ** 2) * lmbda ** 2)
-            omega_list.append(omega)
-            print('{:<8.0f} {:<8.0f} {:<8.0f} {:<8.0f}'.format(m, i, alpha, omega))
-            i += 1  # radial mode order
-    omega_list = np.array(omega_list)
-    return np.sort(omega_list)
+    def find_multiple_zeros(f, xmin, xmax, intervals=9):
+        roots = []
+        x = np.linspace(xmin, xmax, intervals)
+        for i in range(0, intervals):
+            root = fsolve(Bessel_determinant, x[i])
+            roots.append(root)
+        roots = np.array(roots)
+        return np.unique(roots.round(decimals=2))
 
 
-det = lambda_root(lambda_span)
-zeros = np.zeros(len(det))
-roots = find_multiple_zeros(lambda_root, 1, 300)
-roots_y = np.zeros_like(roots)
-alpha = [1, 2, 3, 4, 5, 6, 7, 8]  # possible axial wavenumbers
-omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
-omega_analytical_zero = np.zeros_like(omega_analytical)
+    def compute_omega(alphas, lmbdas, M, L, a):
+        print('{:<8s} {:<8s} {:<8s} {:<8s}'.format('THETA', 'R', 'Z', 'OMEGA'))
+        omega_list = []
+
+        for alpha in alphas:
+            i = 1
+            for lmbda in lmbdas:
+                omega = a * np.sqrt(((1 - M ** 2) * alpha * np.pi / L) ** 2 + (1 - M ** 2) * lmbda ** 2)
+                omega_list.append(omega)
+                print('{:<8.0f} {:<8.0f} {:<8.0f} {:<8.0f}'.format(m, i, alpha, omega))
+                i += 1  # radial mode order
+        omega_list = np.array(omega_list)
+        return np.sort(omega_list)
+
+
+    det = lambda_root(lambda_span)
+    zeros = np.zeros(len(det))
+    roots = find_multiple_zeros(lambda_root, 1, 300)
+    roots_y = np.zeros_like(roots)
+    alpha = [1, 2, 3, 4, 5, 6, 7, 8]  # possible axial wavenumbers
+    omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
+    omega_analytical_zero = np.zeros_like(omega_analytical)
 
 
 
@@ -113,8 +117,8 @@ omega_analytical_zero = np.zeros_like(omega_analytical)
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 5
+Nr = 3
 number_search = 7
 gradient_routine = 'numpy'
 gradient_order = 2
@@ -146,14 +150,14 @@ sun_obj = Sun.src.SunModel(duct_grid)
 sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ComputeBoundaryNormals()
 sun_obj.ShowNormals()
-sun_obj.add_shaft_rpm(omega_ref)
+sun_obj.add_shaft_rpm(60*omega_ref/2/np.pi)
 sun_obj.set_normalization_quantities(mode='duct object')
 sun_obj.ComputeSpectralGrid()
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order, method='nearest')
 sun_obj.ContourTransformation(save_filename='%i_%i/transformation' % (Nz, Nr))
 sun_obj.AddAMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddBMatrixToNodesFrancesco2(normalize=False)
-sun_obj.AddCMatrixToNodesFrancesco2(m=m, normalize=False)
+sun_obj.AddCMatrixToNodesFrancesco2(m=HARMONIC_ORDER, normalize=False)
 sun_obj.AddEMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddRMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddSMatrixToNodes(turbo=False, normalize=False)
@@ -255,7 +259,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{\rho}_%i$' % (ivec + 1))
+    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
     plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
@@ -295,8 +299,8 @@ for ivec in range(np.shape(eigenvectors)[1]):
         c.set_edgecolor("face")
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{p}_%i$' % (ivec + 1))
+    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-plt.show()
+# plt.show()

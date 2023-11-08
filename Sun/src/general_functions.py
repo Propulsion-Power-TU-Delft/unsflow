@@ -79,11 +79,11 @@ def JacobianTransform(X, Y, Z, R):
 def JacobianTransform2(X, Y, Z, R):
     """
     It computes the jacobian of the transformation between two sets of cordinates, using numpy.gradient().
-    :param X: x cordinates of which we want the gradients
-    :param Y: y cordinates of which we want the gradients
-    :param Z: z cordinates of which we want the gradients
-    :param R: r cordinates of which we want the gradients
-    Z,R are the cordinates, used in the gradients. The latter need to be cartesian in order to be mathematically consistent
+    :param X: x cordinates of which we want the gradients (physical grid)
+    :param Y: y cordinates of which we want the gradients (physical grid)
+    :param Z: z cordinates of which we want the gradients (computational grid)
+    :param R: r cordinates of which we want the gradients (computational grid)
+    Z,R are the cordinates, used in the gradients. They need to be cartesian grids in order to be mathematically consistent.
     It returns the gradients of the first as a function of the second cordinates dxdz, dxdr, dydz, dydr.
     """
     # Compute gradients with variable spacing
