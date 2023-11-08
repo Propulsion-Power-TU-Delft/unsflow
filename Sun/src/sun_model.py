@@ -708,19 +708,20 @@ class SunModel:
                 for m in range(0, self.dataSpectral.nAxialNodes):
                     tmp = Dx[ii, m] * B_ij  # 5x5 matrix to be added to a certain block of Q
                     row = node_counter * 5  # this selects the correct block along i of Q
-                    column = (m * self.dataSpectral.nRadialNodes + jj) * 5  # it selects the correct block along
+                    column = (self.data.dataSet[m, jj].nodeCounter) * 5  # it selects the correct block along j of Q
+
                     if verbose:
-                        print('Node [i,j] = (%.1d,%.1d)' % (ii, jj))
-                        print('Element along i [m,j] = (%.1d,%.1d)' % (m, jj))
-                        print('Derivative element [ii,m] = (%.1d,%.1d)' % (ii, m))
-                        print('[row,col] = (%.1d,%.1d)' % (row, column))
+                        print('Node [i,j] = (%i,%i)' % (ii, jj))
+                        print('Element along i [m,j] = (%i,%i)' % (m, jj))
+                        print('Derivative element [ii,m] = (%i,%i)' % (ii, m))
+                        print('[row,col] = (%i,%i)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
                 # eta differentiation. n is in the range of radial nodes, second axis of the matrix
                 for n in range(0, self.dataSpectral.nRadialNodes):
                     tmp = Dy[jj, n] * E_ij
                     row = node_counter * 5
-                    column = (ii * self.dataSpectral.nRadialNodes + n) * 5
+                    column = (self.data.dataSet[ii, n].nodeCounter) * 5  # it selects the correct block along j of Q
                     if verbose:
                         print('Node [i,j] = (%.1d,%.1d)' % (ii, jj))
                         print('Element along j [i,n] = (%.1d,%.1d)' % (jj, n))
@@ -1294,6 +1295,11 @@ class SunModel:
                 column = node_counter * 5  # diagonal block
                 self.add_to_S_g(diag_block_ij, row, column)
 
+        # release memory not needed anymore
+        self.Q_const = None
+        self.C_g = None
+        self.R_g = None
+
     def build_Z_global_matrix(self):
         """
         Build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R), where B_d+E_d=Q_const have been obtained with
@@ -1750,3 +1756,10 @@ class SunModel:
         else:
             raise ValueError("Method unknown")
         return df_new
+
+
+    def free_dataset_memory(self):
+        """
+        Release memory that is not needed anymore
+        """
+        self.data = None

@@ -35,7 +35,7 @@ t_ref = x_ref / u_ref
 omega_ref = 1 / t_ref
 p_ref = rho_ref * u_ref ** 2
 
-COMPUTE_ANALYTICAL = False
+COMPUTE_ANALYTICAL = True
 
 if COMPUTE_ANALYTICAL:
     # %% ANALYTICAL PART OF THE PROBLEM
@@ -117,11 +117,11 @@ if COMPUTE_ANALYTICAL:
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 5
-Nr = 3
-number_search = 7
+Nz = 30
+Nr = 10
+number_search = 15
 gradient_routine = 'numpy'
-gradient_order = 2
+gradient_order = 6
 folder_path = "pictures/" + str(Nz) + "_" + str(Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
@@ -170,8 +170,10 @@ sun_obj.build_Z_global_matrix()
 sun_obj.build_S_global_matrix()
 sun_obj.set_boundary_conditions('zero pressure', 'zero pressure')
 sun_obj.apply_boundary_conditions_generalized()
+# sun_obj.free_dataset_memory()
 
-omega_search = 24000
+
+omega_search = 30000
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
 M = 1j * sun_obj.A_g
@@ -208,7 +210,8 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-ax.set_xlim([7500, 38000])
+# ax.set_xlim([7500, 38000])
+ax.set_xlim([np.min(eigenvalues.real), np.max(eigenvalues.real)])
 ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
 fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
