@@ -20,6 +20,13 @@ units = '[m]'
 nstream = 20
 nspan = 20
 grid_sampling = 'default'
+
+
+
+
+
+
+
 hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
                      rescale_factor=0.01, x_ref=0.252)
 shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
@@ -45,32 +52,33 @@ bladed_block.compute_grid_points(grid_mode='elliptic',
                                  sigmoid_coeff_x=7, sigmoid_coeff_y=9, method='minimize', save_animation=True)
 bladed_block.compute_grid_centers()
 bladed_block.plot_full_grid(save_filename='grid_%2d_%2d' % (nstream, nspan), primary_grid=True, grid_centers=False, ticks=False)
-#
-#
-# # find the camber surface, using the (z,r) grid found in the bladed block
-# blade.find_camber_surface(bladed_block)
-# blade.compute_camber_vectors()
-# blade.compute_blade_camber_angles(convention='rotation-wise')
-# # blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
-#
-# # instantiate cfd data object and perform processing removing the outliers
-# file_name = 'data/meta/config_02_slim.csv'
-# data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=-17189, cut_block=bladed_block, verbose=True, normalize=True,
-#                         rho_ref=1.014, x_ref=0.252, rpm_ref=-17189, T_ref=288.15)
-# data.process_from_ansys_csv()
-#
-# # instantiate meridional process object and avg
-# data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
-# data_process.compute_camber_angles()
-# data_process.compute_streamline_length()
+
+
+# find the camber surface, using the (z,r) grid found in the bladed block
+blade.find_camber_surface(bladed_block)
+blade.compute_camber_vectors()
+blade.compute_blade_camber_angles(convention='rotation-wise')
+blade.show_blade_angles_contour(save_filename='geometry_%2d_%2d' % (nstream, nspan))
+
+# instantiate cfd data object and perform processing removing the outliers
+file_name = 'data/meta/config_09_meridional_data.csv'
+data = Grid.src.CfdData(file_name, blade=blade, rpm_drag=-17189, cut_block=bladed_block, verbose=True, normalize=True,
+                        rho_ref=1.014, x_ref=0.252, T_ref=288.15)
+data.process_from_ansys_csv()
+
+# instantiate meridional process object and avg
+data_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
+data_process.compute_camber_angles()
+data_process.compute_streamline_length()
 # data_process.circumferential_average(mode='cell centered', fix_borders=False, gauss_filter=False)
-# data_process.compute_regressed_fields(order=4)
-# data_process.compute_derived_quantities()
-# data_process.compute_bfm_axial(mode='global', save_fig=True)
-# data_process.compute_averaged_fluxes()
-#
-#
-#
+data_process.get_data_from_meridional_dataset()
+data_process.compute_regressed_fields(order=4)
+data_process.compute_derived_quantities()
+data_process.compute_bfm_axial(mode='global', save_fig=True)
+data_process.compute_averaged_fluxes()
+
+
+
 # # final meridional plots
 # # data_process.contour_plot(field='streamline length', save_filename='sl_length_%2d_%2d' % (nstream, nspan))
 # data_process.contour_plot(field='rho', save_filename='rho_%2d_%2d' % (nstream, nspan), quiver=True)

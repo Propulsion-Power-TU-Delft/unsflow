@@ -20,7 +20,7 @@ print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
-REGRESSION = True
+REGRESSION = False
 INLET_NZ = 20
 BLADE_NZ = 20
 OUTLET_NZ = 40
@@ -30,11 +30,9 @@ file_name = 'data/meta/config_09_meridional_data.csv'
 MULTIBLOCK_FILTERING = False
 SHOCK_SMOOTHING = False
 INTERP_METHOD = 'cubic'
-
-
-
-
-
+INLET_BLOCK = False
+BLADE_BLOCK = True
+OUTLET_BLOCK = False
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INPUT DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data_folder_path = 'nasa_rotor_37/cordinates/'
@@ -52,21 +50,26 @@ sigmoid_coeff_span = 8
 
 
 
-#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-print("\nINLET BLOCK PROCESSING...")
-nstream = INLET_NZ
-nspan = NR
-
-hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
-                     rescale_factor=rescale_factor, x_ref=x_ref)
-shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
-                        rescale_factor=rescale_factor, x_ref=x_ref)
-block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE INFO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # compute the blade object info, in order to cut the block appropriately
 blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
 blade.find_inlet_points(geometry_type='axial')
 blade.find_outlet_points(geometry_type='axial')
+
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if INLET_BLOCK:
+    print("\nINLET BLOCK PROCESSING...")
+    nstream = INLET_NZ
+    nspan = NR
+
+    hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+                         rescale_factor=rescale_factor, x_ref=x_ref)
+    shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+                            rescale_factor=rescale_factor, x_ref=x_ref)
+    block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
 # cut the bladed block properly, and compute the meridional structured mesh
 block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
@@ -90,13 +93,11 @@ block.compute_grid_centers()
 # instantiate cfd data object and perform processing removing the outliers
 data = Grid.src.CfdData(file_name, rpm_drag=rpm_ref, blade=blade, cut_block=block, verbose=True, normalize=True,
                         rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref, file_type='Ansys2D')
-# data.process_from_ansys_3D_csv()
 data.process_from_ansys_csv()
 
 # instantiate meridional process object and avg
 inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
 inlet_process.compute_streamline_length()
-# inlet_process.circumferential_average(mode=AVG_MODE)
 inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
 if REGRESSION:
     inlet_process.compute_regressed_fields()
@@ -143,6 +144,7 @@ bladed_block.compute_grid_centers()
 
 blade.find_camber_surface(bladed_block)
 blade.compute_camber_vectors()
+blade.show_blade_angles_contour()
 blade.compute_blade_camber_angles(convention='rotation-wise')
 
 # instantiate meridional process object and avg
