@@ -207,6 +207,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             for ispan in range(1, ny - 1):
                 X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
                 Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
+        X0 = X
+        Y0 = Y
 
     # compute stretching functions, even in the case of no-stretching to avoid messing up things
     f1 = np.zeros((nx, ny))
@@ -277,10 +279,14 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
             for jj in range(ny):
                 plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
-            plt.plot(c_left[0, :], c_left[1, :], 'red', lw=0.5)
-            plt.plot(c_bottom[0, :], c_bottom[1, :], 'red', lw=0.5)
-            plt.plot(c_right[0, :], c_right[1, :], 'red', lw=0.5)
-            plt.plot(c_top[0, :], c_top[1, :], 'red', lw=0.5)
+            # plt.plot(c_left[0, :], c_left[1, :], 'red', lw=0.5)
+            # plt.plot(c_bottom[0, :], c_bottom[1, :], 'red', lw=0.5)
+            # plt.plot(c_right[0, :], c_right[1, :], 'red', lw=0.5)
+            # plt.plot(c_top[0, :], c_top[1, :], 'red', lw=0.5)
+            plt.plot(X0[0, :], Y0[0, :], 'red', lw=0.5)
+            plt.plot(X0[-1, :], Y0[-1, :], 'red', lw=0.5)
+            plt.plot(X0[:, -1], Y0[:, -1], 'red', lw=0.5)
+            plt.plot(X0[:, 0], Y0[:, 0], 'red', lw=0.5)
             plt.xlabel(r'$X$')
             plt.ylabel(r'$Y$')
             plt.title('iteration %d' % (it))
@@ -368,8 +374,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         if orthogonality and it > it_orth:
 
             # BOTTOM EDGE
-            x = c_bottom[0, :]
-            y = c_bottom[1, :]
+            # x = c_bottom[0, :]
+            # y = c_bottom[1, :]
+            x = X[:, 0]
+            y = Y[:, 0]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, 0]
@@ -388,8 +396,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 Y[istream, 0] = yb_new
 
             # TOP EDGE
-            x = c_top[0, :]
-            y = c_top[1, :]
+            # x = c_top[0, :]
+            # y = c_top[1, :]
+            x = X[:, -1]
+            y = Y[:, -1]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, -1]
@@ -409,8 +419,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
             # LEFT EDGE
             if not fix_inlet:
-                x = c_left[0, :]
-                y = c_left[1, :]
+                # x = c_left[0, :]
+                # y = c_left[1, :]
+                x = X[0, :]
+                y = Y[0, :]
                 y_prime = np.gradient(y, x)
                 for ispan in range(1, ny - 1):
                     xb_old = X_old[0, ispan]
@@ -430,8 +442,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
             # RIGHT EDGE
             if not fix_outlet:
-                x = c_right[0, :]
-                y = c_right[1, :]
+                # x = c_right[0, :]
+                # y = c_right[1, :]
+                x = X[-1, :]
+                y = Y[-1, :]
                 y_prime = np.gradient(y, x)
                 for ispan in range(1, ny - 1):
                     xb_old = X_old[-1, ispan]

@@ -216,7 +216,7 @@ class Blade:
 
     def compute_camber_vector(self, i, j, check=False):
         """
-        for a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
+        For a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
         of the vectors connecting streamwise and spanwise points.
         :param i: i index of the point
         :param j: j index of the point
