@@ -26,11 +26,11 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% NUMERICAL PART FOLLOWING SUN MODULE METHODS %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 60
+Nr = 20
 number_search = 15
 gradient_routine = 'findiff'
-gradient_order = 6
+gradient_order = 12
 folder_path = "pictures/" + str(Nz) + "_" + str(Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
@@ -71,27 +71,67 @@ sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order, 
 # %%%%%%%%%%%%%%%%%%%%%%% ANALYTICAL PART %%%%%%%%%%%%%%%%%%%%%%%
 def compute_analytical_derivative(z, L1, L2):
     """
-    analytical transformation for the annular problem. L1,L2 represent the extremes. z is the z array
+    analytical transformation for the annular problem. L1,L2 represent the extremes. z is the physical array cordinate.
+    It can be used for both axial and radial transformation, using proper inputs.
     """
-    dxi_dz = -np.sin(np.pi * (z - L1) / (L2 - L1)) * np.pi / (L2 - L1)
-    return dxi_dz
+    dcomputational_dphysical = -np.sin(np.pi * (z - L1) / (L2 - L1)) * np.pi / (L2 - L1)
+    return dcomputational_dphysical
 
 
 z = np.linspace(0, L, Nz)
 r = np.linspace(r1, r2, Nr)
-dz_dx = compute_analytical_derivative(z / x_ref, 0, L / x_ref)
-dr_dy = compute_analytical_derivative(r / x_ref, r1 / x_ref, r2 / x_ref)
+dxi_dz = compute_analytical_derivative(z / x_ref, 0 / x_ref, L / x_ref)
+deta_dr = compute_analytical_derivative(r / x_ref, r1 / x_ref, r2 / x_ref)
 
 plt.figure()
-plt.plot(z, dz_dx, label='analytical')
-plt.plot(z, sun_obj.dxdz[:, 0], '--o', label='numerical')
+plt.plot(z / x_ref, dxi_dz, label='analytical')
+plt.plot(z / x_ref, sun_obj.dxdz[:, 0], '--s', label='numerical')
+plt.xlabel(r'$\hat{z} \ \mathrm{[-]}$')
+plt.ylabel(r'$\partial \xi / \partial \hat{z} \ \mathrm{[-]}$')
 plt.legend()
-plt.savefig(folder_path+'/dxi_dz_%s_%i.pdf' %(gradient_routine, gradient_order), bbox_inches='tight')
+plt.savefig(folder_path + '/dxi_dz_%s_%i.pdf' % (gradient_routine, gradient_order), bbox_inches='tight')
 
 plt.figure()
-plt.plot(r, dr_dy, label='analytical')
-plt.plot(r, sun_obj.dydr[0, :], '--o', label='numerical')
+plt.plot(r / x_ref, deta_dr, label='analytical')
+plt.plot(r / x_ref, sun_obj.dydr[0, :], '--s', label='numerical')
+plt.xlabel(r'$\hat{r} \ \mathrm{[-]}$')
+plt.ylabel(r'$\partial \eta / \partial \hat{r} \ \mathrm{[-]}$')
 plt.legend()
-plt.savefig(folder_path+'/deta_dr_%s_%i.pdf' %(gradient_routine, gradient_order), bbox_inches='tight')
+plt.savefig(folder_path + '/deta_dr_%s_%i.pdf' % (gradient_routine, gradient_order), bbox_inches='tight')
 
-plt.show()
+# 2D comparison
+Dxi_Dz = np.zeros((Nz, Nr))
+Deta_Dr = np.zeros((Nz, Nr))
+for i in range(Nz):
+    for j in range(Nr):
+        Dxi_Dz[i, j] = dxi_dz[i]
+        Deta_Dr[i, j] = deta_dr[j]
+
+R, Z = np.meshgrid(r, z)
+R /= x_ref
+Z /= x_ref
+
+#percentage errors matrices
+dxi_dz_err = (Dxi_Dz - sun_obj.dxdz)/np.linalg.norm(Dxi_Dz)
+deta_dr_err = (Deta_Dr - sun_obj.dydr)/np.linalg.norm(Deta_Dr)
+
+
+plt.figure()
+plt.contourf(Z, R, dxi_dz_err*100, levels = 100, cmap='jet')
+plt.xlabel(r'$\hat{z} \ \mathrm{[-]}$')
+plt.ylabel(r'$\hat{r} \ \mathrm{[-]}$')
+plt.title(r'$(\partial \xi / \partial \hat{z})_{err} \ \mathrm{[\%]}$')
+plt.colorbar()
+plt.savefig(folder_path + '/dxi_dz_2d_%s_%i.pdf' % (gradient_routine, gradient_order), bbox_inches='tight')
+
+
+plt.figure()
+plt.contourf(Z, R, deta_dr_err*100, levels = 100, cmap='jet')
+plt.xlabel(r'$\hat{z} \ \mathrm{[-]}$')
+plt.ylabel(r'$\hat{r} \ \mathrm{[-]}$')
+plt.title(r'$(\partial \eta / \partial \hat{r})_{err} \ \mathrm{[\%]}$')
+plt.colorbar()
+plt.savefig(folder_path + '/deta_dr_2d_%s_%i.pdf' % (gradient_routine, gradient_order), bbox_inches='tight')
+
+
+# plt.show()

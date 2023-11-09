@@ -185,7 +185,8 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
-    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf', artificial_refinement=False):
+    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf', artificial_refinement=False,
+                                dx_dz = None, dx_dr=None, dy_dz = None, dy_dr = None):
         """
         It computes the transformation gradients for every grid point, and stores the value at the node level.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
@@ -194,46 +195,78 @@ class SunModel:
         :param order: order of the finite differences (only for findiff routine)
         :param method: method used to interpolate on the operating grid the gradients calculated on the refined grid.
         :param artificial_refinement: True to set artifical refinement method for grid differentiation
+        :param dx_dz: analytical transformation. If provided, gradients simply taken from here, not calculated
+        :param dx_dr: analytical transformation. If provided, gradients simply taken from here, not calculated
+        :param dy_dz: analytical transformation. If provided, gradients simply taken from here, not calculated
+        :param dy_dr: analytical transformation. If provided, gradients simply taken from here, not calculated
         """
         print_banner_begin('TRANSFORMATION GRADIENTS')
         print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
         print(f"{'Order Used:':<{total_chars_mid}}{order:>{total_chars_mid}}")
         print_banner_end()
 
-        # refined grids
-        if artificial_refinement:
-            Z = self.data.meridional_obj.z_cg_fine
-            R = self.data.meridional_obj.r_cg_fine
-        else:
-            Z = self.data.meridional_obj.z_cg
-            R = self.data.meridional_obj.r_cg
-        Nz_fine = np.shape(Z)[0]
-        Nr_fine = np.shape(Z)[1]
-        x = GaussLobattoPoints(Nz_fine)
-        y = GaussLobattoPoints(Nr_fine)
-        Y, X = np.meshgrid(y, x)
+        if dx_dz is None and dx_dr is None and dy_dz is None and dy_dr is None:
+            # refined grids
+            if artificial_refinement:
+                Z = self.data.meridional_obj.z_cg_fine
+                R = self.data.meridional_obj.r_cg_fine
+            else:
+                Z = self.data.meridional_obj.z_cg
+                R = self.data.meridional_obj.r_cg
+            Nz_fine = np.shape(Z)[0]
+            Nr_fine = np.shape(Z)[1]
+            x = GaussLobattoPoints(Nz_fine)
+            y = GaussLobattoPoints(Nr_fine)
+            Y, X = np.meshgrid(y, x)
 
-        if routine == 'numpy':
-            dzdx, dzdy, drdx, drdy = JacobianTransform2(Z, R, X, Y)
-        elif routine == 'hard-coded':
-            dzdx, dzdy, drdx, drdy = JacobianTransform(Z, R, X, Y)
-        elif routine == 'findiff':
-            dzdx, dzdy, drdx, drdy = JacobianTransform3(Z, R, X, Y, order=order)
-        else:
-            raise ValueError('select an available routine for the transformation gradient!')
+            if routine == 'numpy':
+                dzdx, dzdy, drdx, drdy = JacobianTransform2(Z, R, X, Y)
+            elif routine == 'hard-coded':
+                dzdx, dzdy, drdx, drdy = JacobianTransform(Z, R, X, Y)
+            elif routine == 'findiff':
+                dzdx, dzdy, drdx, drdy = JacobianTransform3(Z, R, X, Y, order=order)
+            else:
+                raise ValueError('select an available routine for the transformation gradient!')
 
-        if artificial_refinement:
-            self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
-            self.dzdy = self.interpolation_on_original_grid(dzdy, X, Y, method=method)
-            self.drdx = self.interpolation_on_original_grid(drdx, X, Y, method=method)
-            self.drdy = self.interpolation_on_original_grid(drdy, X, Y, method=method)
+            if artificial_refinement:
+                self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
+                self.dzdy = self.interpolation_on_original_grid(dzdy, X, Y, method=method)
+                self.drdx = self.interpolation_on_original_grid(drdx, X, Y, method=method)
+                self.drdy = self.interpolation_on_original_grid(drdy, X, Y, method=method)
+            else:
+                self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
+            self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
+            self.dxdz = (1/self.J) * (self.drdy)
+            self.dxdr = (1/self.J) * (-self.dzdy)
+            self.dydz = (1/self.J) * (-self.drdx)
+            self.dydr =(1/self.J) * (self.dzdx)
         else:
-            self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
-        self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
-        self.dxdz = (1/self.J) * (self.drdy)
-        self.dxdr = (1/self.J) * (-self.dzdy)
-        self.dydz = (1/self.J) * (-self.drdx)
-        self.dydr =(1/self.J) * (self.dzdx)
+            if dx_dz is not None:
+                self.dxdz = dx_dz
+                self.dzdx = 1/dx_dz
+            else:
+                self.dxdz = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+                self.dzdx = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+            if dx_dr is not None:
+                self.dxdr = dx_dr
+                self.drdx = 1/dx_dr
+            else:
+                self.dxdr = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+                self.drdx = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+            if dy_dz is not None:
+                self.dydz = dy_dz
+                self.dydz = 1/dy_dz
+            else:
+                self.dydz = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+                self.dzdy = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+            if dy_dr is not None:
+                self.dydr = dy_dr
+                self.drdy = 1/dy_dr
+            else:
+                self.dydr = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+                self.drdy = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
+            self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
+
 
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):

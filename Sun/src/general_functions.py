@@ -229,3 +229,13 @@ def print_banner_end(string=''):
     """
     n = total_chars - 2
     print("+", f"{string:-^{n}}", "+", sep='')
+
+
+def annular_duct_analytical_transformation(z, L1, L2):
+    """
+    Analytical transformation for the annular problem (a rectangular one, evenly spaces in both z and r).
+    L1,L2 represent the extremes. z is the physical array cordinate.
+    It can be used for both axial and radial transformation, using proper inputs.
+    """
+    dcomputational_dphysical = -np.sin(np.pi * (z - L1) / (L2 - L1)) * np.pi / (L2 - L1)
+    return dcomputational_dphysical
