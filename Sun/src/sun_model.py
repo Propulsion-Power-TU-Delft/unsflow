@@ -762,6 +762,111 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
+
+    def apply_finite_differences_on_physical_grid(self, verbose=False):
+        """
+       This method differentiates directly the problem on the physical grid. It saves a new global (for all the nodes) matrix
+       Q_const, which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
+       The method should only be used for those cases having a cartesian physical grid, otherwise is wrong.
+       :param verbose: print additional info.
+       """
+
+        # the cordinates on the spectral grid directions, necessary for the differentiation matrices Dx and Dy
+        z = self.data.zGrid[:, 0]
+        dz = z[1]-z[0]
+        r = self.data.rGrid[0, :]
+        dr = r[1]-r[0]
+
+        # Q_const is the global matrix storing B and E elements after finite differentiation.
+        self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
+
+        # differentiation of a general perturbation vector (for the node (i,j)) along xi  and eta. (formula double-checked)
+        for ii in range(0, self.dataSpectral.nAxialNodes):
+            for jj in range(0, self.dataSpectral.nRadialNodes):
+                B_ij = self.data.dataSet[ii, jj].B  # B matrix of the ij node
+                E_ij = self.data.dataSet[ii, jj].E  # E matrix of the ij node
+
+                if ii==0 and jj==0:  # bottom left corner
+                    ip = 1
+                    im = 0
+                    deltaz = 1
+                    jp = 1
+                    jm = 0
+                    deltar = 1
+                elif ii==0 and jj==self.data.nRadialNodes-1:  # top left corner
+                    ip = 1
+                    im = 0
+                    deltaz = 1
+                    jp = 0
+                    jm = -1
+                    deltar = 1
+                elif ii==self.data.nAxialNodes-1 and jj==0:  # bottom right corner
+                    ip = 0
+                    im = -1
+                    deltaz = 1
+                    jp = 1
+                    jm = 0
+                    deltar = 1
+                elif ii==self.data.nAxialNodes-1 and jj==self.data.nRadialNodes-1:  # top right corner
+                    ip = 0
+                    im = -1
+                    deltaz = 1
+                    jp = 0
+                    jm = -1
+                    deltar = 1
+                elif ii==0:  # left internal border
+                    ip = 1
+                    im = 0
+                    deltaz = 1
+                    jp = 1
+                    jm = -1
+                    deltar = 2
+                elif ii==self.data.nAxialNodes-1:  # right internal border
+                    ip = 0
+                    im = -1
+                    deltaz = 1
+                    jp = 1
+                    jm = -1
+                    deltar = 2
+                elif jj==0:  # bottom internal border
+                    ip = 1
+                    im = -1
+                    deltaz = 2
+                    jp = 1
+                    jm = 0
+                    deltar = 1
+                elif jj==self.data.nRadialNodes-1:  # top internal border
+                    ip = 1
+                    im = -1
+                    deltaz = 2
+                    jp = 0
+                    jm = -1
+                    deltar = 1
+                else:
+                    ip = 1
+                    im = -1
+                    deltaz = 2
+                    jp = 1
+                    jm = -1
+                    deltar = 2
+
+                # B differentiation
+                row = self.data.dataSet[ii, jj].nodeCounter*5
+                colp = self.data.dataSet[ii, jj + jp].nodeCounter*5
+                colm = self.data.dataSet[ii, jj + jm].nodeCounter*5
+                tmp = B_ij/(deltar*dr)
+                self.AddToQ_const(tmp, row, colp)
+                self.AddToQ_const(-tmp, row, colm)
+
+                # E differentiation
+                row = self.data.dataSet[ii, jj].nodeCounter*5
+                colp = self.data.dataSet[ii+ip, jj].nodeCounter*5
+                colm = self.data.dataSet[ii+im, jj].nodeCounter*5
+                tmp = E_ij / (deltaz * dz)
+                self.AddToQ_const(tmp, row, colp)
+                self.AddToQ_const(-tmp, row, colm)
+
+
     def NormalizeMatrix(self, M):
         """
         Normalize a 5x5 matrix, where the first row is continuity, then 3 equations for momentum, and one for pressure.
@@ -1328,10 +1433,10 @@ class SunModel:
                 column = node_counter * 5  # diagonal block
                 self.add_to_S_g(diag_block_ij, row, column)
 
-        # release memory not needed anymore
-        self.Q_const = None
-        self.C_g = None
-        self.R_g = None
+        # # release memory not needed anymore
+        # self.Q_const = None
+        # self.C_g = None
+        # self.R_g = None
 
     def build_Z_global_matrix(self):
         """
@@ -1564,6 +1669,11 @@ class SunModel:
         self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
         self.sort_eigensolution()
 
+
+
+
+
+
     def sort_eigensolution(self):
         """
         Sort the eigenvalues and eigenvectors from the most unstable to the least one.
@@ -1591,8 +1701,12 @@ class SunModel:
         :param save_filename: if not None, save figure files
         """
         fig, ax = plt.subplots(figsize=fig_size)
-        ax.scatter(self.eigenfreqs_rs, self.eigenfreqs_df, marker='o', facecolors='red', edgecolors='red',
-                   s=marker_size)
+        for mode in self.eigenfields:
+            if mode.is_physical:
+                rs = mode.eigenfrequency.real/self.omega_ref
+                df = mode.eigenfrequency.imag/self.omega_ref
+                ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
+                           s=marker_size)
         ax.set_xlabel(r'RS [-]')
         ax.set_ylabel(r'DF [-]')
         # ax.legend()
@@ -1676,68 +1790,69 @@ class SunModel:
         imode = 0
         for mode in self.eigenfields[0:n]:
             imode += 1
-            rs = mode.eigenfrequency.real / self.omega_ref
-            df = mode.eigenfrequency.imag / self.omega_ref
+            if mode.is_physical:
+                rs = mode.eigenfrequency.real / self.omega_ref
+                df = mode.eigenfrequency.imag / self.omega_ref
 
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
+                plt.figure(figsize=self.pic_size_contour)
+                cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
+                plt.xlabel(r'$z$ [-]')
+                plt.ylabel(r'$r$ [-]')
+                plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+                plt.colorbar()
+                if save_filename is not None:
+                    plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                    plt.close()
 
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
+                plt.figure(figsize=self.pic_size_contour)
+                cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
+                plt.xlabel(r'$z$ [-]')
+                plt.ylabel(r'$r$ [-]')
+                plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+                plt.colorbar()
+                if save_filename is not None:
+                    plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                    plt.close()
 
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
+                plt.figure(figsize=self.pic_size_contour)
+                cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
+                plt.xlabel(r'$z$ [-]')
+                plt.ylabel(r'$r$ [-]')
+                plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+                plt.colorbar()
+                if save_filename is not None:
+                    plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                    plt.close()
 
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
+                plt.figure(figsize=self.pic_size_contour)
+                cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
+                plt.xlabel(r'$z$ [-]')
+                plt.ylabel(r'$r$ [-]')
+                plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+                plt.colorbar()
+                if save_filename is not None:
+                    plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                    plt.close()
 
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
+                plt.figure(figsize=self.pic_size_contour)
+                cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
+                plt.xlabel(r'$z$ [-]')
+                plt.ylabel(r'$r$ [-]')
+                plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+                plt.colorbar()
+                if save_filename is not None:
+                    plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                    plt.close()
 
     def write_results(self, save_filename=None, extension='csv'):
         """

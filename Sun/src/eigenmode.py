@@ -37,3 +37,21 @@ class Eigenmode:
         self.eigen_utheta = utheta
         self.eigen_uz = uz
         self.eigen_p = p
+        self.Nz = np.shape(rho)[0]
+        self.Nr = np.shape(rho)[1]
+        self.distinguish_physical_mode()
+
+    def distinguish_physical_mode(self, threshold=0.3):
+        """
+        Distinguish between physical and sprious eigenmodes. The criterion is taken from 'Predicting the onset of flow
+        unsteadiness based on global instability' by Crouch et al.
+        """
+        f = self.eigen_p  # classify based on the eigenpressure shape
+        max_value = np.sqrt(np.max(f)**2)
+        border_summation = np.sum(f[:, 0]**2) + np.sum(f[-1, 1:]**2) + np.sum(f[0, 1:]**2) + np.sum(f[1:-1, -1]**2)
+        border_points = self.Nz*2 + (self.Nr-1)*2
+        avg_borders = np.sqrt(border_summation/border_points)
+        if np.abs(avg_borders)<threshold*max_value:
+            self.is_physical = True
+        else:
+            self.is_physical = False

@@ -28,12 +28,12 @@ OUTLET_NZ = 40
 NR = 20
 AVG_MODE = 'cell centered'
 file_name = 'data/meta/config_09_meridional_data.csv'
-MULTIBLOCK_FILTERING = False
+MULTIBLOCK_FILTERING = True
 SHOCK_SMOOTHING = False
 INTERP_METHOD = 'cubic'
-INLET_BLOCK = False
+INLET_BLOCK = True
 BLADE_BLOCK = True
-OUTLET_BLOCK = False
+OUTLET_BLOCK = True
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INPUT DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 data_folder_path = 'nasa_rotor_37/cordinates/'
