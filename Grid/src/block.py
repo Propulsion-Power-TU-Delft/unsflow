@@ -153,7 +153,7 @@ class Block:
         self.trailing_edge.sample(sampling_mode=sampling_mode)
 
     def compute_grid_points(self, grid_mode, orthogonality, x_stretching,
-                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='minimize',
+                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='intersection',
                             sampling_mode='default', curved_border='both',
                             inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """

@@ -4,6 +4,7 @@
 Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sin, cos
 import pickle
@@ -151,7 +152,7 @@ def cartesian_to_cylindrical_matrix(x, y):
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
                              pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
-                             method='minimize', fix_inlet=False, fix_outlet=False, save_animation=False):
+                             method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -172,7 +173,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     :param sigmoid_coeff_y: y-coefficient of the sigmoid along the spanwise direction.
     :param it_orth: iteration number from which orthogonality is enabled.
     :param guardian: under-relaxation method
-    :param method: choose method used to update points on the border. Suggested minimize, as fzero frequently diverges
+    :param method: choose method used to update points on the border. Suggested minimize, as fzero frequently diverges, and
+    intersection doesn't work 100% good at the moment.
     :param fix_inlet: if True, fixes the points on the inlet border
     :param fix_outlet: if True, fixes the points on the outlet border.
     :param save_animation: if specified,  saves figures with the defined filename path.
@@ -390,6 +392,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                 elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                elif method == 'intersection':
+                    xb_new, yb_new = find_updated_point(X0[:, 0], Y0[:, 0], xp_new, yp_new, xb_old, yb_old, yb_prime)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, 0] = xb_new
@@ -412,6 +416,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                 elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                elif method == 'intersection':
+                    xb_new, yb_new = find_updated_point(X0[:, -1], Y0[:, -1], xp_new, yp_new, xb_old, yb_old, yb_prime)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, -1] = xb_new
@@ -435,6 +441,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                         xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                    elif method == 'intersection':
+                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[0, ispan] = xb_new
@@ -458,6 +466,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                         xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
+                    elif method == 'intersection':
+                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[-1, ispan] = xb_new
@@ -654,6 +664,122 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
     return xb_new, yb_new
 
 
+def find_updated_point(x, y, xp_new, yp_new, xb_old, yb_old, yb_prime):
+    """
+    Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
+    minimizing the distance of the new point distance from the old point.
+    xb_old, yb_old are the cordinates of the previous iteration
+    :param x: set of x points of the border curve.
+    :param y: set of y points of the border curve.
+    :param xp_new: new x cordinate of the inner point close to the border.
+    :param yp_new: new y cordinate of the inner point close to the border.
+    :param xb_old: old x cordinate of the border point.
+    :param yb_old: old y cordinate of the border point.
+    :param yb_prime: derivative of the function at the border
+    """
+    from intersect import intersection
+    u = np.linspace(-0.1, 0.1, 5000)
+    from scipy.interpolate import make_interp_spline
+    u_border = np.linspace(0, 1, len(x))
+    xspline_border = make_interp_spline(u_border, x, k=1)
+    yspline_border = make_interp_spline(u_border, y, k=1)
+    x_grid_line = xp_new + u * (-yb_prime)
+    y_grid_line = yp_new + u * 1
+    xb_new, yb_new = intersection(x_grid_line, y_grid_line, xspline_border(u_border), yspline_border(u_border))
+    try:
+        xb_new, yb_new = xb_new[0], yb_new[0]
+    except:
+        xb_new, yb_new = xb_old, yb_old
+
+    # plt.figure()
+    # plt.plot(xspline_border(u_border), yspline_border(u_border), label='border line')
+    # plt.plot(xp_new, yp_new, 'ko', label='internal point')
+    # plt.plot(x_grid_line, y_grid_line, 'k', label='internal grid line')
+    # plt.plot(xb_new, yb_new, 'ro', label='intersection')
+    # # plt.xlim([-0.1, 0.4])
+    # # plt.ylim([0.6, 1.1])
+    # plt.gca().set_aspect('equal', adjustable='box')
+    # plt.legend()
+
+    return xb_new, yb_new
+
+
+# def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
+#     """
+#     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
+#     minimizing the distance of the new point distance from the old point.
+#     xb_old, yb_old are the cordinates of the previous iteration
+#     :param xb_new: new x cordinate of the border point.
+#     :param yb_new: new y cordinate of the border point.
+#     :param x: set of x points of the border curve.
+#     :param y: set of y points of the border curve.
+#     :param xp_new: new x cordinate of the inner point close to the border.
+#     :param yp_new: new y cordinate of the inner point close to the border.
+#     """
+#     # from scipy.interpolate import CubicSpline
+#     from scipy.interpolate import make_interp_spline
+#     u = np.linspace(0, 1, len(x))
+#     xspline = make_interp_spline(u, x, k=1)
+#     yspline = make_interp_spline(u, y, k=1)
+#     # plt.figure()
+#     # plt.plot(x, y, 'o', label='data')
+#     # plt.plot(xspline(u), yspline(u), label='spline')
+#
+#     def objective(u_param, xpoint, ypoint):
+#         y_u = yspline(u_param)
+#         x_u = xspline(u_param)
+#         obj = (y_u - ypoint) ** 2 + (x_u - xpoint) ** 2
+#         return obj
+#
+#     initial_guess = np.mean(u)  # initial guess for u
+#     u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
+#     u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
+#     xb_new = xspline(u_result.x)
+#     yb_new = yspline(u_result.x)
+#     # plt.scatter(xp_new, yp_new, label='p new')
+#     # plt.scatter(xb_new, yb_new, label='b new')
+#     # plt.legend()
+#     return xb_new, yb_new
+#
+#
+# def find_optimized_point_old2(xb_new, yb_new, x, y, xp_new, yp_new):
+#     """
+#     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
+#     minimizing the distance of the new point distance from the old point.
+#     xb_old, yb_old are the cordinates of the previous iteration
+#     :param xb_new: new x cordinate of the border point.
+#     :param yb_new: new y cordinate of the border point.
+#     :param x: set of x points of the border curve.
+#     :param y: set of y points of the border curve.
+#     :param xp_new: new x cordinate of the inner point close to the border.
+#     :param yp_new: new y cordinate of the inner point close to the border.
+#     """
+#     # from scipy.interpolate import CubicSpline
+#     u = np.linspace(0, 1, len(x))  # curve parameterization
+#     xspline = CubicSpline(u, x)
+#     yspline = CubicSpline(u, y)
+#
+#     # plt.figure()
+#     # plt.plot(x, y, 'o', label='data')
+#     # plt.plot(xspline(u), yspline(u), label='spline')
+#
+#     def objective(u_param, xpoint, ypoint):
+#         y_u = yspline(u_param)
+#         x_u = xspline(u_param)
+#         obj = (y_u - ypoint) ** 2 + (x_u - xpoint) ** 2
+#         return obj
+#
+#     initial_guess = np.mean(u)  # initial guess for u
+#     u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
+#     u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
+#     xb_new = xspline(u_result.x)
+#     yb_new = yspline(u_result.x)
+#     # plt.scatter(xp_new, yp_new, label='p new')
+#     # plt.scatter(xb_new, yb_new, label='b new')
+#     # plt.legend()
+#     return xb_new, yb_new
+
+
 def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     """
     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
@@ -667,7 +793,7 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     :param yp_new: new y cordinate of the inner point close to the border.
     """
     u = np.linspace(0, 1, len(x))  # curve parameterization
-    degree = 7
+    degree = 10
 
     # Perform polynomial interpolation
     coefficients = np.polyfit(u, x, degree)
@@ -703,8 +829,8 @@ def compute_picture_size(x, y):
     color_bar_span = 0.15
     if WH_ratio >= 1:
         pic_size_blank = (8, 8 / WH_ratio)
-        pic_size_contour = (8*(1+color_bar_span), 8 / WH_ratio)
+        pic_size_contour = (8 * (1 + color_bar_span), 8 / WH_ratio)
     else:
         pic_size_blank = (6 * WH_ratio, 6)
-        pic_size_contour = (6 * WH_ratio*(1+color_bar_span), 6)
+        pic_size_contour = (6 * WH_ratio * (1 + color_bar_span), 6)
     return pic_size_blank, pic_size_contour

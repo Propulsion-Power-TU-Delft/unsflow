@@ -20,7 +20,7 @@ start_time = time.time()
 print('Start execution:')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
+MESH_TYPE = 'sigmoid'
 REGRESSION = False
 INLET_NZ = 20
 BLADE_NZ = 20
@@ -43,8 +43,8 @@ x_ref = 0.252  # reference length, tip radius [m]
 rpm_ref = -17189  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 0.01  # cordinates of data files are in [cm]
-sigmoid_coeff_stream = 8
-sigmoid_coeff_span = 8
+sigmoid_coeff_stream = 5
+sigmoid_coeff_span = 5
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE INFO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # compute the blade object info, in order to cut the block appropriately

@@ -18,7 +18,7 @@ start_time = time.time()
 print('Start execution:')
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
+MESH_TYPE = 'sigmoid'
 ORTHOGONALITY = False
 SIGMOID_STREAM = 9
 SIGMOID_SPAN = 7
@@ -81,11 +81,11 @@ block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False,
                               x_stretching=False, y_stretching=False,
-                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='minimize')
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='intersection')
 else:
     block.compute_grid_points(grid_mode='elliptic', orthogonality=True,
                               x_stretching='sigmoid_right', y_stretching='sigmoid',
-                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='minimize')
+                              sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN, method='intersection')
 block.compute_grid_centers()
 
 # instantiate cfd data object and perform processing
@@ -131,11 +131,11 @@ bladed_block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
                                      sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
-                                     inlet_meridional_obj=inlet_process, method='minimize')
+                                     inlet_meridional_obj=inlet_process, method='intersection')
 else:
     bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
                                  sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
-                                 inlet_meridional_obj=inlet_process, method='minimize')
+                                 inlet_meridional_obj=inlet_process, method='intersection')
 bladed_block.compute_grid_centers()
 
 blade.find_camber_surface(bladed_block)
@@ -180,11 +180,11 @@ block.sample_inlet_outlet()
 if MESH_TYPE=='default':
     block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
                               sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
-                              inlet_meridional_obj=blade_process, method='minimize')
+                              inlet_meridional_obj=blade_process, method='intersection')
 else:
     block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left', y_stretching='sigmoid',
                               sigmoid_coeff_x=SIGMOID_STREAM, sigmoid_coeff_y=SIGMOID_SPAN,
-                              inlet_meridional_obj=blade_process, method='minimize')
+                              inlet_meridional_obj=blade_process, method='intersection')
 block.compute_grid_centers()
 
 outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
