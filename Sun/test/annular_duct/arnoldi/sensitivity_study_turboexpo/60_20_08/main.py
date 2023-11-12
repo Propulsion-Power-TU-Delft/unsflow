@@ -117,12 +117,12 @@ if COMPUTE_ANALYTICAL:
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
-number_search = 15
-gradient_routine = 'numpy'
-gradient_order = 6
-folder_path = "pictures/" + str(Nz) + "_" + str(Nr)  # Replace with the desired folder path
+Nz = 60
+Nr = 20
+number_search = 10
+gradient_routine = 'findiff'
+gradient_order = 8
+folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
@@ -154,7 +154,7 @@ sun_obj.add_shaft_rpm(60*omega_ref/2/np.pi)
 sun_obj.set_normalization_quantities(mode='duct object')
 sun_obj.ComputeSpectralGrid()
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order, method='nearest')
-sun_obj.ContourTransformation(save_filename='%i_%i/transformation' % (Nz, Nr))
+sun_obj.ContourTransformation(save_filename='%02i_%02i/transformation' % (Nz, Nr))
 sun_obj.AddAMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddBMatrixToNodesFrancesco2(normalize=False)
 sun_obj.AddCMatrixToNodesFrancesco2(m=HARMONIC_ORDER, normalize=False)
@@ -173,7 +173,7 @@ sun_obj.apply_boundary_conditions_generalized()
 # sun_obj.free_dataset_memory()
 
 
-omega_search = 30000
+omega_search = 23000
 sigma = omega_search / omega_ref
 A = sun_obj.Z_g
 M = 1j * sun_obj.A_g
@@ -210,11 +210,11 @@ ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', ed
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.legend()
-# ax.set_xlim([7500, 38000])
-ax.set_xlim([np.min(eigenvalues.real), np.max(eigenvalues.real)])
+ax.set_xlim([7500, 38000])
+# ax.set_xlim([np.min(eigenvalues.real), np.max(eigenvalues.real)])
 ax.set_ylim([-8000, 8000])
 ax.grid(alpha=0.3)
-fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
+fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -264,7 +264,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=200, cmap='bwr')
@@ -274,7 +274,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=200, cmap='bwr')
@@ -284,7 +284,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=200, cmap='bwr')
@@ -294,7 +294,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=200, cmap='bwr')
@@ -304,6 +304,11 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-# plt.show()
+
+import pickle
+file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, gradient_order)
+with open(file_path, 'wb') as file:
+    pickle.dump(eigenvalues, file)
+

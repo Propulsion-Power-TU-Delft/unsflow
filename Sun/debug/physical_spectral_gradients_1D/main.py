@@ -5,7 +5,7 @@ from numpy import cos, sin, pi, linspace
 from findiff import FinDiff
 
 ALPHA_GRID = 0.2
-N = 150  # number of grid points
+N = 60  # number of grid points
 L = 1
 
 i = linspace(0, N - 1, N)
@@ -66,32 +66,35 @@ d_dx = FinDiff(0, x, acc=10)
 # dxi_dx_num_findiff10 = d_dx(xi)
 dxi_dx_num_findiff10 = 1/dx_dxi_num_findiff10
 
+# refined version of the analytical case to show the singularities at the extremities
+xi_refined = np.linspace(-0.999, 0.999, 1000)
+dx_dxi_refined = -L/pi/np.sqrt(1-xi_refined**2)
 
 plt.figure()
-plt.plot(x[1:-1], dx_dxi[1:-1], label='analytical')
-plt.plot(x, dx_dxi_num, '--o', label=r'$2^{nd}$ order', linewidth=0.5)
-plt.plot(x, dx_dxi_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=0.5)
-plt.plot(x, dx_dxi_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=0.5)
-plt.plot(x, dx_dxi_num_findiff8, '--x', label=r'$8^{th}$ order', linewidth=0.5)
-plt.plot(x, dx_dxi_num_findiff10, '--*', label=r'$10^{th}$ order', linewidth=0.5)
-plt.xlabel('x')
-plt.ylabel(r'$\partial x / \partial \xi$')
+plt.plot(xi_refined, dx_dxi_refined, label='analytical', linewidth=2)
+plt.plot(xi, dx_dxi_num, '--o', label=r'$2^{nd}$ order', linewidth=0.5)
+plt.plot(xi, dx_dxi_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=0.5)
+plt.plot(xi, dx_dxi_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=0.5)
+plt.plot(xi, dx_dxi_num_findiff8, '--x', label=r'$8^{th}$ order', linewidth=0.5)
+plt.plot(xi, dx_dxi_num_findiff10, '--*', label=r'$10^{th}$ order', linewidth=0.5)
+plt.xlabel(r'$\xi$')
+plt.ylabel(r'$d x / d \xi$')
 plt.legend()
 plt.title(r'N:%i' %(N))
 plt.grid(alpha=ALPHA_GRID)
 plt.savefig('pictures/dx_dxi_%i.pdf' %(N), bbox_inches='tight')
-
-plt.figure()
-plt.plot(x, dxi_dx, label='analytical')
-plt.plot(x, dxi_dx_num, '--o', label=r'$2^{nd}$ order', linewidth=0.5)
-plt.plot(x, dxi_dx_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=0.5)
-plt.plot(x, dxi_dx_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=0.5)
-plt.plot(x, dxi_dx_num_findiff8, '--x', label=r'$8^{th}$ order', linewidth=0.5)
-plt.plot(x, dxi_dx_num_findiff10, '--*', label=r'$10^{th}$ order', linewidth=0.5)
-plt.xlabel('x')
-plt.ylabel(r'$\partial \xi / \partial x$')
-plt.legend()
-plt.grid(alpha=ALPHA_GRID)
-plt.title(r'N:%i' %(N))
-plt.savefig('pictures/dxi_dx_%i.pdf' %(N), bbox_inches='tight')
+#
+# plt.figure()
+# plt.plot(x, dxi_dx, label='analytical')
+# plt.plot(x, dxi_dx_num, '--o', label=r'$2^{nd}$ order', linewidth=0.5)
+# plt.plot(x, dxi_dx_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=0.5)
+# plt.plot(x, dxi_dx_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=0.5)
+# plt.plot(x, dxi_dx_num_findiff8, '--x', label=r'$8^{th}$ order', linewidth=0.5)
+# plt.plot(x, dxi_dx_num_findiff10, '--*', label=r'$10^{th}$ order', linewidth=0.5)
+# plt.xlabel('x')
+# plt.ylabel(r'$\partial \xi / \partial x$')
+# plt.legend()
+# plt.grid(alpha=ALPHA_GRID)
+# plt.title(r'N:%i' %(N))
+# plt.savefig('pictures/dxi_dx_%i.pdf' %(N), bbox_inches='tight')
 plt.show()

@@ -1,1 +1,0 @@
-Try different levels of grid refinement to see how accuracy is effected

@@ -7,7 +7,7 @@ class AnnulusMeridional():
     insert the meridional flow fields as 2D array, in order to compute the eigenfrequencies of the annulus duct.
     """
 
-    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, grid_refinement=2):
+    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, grid_refinement=1):
         """
         Build the 2D arrays on the meridional plane, to be compatible with meridional_process object of a compressor.
         The non-dimensionalization procedure is treated later.
