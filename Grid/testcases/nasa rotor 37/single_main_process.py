@@ -224,7 +224,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.assemble_field_gradients()
     obj.assemble_body_force_fields()
     if SHOCK_SMOOTHING:
-        obj.shock_smoothing((0,))
+        obj.shock_smoothing(INLET_NZ-1)
     if MULTIBLOCK_FILTERING:
         obj.gauss_filtering()
         obj.gauss_filtering_gradients()

@@ -708,7 +708,7 @@ class MeridionalProcessGroup:
         self.tau_sun = enlarge_matrix_for_sun(self.tau)
 
 
-    def shock_smoothing(self, i_shock, extension_points, blending_function):
+    def shock_smoothing(self, i_shock, extension_points=4, blending_function='linear'):
         """
         Apply shock smoothing method to the interface between 2 blocks.
         :param i_shock: streamwise index of the shock/discontinuity position (upstream point of the discontinuity)
@@ -720,7 +720,8 @@ class MeridionalProcessGroup:
         # upstream/downstream
         self.compute_blending_function(i_shock, extension_points, blending_function)
         
-        #smooth the fields according to Crouch et al.
+        #smooth the primary fields
+        print("Smoothing the flow fields...")
         self.rho = self.smooth_field(self.rho)
         self.ur = self.smooth_field(self.ur)
         self.ut = self.smooth_field(self.ut)
@@ -729,6 +730,8 @@ class MeridionalProcessGroup:
         self.T = self.smooth_field(self.T)
         self.s = self.smooth_field(self.s)
 
+        #smooth the gradients
+        print("Smoothing the gradients...")
         self.drho_dr = self.smooth_field(self.drho_dr)
         self.dur_dr = self.smooth_field(self.dur_dr)
         self.dur_dz = self.smooth_field(self.dur_dz)
@@ -738,14 +741,50 @@ class MeridionalProcessGroup:
         self.dut_dz = self.smooth_field(self.dut_dz)
         self.dp_dr = self.smooth_field(self.dp_dr)
         self.dp_dz = self.smooth_field(self.dp_dz)
+
+        #smooth the body force fields
+        print("Smoothing the body force fields...")
+        self.S00 = self.smooth_field(self.S00)
+        self.S01 = self.smooth_field(self.S01)
+        self.S02 = self.smooth_field(self.S02)
+        self.S03 = self.smooth_field(self.S03)
+        self.S04 = self.smooth_field(self.S04)
+
+        self.S10 = self.smooth_field(self.S10)
+        self.S11 = self.smooth_field(self.S11)
+        self.S12 = self.smooth_field(self.S12)
+        self.S13 = self.smooth_field(self.S13)
+        self.S14 = self.smooth_field(self.S14)
+
+        self.S20 = self.smooth_field(self.S20)
+        self.S21 = self.smooth_field(self.S21)
+        self.S22 = self.smooth_field(self.S22)
+        self.S23 = self.smooth_field(self.S23)
+        self.S24 = self.smooth_field(self.S24)
+
+        self.S30 = self.smooth_field(self.S30)
+        self.S31 = self.smooth_field(self.S31)
+        self.S32 = self.smooth_field(self.S32)
+        self.S33 = self.smooth_field(self.S33)
+        self.S34 = self.smooth_field(self.S34)
+
+        self.S40 = self.smooth_field(self.S40)
+        self.S41 = self.smooth_field(self.S41)
+        self.S42 = self.smooth_field(self.S42)
+        self.S43 = self.smooth_field(self.S43)
+        self.S44 = self.smooth_field(self.S44)
     
-    def compute_blending_function(self, i_shock, extension_points=3, blending_function='linear'):
+    def compute_blending_function(self, i_shock, extension_points, blending_function):
         """
         :param i_shock: streamwise index of the shock/discontinuity position
         :param extension_points: specify how many points upstream and downstream of the interface you want to 
         smooth, blended accordingly to the blending function
         :param blending_function: specify they type of blending functions to use
         """
+        print_banner_begin("SMOOTHING PROCESS")
+        print(f"{'Extension of smoothing:':<{total_chars_mid}}{extension_points:>{total_chars_mid}i}")
+        print(f"{'Blending function:':<{total_chars_mid}}{blending_function:>{total_chars_mid}s}")
+        print_banner_end()
         self.blending_function = np.zeros_like(self.rho)
         if blending_function == 'linear':
             for jj in range(self.nspan):
