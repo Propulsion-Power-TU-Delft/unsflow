@@ -708,46 +708,66 @@ class MeridionalProcessGroup:
         self.tau_sun = enlarge_matrix_for_sun(self.tau)
 
 
-    def shock_smoothing(self, blocks):
+    def shock_smoothing(self, i_shock, extension_points, blending_function):
         """
         Apply shock smoothing method to the interface between 2 blocks.
-        :param blocks: tuple specifying among which blocks apply the smoothing
+        :param i_shock: streamwise index of the shock/discontinuity position (upstream point of the discontinuity)
+        :param extension_points: specify how many points upstream and downstream of the interface you want to 
+        smooth, blended accordingly to the blending function
+        :param blending_function: specify they type of blending functions to use
         """
-        for block in blocks:
-            idx = self.group[block].nstream
-            self.rho = self.smooth_field(self.rho, idx)
-            self.ur = self.smooth_field(self.ur, idx)
-            self.ut = self.smooth_field(self.ut, idx)
-            self.uz = self.smooth_field(self.uz, idx)
-            self.p = self.smooth_field(self.p, idx)
-            self.T = self.smooth_field(self.T, idx)
-            self.s = self.smooth_field(self.s, idx)
+        # compute the blending function, linear ramp from S = 1 at the leading edge, to S = 0 at 4 indexes 
+        # upstream/downstream
+        self.compute_blending_function(i_shock, extension_points, blending_function)
+        
+        #smooth the fields according to Crouch et al.
+        self.rho = self.smooth_field(self.rho)
+        self.ur = self.smooth_field(self.ur)
+        self.ut = self.smooth_field(self.ut)
+        self.uz = self.smooth_field(self.uz)
+        self.p = self.smooth_field(self.p)
+        self.T = self.smooth_field(self.T)
+        self.s = self.smooth_field(self.s)
 
-            self.drho_dr = self.smooth_field(self.drho_dr, idx)
-            self.dur_dr = self.smooth_field(self.dur_dr, idx)
-            self.dur_dz = self.smooth_field(self.dur_dz, idx)
-            self.duz_dr = self.smooth_field(self.duz_dr, idx)
-            self.duz_dz = self.smooth_field(self.duz_dz, idx)
-            self.dut_dr = self.smooth_field(self.dut_dr, idx)
-            self.dut_dz = self.smooth_field(self.dut_dz, idx)
-            self.dp_dr = self.smooth_field(self.dp_dr, idx)
-            self.dp_dz = self.smooth_field(self.dp_dz, idx)
-
-    @staticmethod
-    def smooth_field(f, idx, c=0.1, Nsc=15):
+        self.drho_dr = self.smooth_field(self.drho_dr)
+        self.dur_dr = self.smooth_field(self.dur_dr)
+        self.dur_dz = self.smooth_field(self.dur_dz)
+        self.duz_dr = self.smooth_field(self.duz_dr)
+        self.duz_dz = self.smooth_field(self.duz_dz)
+        self.dut_dr = self.smooth_field(self.dut_dr)
+        self.dut_dz = self.smooth_field(self.dut_dz)
+        self.dp_dr = self.smooth_field(self.dp_dr)
+        self.dp_dz = self.smooth_field(self.dp_dz)
+    
+    def compute_blending_function(self, i_shock, extension_points=3, blending_function='linear'):
+        """
+        :param i_shock: streamwise index of the shock/discontinuity position
+        :param extension_points: specify how many points upstream and downstream of the interface you want to 
+        smooth, blended accordingly to the blending function
+        :param blending_function: specify they type of blending functions to use
+        """
+        self.blending_function = np.zeros_like(self.rho)
+        if blending_function == 'linear':
+            for jj in range(self.nspan):
+                self.blending_function[i_shock-extension_points:i_shock+1, jj] = np.linspace(0,1,extension_points+1)
+                self.blending_function[i_shock+1:i_shock+1+extension_points, jj] = np.linspace(1,0,extension_points+1)
+        else:
+            raise ValueError("Blending function not recognized.")
+        
+    def smooth_field(self, f, c=0.1, Nsc=15):
         """
         Smoothing Algorithm.
         :param f: field to smooth
-        :param idx: streamwise index of the point upstream of the discontinuity to smooth
-        :param c: smoothing coefficient. Suggested value=0.1 from He et al.
+        :param c: smoothing coefficient. Suggested value=0.1 from He et al. and Crouch et al.
         :param Nsc: number of smoothing cycles. Suggested value=15 from He et al.
         """
-        g = f.copy()  # copy of the initial field
+        f_original = f.copy()
+        islice = slice(1,self.nstream-1)
+        islicep = slice(2,self.nstream)
+        islicem = slice(0, self.nstream-2)
         for _ in range(Nsc):
-            f[idx, :] = g[idx, :] + 0.5*c*(g[idx+1, :] - 2*g[idx, :] + g[idx-1, :])  # upstream point smoothing
-            idx +=1
-            f[idx, :] = g[idx, :] + 0.5 * c * (g[idx + 1, :] - 2 * g[idx, :] + g[idx - 1, :])  # downstream point smoothing
-            g = f.copy()
+            f[islice, :] = f[islice, :] + 0.5*c*(f[islicep, :] - 2*f[islice, :] + f[islicem, :])  
+        f = (1-self.blending_function)*f_original + self.blending_function*f
         return f
 
 
