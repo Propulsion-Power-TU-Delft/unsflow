@@ -1,24 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 12 11:41:53 2023
-@author: F. Neri, TU Delft
-
-"""
 import time
 import matplotlib.pyplot as plt
 import sys
-
-sys.path.append('../../Grid')
-import Grid
 import pickle
 import numpy as np
+import Grid
 
-plt.rcParams.update({'figure.max_open_warning': 0})
 
 start_time = time.time()
 print('Start execution:')
-
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'sigmoid'
 REGRESSION = False
@@ -27,46 +16,58 @@ BLADE_NZ = 20
 OUTLET_NZ = 40
 NR = 20
 AVG_MODE = 'cell centered'
-file_name = 'data/meta/config_09_meridional_data.csv'
-MULTIBLOCK_FILTERING = True
+cfd_filename = 'data/meta/config_09_meridional_data.csv'
+MULTIBLOCK_FILTERING = False
 SHOCK_SMOOTHING = False
-INTERP_METHOD = 'cubic'
+INTERP_METHOD = 'linear'
 INLET_BLOCK = True
 BLADE_BLOCK = True
 OUTLET_BLOCK = True
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INPUT DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-data_folder_path = 'nasa_rotor_37/cordinates/'
+geo_folder = 'nasa_rotor_37/cordinates/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
 x_ref = 0.252  # reference length, tip radius [m]
 rpm_ref = -17189  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 0.01  # cordinates of data files are in [cm]
-sigmoid_coeff_stream = 5
-sigmoid_coeff_span = 5
+sigmoid_coeff_stream = 8
+sigmoid_coeff_span = 10
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE INFO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# compute the blade object info, in order to cut the block appropriately
-blade = Grid.src.Blade(data_folder_path + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
+
+
+
+
+
+
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+blade = Grid.src.Blade(geo_folder + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
 blade.find_inlet_points(geometry_type='axial')
 blade.find_outlet_points(geometry_type='axial')
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CFD INFO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# instantiate cfd data object and perform processing removing the outliers
-data = Grid.src.CfdData(file_name, rpm_drag=rpm_ref, blade=blade, verbose=True, normalize=True,
+
+data = Grid.src.CfdData(cfd_filename, rpm_drag=rpm_ref, blade=blade, verbose=True, normalize=True,
                         rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref, file_type='Ansys2D')
 data.process_from_ansys_csv()
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCKPROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK:
     print("\nINLET BLOCK PROCESSING...")
     nstream = INLET_NZ
     nspan = NR
-
-    hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
                          rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
                             rescale_factor=rescale_factor, x_ref=x_ref)
     block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
@@ -102,14 +103,21 @@ if INLET_BLOCK:
     inlet_process.compute_body_fource_S('unbladed')
     delattr(inlet_process, 'data')  # release useless memory
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if BLADE_BLOCK:
     print("\nBLADE BLOCK PROCESSING...")
     nstream = BLADE_NZ
     nspan = NR
-    hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
                          rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
                             rescale_factor=rescale_factor, x_ref=x_ref)
     bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
 
@@ -163,14 +171,21 @@ if BLADE_BLOCK:
 
     delattr(blade_process, 'data')
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if OUTLET_BLOCK:
     print("\nOUTLET BLOCK PROCESSING...")
     nstream = OUTLET_NZ
     nspan = NR
-    hub = Grid.src.Curve(curve_filepath=data_folder_path + 'hub.curve', units=units, degree_spline=3,
+    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
                          rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=data_folder_path + 'shroud.curve', units=units, degree_spline=3,
+    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
                             rescale_factor=rescale_factor, x_ref=x_ref)
     block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
     block.add_inlet_outlet_curves(blade.inlet, blade.outlet)

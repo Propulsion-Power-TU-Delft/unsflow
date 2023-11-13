@@ -782,14 +782,14 @@ class MeridionalProcessGroup:
         :param blending_function: specify they type of blending functions to use
         """
         print_banner_begin("SMOOTHING PROCESS")
-        print(f"{'Extension of smoothing:':<{total_chars_mid}}{extension_points:>{total_chars_mid}i}")
-        print(f"{'Blending function:':<{total_chars_mid}}{blending_function:>{total_chars_mid}s}")
+        print(f"{'Extension of smoothing:':<{total_chars_mid}}{extension_points:>{total_chars_mid}}")
+        print(f"{'Blending function:':<{total_chars_mid}}{blending_function:>{total_chars_mid}}")
         print_banner_end()
         self.blending_function = np.zeros_like(self.rho)
         if blending_function == 'linear':
             for jj in range(self.nspan):
                 self.blending_function[i_shock-extension_points:i_shock+1, jj] = np.linspace(0,1,extension_points+1)
-                self.blending_function[i_shock+1:i_shock+1+extension_points, jj] = np.linspace(1,0,extension_points+1)
+                self.blending_function[i_shock+1:i_shock+1+extension_points+1, jj] = np.linspace(1,0,extension_points+1)
         else:
             raise ValueError("Blending function not recognized.")
         

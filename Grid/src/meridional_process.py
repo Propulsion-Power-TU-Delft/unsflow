@@ -4,7 +4,7 @@
 Created on Thu Jun 15 17:07:05 2023
 @author: F. Neri, TU Delft
 """
-
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sqrt
 import matplotlib.path as mplpath
@@ -620,8 +620,8 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)
+        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)/50
+        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)/50
 
         # Perform the RBF interpolation of the left points
         field_interp_right = rbf(self.z_cg + dz, self.r_cg)
@@ -630,9 +630,21 @@ class MeridionalProcess:
         field_interp_down = rbf(self.z_cg, self.r_cg - dr)
         dfield_dz = ((field_interp_right - field_interp_left) / (2 * dz))
         dfield_dr = ((field_interp_up - field_interp_down) / (2 * dr))
-        dfield_dtheta = np.zeros_like(dfield_dr)
 
-        return dfield_dr, dfield_dtheta, dfield_dz
+        # plt.figure()
+        # plt.contourf(self.z_cg, self.r_cg, field, levels=50)
+        #
+        # plt.figure()
+        # plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=50)
+        # plt.title('d/dz')
+        # plt.colorbar()
+        #
+        # plt.figure()
+        # plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=50)
+        # plt.title('d/dr')
+        # plt.colorbar()
+
+        return dfield_dr, dfield_dz
 
 
     @staticmethod
@@ -1782,15 +1794,66 @@ class MeridionalProcess:
         self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
 
 
-    def compute_field_gradients(self):
-        self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
-        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
-        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
-        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
-        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
-        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
-        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
+    def compute_field_gradients(self, method='rbf'):
+        """
+        compute the gradient of the flow field using a certain interpolation method, in order to evaluate functions at
+        z+deltaz and r+deltar.
+        """
+        if method == 'rbf':
+            self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
+            self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
+            self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
+            self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
+            self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
+            self.dT_dr, self.dT_dz = self.rbf_finite_difference(self.T)
+            self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
+        elif method == 'linear':
+            self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.rho)
+            self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.ur)
+            self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.ut)
+            self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.uz)
+            self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.p)
+            self.dT_dr, self.dT_dz = self.linear_interpolation_gradient(self.T)
+            self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.s)
+        else:
+            raise ValueError("Method not recognized.")
 
+    def linear_interpolation_gradient(self, f):
+        """
+        Linear interpolation method in order to compute the gradient of f
+        """
+        Z = self.z_cg
+        R = self.r_cg
+        Zplus = np.zeros_like(self.z_cg)
+        Rplus = np.zeros_like(self.r_cg)
+        Zminus = np.zeros_like(self.z_cg)
+        Rminus = np.zeros_like(self.r_cg)
+        for ii in range(0, self.nstream):
+            for jj in range(0, self.nspan):
+                if ii==self.nstream-1 or jj==self.nspan-1:
+                    Zplus[ii, jj] = Z[ii, jj] + np.abs((Z[ii, jj] - Z[ii-1, jj]) / 2)
+                    Zminus[ii, jj] = Z[ii, jj] - np.abs((Z[ii, jj] - Z[ii-1, jj]) / 2)
+                    Rplus[ii, jj] = R[ii, jj] + np.abs((R[ii, jj] - R[ii, jj-1]) / 2)
+                    Rminus[ii, jj] = R[ii, jj] - np.abs((R[ii, jj] - R[ii, jj-1]) / 2)
+                else:
+                    Zplus[ii, jj] = Z[ii, jj]+ np.abs((Z[ii+1, jj] - Z[ii, jj])/2)
+                    Rplus[ii, jj] = R[ii, jj] + np.abs((R[ii, jj+1] - R[ii, jj]) / 2)
+                    Zminus[ii, jj] = Z[ii, jj] - np.abs((Z[ii+1, jj] - Z[ii, jj]) / 2)
+                    Rminus[ii, jj] = R[ii, jj] - np.abs((R[ii, jj+1] - R[ii, jj]) / 2)
+
+        values = f.flatten()
+
+        points = np.column_stack((Z.flatten(), R.flatten()))
+        f_zplus = griddata(points, values, (Zplus, R), method='cubic')
+        f_zminus = griddata(points, values, (Zminus, R), method='cubic')
+        f_rplus = griddata(points, values, (Z, Rplus), method='cubic')
+        f_rminus = griddata(points, values, (Z, Rminus), method='cubic')
+        df_dz = (f_zplus-f_zminus)/(Zplus-Zminus)
+        df_dz = np.reshape(df_dz, self.z_cg.shape)
+        df_dr = (f_rplus - f_rminus) / (Rplus - Rminus)
+        df_dr = np.reshape(df_dr, self.z_cg.shape)
+
+        return f_zplus, f_zminus
 
 
     def interpolate_function(self, f, z, r, method):
