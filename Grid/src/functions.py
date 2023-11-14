@@ -12,6 +12,7 @@ from .styles import *
 import math
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
+from scipy.interpolate import CubicSpline
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -191,26 +192,27 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
     X = np.zeros((nx, ny))
     Y = np.zeros((nx, ny))
-    if X0 is not None and Y0 is not None:
-        # inital grid attempt given in the args
-        X = X0
-        Y = Y0
-    else:
-        # if initial grid is not given, find it via interpolation of the borders
-        X[0, :] = c_left[0, :]
-        Y[0, :] = c_left[1, :]
-        X[:, 0] = c_bottom[0, :]
-        Y[:, 0] = c_bottom[1, :]
-        X[-1, :] = c_right[0, :]
-        Y[-1, :] = c_right[1, :]
-        X[:, -1] = c_top[0, :]
-        Y[:, -1] = c_top[1, :]
-        for istream in range(1, nx - 1):
-            for ispan in range(1, ny - 1):
-                X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
-                Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
-        X0 = X
-        Y0 = Y
+    # if X0 is not None and Y0 is not None:
+    #     # inital grid attempt given in the args
+    #     X = X0
+    #     Y = Y0
+    # else:
+
+    # if initial grid is not given, find it via interpolation of the borders
+    X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    Y[0, :] = c_left[1, :]
+    X[:, 0] = c_bottom[0, :]
+    Y[:, 0] = c_bottom[1, :]
+    X[-1, :] = c_right[0, :]
+    Y[-1, :] = c_right[1, :]
+    X[:, -1] = c_top[0, :]
+    Y[:, -1] = c_top[1, :]
+    for istream in range(1, nx - 1):
+        for ispan in range(1, ny - 1):
+            X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
+            Y[istream, ispan] = Y[istream, 0] + (Y[istream, -1] - Y[istream, 0]) * ispan / (ny - 1)
+    X0 = X
+    Y0 = Y
 
     # compute stretching functions, even in the case of no-stretching to avoid messing up things
     f1 = np.zeros((nx, ny))
@@ -376,10 +378,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         if orthogonality and it > it_orth:
 
             # BOTTOM EDGE
-            # x = c_bottom[0, :]
-            # y = c_bottom[1, :]
-            x = X[:, 0]
-            y = Y[:, 0]
+            x = c_bottom[0, :]
+            y = c_bottom[1, :]
+            # x = X[:, 0]
+            # y = Y[:, 0]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, 0]
@@ -400,10 +402,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 Y[istream, 0] = yb_new
 
             # TOP EDGE
-            # x = c_top[0, :]
-            # y = c_top[1, :]
-            x = X[:, -1]
-            y = Y[:, -1]
+            x = c_top[0, :]
+            y = c_top[1, :]
+            # x = X[:, -1]
+            # y = Y[:, -1]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, -1]
@@ -425,10 +427,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
             # LEFT EDGE
             if not fix_inlet:
-                # x = c_left[0, :]
-                # y = c_left[1, :]
-                x = X[0, :]
-                y = Y[0, :]
+                x = c_left[0, :]
+                y = c_left[1, :]
+                # x = X[0, :]
+                # y = Y[0, :]
                 y_prime = np.gradient(y, x)
                 for ispan in range(1, ny - 1):
                     xb_old = X_old[0, ispan]
@@ -450,10 +452,10 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
             # RIGHT EDGE
             if not fix_outlet:
-                # x = c_right[0, :]
-                # y = c_right[1, :]
-                x = X[-1, :]
-                y = Y[-1, :]
+                x = c_right[0, :]
+                y = c_right[1, :]
+                # x = X[-1, :]
+                # y = Y[-1, :]
                 y_prime = np.gradient(y, x)
                 for ispan in range(1, ny - 1):
                     xb_old = X_old[-1, ispan]
@@ -834,3 +836,14 @@ def compute_picture_size(x, y):
         pic_size_blank = (6 * WH_ratio, 6)
         pic_size_contour = (6 * WH_ratio * (1 + color_bar_span), 6)
     return pic_size_blank, pic_size_contour
+
+
+def sample_spline(x, sample_method, sample_coeff, sampling_points):
+    t = np.linspace(0, 1, sampling_points)
+    spline = CubicSpline(t, x)
+
+    t_scaled = scaled_sigmoid(t, sample_coeff)[0]
+    t_scaled[0] = 0
+    t_scaled[-1] = 1
+    x_spline = spline(t_scaled)
+    return x_spline

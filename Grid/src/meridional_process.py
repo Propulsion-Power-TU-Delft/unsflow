@@ -776,6 +776,38 @@ class MeridionalProcess:
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
 
+    def contour_all_plots(self):
+        """
+        call all the contour plots
+        """
+        self.contour_plot(field='rho')
+        self.contour_plot(field='ur')
+        self.contour_plot(field='ut')
+        self.contour_plot(field='ut_rel')
+        self.contour_plot(field='ut_drag')
+        self.contour_plot(field='uz')
+        self.contour_plot(field='p')
+        self.contour_plot(field='s')
+        self.contour_plot(field='T')
+        self.contour_plot(field='drho_dr')
+        self.contour_plot(field='drho_dz')
+        self.contour_plot(field='dur_dr')
+        self.contour_plot(field='dur_dz')
+        self.contour_plot(field='dut_dr')
+        self.contour_plot(field='dut_dz')
+        self.contour_plot(field='duz_dr')
+        self.contour_plot(field='duz_dz')
+        self.contour_plot(field='dp_dr')
+        self.contour_plot(field='dp_dz')
+        self.contour_plot(field='dT_dr')
+        self.contour_plot(field='dT_dz')
+        self.contour_plot(field='ds_dr')
+        self.contour_plot(field='ds_dz')
+        self.contour_plot(field='M')
+        self.contour_plot(field='p_tot')
+        self.contour_plot(field='p_tot_bar')
+        self.contour_plot(field='T_tot')
+
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
         Contour plot of a 2D field.

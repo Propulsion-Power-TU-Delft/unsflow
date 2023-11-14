@@ -42,10 +42,10 @@ block.find_intersections(tol=1e-3)
 block.spline_of_hub_shroud()
 block.spline_of_inlet_outlet_full_block()
 block.sample_hub_shroud_full_block(sampling_mode=stream_grid_sampling)
-block.sample_outlet(sampling_mode=span_grid_sampling)
-block.compute_grid_points(sampling_mode=span_grid_sampling, grid_mode='spanwise', curved_border='right', smoothing='elliptic',
-                          orthogonality=False, x_stretching=False, y_stretching=False, sigmoid_coeff_x=6,
-                          sigmoid_coeff_y=9)
+block.sample_inlet_outlet(sampling_mode=span_grid_sampling)
+block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=False,
+                          y_stretching='sigmoid', method='minimize',
+                          sigmoid_coeff_x=6, sigmoid_coeff_y=10)
 block.compute_grid_centers()
 block.find_border()
 block.plot_full_grid(save_filename='inlet_grid_%2d_%2d' % (nstream, nspan), primary_grid=True)
