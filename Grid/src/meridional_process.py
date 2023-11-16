@@ -1551,6 +1551,44 @@ class MeridionalProcess:
             plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             plt.close()
 
+    def contour_entropy_generation(self, save_fig=None):
+        """
+        Show the contour of the entropy generation, defined as the difference between the local entropy and the
+        one that was at leading edge
+        """
+        z = self.z_cg
+        r = self.r_cg
+        s = self.s.copy()
+        for istream in range(self.nstream):
+            s[istream, :] = s[istream, :] - s[0, :]
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(z, r, s, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$s_{GEN}$')
+        if save_fig:
+            plt.savefig('pictures/entropy_generation_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
+
+    def contour_local_entropy_generation(self, save_fig=None):
+        """
+        Show the contour of the entropy generation, defined as the difference between the local entropy and the
+        one that was at leading edge
+        """
+        z = self.z_cg
+        r = self.r_cg
+        s = self.s.copy()
+        for istream in range(1, self.nstream):
+            s[istream, :] = s[istream, :] - s[istream-1, :]
+        s[0, :] = s[1, :]
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(z, r, s, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$s_{GEN,L}$')
+        if save_fig:
+            plt.savefig('pictures/local_entropy_generation_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            plt.close()
 
 
     def compute_body_fource_S(self, domain):
@@ -1825,6 +1863,21 @@ class MeridionalProcess:
         self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
         self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
 
+        try:
+            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method)
+            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method)
+            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method)
+            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method)
+            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method)
+            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method)
+            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method)
+            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method)
+            self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method)
+            self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method)
+            self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method)
+            self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method)
+        except:
+            pass
 
     def compute_field_gradients(self, method='rbf'):
         """
@@ -1832,21 +1885,21 @@ class MeridionalProcess:
         z+deltaz and r+deltar.
         """
         if method == 'rbf':
-            self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
-            self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
-            self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
-            self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
-            self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
+            # self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
+            # self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
+            # self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
+            # self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
+            # self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
             self.dT_dr, self.dT_dz = self.rbf_finite_difference(self.T)
-            self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
+            # self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
         elif method == 'linear':
-            self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.rho)
-            self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.ur)
-            self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.ut)
-            self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.uz)
-            self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.p)
+            # self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.rho)
+            # self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.ur)
+            # self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.ut)
+            # self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.uz)
+            # self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.p)
             self.dT_dr, self.dT_dz = self.linear_interpolation_gradient(self.T)
-            self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.s)
+            # self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.s)
         else:
             raise ValueError("Method not recognized.")
 

@@ -18,7 +18,7 @@ start_time = time.time()
 print('Start execution:')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
+MESH_TYPE = 'sigmoid'
 REGRESSION = True
 INLET_NZ = 20
 BLADE_NZ = 40
@@ -45,8 +45,8 @@ x_ref = 0.0228  # reference length, tip radius [m]
 rpm_ref = +94e3  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 1  # cordinates of data files are in [m]
-sigmoid_coeff_stream = 8
-sigmoid_coeff_span = 8
+sigmoid_coeff_stream = 12
+sigmoid_coeff_span = 17
 
 
 
@@ -93,7 +93,7 @@ if INLET_BLOCK:
                                   sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
     else:
         block.compute_grid_points(grid_mode='elliptic', orthogonality=True,
-                                  x_stretching='sigmoid_right', y_stretching='sigmoid',
+                                  x_stretching='sigmoid', y_stretching='sigmoid',
                                   sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
     block.compute_grid_centers()
 
@@ -209,12 +209,12 @@ if OUTLET_BLOCK:
                                       sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
     else:
         try:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left',
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid',
                                       y_stretching='sigmoid',
                                       sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span,
                                       inlet_meridional_obj=blade_process)
         except:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left',
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid',
                                       y_stretching='sigmoid',
                                       sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
     block.compute_grid_centers()

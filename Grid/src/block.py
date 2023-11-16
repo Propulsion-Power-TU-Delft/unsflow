@@ -279,7 +279,7 @@ class Block:
                                                                               sigmoid_coeff_y=sigmoid_coeff_y,
                                                                               method=method,
                                                                               fix_inlet = fix_inlet, fix_outlet = fix_outlet,
-                                                                              save_animation=save_animation, tol=1e-4)
+                                                                              save_animation=save_animation, tol=1e-5)
         else:
             raise ValueError('Grid method not recognized!')
 

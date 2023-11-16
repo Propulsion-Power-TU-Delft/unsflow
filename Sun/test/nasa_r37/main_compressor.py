@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import Sun
 
 # INPUT
-filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_20_blade_20_outlet_40_nspan_20.pickle'
+filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_15_blade_15_outlet_30_nspan_25.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
@@ -19,6 +19,7 @@ compressor_grid = Sun.src.sun_grid.SunGrid(meridional_obj)
 sun_obj = Sun.src.SunModel(compressor_grid)
 sun_obj.ComputeBoundaryNormals()
 sun_obj.set_normalization_quantities()
+sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ShowPhysicalGrid(save_filename='physical_grid', mode='lines')
 sun_obj.ComputeSpectralGrid()
 sun_obj.ShowSpectralGrid(save_filename='computational_grid', mode='lines')

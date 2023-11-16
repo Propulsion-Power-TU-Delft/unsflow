@@ -11,18 +11,18 @@ print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'sigmoid'
 REGRESSION = False
-INLET_NZ = 30
+INLET_NZ = 25
 BLADE_NZ = 25
 OUTLET_NZ = 45
-NR = 30
+NR = 35
 AVG_MODE = 'cell centered'
-cfd_filename = 'data/meta/config_09_meridional_data.csv'
+cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
 MULTIBLOCK_FILTERING = False
-SHOCK_SMOOTHING = False
+SHOCK_SMOOTHING = True
 INTERP_METHOD = 'cubic'
-INLET_BLOCK = False
+INLET_BLOCK = True
 BLADE_BLOCK = True
-OUTLET_BLOCK = False
+OUTLET_BLOCK = True
 geo_folder = 'nasa_rotor_37/cordinates/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
@@ -31,7 +31,7 @@ rpm_ref = -17189  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 0.01  # cordinates of data files are in [cm]
 sigmoid_coeff_stream = 10
-sigmoid_coeff_span = 15
+sigmoid_coeff_span = 10
 
 
 
@@ -86,7 +86,7 @@ if INLET_BLOCK:
                                   sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
     else:
         block.compute_grid_points(grid_mode='elliptic', orthogonality=True,
-                                  x_stretching='sigmoid_right', y_stretching='sigmoid',
+                                  x_stretching='sigmoid', y_stretching='sigmoid',
                                   sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span, method='minimize')
     block.compute_grid_centers()
 
@@ -106,54 +106,8 @@ if INLET_BLOCK:
 
 
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if OUTLET_BLOCK:
-    print("\nOUTLET BLOCK PROCESSING...")
-    nstream = OUTLET_NZ
-    nspan = NR
-    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
-                         rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
-                            rescale_factor=rescale_factor, x_ref=x_ref)
-    block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
-    block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
-    block.extend_inlet_outlet_curves()
-    block.find_intersections()
-    block.outlet_zone_trim(mode='axial')
-    block.spline_of_hub_shroud()
-    block.spline_of_inlet()
-    block.sample_hub_shroud()
-    block.sample_inlet_outlet()
-    if MESH_TYPE == 'default':
-        try:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
-                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-        except:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
-                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-    else:
-        try:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left', y_stretching='sigmoid',
-                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span, method='minimize')
-        except:
-            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid_left',
-                                      y_stretching='sigmoid',
-                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-    block.compute_grid_centers()
 
-    outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
-    outlet_process.compute_streamline_length()
-    # outlet_process.circumferential_average(mode=AVG_MODE)
-    outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    if REGRESSION:
-        outlet_process.compute_regressed_fields()
-    else:
-        outlet_process.compute_field_gradients()
-    outlet_process.compute_derived_quantities()
-    outlet_process.compute_averaged_fluxes()
-    outlet_process.compute_body_fource_S('unbladed')
-    outlet_process.contour_all_plots()
-    delattr(outlet_process, 'data')
+
 
 
 
@@ -203,6 +157,7 @@ if BLADE_BLOCK:
     blade.find_camber_surface(bladed_block)
     blade.compute_camber_vectors()
     blade.compute_blade_camber_angles(convention='rotation-wise')
+    # blade.show_blade_angles_contour(save_filename='%i_%i' %(BLADE_NZ, NR))
 
     # instantiate meridional process object and avg
     blade_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
@@ -215,16 +170,68 @@ if BLADE_BLOCK:
     else:
         blade_process.compute_field_gradients()
     blade_process.compute_derived_quantities()
-    blade_process.compute_bfm_axial(mode='global', save_fig=True)
+    blade_process.contour_entropy_generation()
+    blade_process.contour_local_entropy_generation()
+    blade_process.compute_bfm_axial(mode='global')
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    blade_process.contour_all_plots()
+    # blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
 
 
 
 
+
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if OUTLET_BLOCK:
+    print("\nOUTLET BLOCK PROCESSING...")
+    nstream = OUTLET_NZ
+    nspan = NR
+    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
+                         rescale_factor=rescale_factor, x_ref=x_ref)
+    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
+                            rescale_factor=rescale_factor, x_ref=x_ref)
+    block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
+    block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
+    block.extend_inlet_outlet_curves()
+    block.find_intersections()
+    block.outlet_zone_trim(mode='axial')
+    block.spline_of_hub_shroud()
+    block.spline_of_inlet()
+    block.sample_hub_shroud()
+    block.sample_inlet_outlet()
+    if MESH_TYPE == 'default':
+        try:
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
+                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+        except:
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=False, x_stretching=False, y_stretching=False,
+                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+    else:
+        try:
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span, method='minimize')
+        except:
+            block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid',
+                                      y_stretching='sigmoid',
+                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+    block.compute_grid_centers()
+
+    outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
+    outlet_process.compute_streamline_length()
+    # outlet_process.circumferential_average(mode=AVG_MODE)
+    outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    if REGRESSION:
+        outlet_process.compute_regressed_fields()
+    else:
+        outlet_process.compute_field_gradients()
+    outlet_process.compute_derived_quantities()
+    outlet_process.compute_averaged_fluxes()
+    outlet_process.compute_body_fource_S('unbladed')
+    outlet_process.contour_all_plots()
+    delattr(outlet_process, 'data')
 
 
 
@@ -245,7 +252,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
         obj.gauss_filtering()
         obj.gauss_filtering_gradients()
     obj.compute_streamline_length()
-    obj.show_grid()
+    obj.show_grid(save_filename='%i_%i_%i_%i' % (INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
     obj.contour_fields(save_filename='filt_%s_%i_%i_%i_%i'
                                      % (MULTIBLOCK_FILTERING, INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
@@ -276,10 +283,11 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.compute_performance()
     obj.print_performance()
     obj.compose_global_sun_Omega_tau()
-    delattr(obj, 'group')
     obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' % (INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
+    delattr(obj, 'group')
+
 
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))
-plt.show()
+# plt.show()

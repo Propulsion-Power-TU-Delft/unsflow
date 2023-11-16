@@ -1702,11 +1702,11 @@ class SunModel:
         """
         fig, ax = plt.subplots(figsize=fig_size)
         for mode in self.eigenfields:
-            if mode.is_physical:
-                rs = mode.eigenfrequency.real/self.omega_ref
-                df = mode.eigenfrequency.imag/self.omega_ref
-                ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
-                           s=marker_size)
+            # if mode.is_physical:
+            rs = mode.eigenfrequency.real/self.omega_ref
+            df = mode.eigenfrequency.imag/self.omega_ref
+            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
+                       s=marker_size)
         ax.set_xlabel(r'RS [-]')
         ax.set_ylabel(r'DF [-]')
         # ax.legend()
@@ -1790,69 +1790,69 @@ class SunModel:
         imode = 0
         for mode in self.eigenfields[0:n]:
             imode += 1
-            if mode.is_physical:
-                rs = mode.eigenfrequency.real / self.omega_ref
-                df = mode.eigenfrequency.imag / self.omega_ref
+            # if mode.is_physical:
+            rs = mode.eigenfrequency.real / self.omega_ref
+            df = mode.eigenfrequency.imag / self.omega_ref
 
-                plt.figure(figsize=self.pic_size_contour)
-                cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
-                plt.xlabel(r'$z$ [-]')
-                plt.ylabel(r'$r$ [-]')
-                plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-                plt.colorbar()
-                if save_filename is not None:
-                    plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                    plt.close()
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-                plt.figure(figsize=self.pic_size_contour)
-                cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
-                plt.xlabel(r'$z$ [-]')
-                plt.ylabel(r'$r$ [-]')
-                plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-                plt.colorbar()
-                if save_filename is not None:
-                    plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                    plt.close()
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-                plt.figure(figsize=self.pic_size_contour)
-                cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
-                plt.xlabel(r'$z$ [-]')
-                plt.ylabel(r'$r$ [-]')
-                plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-                plt.colorbar()
-                if save_filename is not None:
-                    plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                    plt.close()
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-                plt.figure(figsize=self.pic_size_contour)
-                cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
-                plt.xlabel(r'$z$ [-]')
-                plt.ylabel(r'$r$ [-]')
-                plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-                plt.colorbar()
-                if save_filename is not None:
-                    plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                    plt.close()
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
-                plt.figure(figsize=self.pic_size_contour)
-                cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
-                plt.xlabel(r'$z$ [-]')
-                plt.ylabel(r'$r$ [-]')
-                plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-                plt.colorbar()
-                if save_filename is not None:
-                    plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                    plt.close()
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            for c in cnt.collections:
+                c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.close()
 
     def write_results(self, save_filename=None, extension='csv'):
         """

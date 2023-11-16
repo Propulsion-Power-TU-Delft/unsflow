@@ -76,7 +76,7 @@ def project_scalar_gradient_to_cylindrical(da_dx, da_dy, r, theta):
     """
     da_dr = da_dx * cos(theta) + da_dy * sin(theta)
     da_dtheta = r * (-da_dx * sin(theta) + da_dy * cos(theta))
-    return da_dr, da_dtheta
+    return da_dr
 
 
 def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, theta):
@@ -92,11 +92,11 @@ def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, 
     """
 
     dur_dr = dux_dx * cos(theta) ** 2 + (duy_dx + dux_dy) * sin(theta) * cos(theta) + duy_dy * sin(theta) ** 2
-    dur_dtheta = r * (dux_dy * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - duy_dx * sin(theta) ** 2)
+    # dur_dtheta = r * (dux_dy * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - duy_dx * sin(theta) ** 2)
     dut_dr = duy_dx * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - dux_dy * sin(theta) ** 2
-    dut_dtheta = r * (dux_dx * sin(theta) ** 2 - sin(theta) * cos(theta) * (duy_dx + dux_dy) + duy_dy * cos(theta) ** 2)
+    # dut_dtheta = r * (dux_dx * sin(theta) ** 2 - sin(theta) * cos(theta) * (duy_dx + dux_dy) + duy_dy * cos(theta) ** 2)
 
-    return dur_dr, dur_dtheta, dut_dr, dut_dtheta
+    return dur_dr, dut_dr
 
 
 # def second_order_finite_differences(x, y, z):
@@ -153,7 +153,8 @@ def cartesian_to_cylindrical_matrix(x, y):
 def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
                              y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
                              pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
-                             method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False):
+                             method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False,
+                             border_adjustment=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -182,7 +183,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     """
     nx = np.shape(c_bottom)[1]
     ny = np.shape(c_left)[1]
-    maxit = 500
+    maxit = 1000
 
     # computational domain between 0 and 1 in both directions
     xi = np.linspace(0, 1, nx)
@@ -200,13 +201,13 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
     # if initial grid is not given, find it via interpolation of the borders
     X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
-    Y[0, :] = c_left[1, :]
-    X[:, 0] = c_bottom[0, :]
-    Y[:, 0] = c_bottom[1, :]
-    X[-1, :] = c_right[0, :]
-    Y[-1, :] = c_right[1, :]
-    X[:, -1] = c_top[0, :]
-    Y[:, -1] = c_top[1, :]
+    Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
+    Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
+    X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
+    Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
     for istream in range(1, nx - 1):
         for ispan in range(1, ny - 1):
             X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
@@ -375,7 +376,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 Y[ii, jj] = P[ii] * Y[ii + 1, jj] + Q[ii]
 
         # if orthogonality required, update all the borders points cordinates, except the vertices
-        if orthogonality and it > it_orth:
+        if border_adjustment and it > it_orth:
 
             # BOTTOM EDGE
             x = c_bottom[0, :]
@@ -839,11 +840,31 @@ def compute_picture_size(x, y):
 
 
 def sample_spline(x, sample_method, sample_coeff, sampling_points):
+    """
+    Sample the curve denoted by a generic x-cordinate, parametrized as cubic spline, in a certain method.
+    :param x:cordinates
+    :param sample_method: method used to sample (linear, sigmoid, sigmoid_left, sigmoid_right)
+    :param sample_coeff: coefficient of the sigmoid slope (alpha parameters)
+    :param sampling_points: number of sampling points
+    """
     t = np.linspace(0, 1, sampling_points)
     spline = CubicSpline(t, x)
 
-    t_scaled = scaled_sigmoid(t, sample_coeff)[0]
+    if sample_method=='sigmoid':
+        t_scaled = scaled_sigmoid(t, sample_coeff)[0]
+    elif sample_method=='sigmoid_left' or sample_method=='sigmoid_down':
+        t_scaled = scaled_sigmoid_left(t, sample_coeff)[0]
+    elif sample_method=='sigmoid_right' or sample_method=='sigmoid_up':
+        t_scaled = scaled_sigmoid_right(t, sample_coeff)[0]
+    elif sample_method=='default':
+        t_scaled = t
+    else:
+        raise ValueError("Unrecognized sample method")
     t_scaled[0] = 0
     t_scaled[-1] = 1
     x_spline = spline(t_scaled)
+
+    plt.figure()
+    plt.plot(t, x, 'k')
+    plt.plot(t_scaled, x_spline, 'ro')
     return x_spline
