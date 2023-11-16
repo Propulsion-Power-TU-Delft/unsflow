@@ -18,6 +18,7 @@ from .functions import compute_picture_size
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
 from scipy.interpolate import griddata
+from Grid.src.weighted_least_squares import *
 
 
 class MeridionalProcess:
@@ -1878,6 +1879,48 @@ class MeridionalProcess:
             self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method)
         except:
             pass
+
+
+    def weight_least_square_regression(self):
+        self.instantiate_2d_fields()
+
+        print("WLS regression of Density...")
+        self.rho, self.drho_dz, self.drho_dr = self.approximate_with_weighted_least_square(self.data.rho, self.data.z, self.data.r)
+
+        print("WLS regression of Radial Velocity...")
+        self.ur, self.dur_dz, self.dur_dr = self.approximate_with_weighted_least_square(self.data.ur, self.data.z, self.data.r)
+
+        print("WLS regression of Tangential Velocity...")
+        self.ut, self.dut_dz, self.dut_dr = self.approximate_with_weighted_least_square(self.data.ut, self.data.z, self.data.r)
+
+        print("WLS regression of Axial Velocity...")
+        self.uz, self.duz_dz, self.duz_dr = self.approximate_with_weighted_least_square(self.data.uz, self.data.z, self.data.r)
+
+        print("WLS regression of Pressure...")
+        self.p, self.dp_dz, self.dp_dr = self.approximate_with_weighted_least_square(self.data.p, self.data.z, self.data.r)
+
+        print("WLS regression of Entropy...")
+        self.s, self.ds_dz, self.ds_dr = self.approximate_with_weighted_least_square(self.data.s, self.data.z, self.data.r)
+
+        print("WLS regression of Temperature...")
+        self.T, self.dT_dz, self.dT_dr = self.approximate_with_weighted_least_square(self.data.T, self.data.z, self.data.r)
+
+
+    def approximate_with_weighted_least_square(self, f_points, z_points, r_points):
+        F = np.zeros_like(self.z_cg)
+        dFdZ = np.zeros_like(self.z_cg)
+        dFdR = np.zeros_like(self.z_cg)
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                print("Regression %i of %i" % (jj + ii * self.nspan, self.nstream * self.nspan))
+                f, dfdx, dfdy = evaluate_weight_least_square_regression(self.z_cg[ii, jj], self.r_cg[ii, jj],
+                                                                        z_points, r_points, f_points,
+                                                                        order=2, delta=0.001, wfunc_type='gauss')
+                F[ii, jj] = f
+                dFdZ[ii, jj] = dfdx
+                dFdR[ii, jj] = dfdy
+        return F, dFdZ, dFdR
+
 
     def compute_field_gradients(self, method='rbf'):
         """

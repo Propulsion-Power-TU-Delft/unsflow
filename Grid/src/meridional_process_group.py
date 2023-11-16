@@ -237,6 +237,8 @@ class MeridionalProcessGroup:
         self.duz_dz = self.group[0].duz_dz
         self.dp_dr = self.group[0].dp_dr
         self.dp_dz = self.group[0].dp_dz
+        self.ds_dr = self.group[0].ds_dr
+        self.ds_dz = self.group[0].ds_dz
 
         for obj in self.group[1:]:
             self.drho_dr = np.concatenate((self.drho_dr, obj.drho_dr), axis=0)
@@ -249,6 +251,8 @@ class MeridionalProcessGroup:
             self.duz_dz = np.concatenate((self.duz_dz, obj.duz_dz), axis=0)
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
+            self.ds_dr = np.concatenate((self.ds_dr, obj.dp_dr), axis=0)
+            self.ds_dz = np.concatenate((self.ds_dz, obj.dp_dz), axis=0)
 
 
     def contour_fields(self, save_filename=None):
@@ -494,6 +498,26 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial {z} \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
+            plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.ds_dr, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$\partial s / \partial r \ \mathrm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_ds_dr.pdf', bbox_inches='tight')
+            plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.ds_dz, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$\partial s / \partial {z} \ \mathrm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_ds_dz.pdf', bbox_inches='tight')
             plt.close()
 
     @staticmethod

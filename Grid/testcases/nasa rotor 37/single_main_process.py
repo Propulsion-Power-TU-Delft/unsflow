@@ -11,10 +11,10 @@ print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'sigmoid'
 REGRESSION = False
-INLET_NZ = 25
-BLADE_NZ = 25
-OUTLET_NZ = 45
-NR = 35
+INLET_NZ = 10
+BLADE_NZ = 15
+OUTLET_NZ = 20
+NR = 15
 AVG_MODE = 'cell centered'
 cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
 MULTIBLOCK_FILTERING = False
@@ -30,8 +30,8 @@ x_ref = 0.252  # reference length, tip radius [m]
 rpm_ref = -17189  # shaft rpm with sign
 T_ref = 288.15  # reference temperature [K]
 rescale_factor = 0.01  # cordinates of data files are in [cm]
-sigmoid_coeff_stream = 10
-sigmoid_coeff_span = 10
+sigmoid_coeff_stream = 9
+sigmoid_coeff_span = 9
 
 
 
@@ -93,11 +93,12 @@ if INLET_BLOCK:
     # instantiate meridional process object and avg
     inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
     inlet_process.compute_streamline_length()
-    inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    if REGRESSION:
-        inlet_process.compute_regressed_fields()
-    else:
-        inlet_process.compute_field_gradients()
+    # inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    inlet_process.weight_least_square_regression()
+    # if REGRESSION:
+    #     inlet_process.compute_regressed_fields()
+    # else:
+    #     inlet_process.compute_field_gradients()
     inlet_process.compute_derived_quantities()  # to recompute the derived quantities based on the regressed values
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S('unbladed')
@@ -164,18 +165,19 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     # blade_process.circumferential_average(mode=AVG_MODE)
-    blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    if REGRESSION:
-        blade_process.compute_regressed_fields()
-    else:
-        blade_process.compute_field_gradients()
+    # blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    blade_process.weight_least_square_regression()
+    # if REGRESSION:
+    #     blade_process.compute_regressed_fields()
+    # else:
+    #     blade_process.compute_field_gradients()
     blade_process.compute_derived_quantities()
     blade_process.contour_entropy_generation()
     blade_process.contour_local_entropy_generation()
     blade_process.compute_bfm_axial(mode='global')
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    # blade_process.contour_all_plots()
+    blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
 
@@ -222,11 +224,12 @@ if OUTLET_BLOCK:
     outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
     outlet_process.compute_streamline_length()
     # outlet_process.circumferential_average(mode=AVG_MODE)
-    outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    if REGRESSION:
-        outlet_process.compute_regressed_fields()
-    else:
-        outlet_process.compute_field_gradients()
+    # outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    outlet_process.weight_least_square_regression()
+    # if REGRESSION:
+    #     outlet_process.compute_regressed_fields()
+    # else:
+    #     outlet_process.compute_field_gradients()
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')

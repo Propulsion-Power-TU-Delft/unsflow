@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import Sun
 
 # INPUT
-filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_15_blade_15_outlet_30_nspan_25.pickle'
+filename = '../../../Grid/testcases/nasa rotor 37/data/meta/inlet_10_blade_15_outlet_20_nspan_15.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
