@@ -272,25 +272,20 @@ class MeridionalProcess:
         self.u_mag = np.zeros((self.nstream, self.nspan))
         self.u_mag_rel = np.zeros((self.nstream, self.nspan))
         self.drho_dr = np.zeros((self.nstream, self.nspan))
-        self.drho_dtheta = np.zeros((self.nstream, self.nspan))
         self.drho_dz = np.zeros((self.nstream, self.nspan))
         self.dur_dr = np.zeros((self.nstream, self.nspan))
-        self.dur_dtheta = np.zeros((self.nstream, self.nspan))
         self.dur_dz = np.zeros((self.nstream, self.nspan))
         self.dut_dr = np.zeros((self.nstream, self.nspan))
-        self.dut_dtheta = np.zeros((self.nstream, self.nspan))
         self.dut_dz = np.zeros((self.nstream, self.nspan))
         self.duz_dr = np.zeros((self.nstream, self.nspan))
-        self.duz_dtheta = np.zeros((self.nstream, self.nspan))
         self.duz_dz = np.zeros((self.nstream, self.nspan))
         self.dp_dr = np.zeros((self.nstream, self.nspan))
-        self.dp_dtheta = np.zeros((self.nstream, self.nspan))
         self.dp_dz = np.zeros((self.nstream, self.nspan))
         self.ds_dr = np.zeros((self.nstream, self.nspan))
-        self.ds_dtheta = np.zeros((self.nstream, self.nspan))
         self.ds_dz = np.zeros((self.nstream, self.nspan))
-        self.theta_min = np.zeros((self.nstream, self.nspan))
-        self.theta_max = np.zeros((self.nstream, self.nspan))
+        self.dT_dr = np.zeros((self.nstream, self.nspan))
+        self.dT_dz = np.zeros((self.nstream, self.nspan))
+
 
     # def instantiate_2d_bfm_fields(self):
     #     """
@@ -1854,29 +1849,39 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
+    def interpolate_on_working_grid_and_compute_gradients(self, method):
+        self.instantiate_2d_fields()
+        self.rho, self.drho_dz, self.drho_dr = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
+        self.ur, self.dur_dz, self.dur_dr = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
+        self.ut, self.dut_dz, self.dut_dr = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
+        self.uz, self.duz_dz, self.duz_dr = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
+        self.p, self.dp_dz, self.dp_dr = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
+        self.T, self.dT_dz, self.dT_dr = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
+        self.s, self.ds_dz, self.ds_dr = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
+
     def interpolate_on_working_grid(self, method):
         self.instantiate_2d_fields()
-        self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
-        self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
-        self.ut = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
-        self.uz = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
-        self.p = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
-        self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
-        self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
+        self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method, type='field')
+        self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method, type='field')
+        self.ut = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method, type='field')
+        self.uz = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method, type='field')
+        self.p = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method, type='field')
+        self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method, type='field')
+        self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method, type='field')
 
         try:
-            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method)
-            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method)
-            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method)
-            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method)
-            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method)
-            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method)
-            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method)
-            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method)
-            self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method)
-            self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method)
-            self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method)
-            self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method)
+            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method, type='field')
+            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method, type='field')
+            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method, type='field')
+            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method, type='field')
+            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method, type='field')
+            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method, type='field')
+            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method, type='field')
+            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method, type='field')
+            self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method, type='field')
+            self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method, type='field')
+            self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method, type='field')
+            self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method, type='field')
         except:
             pass
 
@@ -1910,48 +1915,50 @@ class MeridionalProcess:
         F = np.zeros_like(self.z_cg)
         dFdZ = np.zeros_like(self.z_cg)
         dFdR = np.zeros_like(self.z_cg)
+        distance_limit = ((np.max(z_points) - np.min(z_points)) + (np.max(r_points) - np.min(r_points)))*1000
+
         for ii in range(self.nstream):
             for jj in range(self.nspan):
                 print("Regression %i of %i" % (jj + ii * self.nspan, self.nstream * self.nspan))
-                f, dfdx, dfdy = evaluate_weight_least_square_regression(self.z_cg[ii, jj], self.r_cg[ii, jj],
-                                                                        z_points, r_points, f_points,
-                                                                        order=2, delta=0.001, wfunc_type='gauss')
-                F[ii, jj] = f
-                dFdZ[ii, jj] = dfdx
-                dFdR[ii, jj] = dfdy
+                distance = np.sqrt((self.z_cg[ii, jj]-z_points)**2 + (self.r_cg[ii, jj]-r_points)**2)
+                idx = np.where(distance<distance_limit)
+                F[ii, jj], dFdZ[ii, jj], dFdR[ii, jj] = compute_function_and_gradient_approximation(
+                                                                        self.z_cg[ii, jj], self.r_cg[ii, jj],
+                                                                        z_points[idx], r_points[idx], f_points[idx])
+
         return F, dFdZ, dFdR
 
 
-    def compute_field_gradients(self, method='rbf'):
+    def compute_field_gradients(self, method='linear'):
         """
         compute the gradient of the flow field using a certain interpolation method, in order to evaluate functions at
         z+deltaz and r+deltar.
         """
         if method == 'rbf':
-            # self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
-            # self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
-            # self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
-            # self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
-            # self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
+            self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
+            self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
+            self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
+            self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
+            self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
             self.dT_dr, self.dT_dz = self.rbf_finite_difference(self.T)
-            # self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
+            self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
         elif method == 'linear':
-            # self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.rho)
-            # self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.ur)
-            # self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.ut)
-            # self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.uz)
-            # self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.p)
-            self.dT_dr, self.dT_dz = self.linear_interpolation_gradient(self.T)
-            # self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.s)
+            self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.data.rho, self.data.r, self.data.z)
+            self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.data.ur, self.data.r, self.data.z)
+            self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.data.ut, self.data.r, self.data.z)
+            self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.data.uz, self.data.r, self.data.z)
+            self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.data.p, self.data.r, self.data.z)
+            self.dT_dr, self.dT_dz = self.linear_interpolation_gradient(self.data.T, self.data.r, self.data.z)
+            self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.data.s, self.data.r, self.data.z)
         else:
             raise ValueError("Method not recognized.")
 
-    def linear_interpolation_gradient(self, f):
+    def linear_interpolation_gradient(self, f, r, z):
         """
         Linear interpolation method in order to compute the gradient of f
         """
-        Z = self.z_cg
-        R = self.r_cg
+        Z = self.z_cg.copy()
+        R = self.r_cg.copy()
         Zplus = np.zeros_like(self.z_cg)
         Rplus = np.zeros_like(self.r_cg)
         Zminus = np.zeros_like(self.z_cg)
@@ -1969,36 +1976,39 @@ class MeridionalProcess:
                     Zminus[ii, jj] = Z[ii, jj] - np.abs((Z[ii+1, jj] - Z[ii, jj]) / 2)
                     Rminus[ii, jj] = R[ii, jj] - np.abs((R[ii, jj+1] - R[ii, jj]) / 2)
 
-        values = f.flatten()
+        values = f.copy()
 
-        points = np.column_stack((Z.flatten(), R.flatten()))
-        f_zplus = griddata(points, values, (Zplus, R), method='cubic')
-        f_zminus = griddata(points, values, (Zminus, R), method='cubic')
-        f_rplus = griddata(points, values, (Z, Rplus), method='cubic')
-        f_rminus = griddata(points, values, (Z, Rminus), method='cubic')
+        points = np.column_stack((r, z))
+        f_zplus = griddata(points, values, (Zplus, R), method='linear')
+        f_zminus = griddata(points, values, (Zminus, R), method='linear')
+        f_rplus = griddata(points, values, (Z, Rplus), method='linear')
+        f_rminus = griddata(points, values, (Z, Rminus), method='linear')
         df_dz = (f_zplus-f_zminus)/(Zplus-Zminus)
         df_dz = np.reshape(df_dz, self.z_cg.shape)
         df_dr = (f_rplus - f_rminus) / (Rplus - Rminus)
         df_dr = np.reshape(df_dr, self.z_cg.shape)
 
-        return f_zplus, f_zminus
+        return df_dr, df_dz
 
 
-    def interpolate_function(self, f, z, r, method):
+    def interpolate_function(self, f, z, r, method, type='all'):
         """
-
+        Interpolate the unstructured dataset f(z,r) on the working grid of the analysis.
+        :param f: function values
+        :param z: x or z cordinate of dataset at which is evaluated
+        :param r: y or r cordinate of dataset at which is evaluated
+        :param type: specify if you want to return only the field or also the gradients computed on it
         """
         Xnew = self.z_cg  # original grid
         Ynew = self.r_cg  # original grid
-        if method=='linear':
-            f_new = griddata((z, r), f, (Xnew, Ynew), method='linear')
-        elif method=='cubic':
-            f_new = griddata((z, r), f, (Xnew, Ynew), method='cubic')
-        elif method=='nearest':
-            f_new = griddata((z, r), f, (Xnew, Ynew), method='nearest')
-        elif method=='rbf':
-            rbf_interpolator = Rbf(z, r, f, function='multiquadric')
-            f_new = rbf_interpolator(Xnew, Ynew)
+        dx = np.abs(np.max(z)-np.min(z)) / 20
+        dy = np.abs(np.max(r) - np.min(r)) / 20
+        f_new = griddata((z, r), f, (Xnew, Ynew), method=method)
+        if type == 'all':
+            f_new_dx = griddata((z, r), f, (Xnew+dx, Ynew), method=method)
+            f_new_dy = griddata((z, r), f, (Xnew, Ynew+dy), method=method)
+            df_dx_new = (f_new_dx-f_new)/dx
+            df_dy_new = (f_new_dy-f_new)/dy
+            return f_new, df_dx_new, df_dy_new
         else:
-            raise ValueError("Method unknown")
-        return f_new
+            return f_new

@@ -9,7 +9,9 @@ import pickle
 
 from Grid.src.weighted_least_squares import *
 from Grid.src.styles import color_map
+import time
 
+begin = time.time()
 
 def function(X, Y):
     # return X ** 4 - X ** 2 * Y ** 2 + 3 * X ** 3 * Y - 6 * X * Y ** 2 - 2 * X + Y ** 2 + 1
@@ -32,7 +34,7 @@ def function_dy(X, Y):
 # GENERATE THE DATA, AND THE ANALYTIC RESULTS
 L = 5
 H = 5
-nx, ny = 20, 30
+nx, ny = 50, 30
 x = np.linspace(0, L, nx)
 y = np.linspace(0, H, ny)
 delta = np.sqrt((x[1] - x[0]) ** 2 + (y[1] - y[0]) ** 2) / 10
@@ -98,4 +100,6 @@ fig.colorbar(contour3, ax=ax[2])
 ax[2].set_title(r'$\varepsilon$')
 plt.savefig('pictures/dfdy_%i_%i.pdf' %(nx, ny), bbox_inches='tight')
 
+end = time.time()
+print("Running time: %.2f" %(end-begin))
 plt.show()
