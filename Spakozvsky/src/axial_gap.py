@@ -20,7 +20,7 @@ class AxialGap:
         self.uz = uz
 
 
-    def transfer_function(self, theta, s, n):
+    def transfer_function(self, s, n, theta=0):
         """
         compute the component transfer function
         Args:

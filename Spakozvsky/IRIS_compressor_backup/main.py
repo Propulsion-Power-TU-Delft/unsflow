@@ -3,26 +3,33 @@ import numpy as np
 import sys
 from Spakozvsky.src.functions import *
 
+# Preamble: customization of matplotlib
+# Configuration for plots
+plt.rc('text', usetex=False)
+plt.rc('xtick', labelsize=10)
+plt.rc('ytick', labelsize=10)
+plt.rcParams['font.size'] = 10
+format_fig = (18, 8)
 
-# Relevant geometric parameters for the compressor. All the variables that begin with
-# capital letters are dimensional. Otherwise, they have been non-dimensionalized
+# Relevant geometric parameters for the compressor selected by Andrea on the Pareto front. All the variables that begin with
+# capital letters are dimensional. Otherwise they have been non-dimensionalized
 
-total_blades = 14  # number of blades (normal + split)
+total_blades = 14  # number of blades (normal +split)
 main_blades = 7  # main blades
-splitter_blades = total_blades-main_blades  # splitter blades
+splitter_blades = 7  # splitter blades
 n_max = total_blades // 4 + 1  # maximum harmonic to take in consideration (2 blades in a half-wavelength)
 
 # COMPRESSOR DESIGN SELECTED ALONG THE PARETO FRONT (SI units) - INPUT DATA
 fluid = 'R1233zd(E)'  # fluid
 Omega_range = np.array([70, 79, 88, 93, 97]) * 1e3 * 2 * np.pi / 60  # angular velocities [rad/s]
-R1s = 15.3 * 1e-3  # shroud radius inlet [m]
+R1s = 15.2 * 1e-3  # shroud radius inlet [m]
 R1h = 3.4 * 1e-3  # hub radius inlet [m]
-R2 = R1s / 0.668  # impeller exit radius [m]
+R2 = 22.8 * 1e-3  # impeller exit radius [m]
 R3 = 35.2 * 1e-3  # diffuser outlet radius [m]
-H2 = 0.0963 * R2  # blade heigth exit impeller [m]
+H2 = 2.3 * 1e-3  # blade heigth exit impeller [m]
 H3 = 1.6 * 1e-3  # diffuser height [m]
 H4 = H3  # diffuser outlet height [m]
-Lax = 16.03 * 1e-3  # axial length [m]
+Lax = 16 * 1e-3  # axial length [m]
 R4 = 49.3 * 1e-3  # external diameter compressor [m]
 Ts = 0.3 * 1e-3  # blade trailing edge at shroud [m]
 Th = 0.6 * 1e-3  # blade trailing edge at hub [m]
@@ -33,18 +40,18 @@ R_Ref = R2  # Reference parameters for non-dimensionalization
 # STA locations non dimensionalized
 x1 = 0  # impeller inlet
 x2 = Lax / R_Ref  # impeller outlet/diffuser inlet
-x3 = x2
+# x3 = x2
 x4 = x2  # diffuser outlet
 r1 = R1 / R_Ref
 r2 = R2 / R_Ref
 r3 = R3 / R_Ref
 r4 = R4 / R_Ref
 
-#  Cross sections (dimensional)
+# Cross sections
 A1 = np.pi * (R1s ** 2 - R1h ** 2)  # cross section [m2]
 A2 = 2 * np.pi * R2 * H2  # cross section [m2]
 A4 = 2 * np.pi * R4 * H4  # cross section [m2]
-A1_blade = A1 / main_blades  # cross section of one sector at impeller inlet [m2]
+A1_blade = A1 / main_blades  # cross section of one sector at impeller inlet [2]
 A2_blade = (A2 - total_blades * H2 * Tte_mean) / (total_blades)  # cross section of one sector at impeller outlet [m2]
 s_i = np.sqrt(Lax ** 2 + (R2 - R1) ** 2) * 1.3  # approximation of the meridional path length along the impeller [m]
 
@@ -104,23 +111,20 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
 
 speedline = 2  # choose the speedline to be used
 print("Selected speedline : %2d rpm" % (rpm[speedline]))
-
-# drop out the zeros used to allocate data for chocked conditions
-index_zeros = np.where(mass_flow[speedline, :] == 0)
-index_max = index_zeros[0][0]
+index_max = np.where(mass_flow[speedline, :] == 0)
+index_max = index_max[0]
+index_max = index_max[0]
 index_max -= 1  # index max in order to avoid the choked data
 
 Omega = rpm[speedline] * 2 * np.pi / 60
 U_Ref = Omega * R_Ref  # the reference velocity is the outlet impeller peripheral speed
 A_Ref = R_Ref ** 2
-p_ratio_tt = beta_tt[speedline, 0:index_max]  # across the whole characteristic
-mdot = mass_flow[speedline, 0:index_max] # across the whole characteristic
-
-plt.figure(figsize=(10,6))
-plt.plot(mdot, p_ratio_tt, label='%i krpm' %(rpm[speedline]/1000))
+p_ratio_tt = beta_tt[speedline, 0:index_max]  # across the whole compressor
+mdot = mass_flow[speedline, 0:index_max]
+plt.figure(figsize=format_fig)
+plt.plot(mdot, p_ratio_tt)
 plt.ylabel(r'$\beta_{tt}$')
 plt.xlabel(r'$\dot{m}$')
-plt.legend()
 # plt.title('Pressure ratio')
 
 
@@ -131,8 +135,8 @@ vx2 = np.zeros(index_max)
 vx4 = np.zeros(index_max)
 
 # azimuthal absolute velocities
-vy1 = np.zeros_like(vx1)  # attention to the sign
-vy2 = (+Wt2[speedline, 0:index_max] + Omega * R2) / U_Ref  # attention to the sign
+vy1 = np.zeros(index_max)
+vy2 = (-Wt2[speedline, 0:index_max] + Omega * R1) / U_Ref  # attention to the sign
 # vy3 = 
 vy4 = Vt4[speedline, 0:index_max] / U_Ref
 
@@ -180,17 +184,17 @@ phi = mdot / (rho1 * U_Ref * A1)  # inlet flow coefficient for the impeller
 dLimp_dphi = np.gradient(L_imp, phi)
 dLi_dTanb = np.gradient(L_imp, np.tan(Beta1[speedline, 0:index_max]))
 
-plt.figure(figsize=(7, 5))
+plt.figure(figsize=format_fig)
 plt.plot(phi, L_imp)
 plt.ylabel(r'$L_{imp}$')
 plt.xlabel(r'$\phi$')
 plt.title('impeller loss')
-plt.figure(figsize=(7, 5))
+plt.figure(figsize=format_fig)
 plt.plot(phi, dLimp_dphi)
 plt.ylabel(r'$dL_{imp} / d \phi$')
 plt.xlabel(r'$\phi$')
 plt.title('impeller loss derivative')
-plt.figure(figsize=(7, 5))
+plt.figure(figsize=format_fig)
 plt.plot(np.tan(Beta1[speedline, 0:index_max]), dLi_dTanb)
 plt.ylabel(r'$dL_{imp} / d \tan{\beta_1}$')
 plt.xlabel(r'$\beta_1$')
@@ -203,97 +207,101 @@ beta1 = Beta1[speedline, 0:index_max]
 beta2 = Beta2[speedline, 0:index_max]
 alpha4 = Alpha4[speedline, 0:index_max]
 
-working_points = [8, 10, 12, 14, 16, 18, 20]
+wpoint = index_max // 4
+wpoint = 15  # working point selected
+working_points = [6, 8, 10, 12, 14, 16]
+# working_points = [0,2]
+
 poles_global = {}  # dictionary for the whole set of poles
-# for wpoint in working_points:
-#     print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
-#
-#
-#     def centrifugal_vaneless(s, n, theta=0):
-#         # m1 = np.linalg.inv(Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0))
-#         m2 = Bvlsd_n(s, n, r2, r4, r2, Q[wpoint], GAMMA[wpoint], 0)
-#         m3 = Bimp_n(s, n, vx1[wpoint], vr2[wpoint], vy1[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint],
-#                     beta2[wpoint], r1, r2, rho1[wpoint], rho2[wpoint], A1_blade, A2_blade, s_i, dLi_dTanb[wpoint], 0, 0)
-#         m4 = Tax_n(x1, s, n, vx1[0], vy1[0], 0)
-#         m_res = m2 @ m3 @ m4
-#         # EC = np.array([[Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,0],
-#         #                 Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,1],
-#         #                 Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,2]]])
-#         EC = np.array([[0, 0, 1]])
-#         IC = np.array([[0, 1, 0],
-#                        [0, 0, 1]])
-#         Y = np.concatenate((EC @ m_res, IC))
-#         return np.linalg.det(Y)
-#
-#
-#     domain = [-3, 1.5, -10, 10]
-#     grid = [1, 1]
-#     n = np.arange(1, 5)
-#     poles = {}  # dictionary of poles for a single working point
-#     fig, ax = plt.subplots(1, 2, figsize=(12,5))
-#
-#     for nn in n:
-#         print('Harmonic Number: ' + str(nn) + ' of ' + str(n[-1]))
-#         poles[nn] = Shot_Gun(centrifugal_vaneless, domain, grid, n=nn, attempts=20, N=30)
-#         plt.plot(poles[nn].real, -poles[nn].imag, 'o', label='n ' + str(nn))
-#     poles_global[wpoint] = poles  # for every working point attach the poles to the big dictionary of all poles
-#     real_axis_x = np.linspace(domain[0], domain[1], 100)
-#     real_axis_y = np.zeros(len(real_axis_x))
-#     imag_axis_y = np.linspace(domain[2], domain[3], 100)
-#     imag_axis_x = np.zeros(len(imag_axis_y))
-#     ax[1].plot(real_axis_x, real_axis_y, '--k', linewidth=0.5)
-#     ax[1].plot(imag_axis_x, imag_axis_y, '--k', linewidth=0.5)
-#     ax[1].set_xlim([domain[0], domain[1]])
-#     ax[1].set_ylim([domain[2], domain[3]])
-#     ax[1].legend()
-#     ax[1].set_xlabel(r'$\sigma_{n}$')
-#     ax[1].set_ylabel(r'$j \omega_{n}$')
-#     ax[1].set_title('root locus, operating point: ' + str(wpoint))
-#     # plt.savefig('pics/poles_iris_compressor_sl_'+str(speedline)+'_'+str(wpoint)+'.png')
-#
-#     # speedline plot
-#     ax[0].plot(phi, beta_ts[speedline, 0:index_max], label='rpm ' + str(int(rpm[speedline])))
-#     ax[0].plot(phi[wpoint], beta_ts[speedline, wpoint], 'ro', label='op. point: ' + str(wpoint))
-#     ax[0].set_ylabel(r'$\beta_{ts}$')
-#     ax[0].set_xlabel(r'$\phi$')
-#     ax[0].set_title('operating point: ' + str(wpoint))
-#     fig.savefig('pics/root_locus_' + str(speedline) + '_op_' + str(wpoint) + '.pdf', bbox_inches='tight')
+for wpoint in working_points:
+    print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
 
-# %% General plots
-# plot of characteristics
-fig, ax = plt.subplots(1, figsize=(8, 6))
-for s in range(0, len(rpm)):
-    speedline = s  # choose the speedline to be used
-    index_max = np.where(mass_flow[speedline, :] == 0)
-    index_max = index_max[0]
-    index_max = index_max[0]
-    index_max = index_max - 1  # index max in order to avoid the choked data
-    ax.plot(mass_flow[speedline, 0:index_max], beta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
-ax.set_ylabel(r'$\beta_{ts}$')
-ax.set_xlabel(r'$\dot{m}$')
-ax.set_title('compressor characteristics')
-ax.plot(mass_flow[:, 0], beta_ts[:, 0], 'k^', label='Senoo')
-ax.plot(mass_flow[:, 19], beta_ts[:, 19], 'ko', label='Spakovszky')  # instability point, visually located
-ax.legend()
-fig.savefig('pics/compressor_characteristics.png')
 
-# plot of efficiency
-fig, ax = plt.subplots(1, figsize=(8, 6))
-for s in range(0, len(rpm)):
-    speedline = s  # choose the speedline to be used
-    index_max = np.where(mass_flow[speedline, :] == 0)
-    index_max = index_max[0]
-    index_max = index_max[0]
-    index_max = index_max - 1  # index max in order to avoid the choked data
-    ax.plot(mass_flow[speedline, 0:index_max], eta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
-ax.set_ylabel(r'$\eta_{ts}$')
-ax.set_xlabel(r'$\dot{m}$')
-ax.set_title('compressor characteristics')
-ax.plot(mass_flow[:, 0], eta_ts[:, 0], 'k^', label='Senoo')
-ax.plot(mass_flow[:, 19], eta_ts[:, 19], 'ko', label='Spakovszky')  # instability point, visually located
-ax.legend()
-fig.savefig('pics/compressor_efficiencies.png')
+    def centrifugal_vaneless(s, n, theta=0):
+        # m1 = np.linalg.inv(Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0))
+        m2 = Bvlsd_n(s, n, r2, r4, r2, Q[wpoint], GAMMA[wpoint], 0)
+        m3 = Bimp_n(s, n, vx1[wpoint], vr2[wpoint], vy1[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint],
+                    beta2[wpoint], r1, r2, rho1[wpoint], rho2[wpoint], A1_blade, A2_blade, s_i, dLi_dTanb[wpoint], 0, 0)
+        m4 = Tax_n(x1, s, n, vx1[0], vy1[0], 0)
+        m_res = np.linalg.multi_dot([m2, m3, m4])
+        # EC = np.array([[Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,0],
+        #                 Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,1],
+        #                 Trad_n(r4, r4, n, s, Q[wpoint], GAMMA[wpoint], 0)[2,2]]])
+        EC = np.array([[0, 0, 1]])
+        IC = np.array([[0, 1, 0],
+                       [0, 0, 1]])
+        Y = np.concatenate((np.matmul(EC, m_res), IC))
+        return np.linalg.det(Y)
 
+
+    domain = [-3, 1.5, -10, 10]
+    grid = [1, 1]
+    n = np.arange(1, 5)
+    poles = {}  # dictionary of poles for a single working point
+    fig, ax = plt.subplots(1, 2, figsize=format_fig)
+
+    for nn in n:
+        print('Harmonic Number: ' + str(nn) + ' of ' + str(n[-1]))
+        poles[nn] = Shot_Gun(centrifugal_vaneless, domain, grid, n=nn, attempts=20, N=30)
+        plt.plot(poles[nn].real, -poles[nn].imag, 'o', label='n ' + str(nn))
+    poles_global[wpoint] = poles  # for every working point attach the poles to the big dictionary of all poles
+    real_axis_x = np.linspace(domain[0], domain[1], 100)
+    real_axis_y = np.zeros(len(real_axis_x))
+    imag_axis_y = np.linspace(domain[2], domain[3], 100)
+    imag_axis_x = np.zeros(len(imag_axis_y))
+    ax[1].plot(real_axis_x, real_axis_y, '--k', linewidth=0.5)
+    ax[1].plot(imag_axis_x, imag_axis_y, '--k', linewidth=0.5)
+    ax[1].set_xlim([domain[0], domain[1]])
+    ax[1].set_ylim([domain[2], domain[3]])
+    ax[1].legend()
+    ax[1].set_xlabel(r'$\sigma_{n}$')
+    ax[1].set_ylabel(r'$j \omega_{n}$')
+    ax[1].set_title('root locus, operating point: ' + str(wpoint))
+    # plt.savefig('pics/poles_iris_compressor_sl_'+str(speedline)+'_'+str(wpoint)+'.png')
+
+    # speedline plot
+    ax[0].plot(phi, beta_ts[speedline, 0:index_max], label='rpm ' + str(int(rpm[speedline])))
+    ax[0].plot(phi[wpoint], beta_ts[speedline, wpoint], 'ro', label='op. point: ' + str(wpoint))
+    ax[0].set_ylabel(r'$\beta_{ts}$')
+    ax[0].set_xlabel(r'$\phi$')
+    ax[0].set_title('operating point: ' + str(wpoint))
+    fig.savefig('pics/root_locus_' + str(speedline) + '_op_' + str(wpoint) + '.pdf', bbox_inches='tight')
+
+# # %% General plots
+# # plot of characteristics
+# fig, ax = plt.subplots(1, figsize=(8, 6))
+# for s in range(0, len(rpm)):
+#     speedline = s  # choose the speedline to be used
+#     index_max = np.where(mass_flow[speedline, :] == 0)
+#     index_max = index_max[0]
+#     index_max = index_max[0]
+#     index_max = index_max - 1  # index max in order to avoid the choked data
+#     ax.plot(mass_flow[speedline, 0:index_max], beta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
+# ax.set_ylabel(r'$\beta_{ts}$')
+# ax.set_xlabel(r'$\dot{m}$')
+# ax.set_title('compressor characteristics')
+# ax.plot(mass_flow[:, 0], beta_ts[:, 0], 'k^', label='Senoo')
+# ax.plot(mass_flow[:, 10], beta_ts[:, 10], 'ko', label='Spakovszky')  # instability point, visually located
+# ax.legend()
+# fig.savefig('pics/compressor_characteristics.png')
+#
+# # plot of efficiency
+# fig, ax = plt.subplots(1, figsize=(8, 6))
+# for s in range(0, len(rpm)):
+#     speedline = s  # choose the speedline to be used
+#     index_max = np.where(mass_flow[speedline, :] == 0)
+#     index_max = index_max[0]
+#     index_max = index_max[0]
+#     index_max = index_max - 1  # index max in order to avoid the choked data
+#     ax.plot(mass_flow[speedline, 0:index_max], eta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
+# ax.set_ylabel(r'$\eta_{ts}$')
+# ax.set_xlabel(r'$\dot{m}$')
+# ax.set_title('compressor characteristics')
+# ax.plot(mass_flow[:, 0], eta_ts[:, 0], 'k^', label='Senoo')
+# ax.plot(mass_flow[:, 10], eta_ts[:, 10], 'ko', label='Spakovszky')  # instability point, visually located
+# ax.legend()
+# fig.savefig('pics/compressor_efficiencies.png')
+#
 # # %%plot the characteristics for impeller and diffuser to analyze the slopes
 # OMEGA = 2 * np.pi * rpm / 60
 # U1 = OMEGA * R1
