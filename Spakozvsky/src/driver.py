@@ -112,7 +112,7 @@ class Driver:
                 save_foldername = 'pictures'
             if not os.path.exists(save_foldername):
                 os.makedirs(save_foldername)
-
+        plt.figure()
         for n in self.poles_dict.keys():
             plt.plot(self.poles_dict[n].real, -self.poles_dict[n].imag, 'o', label='n:%i' %(n))
 

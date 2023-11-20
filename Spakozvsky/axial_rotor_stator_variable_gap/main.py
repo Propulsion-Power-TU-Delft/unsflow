@@ -26,8 +26,8 @@ from Spakozvsky.src.driver import Driver
 format_fig = (7, 7)
 
 # %%INPUT DATA for the implementation of the generic actuator disk of Greitzer, zero gap
-Vy1 = 0  # non dimensional background azimuthal flow velocity at outlet
-DeltaX = 0
+Vy1 = 0  #  non dimensional background azimuthal flow velocity at outlet
+DeltaX = 0.3
 
 # from the inertia parameters we need to go back to axial spacing in order to recostruct the matrix
 
@@ -41,7 +41,6 @@ dLr_dPhi = -0.6938  # steady state rotor loss derivative at background condition
 dLr_dTanb = dLr_dPhi / ((np.tan(alfa1) - np.tan(beta1)) ** 2)  # steady state rotor loss derivative at background condition
 c_r = 0.135  # blade chord
 gamma_r = -50.2 * np.pi / 180  # stagger angle rotor blades
-# lambda_r = 0.212 #inertia parameter rotor
 lambda_r = c_r / np.cos(gamma_r) ** 2
 
 # stator parameters (pag. 147)
@@ -90,15 +89,15 @@ driver.add_component(outlet)
 driver.set_inlet_boundary_conditions()
 driver.set_outlet_boundary_conditions()
 
-domain = [-0.15, 0.35, -4.5, 4.5, 5]
-grid = [1, 1]
+domain = [-2.5, 0.5, -4.5, 4.5]
+grid = [1, 2]
 attempts = 30
 tol = 1e-6
 driver.set_eigenvalues_research_settings(domain, grid, attempts, tol)
 
 N = np.arange(1, 7)
 driver.find_eigenvalues(N)
-driver.plot_eigenvalues([-0.15, 0.35, 0, 4.5], save_filename='rotor_stator_gap_%.1f' %(DeltaX))
+driver.plot_eigenvalues([-2.5, 0.5, -0.5, 4.5], save_filename='rotor_stator_gap_%.1f' %(DeltaX))
 driver.store_results_pickle(save_filename='rotor_stator_gap_%.1f' %(DeltaX))
 
 plt.show()
