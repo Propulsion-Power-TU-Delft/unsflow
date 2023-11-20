@@ -20,15 +20,10 @@ from Spakozvsky.src.axial_stator import AxialStator
 from Spakozvsky.src.axial_gap import AxialGap
 from Spakozvsky.src.axial_rotor import AxialRotor
 from Spakozvsky.src.driver import Driver
-import os
+
+
 
 format_fig = (7, 7)
-
-# create directory for pictures
-path = "pics"
-isExist = os.path.exists(path)
-if not isExist:
-    os.makedirs(path)
 
 # %%INPUT DATA for the implementation of the generic actuator disk of Greitzer, zero gap
 Vy1 = 0  # non dimensional background azimuthal flow velocity at outlet
@@ -92,7 +87,6 @@ driver.add_component(rotor)
 driver.add_component(gap)
 driver.add_component(stator)
 driver.add_component(outlet)
-matrix = driver.compute_global_Xsys(0, 1)
 driver.set_inlet_boundary_conditions()
 driver.set_outlet_boundary_conditions()
 
@@ -104,6 +98,7 @@ driver.set_eigenvalues_research_settings(domain, grid, attempts, tol)
 
 N = np.arange(1, 7)
 driver.find_eigenvalues(N)
-driver.plot_eigenvalues([-0.15, 0.35, 0, 4.5], savefilename='rotor_stator_gap_%.1f' %(DeltaX))
+driver.plot_eigenvalues([-0.15, 0.35, 0, 4.5], save_filename='rotor_stator_gap_%.1f' %(DeltaX))
+driver.store_results_pickle(save_filename='rotor_stator_gap_%.1f' %(DeltaX))
 
 plt.show()
