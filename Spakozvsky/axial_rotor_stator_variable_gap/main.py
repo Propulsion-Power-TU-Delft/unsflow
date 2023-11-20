@@ -90,9 +90,9 @@ driver.set_inlet_boundary_conditions()
 driver.set_outlet_boundary_conditions()
 
 domain = [-2.5, 0.5, -4.5, 4.5]
-grid = [1, 2]
-attempts = 30
-tol = 1e-6
+grid = [1, 1]
+attempts = 10
+tol = 1e-3
 driver.set_eigenvalues_research_settings(domain, grid, attempts, tol)
 
 N = np.arange(1, 7)

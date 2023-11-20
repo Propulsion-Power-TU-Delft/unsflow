@@ -325,11 +325,11 @@ def Bvlsd_n(s, n, r1, r2, r0, Q, GAMMA, theta):
     ARGUMENTS:
         s : Laplace variable s=sigma-j*omega
         n : circumferential harmonic number
-        r1 : inlet non dimensional radius
-        r2 : outlet non dimensional radius
+        r1 : inlet non-dimensional radius
+        r2 : outlet non-dimensional radius
         r0 : reference radius for Trad computation
-        Q : non dimensional source term
-        GAMMA : non dimensional rotational term of the potential flow
+        Q : non-dimensional source term
+        GAMMA : non-dimensional rotational term of the potential flow
         theta : azimuthal cordinate (zero default)
 
     
@@ -344,7 +344,7 @@ def Bvlsd_n(s, n, r1, r2, r0, Q, GAMMA, theta):
 
 
 #%% Methods to find the complex roots of a complex function
-def Shot_Gun(complex_function, domain, n_grid=[1, 1], n=1, N=30, tol=1e-6, attempts=30, verbose=True):
+def Shot_Gun(complex_function, domain, n_grid=(1, 1), n=1, N=30, tol=1e-3, attempts=30, verbose=False):
     """
     Shot-gun method taken from Spakozvzski PhD thesis, needed to compute the complex zeros of a complex function.
     

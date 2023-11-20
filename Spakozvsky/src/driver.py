@@ -90,10 +90,12 @@ class Driver:
         self.poles_dict = {}
         try:
             for nn in n:
+                print("Looking for eigenvalues of harmonic: %i" %(nn))
                 poles = Shot_Gun(self.compute_global_Ysys_determinant,
                                  self.domain, self.grid, n=nn, attempts=self.attempts, tol=self.tol)
                 self.poles_dict[nn] = poles
         except:
+            print("Looking for eigenvalues of harmonic: %i" % (n))
             poles = Shot_Gun(self.compute_global_Ysys_determinant,
                              self.domain, self.grid, n=n, attempts=self.attempts, tol=self.tol)
             self.poles_dict[n] = poles
