@@ -26,7 +26,7 @@ class VanelessDiffuser:
 
 
 
-    def transfer_function(self, r, theta, s, n):
+    def transfer_function(self, s, n, theta=0):
         """
         compute the component transfer function
         Args:

@@ -6,13 +6,14 @@ class SwirlingFlow:
     """
     this class contains the swirling flow model for the Spakovszky model
     """
-    def __init__(self, r_1, ur_1, ut_1):
+    def __init__(self, r_1, ur_1, ut_1, r_eval):
         """
 
         Args:
             r_1: location where data are given, usually inner radius
             ur_1: radial velocity
             ut_1: tangential velocity
+            r_eval: evaluation point of the swirling flow dynamics
         """
 
         self.r_1 = r_1
@@ -20,11 +21,12 @@ class SwirlingFlow:
         self.ut_1 = ut_1
         self.Q = 2 * pi * r_1 * ur_1
         self.GAMMA = 2 * pi * r_1 * ut_1
+        self.r_eval = r_eval
 
 
 
 
-    def transfer_function(self, r, theta, s, n):
+    def transfer_function(self, s, n, theta=0):
         """
         compute the component transfer function
         Args:
@@ -37,5 +39,5 @@ class SwirlingFlow:
             M: swirling flow transfer function at a given location (r, theta, s, n)
 
         """
-        M = Trad_n(r, self.r_1, n, s, self.Q, self.GAMMA, theta)
+        M = Trad_n(self.r_eval, self.r_1, n, s, self.Q, self.GAMMA, theta)
         return M
