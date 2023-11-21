@@ -1,5 +1,8 @@
 from .functions import Bvlsd_n
 from numpy import pi
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
+from numpy import pi as pi
 
 
 class VanelessDiffuser:
@@ -22,6 +25,7 @@ class VanelessDiffuser:
         self.ut_1 = ut_1
         self.Q = 2 * pi * r_1 * ur_1
         self.GAMMA = 2 * pi * r_1 * ut_1
+        self.print_info()
 
 
 
@@ -41,3 +45,15 @@ class VanelessDiffuser:
         """
         M = Bvlsd_n(s, n, self.r_1, self.r_2, self.r_1, self.Q, self.GAMMA, theta)
         return M
+
+    def print_info(self):
+        """
+        Print the information of the component
+        """
+        print_banner_begin('VANELESS DIFFUSER')
+        print(f"{'Inlet Radius [-]:':<{total_chars_mid}}{self.r_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Radius [-]:':<{total_chars_mid}}{self.r_2:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Radial Velocity [-]:':<{total_chars_mid}}{self.ur_1:>{total_chars_mid}.2f}")
+        print(f"{'Radial Source Term Q [-]:':<{total_chars_mid}}{self.Q:>{total_chars_mid}.2f}")
+        print(f"{'Circulation Term GAMMA [-]:':<{total_chars_mid}}{self.GAMMA:>{total_chars_mid}.2f}")
+        print_banner_end()

@@ -21,10 +21,6 @@ folder_name = 'pictures/'
 if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 
-# meta-data folder
-folder_meta_data_default = 'data/meta/'
-if not os.path.exists(folder_meta_data_default):
-    os.makedirs(folder_meta_data_default)
 
 # default size of the figures
 fig_size = (7, 5)

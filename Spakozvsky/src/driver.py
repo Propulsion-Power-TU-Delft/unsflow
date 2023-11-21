@@ -49,16 +49,39 @@ class Driver:
         self.IC = np.array([[0, 1, 0],
                             [0, 0, 1]])
 
-    def set_outlet_boundary_conditions(self, bc_type='infinite duct length'):
+    def set_outlet_boundary_conditions(self, bc_type='infinite duct length', *axial_exit_conditions):
         """
-        Generate the EC matrix.
+        Set the parameters to compute the EC matrix.
         :param bc_type: type of the boundary condition
+        :param axial_exit_conditions: tuple storing (uz, ut, x) of the location where the perturbations go to zero
         """
-        if bc_type=='infinite duct length':
-            print("Exit Boundary Conditions: infinite duct length")
-            self.EC = np.array([[1, 0, 0]])
+        self.exit_bc_type = bc_type
+        if bc_type == 'finite duct length':
+            print('Exit Boundary Condition Type: finite duct length')
+            self.exit_uz = axial_exit_conditions[0][0]
+            self.exit_ut = axial_exit_conditions[0][1]
+            self.exit_z = axial_exit_conditions[0][2]
+        elif bc_type == 'infinite duct length':
+            print('Exit Boundary Condition Type: infinite duct length')
+            pass
         else:
             raise ValueError("Boundary condition not recognized")
+
+    def compute_outlet_boundary_conditions(self, s, n):
+        """
+        Generate the EC matrix.
+        :param s: Laplace variable
+        :param n: hamronic order
+        """
+        if self.exit_bc_type=='infinite duct length':
+            EC = np.array([[1, 0, 0]])
+        elif self.exit_bc_type=='finite duct length':
+            EC = np.array([[(-s/n - self.exit_uz - 1j*self.exit_ut)*np.exp(n*self.exit_z),
+                           (+s/n - self.exit_uz + 1j*self.exit_ut)*np.exp(-n*self.exit_z),
+                            0]])
+        else:
+            raise ValueError("Boundary condition not recognized")
+        return EC
 
     def compute_global_Ysys_determinant(self, s, n):
         """
@@ -66,7 +89,7 @@ class Driver:
         :param s: Laplace variable
         :param n: harmonic order
         """
-        Y = np.concatenate((self.EC @ self.compute_global_Xsys(s, n), self.IC), axis=0)
+        Y = np.concatenate((self.compute_outlet_boundary_conditions(s, n) @ self.compute_global_Xsys(s, n), self.IC), axis=0)
         return np.linalg.det(Y)
 
     def set_eigenvalues_research_settings(self, domain, grid, attempts, tol):

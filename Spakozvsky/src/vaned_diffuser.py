@@ -1,5 +1,7 @@
 from .functions import Bdif_n
-
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
+from numpy import pi as pi
 
 class VanedDiffuser:
     """
@@ -43,6 +45,7 @@ class VanedDiffuser:
         self.s_dif = s_dif
         self.dLd_dTana = dLd_dTana
         self.tau_d = tau_d
+        self.print_info()
 
 
 
@@ -63,3 +66,26 @@ class VanedDiffuser:
                    self.r_1, self.r_2, self.rho_1, self.rho_2, self.A_1, self.A_2, self.s_dif, self.dLd_dTana,
                    theta, self.tau_d)
         return M
+
+    def print_info(self):
+        """
+        Print the information of the component
+        """
+        print_banner_begin('VANED DIFFUSER')
+        print(f"{'Inlet Radius [-]:':<{total_chars_mid}}{self.r_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Radius [-]:':<{total_chars_mid}}{self.r_2:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Density [-]:':<{total_chars_mid}}{self.rho_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Density [-]:':<{total_chars_mid}}{self.rho_2:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Area [-]:':<{total_chars_mid}}{self.A_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Area [-]:':<{total_chars_mid}}{self.A_2:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Radial Velocity [-]:':<{total_chars_mid}}{self.ur_1:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Tang. Velocity [-]:':<{total_chars_mid}}{self.ut_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Radial Velocity [-]:':<{total_chars_mid}}{self.ur_2:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Tang. Velocity [-]:':<{total_chars_mid}}{self.ut_2:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Abs. Angle [deg]:':<{total_chars_mid}}{self.alpha_1*180/pi:>{total_chars_mid}.2f}")
+        print(f"{'Inlet Rel. Angle [deg]:':<{total_chars_mid}}{self.beta_1 * 180 / pi:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Abs. Angle [deg]:':<{total_chars_mid}}{self.alpha_2 * 180 / pi:>{total_chars_mid}.2f}")
+        print(f"{'Path Length [-]:':<{total_chars_mid}}{self.s_dif:>{total_chars_mid}.2f}")
+        print(f"{'Loss coefficient [-]:':<{total_chars_mid}}{self.dLd_dTana:>{total_chars_mid}.2f}")
+        print(f"{'Time Lag Parameter [-]:':<{total_chars_mid}}{self.tau_d:>{total_chars_mid}.2f}")
+        print_banner_end()

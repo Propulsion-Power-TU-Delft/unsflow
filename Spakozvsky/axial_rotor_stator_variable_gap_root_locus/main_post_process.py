@@ -37,7 +37,12 @@ for i in range(len(deltax)):
     first_key = list(poles[i].keys())[0]
     real_part = poles[i][first_key].real
     imag_part = -poles[i][first_key].imag
+    color_i = deltax[i]/deltax[-1]
+    color = np.zeros(len(real_part))+deltax[i]
     plt.scatter(real_part, imag_part, c='blue')
+    plt.xlim([-4.5, 0.5])
+    plt.ylim([-0.5, 2])
+
 
 
 plt.figure()

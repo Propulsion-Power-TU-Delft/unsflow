@@ -91,7 +91,7 @@ driver.set_outlet_boundary_conditions()
 
 domain = [-2.5, 0.5, -4.5, 4.5]
 grid = [1, 1]
-attempts = 10
+attempts = 15
 tol = 1e-3
 driver.set_eigenvalues_research_settings(domain, grid, attempts, tol)
 

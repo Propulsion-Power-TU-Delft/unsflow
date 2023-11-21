@@ -1,5 +1,7 @@
 from .functions import Bgap_n
-
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Sun.src.styles import total_chars, total_chars_mid
+from numpy import pi as pi
 
 class AxialGap:
     """
@@ -18,6 +20,7 @@ class AxialGap:
         self.z_2 = z_2
         self.ut = ut
         self.uz = uz
+        self.print_info()
 
 
     def transfer_function(self, s, n, theta=0):
@@ -34,3 +37,14 @@ class AxialGap:
         """
         M = Bgap_n(self.z_1, self.z_2, s, n, self.uz, self.ut, theta)
         return M
+
+    def print_info(self):
+        """
+        Print the information of the component
+        """
+        print_banner_begin('AXIAL GAP')
+        print(f"{'Inlet Coordinate [-]:':<{total_chars_mid}}{self.z_1:>{total_chars_mid}.2f}")
+        print(f"{'Outlet Coordinate [-]:':<{total_chars_mid}}{self.z_2:>{total_chars_mid}.2f}")
+        print(f"{'Axial Velocity [-]:':<{total_chars_mid}}{self.uz:>{total_chars_mid}.2f}")
+        print(f"{'Tang. Velocity [-]:':<{total_chars_mid}}{self.ut:>{total_chars_mid}.2f}")
+        print_banner_end()

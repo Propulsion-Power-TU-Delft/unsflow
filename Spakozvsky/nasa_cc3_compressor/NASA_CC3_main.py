@@ -11,34 +11,31 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 # sys.path.insert(1, '../src/') #to add function folder
-# from functions import *
-import Spakozvsky
+from Spakozvsky.src.functions import *
+from Spakozvsky.src.axial_duct import AxialDuct
+from Spakozvsky.src.radial_impeller import RadialImpeller
+from Spakozvsky.src.vaneless_diffuser import VanelessDiffuser
+from Spakozvsky.src.vaned_diffuser import VanedDiffuser
+from Spakozvsky.src.driver import Driver
 
-# Preamble: customization of matplotlib
-# Configuration for plots
-plt.rc('text', usetex=False)
-plt.rc('xtick', labelsize=10)
-plt.rc('ytick', labelsize=10)
-plt.rcParams['font.size'] = 14
-format_fig = (12, 8)
+format_fig = (7, 5)
 
 # %%DATA INPUT OF THE COMPRESSOR
 mdot = 4.54  # mass flow rate
-PR = 4  # pressure ratio impeller and vaned diffuser
+PR = 4  # design pressure ratio impeller and vaned diffuser
 Corr_speed = 21789 * 2 * np.pi / 60  # standard day corrected speed
 U2 = 492  # exit tip speed
 Nbl = 15  # impeller blades
 Nvd = 24  # vaned diffuser blades
 Nspl = 15  # splitter blades
-Nspl = 15  # splitter blades
-beta2 = -50 * np.pi / 180  # backsweep at exit of blades
+beta2 = -50 * np.pi / 180  # backsweep at exit of impeller
 R1t = 105 * 1e-3  # inlet tip radius
-blade_height_1 = 64 * 1e-3  # inlet blade height
+H1 = 64 * 1e-3  # inlet blade height
 R2 = 215.5 * 1e-3  # inlet tip radius
-blade_height_1 = 17 * 1e-3  # exit blade height
+H2 = 17 * 1e-3  # exit blade height
 R3 = R2 * 1.078  # LE radius of vaned diffuser
-div_angle = 7.8 * np.pi / 180  # divergence angle of vane blades
-R4 = 181.5 * 1e-3  # diffuser outlet radius
+divergence_angle_diffuser = 7.8 * np.pi / 180  # divergence angle of vane blades
+R4 = 363 * 1e-3  # diffuser outlet radius
 s_i = 1.3064  # gas path length in impeller
 s_dif = 1.1187  # diffuser path length
 lambda_i = 1.1508  # impeller inertia factor
@@ -139,44 +136,41 @@ beta1 = np.arctan(-U1 / Vx1)
 rho1 = rho
 rho2 = rho
 dLi_dTanb = 0
+tau_i = 1
+tau_d = 1
 
 
-# %% BUILD THE SYSTEM TRANSFER FUNCTION
-# system function
-def centrifugal_vaned(s, n, theta=0):
-    m1 = np.linalg.inv(Spakozvsky.Tax_n(x4, s, n, Vx4, Vy4, theta=theta))
-    m2 = Spakozvsky.Bdif_n(s, n, Vr3, Vr4, Vy3, Vy4, alfa3, beta3, alfa4, r3, r4, rho3, rho4, A3, A4, s_dif, dLd_dTana)
-    m3 = Spakozvsky.Bvlsd_n(s, n, r2, r3, r2, Q, GAMMA)
-    m4 = Spakozvsky.Bimp_n(s, n, Vx1, Vr2, Vy1, Vy2, alfa1, beta1, beta2, r1, r2, rho1, rho2, A1, A2, s_i, dLi_dTanb)
-    m5 = Spakozvsky.Tax_n(x1, s, n, Vx1, Vy1, theta=theta)
-    m6 = np.linalg.multi_dot([m1, m2, m3, m4, m5])
-    EC = np.array([[(-s / n - Vx5 - 1j * Vy5) * np.exp(n * x5), (s / n - Vx5 + 1j * Vy5) * np.exp(-n * x5), 0]])
-    IC = np.array([[0, 1, 0],
-                   [0, 0, 1]])
-    Y = np.concatenate((np.matmul(EC, m6), IC))
-    return np.linalg.det(Y)
 
 
-domain = [-3.5, 0.5, -2.5, 6]
-grid = [2, 2]
-n = np.arange(1, 7)
-poles = {}
-plt.figure(figsize=(16, 9))
-for nn in n:
-    poles[nn] = Spakozvsky.Shot_Gun(centrifugal_vaned, domain, grid, n=nn, attempts=10)
-    plt.plot(poles[nn].real, -poles[nn].imag, 'o', label='n ' + str(nn))
-real_axis_x = np.linspace(domain[0], domain[1], 100)
-real_axis_y = np.zeros(len(real_axis_x))
-imag_axis_y = np.linspace(domain[2], domain[3], 100)
-imag_axis_x = np.zeros(len(imag_axis_y))
-plt.plot(real_axis_x, real_axis_y, '--k', linewidth=0.5)
-plt.plot(imag_axis_x, imag_axis_y, '--k', linewidth=0.5)
-# plt.xlim([domain[0],domain[1]])
-# plt.ylim([domain[2],domain[3]])
-plt.legend()
-plt.xlabel(r'$\sigma_{n}$')
-plt.ylabel(r'$j \omega_{n}$')
-plt.title('Root locus')
-# plt.savefig(path+'/poles_rotor_stator_deltax_03.png')
+
+
+
+
+
+
+
+
+
+
+
+
+# INSTABILITY ANALYSIS
+inlet = AxialDuct(Vy1, Vx1, x1)
+impeller = RadialImpeller(r1, r2, rho1, rho2, A1, A2, Vy1, Vx1, Vr2, Vy2, alfa1, beta1, beta2, s_i, dLi_dTanb, tau_i)
+vaneless_diff = VanelessDiffuser(r2, r3, Vr2, Vy2)
+vaned_diff = VanedDiffuser(r3, r4, rho3, rho4, A3, A4, Vr3, Vy3, Vr4, Vy4, alfa3, beta3, alfa4, s_dif, dLd_dTana, tau_d)
+outlet = AxialDuct(Vy4, Vx4, x4)
+driver = Driver('Centrifugal with vaned diffuser')
+driver.add_component(inlet)
+driver.add_component(impeller)
+driver.add_component(vaneless_diff)
+driver.add_component(vaned_diff)
+driver.add_component(outlet)
+driver.set_inlet_boundary_conditions()
+driver.set_outlet_boundary_conditions('finite duct length', (Vx5, Vy5, x5))
+driver.set_eigenvalues_research_settings(domain=[-3.5, 0.5, -6, 6], grid=[1,1], attempts=10, tol=1e-3)
+driver.find_eigenvalues(np.arange(1, 7))
+driver.plot_eigenvalues()
+
 
 plt.show()
