@@ -32,16 +32,38 @@ for file in filenames:
 
 deltax = np.array(deltax, dtype=float)
 
-plt.figure()
+pole_up = []
+pole_dn = []
+dx = []
 for i in range(len(deltax)):
     first_key = list(poles[i].keys())[0]
-    real_part = poles[i][first_key].real
-    imag_part = -poles[i][first_key].imag
-    color_i = deltax[i]/deltax[-1]
-    color = np.zeros(len(real_part))+deltax[i]
-    plt.scatter(real_part, imag_part, c='blue')
-    plt.xlim([-4.5, 0.5])
-    plt.ylim([-0.5, 2])
+    pole = poles[i][first_key]
+    idx_up = np.where(-pole.imag>0.5)
+    idx_dn = np.where(-pole.imag<=0.5)
+    pole_up.append(pole[idx_up])
+    pole_dn.append(pole[idx_dn])
+    dx.append(deltax[i])
+
+pole_up = np.array([item for sublist in pole_up for item in sublist])
+pole_dn = np.array([item for sublist in pole_dn for item in sublist])
+colormap = 'viridis'
+plt.figure()
+colors = np.linspace(0, 1, len(pole_up))
+plt.scatter(pole_up.real, -pole_up.imag, c=colors, s=20, cmap=colormap)
+idx = np.where(-pole_dn.imag>-0.5)
+pole_dn = pole_dn[idx]
+colors = np.linspace(0, 1, len(pole_dn))
+scatter = plt.scatter(pole_dn.real, -pole_dn.imag, c=colors, s=20, cmap=colormap)
+colorbar = plt.colorbar(scatter)
+colorbar.set_label(r'$\Delta x$ [-]', rotation=90, labelpad=15)
+plt.xlabel(r'$\sigma$')
+plt.ylabel(r'$\omega$')
+plt.grid(alpha=0.2)
+plt.xlim([-4.5, 0.5])
+plt.ylim([-0.5, 2])
+# plt.title('Root Locus')
+plt.savefig('pictures/root_locus_complex_plane.pdf', bbox_inches='tight')
+
 
 
 
@@ -65,9 +87,9 @@ for i in range(len(deltax)):
             plt.scatter(deltax_var, imag_part, facecolors='none', edgecolors='blue', marker='^', alpha=alpha)
 plt.xlim([0, 1])
 plt.ylim([-2, 2])
-plt.title('Root Locus')
+# plt.title('Root Locus')
 plt.grid(alpha=0.2)
 plt.legend()
 plt.xlabel(r'$\Delta x$ [-]')
-plt.savefig('root_locus_variable_deltx.pdf', bbox_inches='tight')
+plt.savefig('pictures/root_locus_variable_deltx.pdf', bbox_inches='tight')
 plt.show()

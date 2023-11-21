@@ -3,6 +3,7 @@ from Spakozvsky.src.functions import Shot_Gun
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+from Spakozvsky.src.functions import Trad_n
 
 
 class Driver:
@@ -49,18 +50,25 @@ class Driver:
         self.IC = np.array([[0, 1, 0],
                             [0, 0, 1]])
 
-    def set_outlet_boundary_conditions(self, bc_type='infinite duct length', *axial_exit_conditions):
+    def set_outlet_boundary_conditions(self, bc_type='infinite duct length', *exit_conditions):
         """
         Set the parameters to compute the EC matrix.
         :param bc_type: type of the boundary condition
-        :param axial_exit_conditions: tuple storing (uz, ut, x) of the location where the perturbations go to zero
+        :param exit_conditions: tuple storing the information of the outlet.
         """
         self.exit_bc_type = bc_type
         if bc_type == 'finite duct length':
             print('Exit Boundary Condition Type: finite duct length')
-            self.exit_uz = axial_exit_conditions[0][0]
-            self.exit_ut = axial_exit_conditions[0][1]
-            self.exit_z = axial_exit_conditions[0][2]
+            self.exit_uz = exit_conditions[0][0]
+            self.exit_ut = exit_conditions[0][1]
+            self.exit_z = exit_conditions[0][2]
+        elif bc_type == 'radial plenum discharge':
+            print('Exit Boundary Condition Type: radial plenum discharge')
+            self.exit_r = exit_conditions[0][0]
+            self.exit_ur = exit_conditions[0][1]
+            self.exit_ut = exit_conditions[0][2]
+            self.exit_Q = 2 * np.pi * self.exit_r * self.exit_ur
+            self.exit_GAMMA = 2 * np.pi * self.exit_r * self.exit_ut
         elif bc_type == 'infinite duct length':
             print('Exit Boundary Condition Type: infinite duct length')
             pass
@@ -79,6 +87,9 @@ class Driver:
             EC = np.array([[(-s/n - self.exit_uz - 1j*self.exit_ut)*np.exp(n*self.exit_z),
                            (+s/n - self.exit_uz + 1j*self.exit_ut)*np.exp(-n*self.exit_z),
                             0]])
+        elif self.exit_bc_type=='radial plenum discharge':
+            Tmat = Trad_n(self.exit_r, self.exit_r, n, s, self.exit_Q, self.exit_GAMMA, 0)
+            EC = np.array([[Tmat[2, 0], Tmat[2, 1], Tmat[2, 2]]])
         else:
             raise ValueError("Boundary condition not recognized")
         return EC

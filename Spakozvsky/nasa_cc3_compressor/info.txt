@@ -1,0 +1,4 @@
+This exercise tries to model the problem 5.6 in Spakovszky thesis, but the
+several assumptions made on the flow don't lead to good results. We would
+need a way to compute the compressible meanline flow solution of the compressor
+before using the model. 

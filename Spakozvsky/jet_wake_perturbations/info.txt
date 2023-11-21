@@ -1,0 +1,3 @@
+script used to compute the radial perturbations in the vaned diffuser 
+described in the Spakovszky thesis. Code used to verify and check robustness
+of the radial functions used in the swirling flow modeling.
