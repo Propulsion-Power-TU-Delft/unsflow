@@ -28,7 +28,7 @@ format_fig = (7, 7)
 
 
 # %%INPUT DATA for the implementation of the generic actuator disk of Greitzer, with variable gap
-gap = np.linspace(0, 0.2, 100)
+gap = np.linspace(0.2, 0.6, 100)
 for DeltaX in gap:
     Vy1 = 0  # non dimensional background azimuthal flow velocity at outlet
 

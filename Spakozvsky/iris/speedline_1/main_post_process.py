@@ -17,16 +17,16 @@ for i in range(0, np.shape(mass_flow)[0]-1):
     beta = beta_ts[i, :]
     idx = np.where(mdot>0)
     plt.plot(mdot[idx], beta[idx], label='%.1f krpm' %(rpm[i]/1000))
-    # plt.plot(mdot[0], beta[0], 'ks', markersize=4)
+    plt.plot(mdot[0], beta[0], 'ks', markersize=4)
 plt.xlabel(r'$\dot{m}$ [kg/s]')
 plt.ylabel(r'$\beta_{ts}$ [-]')
-# plt.title('Compressor Curves')
+plt.title('Compressor Curves')
 plt.grid(alpha=0.2)
 plt.legend()
 plt.savefig('pictures/iris_characteristic_curves.pdf', bbox_inches='tight')
 
 
-speedline = 2  # choose the speedline to be used
+speedline = 1  # choose the speedline to be used
 mass_flow = mass_flow[speedline, :]
 beta_ts = beta_ts[speedline, :]
 
