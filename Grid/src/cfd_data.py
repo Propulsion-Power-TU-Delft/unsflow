@@ -218,26 +218,30 @@ class CfdData:
 
         # #gradients in cylindrical cordinates
         try:
-            self.drho_dr = project_scalar_gradient_to_cylindrical(self.drho_dx, self.drho_dy, self.r, self.theta)
-            self.drho_dx, self.drho_dy = None, None
+            self.drho_dr, _, self.drho_dz = project_scalar_gradient_to_cylindrical(self.drho_dx, self.drho_dy, self.drho_dz,
+                                                                                   self.r, self.theta)
 
-            self.dur_dr, self.dut_dr = project_velocity_gradient_to_cylindrical(self.dux_dx, self.dux_dy,
-                                                                                self.duy_dx, self.duy_dy,
-                                                                                self.r, self.theta)
+            # self.dur_dr, self.dut_dr = project_velocity_gradient_to_cylindrical(self.dux_dx, self.dux_dy,
+            #                                                                     self.duy_dx, self.duy_dy,
+            #                                                                     self.r, self.theta)
 
-            self.duz_dr = project_scalar_gradient_to_cylindrical(self.duz_dx, self.duz_dy, self.r, self.theta)
-            self.dur_dz = cos(self.theta) * self.dux_dz + sin(self.theta) * self.duy_dz
-            self.dut_dz = -sin(self.theta)*self.dux_dz + cos(self.theta)*self.duy_dz
-            self.dux_dx, self.dux_dy = None, None
-            self.duy_dx, self.duy_dy = None, None
-            self.duz_dx, self.duz_dy = None, None
+            self.dur_dr, self.dut_dr, self.duz_dr, self.dur_dz, self.dut_dz, self.duz_dz = np.zeros_like(self.r), \
+                np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r)
 
-            self.dp_dr = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.r, self.theta)
-            self.dp_dx, self.dp_dy = None, None
+            for i in range(len(self.r)):
+                self.dur_dr[i], self.dut_dr[i], self.duz_dr[i], _, _, _, self.dur_dz[i], self.dut_dz[i], self.duz_dz[i] = \
+                    rotate_3d_tensor(self.dux_dx[i], self.dux_dy[i], self.dux_dz[i],
+                                     self.duy_dx[i], self.duy_dy[i], self.duy_dz[i],
+                                     self.duz_dx[i], self.duz_dy[i], self.duz_dz[i],
+                                     self.r[i], self.theta[i])
 
-            self.ds_dr = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.r, self.theta)
-            self.ds_dx, self.ds_dy = None
+            # self.duz_dr = project_scalar_gradient_to_cylindrical(self.duz_dx, self.duz_dy, self.r, self.theta)
+            # self.dur_dz = cos(self.theta) * self.dux_dz + sin(self.theta) * self.duy_dz
+            # self.dut_dz = -sin(self.theta)*self.dux_dz + cos(self.theta)*self.duy_dz
 
+            self.dp_dr, _, self.dp_dz = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.dp_dz, self.r, self.theta)
+            self.ds_dr, _, self.ds_dz = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.ds_dz, self.r, self.theta)
+            # self.dT_dr, _, self.dT_dz = project_scalar_gradient_to_cylindrical(self.dT_dx, self.dT_dy, self.dT_dz, self.r, self.theta)
         except:
             pass
 

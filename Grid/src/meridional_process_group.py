@@ -4,6 +4,7 @@
 Created on Thu Jun 15 17:07:05 2023
 @author: F. Neri, TU Delft
 """
+import os.path
 
 import numpy as np
 from .styles import *
@@ -531,18 +532,22 @@ class MeridionalProcessGroup:
         smoothed_array = gaussian_filter(smoothed_array, sigma=sigma)
         return smoothed_array
 
-    def store_pickle(self, file_name=None, folder=None):
+    def store_pickle(self, file_name=None, folder_name=None):
         """
         Store the object content in a pickle.
         :param file_name: name to store. if None, default one is selected
-        :param folder: location to store. if None, default one is selected
+        :param folder_name: location to store. if None, default one is selected
         """
-        if folder is None:
-            folder = folder_meta_data_default
+        if folder_name is None:
+            folder_name = 'data'
+
         if file_name is None:
             file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)
 
-        with open(folder + file_name + '.pickle', "wb") as file:
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        with open(os.path.join(folder_name, file_name) + '.pickle', "wb") as file:
             pickle.dump(self, file)
 
     def compute_streamline_length(self):

@@ -66,17 +66,18 @@ def project_vector_to_cylindrical(ux, uy, theta):
     return ur, ut
 
 
-def project_scalar_gradient_to_cylindrical(da_dx, da_dy, r, theta):
+def project_scalar_gradient_to_cylindrical(da_dx, da_dy, da_dz, r, theta):
     """
     Project the x-y gradients of a scalar field "a" in r-theta components.
     :param da_dx: x-derivative of the scalar field
     :param da_dy: y-derivative of the scalar field
+    :param da_dz: z-derivative of the scalar field
     :param r: radial cordinate of the point
     :param theta: theta location of the considered point [rad]
     """
     da_dr = da_dx * cos(theta) + da_dy * sin(theta)
     da_dtheta = r * (-da_dx * sin(theta) + da_dy * cos(theta))
-    return da_dr
+    return da_dr, da_dtheta, da_dz
 
 
 def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, theta):
@@ -850,13 +851,13 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     t = np.linspace(0, 1, sampling_points)
     spline = CubicSpline(t, x)
 
-    if sample_method=='sigmoid':
+    if sample_method == 'sigmoid':
         t_scaled = scaled_sigmoid(t, sample_coeff)[0]
-    elif sample_method=='sigmoid_left' or sample_method=='sigmoid_down':
+    elif sample_method == 'sigmoid_left' or sample_method == 'sigmoid_down':
         t_scaled = scaled_sigmoid_left(t, sample_coeff)[0]
-    elif sample_method=='sigmoid_right' or sample_method=='sigmoid_up':
+    elif sample_method == 'sigmoid_right' or sample_method == 'sigmoid_up':
         t_scaled = scaled_sigmoid_right(t, sample_coeff)[0]
-    elif sample_method=='default':
+    elif sample_method == 'default':
         t_scaled = t
     else:
         raise ValueError("Unrecognized sample method")
@@ -864,7 +865,32 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     t_scaled[-1] = 1
     x_spline = spline(t_scaled)
 
-    plt.figure()
-    plt.plot(t, x, 'k')
-    plt.plot(t_scaled, x_spline, 'ro')
+    # plt.figure()
+    # plt.plot(t, x, 'k')
+    # plt.plot(t_scaled, x_spline, 'ro')
     return x_spline
+
+
+def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz_dy, duz_dz, r, theta):
+    """
+    Having a tensor defined in cartesian cordinates, express the same quantity in cylindrical terms
+    :param dux_dx: component of the tensor, following convention grad*velocity^T
+    :param r: radial cordinate
+    :param theta: theta cordinate
+    """
+
+    # cartesian tensor
+    Sigma = np.array([[dux_dx, duy_dx, duz_dx],
+                      [dux_dy, duy_dy, duz_dy],
+                      [dux_dz, duy_dz, duz_dz]])
+
+    # rotation matrix
+    R = np.array([[cos(theta), +sin(theta), 0],
+                  [-sin(theta), cos(theta), 0],
+                  [0, 0, 1]])
+
+    Sigma_prime = R @ Sigma @ R.T
+
+    return Sigma_prime[0, 0], Sigma_prime[0, 1], Sigma_prime[0, 2],\
+        r * Sigma_prime[1, 0], r * Sigma_prime[1, 1], r * Sigma_prime[1, 2], \
+        Sigma_prime[2, 0], Sigma_prime[2, 1], Sigma_prime[2, 2]

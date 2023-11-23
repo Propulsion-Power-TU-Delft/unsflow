@@ -17,7 +17,7 @@ OUTLET_NZ = 30
 NR = 25
 AVG_MODE = 'cell centered'
 cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
-MULTIBLOCK_FILTERING = True
+MULTIBLOCK_FILTERING = False
 SHOCK_SMOOTHING = False
 INTERP_METHOD = 'linear'
 INLET_BLOCK = True
@@ -158,7 +158,7 @@ if BLADE_BLOCK:
     blade_process.compute_bfm_axial(mode='global')
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    blade_process.contour_all_plots()
+    # blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
 
@@ -252,8 +252,10 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.compute_performance()
     obj.print_performance()
     obj.compose_global_sun_Omega_tau()
-    obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' % (INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
+    obj.contour_fields()
+    obj.contour_field_gradients()
     delattr(obj, 'group')
+    obj.store_pickle(file_name='inlet_%i_blade_%i_outlet_%i_nspan_%i' % (INLET_NZ, BLADE_NZ, OUTLET_NZ, NR))
 
 
 end_time = time.time()
