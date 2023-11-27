@@ -371,15 +371,30 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_8.pdf', bbox_inches='tight')
             plt.close()
 
-    def AddAMatrixToNodes(self):
+    def AddAMatrixToNodes(self, normalize=False):
         """
         Compute and store at the node level the A matrix. Sun Formulation
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 A = np.eye(5, dtype=complex)
-                A = self.NormalizeMatrix(A)  # normalization
+                if normalize:
+                    A = self.NormalizeMatrix(A)
+                else:
+                    # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
+                    # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+                    # should be 1 by construction. In this case the non-dimensional equations are exactly the same
+                    # of the dimensional ones
+                    strouhal = self.x_ref / (self.u_ref * self.t_ref)
+                    A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
+
+        if normalize:
+            print("A Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
+                  "parameter to false")
+        else:
+            print("Initial data from meridional object were already non-dimensional. Matrix A has been multiplied by Strouhal"
+                  " Number: %.2f" %(strouhal))
 
     def AddAMatrixToNodesFrancesco2(self, normalize=False):
         """
@@ -409,7 +424,7 @@ class SunModel:
                   " Number: %.2f" %(strouhal))
 
 
-    def AddBMatrixToNodes(self):
+    def AddBMatrixToNodes(self, normalize=False):
         """
         Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
         """
@@ -424,8 +439,13 @@ class SunModel:
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
-                B = self.NormalizeMatrix(B)  # normalization
+                if normalize:
+                    B = self.NormalizeMatrix(B)  # normalization
                 self.data.dataSet[ii, jj].AddBMatrix(B)
+
+            if normalize:
+                print("B Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
+                      "parameter to false")
 
     def AddBMatrixToNodesFrancesco2(self, normalize=False):
         """
@@ -452,12 +472,15 @@ class SunModel:
             print("B Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                   "parameter to false")
 
-    def AddCMatrixToNodes(self, m=1):
+    def AddCMatrixToNodes(self, m=1, normalize=False):
         """
         Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
         Sun Formulation.
         :param m: circumferential harmonic order of the analysis
         """
+        self.harmonic_order = m
+        print(f"Circumferential Harmonic Order set to: {m}")
+
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 C = np.zeros((5, 5), dtype=complex)
@@ -470,9 +493,14 @@ class SunModel:
                 C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
                 C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
 
-                C = self.NormalizeMatrix(C)  # normalization
                 C = C * 1j * m / self.data.dataSet[ii, jj].r
+                if normalize:
+                    C = self.NormalizeMatrix(C)  # normalization
                 self.data.dataSet[ii, jj].AddCMatrix(C)
+
+            if normalize:
+                print("C Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
+                      "parameter to false")
 
 
     def AddCMatrixToNodesFrancesco2(self, m=1, normalize=False):
@@ -506,7 +534,7 @@ class SunModel:
             print("C Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                   "parameter to false")
 
-    def AddEMatrixToNodes(self):
+    def AddEMatrixToNodes(self, normalize = False):
         """
         Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
         """
@@ -524,8 +552,13 @@ class SunModel:
                 E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
                 E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
 
-                E = self.NormalizeMatrix(E)  # normalization
+                if normalize:
+                    E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
+
+            if normalize:
+                print("E Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
+                      "parameter to false")
 
     def AddEMatrixToNodesFrancesco2(self, normalize = False):
         """
@@ -551,7 +584,7 @@ class SunModel:
             print("E Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                   "parameter to false")
 
-    def AddRMatrixToNodes(self):
+    def AddRMatrixToNodes(self, normalize=False):
         """
         Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
         """
@@ -585,8 +618,13 @@ class SunModel:
                 R[4, 3] = self.data.dataSet[ii, jj].dp_dz
                 R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
                                        self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
-                R = self.NormalizeMatrix(R)  # normalization
+                if normalize:
+                    R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
+
+            if normalize:
+                print("R Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
+                      "parameter to false")
 
 
     def AddRMatrixToNodesFrancesco2(self, normalize=False):

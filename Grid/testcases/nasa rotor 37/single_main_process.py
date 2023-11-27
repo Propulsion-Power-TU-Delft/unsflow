@@ -9,16 +9,16 @@ import Grid
 start_time = time.time()
 print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'sigmoid'
-REGRESSION = False
+MESH_TYPE = 'default'
+REGRESSION = True
 INLET_NZ = 15
 BLADE_NZ = 20
 OUTLET_NZ = 30
-NR = 25
+NR = 15
 AVG_MODE = 'cell centered'
 cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
 MULTIBLOCK_FILTERING = False
-SHOCK_SMOOTHING = False
+SHOCK_SMOOTHING = True
 INTERP_METHOD = 'linear'
 INLET_BLOCK = True
 BLADE_BLOCK = True
@@ -84,9 +84,8 @@ if INLET_BLOCK:
     block.spline_of_outlet()
     block.sample_hub_shroud()
     block.sample_inlet_outlet()
-    block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+    block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=MESH_TYPE, y_stretching=MESH_TYPE,
                               sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-    block.compute_grid_centers()
 
     # instantiate meridional process object and avg
     inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
@@ -133,10 +132,8 @@ if BLADE_BLOCK:
     bladed_block.spline_of_leading_trailing_edge()
     bladed_block.sample_hub_shroud()
     bladed_block.sample_inlet_outlet()
-    bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+    bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=MESH_TYPE, y_stretching=MESH_TYPE,
                                      sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-
-    bladed_block.compute_grid_centers()
 
     blade.find_camber_surface(bladed_block)
     blade.compute_camber_vectors()
@@ -148,17 +145,17 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    # blade_process.compute_field_gradients(method='rbf')
     if REGRESSION:
         blade_process.compute_regressed_fields()
     # else:
     #     blade_process.compute_field_gradients()
     blade_process.compute_derived_quantities()
     blade_process.contour_entropy_generation()
-    blade_process.contour_local_entropy_generation()
     blade_process.compute_bfm_axial(mode='global')
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    # blade_process.contour_all_plots()
+    blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
 
@@ -185,9 +182,8 @@ if OUTLET_BLOCK:
     block.spline_of_inlet()
     block.sample_hub_shroud()
     block.sample_inlet_outlet()
-    block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching='sigmoid', y_stretching='sigmoid',
+    block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=MESH_TYPE, y_stretching=MESH_TYPE,
                               sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
-    block.compute_grid_centers()
 
     outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
     outlet_process.compute_streamline_length()

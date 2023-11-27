@@ -206,54 +206,43 @@ class CfdData:
 
     def compute_derived_quantities(self):
         """
-        Compute derived quantities, projecting in the radial and tangential direction when needed. Gradients are
-        not actually needed since they will be calculated from the 2D regressed fields.
+        Compute derived quantities, in particular the vector components in the cylindrical reference frame.
         """
-
-        # velocity magnitude
+        self.instantiate_derived_fields_arrays()
         self.u_mag = sqrt(self.ux ** 2 + self.uy ** 2 + self.uz ** 2)
-
-        # velocity in cylindrical cordinates
         self.ur, self.ut = project_vector_to_cylindrical(self.ux, self.uy, self.theta)
+        self.ut_drag = self.r * self.omega_shaft  # drag velocity
+        self.ut_rel = self.ut - self.ut_drag  # relative velocity
+        self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
         # #gradients in cylindrical cordinates
         try:
-            self.drho_dr, _, self.drho_dz = project_scalar_gradient_to_cylindrical(self.drho_dx, self.drho_dy, self.drho_dz,
-                                                                                   self.r, self.theta)
-
-            # self.dur_dr, self.dut_dr = project_velocity_gradient_to_cylindrical(self.dux_dx, self.dux_dy,
-            #                                                                     self.duy_dx, self.duy_dy,
-            #                                                                     self.r, self.theta)
-
-            self.dur_dr, self.dut_dr, self.duz_dr, self.dur_dz, self.dut_dz, self.duz_dz = np.zeros_like(self.r), \
-                np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r)
-
             for i in range(len(self.r)):
+                self.drho_dr[i], _, = project_2d_gradient_to_cylindrical(self.drho_dx[i], self.drho_dy[i], self.r[i], self.theta[i])
+
                 self.dur_dr[i], self.dut_dr[i], self.duz_dr[i], _, _, _, self.dur_dz[i], self.dut_dz[i], self.duz_dz[i] = \
                     rotate_3d_tensor(self.dux_dx[i], self.dux_dy[i], self.dux_dz[i],
                                      self.duy_dx[i], self.duy_dy[i], self.duy_dz[i],
                                      self.duz_dx[i], self.duz_dy[i], self.duz_dz[i],
                                      self.r[i], self.theta[i])
 
-            # self.duz_dr = project_scalar_gradient_to_cylindrical(self.duz_dx, self.duz_dy, self.r, self.theta)
-            # self.dur_dz = cos(self.theta) * self.dux_dz + sin(self.theta) * self.duy_dz
-            # self.dut_dz = -sin(self.theta)*self.dux_dz + cos(self.theta)*self.duy_dz
+                self.dp_dr[i], _ = project_2d_gradient_to_cylindrical(self.dp_dx[i], self.dp_dy[i], self.r[i], self.theta[i])
+                self.ds_dr[i], _ = project_2d_gradient_to_cylindrical(self.ds_dx[i], self.ds_dy[i], self.r[i], self.theta[i])
 
-            self.dp_dr, _, self.dp_dz = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.dp_dz, self.r, self.theta)
-            self.ds_dr, _, self.ds_dz = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.ds_dz, self.r, self.theta)
-            # self.dT_dr, _, self.dT_dz = project_scalar_gradient_to_cylindrical(self.dT_dx, self.dT_dy, self.dT_dz, self.r, self.theta)
         except:
             pass
 
 
-        #
-        # self.dp_dr, self.dp_dtheta = project_scalar_gradient_to_cylindrical(self.dp_dx, self.dp_dy, self.r, self.theta)
-        # self.ds_dr, self.ds_dtheta = project_scalar_gradient_to_cylindrical(self.ds_dx, self.ds_dy, self.r, self.theta)
 
-        # relative quantities
-        self.ut_drag = self.r * self.omega_shaft  # drag velocity
-        self.ut_rel = self.ut - self.ut_drag  # relative velocity
-        self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+    def instantiate_derived_fields_arrays(self):
+        """
+        Instantiate the fields for the derived quantities
+        """
+        self.drho_dr = np.zeros_like(self.r)
+        self.dur_dr, self.dut_dr, self.duz_dr, self.dur_dz, self.dut_dz, self.duz_dz = np.zeros_like(self.r), \
+            np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r)
+        self.dp_dr = np.zeros_like(self.r)
+        self.ds_dr = np.zeros_like(self.r)
 
     def compute_bfm_radial_fields(self):
         """

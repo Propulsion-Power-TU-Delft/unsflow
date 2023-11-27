@@ -283,6 +283,8 @@ class Block:
         else:
             raise ValueError('Grid method not recognized!')
 
+        self.compute_grid_centers()
+
 
 
 

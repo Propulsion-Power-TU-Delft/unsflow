@@ -224,7 +224,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     f2_prime = np.zeros((nx, ny))
     f2_second = np.zeros((nx, ny))
     for ispan in range(ny):
-        if not x_stretching:
+        if x_stretching=='default':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
@@ -237,7 +237,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         else:
             raise ValueError('Check the value of x-strecthing parameter!')
     for istream in range(0, nx):
-        if not y_stretching:
+        if y_stretching=='default':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
         elif y_stretching == 'sigmoid':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff_y)
@@ -851,14 +851,14 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     t = np.linspace(0, 1, sampling_points)
     spline = CubicSpline(t, x)
 
-    if sample_method == 'sigmoid':
+    if sample_method =='default':
+        t_scaled = t.copy()
+    elif sample_method == 'sigmoid':
         t_scaled = scaled_sigmoid(t, sample_coeff)[0]
     elif sample_method == 'sigmoid_left' or sample_method == 'sigmoid_down':
         t_scaled = scaled_sigmoid_left(t, sample_coeff)[0]
     elif sample_method == 'sigmoid_right' or sample_method == 'sigmoid_up':
         t_scaled = scaled_sigmoid_right(t, sample_coeff)[0]
-    elif sample_method == 'default':
-        t_scaled = t
     else:
         raise ValueError("Unrecognized sample method")
     t_scaled[0] = 0
@@ -894,3 +894,16 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
     return Sigma_prime[0, 0], Sigma_prime[0, 1], Sigma_prime[0, 2],\
         r * Sigma_prime[1, 0], r * Sigma_prime[1, 1], r * Sigma_prime[1, 2], \
         Sigma_prime[2, 0], Sigma_prime[2, 1], Sigma_prime[2, 2]
+
+
+def project_2d_gradient_to_cylindrical(du_dx, du_dy, r, theta):
+    """
+    Project a gradient in cartesian cordinates in cylindrical cordinates
+    """
+    r_vers = np.array([cos(theta), sin(theta)])
+    theta_vers = np.array([-sin(theta), cos(theta)])
+    grad_xy = np.array([du_dx, du_dy])
+    du_dr = np.dot(grad_xy, r_vers)
+    du_dtheta = np.dot(grad_xy, theta_vers)
+    return du_dr, r*du_dtheta
+

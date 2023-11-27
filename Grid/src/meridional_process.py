@@ -616,8 +616,8 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)/50
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)/50
+        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)/1000
+        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)/1000
 
         # Perform the RBF interpolation of the left points
         field_interp_right = rbf(self.z_cg + dz, self.r_cg)
@@ -1849,41 +1849,47 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
-    def interpolate_on_working_grid_and_compute_gradients(self, method):
-        self.instantiate_2d_fields()
-        self.rho, self.drho_dz, self.drho_dr = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
-        self.ur, self.dur_dz, self.dur_dr = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
-        self.ut, self.dut_dz, self.dut_dr = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
-        self.uz, self.duz_dz, self.duz_dr = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
-        self.p, self.dp_dz, self.dp_dr = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
-        self.T, self.dT_dz, self.dT_dr = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
-        self.s, self.ds_dz, self.ds_dr = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
+    # def interpolate_on_working_grid_and_compute_gradients(self, method):
+    #     self.instantiate_2d_fields()
+    #     self.rho, self.drho_dz, self.drho_dr = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
+    #     self.ur, self.dur_dz, self.dur_dr = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
+    #     self.ut, self.dut_dz, self.dut_dr = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
+    #     self.uz, self.duz_dz, self.duz_dr = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
+    #     self.p, self.dp_dz, self.dp_dr = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
+    #     self.T, self.dT_dz, self.dT_dr = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
+    #     self.s, self.ds_dz, self.ds_dr = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
 
     def interpolate_on_working_grid(self, method):
+        """
+        Interpolate the 2d dataset on the working grid.
+        :param method: specify which interpolation method (linear, cubic, nearest, rbf)
+        """
         self.instantiate_2d_fields()
-        self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method, type='field')
-        self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method, type='field')
-        self.ut = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method, type='field')
-        self.uz = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method, type='field')
-        self.p = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method, type='field')
-        self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method, type='field')
-        self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method, type='field')
+
+        self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method, return_type='field')
+        self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method, return_type='field')
+        self.ut = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method, return_type='field')
+        self.uz = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method, return_type='field')
+        self.p = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method, return_type='field')
+        self.T = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method, return_type='field')
+        self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method, return_type='field')
 
         try:
-            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method, type='field')
-            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method, type='field')
-            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method, type='field')
-            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method, type='field')
-            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method, type='field')
-            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method, type='field')
-            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method, type='field')
-            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method, type='field')
-            self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method, type='field')
-            self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method, type='field')
-            self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method, type='field')
-            self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method, type='field')
+            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method, return_type='field')
+            self.ds_dz = self.interpolate_function(self.data.ds_dz, self.data.z, self.data.r, method=method, return_type='field')
         except:
             pass
+
 
 
     def weight_least_square_regression(self):
@@ -1991,24 +1997,35 @@ class MeridionalProcess:
         return df_dr, df_dz
 
 
-    def interpolate_function(self, f, z, r, method, type='all'):
+    def interpolate_function(self, f, z, r, method, return_type='all'):
         """
         Interpolate the unstructured dataset f(z,r) on the working grid of the analysis.
         :param f: function values
         :param z: x or z cordinate of dataset at which is evaluated
         :param r: y or r cordinate of dataset at which is evaluated
-        :param type: specify if you want to return only the field or also the gradients computed on it
+        :param method: order of the interpolation
+        :param return_type: specify if you want to return only the field or also the gradients computed on it
         """
         Xnew = self.z_cg  # original grid
         Ynew = self.r_cg  # original grid
         dx = np.abs(np.max(z)-np.min(z)) / 20
         dy = np.abs(np.max(r) - np.min(r)) / 20
-        f_new = griddata((z, r), f, (Xnew, Ynew), method=method)
-        if type == 'all':
-            f_new_dx = griddata((z, r), f, (Xnew+dx, Ynew), method=method)
-            f_new_dy = griddata((z, r), f, (Xnew, Ynew+dy), method=method)
+
+        if method != 'rbf':
+            f_new = griddata((z, r), f, (Xnew, Ynew), method=method)
+            if return_type == 'all':
+                f_new_dx = griddata((z, r), f, (Xnew+dx, Ynew), method=method)
+                f_new_dy = griddata((z, r), f, (Xnew, Ynew+dy), method=method)
+        else:
+            rbf = Rbf(z, r, f, function='linear')
+            f_new = rbf(Xnew, Ynew)
+            if return_type == 'all':
+                f_new_dx = rbf(Xnew+dx, Ynew)
+                f_new_dy = rbf(Xnew, Ynew+dy)
+
+        try:
             df_dx_new = (f_new_dx-f_new)/dx
             df_dy_new = (f_new_dy-f_new)/dy
             return f_new, df_dx_new, df_dy_new
-        else:
+        except:
             return f_new
