@@ -17,8 +17,7 @@ class CfdData:
     extracted from Ansys is implemented
     """
 
-    def __init__(self, filepath, rho_ref, x_ref, rpm_drag, T_ref, cut_block=None, blade=None,
-                 normalize=True, file_type='Ansys3D', verbose=False, ):
+    def __init__(self, config, blade):
         """
         read the data from the csv file extracted from Ansys CFD-post. rpm_drag is used to compute relative and drag velocities
         If normalize = True, it stores the normalization quantities:
@@ -28,71 +27,42 @@ class CfdData:
         T_ref: can be standard temperature [K]
         All other non-dimensionalization quantities are obtained from these fundamental ones.
 
-        :param filepath: path the file contaning the CFD volumetric data.
-        :param rho_ref: reference density [kg/m3].
-        :param x_ref: reference length [m].
-        :param rpm_drag: rpm used in the CFD, with algebraic sign [rpm].
-        :param T_ref: reference Temperature [K].
-        :param cut_block: provide a block object if you wish to cut the dataset with it.
-        :param blade: provide the blade file, to get some info from it.
-        :param normalize: set to True if you wish to produce non-dimesional CFD dataset.
-        :param file_type: filetype of the file storing the CFD dataset.
-        :param verbose: to print some info to screen
+        :param config: configuration file
+        :param config: blade object
         """
-        self.filepath = filepath
-        self.omega_shaft = rpm_drag * 2 * np.pi / 60
-        self.verbose = verbose
-        self.cut_block = cut_block
-        self.normalize = normalize
-        if self.normalize:
-            # compute fundamental quantities, and then compute the derived ones
-            self.rho_ref = rho_ref
-            self.x_ref = x_ref
-            self.rpm_ref = np.abs(rpm_drag)
-            self.T_ref = T_ref
-            self.compute_derived_normalization_quantities()
-        else:
-            print("Attention: CFD data Not normalized")
-            self.rho_ref = 1
-            self.x_ref = 1
-            self.rpm_ref = 1
-            self.T_ref = 1
-            self.compute_derived_normalization_quantities()
-
+        self.config = config
         if blade is not None:
             self.blade = blade
 
-        self.file_type = file_type
-        if self.file_type == 'Ansys3D':
-            self.read_from_ansys_3D_csv(normalize=normalize)
-        elif self.file_type == 'Ansys2D':
-            self.read_from_ansys_2D_csv(normalize=normalize)
+        if self.config.get_cfd_filetype() == 'Ansys3D':
+            self.read_from_ansys_3D_csv()
+        elif self.config.get_cfd_filetype() == 'Ansys2D':
+            self.read_from_ansys_2D_csv()
         else:
             raise ValueError("File type not recognized.")
 
+        if self.config.get_verbosity():
+            print_banner_begin('CFD DATA PROCESSING')
+            print(f"{'CFD filepath:':<{total_chars_mid}}{self.config.get_cfd_filepath():>{total_chars_mid}}")
+            print(f"{'CFD filetype:':<{total_chars_mid}}{self.config.get_cfd_filetype():>{total_chars_mid}}")
+            print(f"{'Shaft Omega [rpm]:':<{total_chars_mid}}{self.config.get_omega_shaft():>{total_chars_mid}.3f}")
+            print(f"{'Reference Omega [rpm]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.3f}")
+            print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.3f}")
+            print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
+            print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.3f}")
+            print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.3f}")
+            print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
+            print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.config.get_reference_temperature():>{total_chars_mid}.3f}")
+            print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.config.get_reference_entropy():>{total_chars_mid}.3f}")
+            print(f"{'Dataset Normalized:':<{total_chars_mid}}{self.config.get_normalize_data():>{total_chars_mid}}")
+            print_banner_end()
 
-        print_banner_begin('CFD DATA PROCESSING')
-        print(f"{'CFD filepath:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
-        print(f"{'CFD filetype:':<{total_chars_mid}}{file_type:>{total_chars_mid}}")
-        print(f"{'Shaft Omega [rpm]:':<{total_chars_mid}}{rpm_drag:>{total_chars_mid}.3f}")
-        print(f"{'Reference Omega [rpm]:':<{total_chars_mid}}{self.rpm_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Length [m]:':<{total_chars_mid}}{x_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
-        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{T_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
-        print(f"{'Dataset Normalized:':<{total_chars_mid}}{normalize:>{total_chars_mid}}")
-        print_banner_end()
-
-    def read_from_ansys_3D_csv(self, normalize=True):
+    def read_from_ansys_3D_csv(self):
         """
         read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
         as well as the correct names of the variables.
-        :param normalize: if true, normalized the full dataset
         """
-        self.data = pd.read_csv(self.filepath, skiprows=range(5))
+        self.data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
         self.x = self.data[' X [ m ]'].values
         self.y = self.data[' Y [ m ]'].values
         self.z = self.data[' Z [ m ]'].values
@@ -128,7 +98,7 @@ class CfdData:
         # self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
         # self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
 
-        if normalize:
+        if self.config.get_normalize_data():
             self.normalize_data()
             if self.verbose:
                 print('CFD data normalized')
@@ -136,12 +106,11 @@ class CfdData:
             if self.verbose:
                 print('CFD data NOT normalized')
 
-    def read_from_ansys_2D_csv(self, normalize=True):
+    def read_from_ansys_2D_csv(self):
         """
         read the data from a CSV file extracted from Ansys, meridionally processed.
-        :param normalize: if true, normalized the full dataset
         """
-        self.data = pd.read_csv(self.filepath, skiprows=range(5))
+        self.data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
         self.x = self.data[' X [ m ]'].values
         self.y = self.data[' Y [ m ]'].values
         self.z = self.data[' Z [ m ]'].values
@@ -184,20 +153,16 @@ class CfdData:
             print("Gradient fields not found in .csv file.")
             pass
 
-        if normalize:
+        if self.config.get_normalize_data():
             self.normalize_data()
-            if self.verbose:
-                print('CFD data normalized')
-        else:
-            if self.verbose:
-                print('CFD data NOT normalized')
+
 
     def process_from_ansys_csv(self, cut=False):
         """
         It computes the derived quantities from the dataset, and the original ones all converted in cylindrical frame.
         :param cut: if True, it cuts the domain thanks to the information contained in the cut_block border (if present).
         """
-        if (self.file_type == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
+        if (self.config.get_cfd_filetype() == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
             if self.verbose:
                 print('cutting domain...')
             self.cut_domain(self.cut_block.border)
@@ -429,16 +394,6 @@ class CfdData:
 
         return normal, stream, span
 
-    def compute_derived_normalization_quantities(self):
-        """
-        Given the fundamental quantities, compute all the reference quantities for following non-dimensionalization.
-        The fundamental quantities are x_ref, omega_ref, T_ref, rho_ref. All the rest is computed from them.
-        """
-        self.omega_ref = self.rpm_ref * 2 * np.pi / 60  # convert to [rad/s]
-        self.u_ref = self.omega_ref * self.x_ref  # tip speed of the machine
-        self.t_ref = 1 / self.omega_ref  # to be coherent
-        self.p_ref = self.rho_ref * self.u_ref ** 2
-        self.s_ref = self.u_ref ** 2 / self.T_ref  # reference entropy
 
     def normalize_data(self):
         """
@@ -446,57 +401,45 @@ class CfdData:
         """
 
         # non-dimensionalize cordinates
-        self.z /= self.x_ref
-        self.r /= self.x_ref
-        self.omega_shaft /= self.omega_ref
+        self.z /= self.config.get_reference_length()
+        self.r /= self.config.get_reference_length()
+        self.omega_shaft = self.config.get_omega_shaft() / self.config.get_reference_omega()
 
         # normalization of the fields
-        self.rho /= self.rho_ref
-        self.ux /= self.u_ref
-        self.uy /= self.u_ref
-        self.uz /= self.u_ref
-        self.p /= self.p_ref
-        self.T /= self.T_ref
-        self.s /= self.s_ref
+        self.rho /= self.config.get_reference_density()
+        self.ux /= self.config.get_reference_velocity()
+        self.uy /= self.config.get_reference_velocity()
+        self.uz /= self.config.get_reference_velocity()
+        self.p /= self.config.get_reference_pressure()
+        self.T /= self.config.get_reference_temperature()
+        self.s /= self.config.get_reference_entropy()
 
         # normalization of the gradients
         try:
-            self.drho_dx /= (self.rho_ref / self.x_ref)
-            self.drho_dy /= (self.rho_ref / self.x_ref)
-            self.drho_dz /= (self.rho_ref / self.x_ref)
+            self.drho_dx /= (self.config.get_reference_density() / self.config.get_reference_length())
+            self.drho_dy /= (self.config.get_reference_density() / self.config.get_reference_length())
+            self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
 
-            self.dux_dx /= (self.u_ref / self.x_ref)
-            self.dux_dy /= (self.u_ref / self.x_ref)
-            self.dux_dz /= (self.u_ref / self.x_ref)
+            self.dux_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.dux_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.dux_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.duy_dx /= (self.u_ref / self.x_ref)
-            self.duy_dy /= (self.u_ref / self.x_ref)
-            self.duy_dz /= (self.u_ref / self.x_ref)
+            self.duy_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.duy_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.duy_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.duz_dx /= (self.u_ref / self.x_ref)
-            self.duz_dy /= (self.u_ref / self.x_ref)
-            self.duz_dz /= (self.u_ref / self.x_ref)
+            self.duz_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.duz_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+            self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.dp_dx /= (self.p_ref / self.x_ref)
-            self.dp_dy /= (self.p_ref / self.x_ref)
-            self.dp_dz /= (self.p_ref / self.x_ref)
+            self.dp_dx /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+            self.dp_dy /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+            self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
 
-            self.ds_dx /= (self.s_ref / self.x_ref)
-            self.ds_dy /= (self.s_ref / self.x_ref)
-            self.ds_dz /= (self.s_ref / self.x_ref)
+            self.ds_dx /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+            self.ds_dy /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+            self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
 
         except:
             pass
 
-        # self.duy_dx /= (self.u_ref / self.x_ref)
-        # self.duy_dy /= (self.u_ref / self.x_ref)
-        # self.duy_dz /= (self.u_ref / self.x_ref)
-        # self.duz_dx /= (self.u_ref / self.x_ref)
-        # self.duz_dy /= (self.u_ref / self.x_ref)
-        # self.duz_dz /= (self.u_ref / self.x_ref)
-        # self.dp_dx /= (self.p_ref / self.x_ref)
-        # self.dp_dy /= (self.p_ref / self.x_ref)
-        # self.dp_dz /= (self.p_ref / self.x_ref)
-        # self.ds_dx /= (self.s_ref / self.x_ref)
-        # self.ds_dy /= (self.s_ref / self.x_ref)
-        # self.ds_dz /= (self.s_ref / self.x_ref)

@@ -27,15 +27,14 @@ class MeridionalProcess:
     Important note: if the cfd data has been normalized, all the quantities are already non-dimensional.
     """
 
-    def __init__(self, data, block=None, blade=None, verbose=False, GAMMA=1.4):
+    def __init__(self, config, data, block, blade=None):
         """
         Build the MeridionalProcess Object, which contains data and methods for the CFD post-process on the meridional plane.
         :param data: CfdData object contaning the 3D CFD dataset.
         :param block: Block Object contaning the grid, needed for circumferential averaging.
         :param blade: Blade Object.
-        :param verbose: to print some info.
-        :param GAMMA: cp/cv ratio. It should be modified in a 2D array for non-ideal thermodynamics applications.
         """
+        self.config = config
         self.data = data
         self.block = block
         self.nstream = np.shape(block.z_grid_cg)[0]  # use the grid baricenters
@@ -44,35 +43,23 @@ class MeridionalProcess:
         self.nRadialNodes = self.nspan
         if blade is not None:
             self.blade = blade
-        self.verbose = verbose
         self.z_grid = block.z_grid_points  # primary grid points
         self.r_grid = block.r_grid_points
         self.z_cg = block.z_grid_cg  # elements centers points
         self.r_cg = block.r_grid_cg
         self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_cg, self.r_cg)
-        self.normalize = data.normalize
-        self.rho_ref = data.rho_ref
-        self.u_ref = data.u_ref
-        self.T_ref = data.T_ref
-        self.s_ref = data.s_ref
-        self.x_ref = data.x_ref
-        self.omega_ref = data.omega_ref
-        self.t_ref = data.t_ref
-        self.omega_shaft = data.omega_shaft * self.omega_ref
-        self.p_ref = data.p_ref
-        self.GAMMA = GAMMA
 
         print_banner_begin('MERIDIONAL DATA PROCESSING')
-        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.omega_shaft:>{total_chars_mid}.3f}")
-        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.omega_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
-        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.T_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
-        print(f"{'Dataset Normalized:':<{total_chars_mid}}{self.normalize:>{total_chars_mid}}")
+        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.config.get_omega_shaft():>{total_chars_mid}.3f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.3f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.3f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.3f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
+        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.config.get_reference_temperature():>{total_chars_mid}.3f}")
+        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.config.get_reference_entropy():>{total_chars_mid}.3f}")
+        print(f"{'Dataset Normalized:':<{total_chars_mid}}{self.config.get_normalize_data():>{total_chars_mid}}")
         print_banner_end()
 
     def compute_camber_angles(self):
@@ -251,8 +238,8 @@ class MeridionalProcess:
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
-        self.M = self.u_mag / sqrt(self.GAMMA * self.p / self.rho)
-        self.M_rel = self.u_mag_rel / sqrt(self.GAMMA * self.p / self.rho)
+        self.M = self.u_mag / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
         self.compute_stagnation_quantities()
 
     def instantiate_2d_fields(self):
@@ -919,7 +906,7 @@ class MeridionalProcess:
         :param quiver: if True, superposes the quiver plots of the meridional velocity
         """
 
-        if self.data.normalize:
+        if self.config.get_normalize_data():
             self.contour_plot_non_dimensional(field, save_filename, quiver)
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
@@ -1474,8 +1461,9 @@ class MeridionalProcess:
         """
         Compute the 2D fields of the stagnation quantities
         """
-        self.p_tot = self.p * (1 + (self.GAMMA - 1) / 2 * self.M ** 2) ** (self.GAMMA / (self.GAMMA - 1))
-        self.T_tot = self.T * (1 + (self.GAMMA - 1) / 2 * self.M ** 2)
+        GAMMA = self.config.get_fluid_gamma()
+        self.p_tot = self.p * (1 + (GAMMA - 1) / 2 * self.M ** 2) ** (GAMMA / (GAMMA - 1))
+        self.T_tot = self.T * (1 + (GAMMA - 1) / 2 * self.M ** 2)
 
         # rotary total pressure, as defined by Sun et al. (centrifugal compressor analysis 2016)
         self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.data.omega_shaft * self.ut
@@ -1787,7 +1775,7 @@ class MeridionalProcess:
 
             # compute quantities needed for the Sun Model Algorithm Variant
             if domain == 'rotor':
-                self.Omega = np.zeros_like(self.z_cg) + self.omega_shaft
+                self.Omega = np.zeros_like(self.z_cg) + self.config.get_omega_shaft()
             elif domain == 'stator':
                 self.Omega = np.zeros_like(self.z_cg)
             else:
@@ -1889,7 +1877,7 @@ class MeridionalProcess:
                                          self.dut_dr[istream, ispan] * dir_vector[1]
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
-        if self.omega_shaft<0:
+        if self.config.get_omega_shaft()<0:
             idx = np.where(self.Ftheta > 0)
             self.Ftheta[idx] = 0
         else:
@@ -1901,7 +1889,7 @@ class MeridionalProcess:
         Starting from the Ftheta and camber normal vectors, compute the magnitude of the turning force
         """
         self.Fturn_t = self.Ftheta - self.Floss_t
-        if self.omega_shaft<0:
+        if self.config.get_omega_shaft()<0:
             idx = np.where(self.Fturn_t > 0)
             self.Fturn_t[idx] = 0
         else:
@@ -2019,12 +2007,12 @@ class MeridionalProcess:
     #     self.T, self.dT_dz, self.dT_dr = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
     #     self.s, self.ds_dz, self.ds_dr = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
 
-    def interpolate_on_working_grid(self, method):
+    def interpolate_on_working_grid(self):
         """
         Interpolate the 2d dataset on the working grid.
-        :param method: specify which interpolation method (linear, cubic, nearest, rbf)
         """
         self.instantiate_2d_fields()
+        method = self.config.get_cfd_interpolation_method()
 
         self.rho = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method, return_type='field')
         self.ur = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method, return_type='field')
@@ -2059,6 +2047,9 @@ class MeridionalProcess:
             pass
 
     def weight_least_square_regression(self):
+        """
+        weighted least square regression method applied to all the fields
+        """
         self.instantiate_2d_fields()
 
         print("WLS regression of Density...")
@@ -2100,11 +2091,13 @@ class MeridionalProcess:
 
         return F, dFdZ, dFdR
 
-    def compute_field_gradients(self, method='linear'):
+    def compute_field_gradients(self):
         """
         compute the gradient of the flow field using a certain interpolation method, in order to evaluate functions at
         z+deltaz and r+deltar.
         """
+        method = self.config.get_gradient_interpolation_method()
+
         if method == 'rbf':
             self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
             self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
@@ -2136,11 +2129,6 @@ class MeridionalProcess:
         """
         Linear interpolation method in order to compute the gradient of f(z,r)
         """
-        # Zplus = np.zeros_like(self.z_cg)
-        # Rplus = np.zeros_like(self.r_cg)
-        # Zminus = np.zeros_like(self.z_cg)
-        # Rminus = np.zeros_like(self.r_cg)
-
         dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
         for ii in range(1, self.nstream - 1):
             tmp = np.min(np.abs(self.z_cg[ii+1, :] - self.z_cg[ii, :]))

@@ -18,18 +18,17 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, hub_curve, shroud_curve, nstream, nspan):
+    def __init__(self, config, nstream, nspan):
         """
         Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
         dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
-        :param hub_curve: curve object for the hub
-        :param shroud_curve: curve object for the shroud
+        :param config: configuration file
         :param nstream: number of grid points along the streamwise direction
         :param nspan: number of grid points along the spanwise direction
-
         """
-        self.hub = hub_curve
-        self.shroud = shroud_curve
+        self.config = config
+        self.hub = Curve(config=config, curve_filepath=config.get_hub_curve_filepath(), degree_spline=1)
+        self.shroud = Curve(config=config, curve_filepath=config.get_shroud_curve_filepath(), degree_spline=1)
         self.nstream = nstream
         self.nspan = nspan
 
@@ -55,10 +54,8 @@ class Block:
         """
         Compute hub,shroud splines, that are parameterized from 0 to 1 between the extremes.
         """
-        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, nstream=self.nstream,
-                              mode='cordinates', rescale_factor=1, x_ref=1)
-        self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, nstream=self.nstream,
-                                 mode='cordinates', x_ref=1, rescale_factor=1)
+        self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, mode='cordinates')
+        self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, mode='cordinates')
 
     def spline_of_leading_trailing_edge(self):
         """
@@ -72,10 +69,8 @@ class Block:
                                       self.outlet[1:-1, :],
                                       np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan,
-                                  mode='cordinates', rescale_factor=1, x_ref=1)
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan,
-                                   mode='cordinates', rescale_factor=1, x_ref=1)
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], mode='cordinates')
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], mode='cordinates')
 
     def spline_of_outlet(self):
         """
@@ -86,14 +81,12 @@ class Block:
         self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
                                       self.inlet[1:-1, :],
                                       np.reshape(self.point_shroud_inlet, (1, 2))))
-        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], nstream=self.nspan,
-                                   mode='cordinates', x_ref=1, rescale_factor=1)
+        self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], mode='cordinates')
 
         # inlet border
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
-        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
-                                  mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+        self.leading_edge = Curve(z=inlet_z, r=inlet_r, mode='cordinates')
 
     def spline_of_inlet_outlet_full_block(self):
         """
@@ -133,8 +126,8 @@ class Block:
         Sample correctly the hub and shroud spline, already trimmed properly, with a certain sampling mode.
         :param sampling_mode: type of sampling, default or clustered
         """
-        self.hub_trim.sample(sampling_mode=sampling_mode)
-        self.shroud_trim.sample(sampling_mode=sampling_mode)
+        self.hub_trim.sample(self.nstream, sampling_mode=sampling_mode)
+        self.shroud_trim.sample(self.nstream, sampling_mode=sampling_mode)
 
     def sample_hub_shroud_full_block(self, sampling_mode='default'):
         """
@@ -149,112 +142,30 @@ class Block:
         Sample the inlet edge for the outlet block.
         :param sampling_mode: type of sampling, default or clustered
         """
-        self.leading_edge.sample(sampling_mode=sampling_mode)
-        self.trailing_edge.sample(sampling_mode=sampling_mode)
+        self.leading_edge.sample(npoints = self.nspan, sampling_mode=sampling_mode)
+        self.trailing_edge.sample(npoints = self.nspan, sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, grid_mode, orthogonality, x_stretching,
-                            y_stretching, sigmoid_coeff_x=5, sigmoid_coeff_y=5, method='intersection',
-                            sampling_mode='default', curved_border='both',
-                            inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
+    def compute_grid_points(self, inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
-        :param grid_mode: mode used for the grid generation algorithm. Suggested 'elliptic'.
-        :param orthogonality: to impose orthogonality at borders, if elliptic mode is used.
-        :param x_stretching: stretching type of the grid in the streamwise direction.
-        :param y_stretching: stretching type of the grid in the spanwise direction.
-        :param sigmoid_coeff_x: coefficient of the sigmoid in the streamwise direction.
-        :param sigmoid_coeff_y: coefficient of the sigmoid in the spanwise direction.
-        :param method: if elliptic mode, choose the method used to shift the nodes on the borders.
-        :param sampling_mode: if algebrai, sample in a certain way
-        :param curved_border: if algebraic, specify which borders are curved.
         :param inlet_meridional_obj: provide inlet meridional object if you wish to mantain consistency of the shared nodes
         :param outlet_meridional_obj: provide outlet meridional object if you wish to mantain consistency of the shared nodes
         :param save_animation: if True store the Matrix necessary for the animation of the elliptic grid generation.
         """
-        print_banner_begin('GRID GENERATION SETTINGS')
-        print(f"{'Grid Generation Mode:':<{total_chars_mid}}{grid_mode:>{total_chars_mid}}")
-        if grid_mode=='elliptic':
-            print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{orthogonality:>{total_chars_mid}}")
-            print(f"{'X Stretching Function:':<{total_chars_mid}}{x_stretching:>{total_chars_mid}}")
-            print(f"{'X Stretching Coefficient:':<{total_chars_mid}}{sigmoid_coeff_x:>{total_chars_mid}}")
-            print(f"{'Y Stretching Function:':<{total_chars_mid}}{y_stretching:>{total_chars_mid}}")
-            print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}{sigmoid_coeff_y:>{total_chars_mid}}")
+        if self.config.get_verbosity():
+            print_banner_begin('GRID GENERATION SETTINGS')
+            print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
+            print(f"{'Grid Stretching Mode:':<{total_chars_mid}}{self.config.get_mesh_type():>{total_chars_mid}}")
+            print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
+            print(f"{'X Stretching Coefficient:':<{total_chars_mid}}{self.config.get_sigmoid_stream_coefficient():>{total_chars_mid}}")
+            print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}{self.config.get_sigmoid_span_coefficient():>{total_chars_mid}}")
             if inlet_meridional_obj is not None:
                 print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             if outlet_meridional_obj is not None:
                 print(f"{'Outlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
-        else:
-            print(f"{'Border Nodes Selection Method:':<{total_chars_mid}}{method:>{total_chars_mid}}")
-            print(f"{'Border Nodes Sampling Mode:':<{total_chars_mid}}{sampling_mode:>{total_chars_mid}}")
-            print(f"{'Curved Borders:':<{total_chars_mid}}{curved_border:>{total_chars_mid}}")
-        print_banner_end()
+            print_banner_end()
 
-        if sampling_mode == 'default':
-            self.u_span = np.linspace(0, 1, self.nspan)
-            self.u_stream = np.linspace(0, 1, self.nstream)
-        elif sampling_mode == 'clustering':
-            self.u_span = cluster_sample_u(self.nspan)  # this can also be obtained with sigmoid
-            self.u_stream = cluster_sample_u(self.nstream)  # this can also be obtained with sigmoid
-        else:
-            raise ValueError("sampling_mode parameter not recognized!")
-
-        self.r_grid_points = np.zeros((self.nstream, self.nspan))
-        self.z_grid_points = np.zeros((self.nstream, self.nspan))
-
-        if grid_mode == 'spanwise':
-            print("WARNING: deprecated method. Consider using elliptic mode.")
-            # algorithm for internal points, connecting points on the hub and shroud along the span direction
-            for istream in range(0, self.nstream):
-                for ispan in range(0, self.nspan):
-                    self.r_grid_points[istream, ispan] = self.hub_trim.r_sample[istream] + self.u_span[ispan] * (
-                            self.shroud_trim.r_sample[istream] - self.hub_trim.r_sample[istream])
-
-                    self.z_grid_points[istream, ispan] = self.hub_trim.z_sample[istream] + self.u_span[ispan] * (
-                            self.shroud_trim.z_sample[istream] - self.hub_trim.z_sample[istream])
-
-            # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border == 'right':
-                self.r_grid_points[-1, :] = self.trailing_edge.r_sample
-                self.z_grid_points[-1, :] = self.trailing_edge.z_sample
-            elif curved_border == 'left':
-                self.r_grid_points[0, :] = self.leading_edge.r_sample
-                self.z_grid_points[0, :] = self.leading_edge.z_sample
-            elif curved_border == 'both':
-                self.r_grid_points[0, :] = self.leading_edge.r_sample
-                self.r_grid_points[-1, :] = self.trailing_edge.r_sample
-                self.z_grid_points[0, :] = self.leading_edge.z_sample
-                self.z_grid_points[-1, :] = self.trailing_edge.z_sample
-            else:
-                raise ValueError('curved_border parameter not recognized')
-
-        elif grid_mode == 'streamwise':
-            print("WARNING: deprecated method. Consider using elliptic mode.")
-            # algorithm for internal points, connecting points on the inlet and trailing edges along the stream direction
-            for istream in range(0, self.nstream):
-                for ispan in range(0, self.nspan):
-                    self.r_grid_points[istream, ispan] = self.leading_edge.r_sample[ispan] + self.u_stream[istream] * (
-                            self.trailing_edge.r_sample[ispan] - self.leading_edge.r_sample[ispan])
-
-                    self.z_grid_points[istream, ispan] = self.leading_edge.z_sample[ispan] + self.u_stream[istream] * (
-                            self.trailing_edge.z_sample[ispan] - self.leading_edge.z_sample[ispan])
-
-            # now overwrite the points that in reality are taken from the curved leading and trailing edges
-            if curved_border == 'right':
-                self.r_grid_points[-1, :] = self.trailing_edge.r_sample
-                self.z_grid_points[-1, :] = self.trailing_edge.z_sample
-            elif curved_border == 'left':
-                self.r_grid_points[0, :] = self.leading_edge.r_sample
-                self.z_grid_points[0, :] = self.leading_edge.z_sample
-            elif curved_border == 'both':
-                self.r_grid_points[0, :] = self.leading_edge.r_sample
-                self.r_grid_points[-1, :] = self.trailing_edge.r_sample
-                self.z_grid_points[0, :] = self.leading_edge.z_sample
-                self.z_grid_points[-1, :] = self.trailing_edge.z_sample
-            else:
-                raise ValueError('curved_border parameter not recognized')
-
-        elif grid_mode == 'elliptic':
-
+        if self.config.get_mesh_generation_method() == 'elliptic':
             # handle the case in which some grid cordinates must be copied from adjacent blocks
             if inlet_meridional_obj is not None:
                 inlet = np.vstack((inlet_meridional_obj.z_grid[-1, :], inlet_meridional_obj.r_grid[-1, :]))
@@ -272,14 +183,13 @@ class Block:
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
-                                                                              orthogonality,
-                                                                              x_stretching=x_stretching,
-                                                                              y_stretching=y_stretching,
-                                                                              sigmoid_coeff_x=sigmoid_coeff_x,
-                                                                              sigmoid_coeff_y=sigmoid_coeff_y,
-                                                                              method=method,
-                                                                              fix_inlet = fix_inlet, fix_outlet = fix_outlet,
-                                                                              save_animation=save_animation, tol=1e-3)
+                                                          self.config.get_grid_orthogonality(),
+                                                          self.config.get_mesh_type(),
+                                                          self.config.get_mesh_type(),
+                                                          sigmoid_coeff_x=self.config.get_sigmoid_stream_coefficient(),
+                                                          sigmoid_coeff_y=self.config.get_sigmoid_span_coefficient(),
+                                                          fix_inlet = fix_inlet, fix_outlet = fix_outlet,
+                                                          save_animation=save_animation)
         else:
             raise ValueError('Grid method not recognized!')
 
@@ -315,8 +225,8 @@ class Block:
         """
         self.inlet = inlet
         self.outlet = outlet
-        self.inlet_curve = Curve(z=inlet[:, 0], r=inlet[:, 1], mode='cordinates', degree_spline=3, x_ref=1, rescale_factor=1)
-        self.outlet_curve = Curve(z=outlet[:, 0], r=outlet[:, 1], mode='cordinates', degree_spline=3, x_ref=1, rescale_factor=1)
+        self.inlet_curve = Curve(z=inlet[:, 0], r=inlet[:, 1], mode='cordinates', degree_spline=1)
+        self.outlet_curve = Curve(z=outlet[:, 0], r=outlet[:, 1], mode='cordinates', degree_spline=1)
 
     def extend_inlet_outlet_curves(self):
         """

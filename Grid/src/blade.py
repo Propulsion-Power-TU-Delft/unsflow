@@ -22,27 +22,19 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, blade_file_path, rescale_factor, x_ref, format_file='.curve'):
+    def __init__(self, config):
         """
         reads the info from the blade file .curve, which is created during blade generation, e.g. with BladeGen.
-        :param blade_file_path: filepath to blade.curve file, storing cordinates of the various profiles
-        :param rescale_factor: factor to convert cordinates in the blade.curve file to [m]
-        :param x_ref: reference length with which non-dimensionalize the cordinates. It should be the tip radius at inlet
-        :param format_file: for now only .curve file, as provided by Bladegen, or Parablade
         """
-        self.file_path = blade_file_path
-        self.rescale_factor = rescale_factor
+        self.config = config
         self.x = []
         self.y = []
         self.z = []
         self.blade = []  # main or splitter type
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
-        self.x_ref = x_ref
 
-        if format_file == '.curve':
-            self.read_from_curve_file()
-
+        self.read_from_curve_file()
         self.print_blade_info()
 
 
@@ -51,7 +43,7 @@ class Blade:
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         """
         blade_type = 'MAIN'
-        with open(self.file_path) as f:
+        with open(self.config.get_blade_curve_filepath()) as f:
             lines = f.readlines()
 
         for line in lines:
@@ -80,14 +72,16 @@ class Blade:
         self.convert_to_floats()
         self.convert_to_arrays()
 
-        self.x *= self.rescale_factor
-        self.x /= self.x_ref
 
-        self.y *= self.rescale_factor
-        self.y /= self.x_ref
 
-        self.z *= self.rescale_factor
-        self.z /= self.x_ref
+        self.x *= self.config.get_coordinates_rescaling_factor()
+        self.x /= self.config.get_reference_length()
+
+        self.y *= self.config.get_coordinates_rescaling_factor()
+        self.y /= self.config.get_reference_length()
+
+        self.z *= self.config.get_coordinates_rescaling_factor()
+        self.z /= self.config.get_reference_length()
 
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
@@ -119,11 +113,12 @@ class Blade:
         """
         Print information of the blade object during construction.
         """
-        print_banner_begin('BLADE')
-        print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.rescale_factor:>{total_chars_mid}.3f}")
-        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
-        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
-        print_banner_end()
+        if self.config.get_verbosity():
+            print_banner_begin('BLADE')
+            print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
+            print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
+            print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+            print_banner_end()
 
 
 
@@ -378,10 +373,9 @@ class Blade:
 
 
 
-    def find_inlet_points(self, geometry_type):
+    def find_inlet_points(self):
         """
         Find the points defining the inlet from the cordinates of the blade points.
-        :param geometry_type: needed to choose the algorithm to find the inlet points
         """
         self.inlet_z = []
         self.inlet_r = []
@@ -394,12 +388,12 @@ class Blade:
             z = self.z_main[idx]
             r = self.r_main[idx]
 
-            if geometry_type == 'axial':
+            if self.config.get_blade_inlet_type() == 'axial':
                 # leading edge point
                 min_z = np.min(z)  # minimum axial cordinate
                 min_r_id = np.argmin(z)  # corresponding index for the r cordinate
                 min_r = r[min_r_id]
-            elif geometry_type == 'radial':
+            elif self.config.get_blade_inlet_type() == 'radial':
                 min_r = np.min(r)
                 min_z_id = np.argmin(r)
                 min_z = z[min_z_id]
@@ -412,11 +406,10 @@ class Blade:
 
 
 
-    def find_outlet_points(self, geometry_type):
+    def find_outlet_points(self):
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
-        :param geometry_type: needed to know how to find the outlet points
         """
         self.outlet_z = []
         self.outlet_r = []
@@ -428,12 +421,12 @@ class Blade:
             z = self.z_main[idx]
             r = self.r_main[idx]
 
-            if geometry_type == 'radial':
+            if self.config.get_blade_outlet_type() == 'radial':
                 # trailing edge points
                 max_r = np.max(r)
                 max_z_id = np.argmax(r)
                 max_z = z[max_z_id]
-            elif geometry_type == 'axial':
+            elif self.config.get_blade_outlet_type() == 'axial':
                 # trailing edge points
                 max_z = np.max(z)
                 max_r_id = np.argmax(z)
@@ -543,7 +536,7 @@ class Blade:
 
 
 
-    def compute_blade_camber_angles(self, convention='rotation'):
+    def compute_blade_camber_angles(self, convention='rotation-wise'):
         """
         From the normal and streamline vectors of the camber compute:
         -gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)

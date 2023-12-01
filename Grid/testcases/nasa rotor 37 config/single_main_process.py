@@ -12,68 +12,68 @@ print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 configuration_file = 'nasa_rotor_37.ini'
 config = Config(configuration_file)
-config.print_config()
+INLET_BLOCK = False
+BLADE_BLOCK = True
+OUTLET_BLOCK = False
+
+
+
+
+
+
+
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-blade = Grid.src.Blade(geo_folder + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
-blade.find_inlet_points(geometry_type='axial')
-blade.find_outlet_points(geometry_type='axial')
+blade = Grid.src.Blade(config)
+blade.find_inlet_points()
+blade.find_outlet_points()
 
-data = Grid.src.CfdData(cfd_filename, rpm_drag=rpm_ref, blade=blade, verbose=True, normalize=True,
-                        rho_ref=rho_ref, x_ref=x_ref, T_ref=T_ref, file_type='Ansys2D')
+data = Grid.src.CfdData(config, blade)
 data.process_from_ansys_csv()
+
+
+
+
+
+
+
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCKPROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK:
     print("\nINLET BLOCK PROCESSING...")
-    nstream = INLET_NZ
-    nspan = NR
-    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
-                         rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
-                            rescale_factor=rescale_factor, x_ref=x_ref)
-    block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
-
-    # cut the bladed block properly, and compute the meridional structured mesh
+    block = Grid.src.Block(config, nstream=config.get_streamwise_points()[0], nspan=config.get_spanwise_points())
     block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
     block.extend_inlet_outlet_curves()
     block.find_intersections()
-    block.inlet_zone_trim(mode='axial')
+    block.inlet_zone_trim(mode=config.get_blade_inlet_type())
     block.spline_of_hub_shroud()
     block.spline_of_outlet()
     block.sample_hub_shroud()
     block.sample_inlet_outlet()
-    block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=MESH_TYPE, y_stretching=MESH_TYPE,
-                              sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+    block.compute_grid_points()
 
-    # instantiate meridional process object and avg
-    inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
+    inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
-    inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    # inlet_process.compute_field_gradients(method=GRAD_METHOD)
-    if REGRESSION:
+    inlet_process.interpolate_on_working_grid()
+    if config.get_standard_regression():
         inlet_process.compute_regressed_fields()
-    # else:
-    #     inlet_process.compute_field_gradients()
-    inlet_process.compute_derived_quantities()  # to recompute the derived quantities based on the regressed values
+    else:
+        inlet_process.compute_field_gradients()
+    inlet_process.compute_derived_quantities()
     inlet_process.compute_averaged_fluxes()
-    inlet_process.compute_body_fource_S('unbladed')
+    inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
     inlet_process.contour_all_plots()
     delattr(inlet_process, 'data')  # release useless memory
+
+
+
+
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if BLADE_BLOCK:
     print("\nBLADE BLOCK PROCESSING...")
-    nstream = BLADE_NZ
-    nspan = NR
-    hub = Grid.src.Curve(curve_filepath=geo_folder + 'hub.curve', units=units, degree_spline=3,
-                         rescale_factor=rescale_factor, x_ref=x_ref)
-    shroud = Grid.src.Curve(curve_filepath=geo_folder + 'shroud.curve', units=units, degree_spline=3,
-                            rescale_factor=rescale_factor, x_ref=x_ref)
-    bladed_block = Grid.src.Block(hub, shroud, nstream=nstream, nspan=nspan)
-
-    # cut the bladed block properly, and compute the meridional structured mesh
+    bladed_block = Grid.src.Block(config, nstream=config.get_streamwise_points()[1], nspan=config.get_spanwise_points())
     bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
     bladed_block.extend_inlet_outlet_curves()
     bladed_block.find_intersections()
@@ -82,28 +82,27 @@ if BLADE_BLOCK:
     bladed_block.spline_of_leading_trailing_edge()
     bladed_block.sample_hub_shroud()
     bladed_block.sample_inlet_outlet()
-    bladed_block.compute_grid_points(grid_mode='elliptic', orthogonality=True, x_stretching=MESH_TYPE, y_stretching=MESH_TYPE,
-                                     sigmoid_coeff_x=sigmoid_coeff_stream, sigmoid_coeff_y=sigmoid_coeff_span)
+    bladed_block.compute_grid_points()
 
     blade.find_camber_surface(bladed_block)
     blade.compute_camber_vectors()
-    blade.compute_blade_camber_angles(convention='rotation-wise')
-    blade.show_blade_angles_contour(save_filename='%i_%i' % (BLADE_NZ, NR))
+    blade.compute_blade_camber_angles()
+    blade.show_blade_angles_contour()
 
     # instantiate meridional process object and avg
-    blade_process = Grid.src.MeridionalProcess(data, block=bladed_block, blade=blade, verbose=True)
+    blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
-    blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    blade_process.interpolate_on_working_grid()
     # blade_process.compute_field_gradients(method=GRAD_METHOD)
 
-    if REGRESSION:
+    if config.get_standard_regression():
         blade_process.compute_regressed_fields()
-    # else:
-    #     blade_process.compute_field_gradients()
+    else:
+        blade_process.compute_field_gradients()
     blade_process.compute_derived_quantities()
     blade_process.contour_entropy_generation()
-    blade_process.compute_bfm_axial(mode='global')
+    blade_process.compute_bfm_axial()
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
     blade_process.contour_all_plots()
@@ -212,4 +211,4 @@ end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))
 
-# plt.show()
+plt.show()

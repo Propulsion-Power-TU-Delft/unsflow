@@ -72,5 +72,5 @@ N_levels_fine = 250
 color_map = cm.jet
 
 # number of chars for the banners
-total_chars = 60
+total_chars = 100
 total_chars_mid = total_chars//2
