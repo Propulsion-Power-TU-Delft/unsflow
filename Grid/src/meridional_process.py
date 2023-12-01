@@ -545,13 +545,13 @@ class MeridionalProcess:
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
 
-        self.rho, self.drho_dr, self.drho_dtheta, self.drho_dz = self.polynomial_regression_solution(self.rho)
-        self.ur, self.dur_dr, self.dur_dtheta, self.dur_dz = self.polynomial_regression_solution(self.ur)
-        self.ut, self.dut_dr, self.dut_dtheta, self.dut_dz = self.polynomial_regression_solution(self.ut)
-        self.uz, self.duz_dr, self.duz_dtheta, self.duz_dz = self.polynomial_regression_solution(self.uz)
-        self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.p)
-        self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.T)
-        self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
+        self.rho, self.drho_dr, self.drho_dz = self.polynomial_regression_solution(self.rho)
+        self.ur, self.dur_dr, self.dur_dz = self.polynomial_regression_solution(self.ur)
+        self.ut, self.dut_dr, self.dut_dz = self.polynomial_regression_solution(self.ut)
+        self.uz, self.duz_dr, self.duz_dz = self.polynomial_regression_solution(self.uz)
+        self.p, self.dp_dr, self.dp_dz = self.polynomial_regression_solution(self.p)
+        self.T, self.dT_dr, self.dT_dz = self.polynomial_regression_solution(self.T)
+        self.s, self.ds_dr, self.ds_dz = self.polynomial_regression_solution(self.s)
 
     def polynomial_regression_solution(self, field):
         """
@@ -566,8 +566,7 @@ class MeridionalProcess:
         regr_field = regression_evaluation(W, coeff_vector, Nz, Nr)
         regr_field_dz = regression_evaluation(W_dz, coeff_vector, Nz, Nr)
         regr_field_dr = regression_evaluation(W_dr, coeff_vector, Nz, Nr)
-        regr_field_dtheta = np.zeros_like(field)  # theta derivatives always zero
-        return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
+        return regr_field, regr_field_dr, regr_field_dz
 
     def compute_rbf_gradients(self):
         """

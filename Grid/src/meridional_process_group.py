@@ -709,32 +709,32 @@ class MeridionalProcessGroup:
         print_banner_end()
 
 
-    def compose_global_sun_Omega_tau(self):
-        """
-        given Omega and tau of the Sun Model of the whole domain, build the global matrices, enlarged by a factor 5, that
-        will be needed in the sun Model. The order of the point is for istream -> for ispan
-        """
-
-        def enlarge_matrix_for_sun(Z):
-            nstream = np.shape(Z)[0]
-            nspan = np.shape(Z)[1]
-
-            nrows = nstream*nspan*5
-            ncols = nrows
-            enlarged_matrix = np.zeros((nrows, ncols))
-
-            irow = 0
-            for i in range(nstream):
-                for j in range(nspan):
-                    block = np.zeros((5, ncols)) + Z[i, j]
-                    enlarged_matrix[irow:irow+5, :] = block
-                    irow +=5
-
-            return enlarged_matrix
-
-        # enlarge_matrix_for_sun(self.Omega)
-        self.Omega_sun = enlarge_matrix_for_sun(self.Omega)
-        self.tau_sun = enlarge_matrix_for_sun(self.tau)
+    # def compose_global_sun_Omega_tau(self):
+    #     """
+    #     given Omega and tau of the Sun Model of the whole domain, build the global matrices, enlarged by a factor 5, that
+    #     will be needed in the sun Model. The order of the point is for istream -> for ispan
+    #     """
+    #
+    #     def enlarge_matrix_for_sun(Z):
+    #         nstream = np.shape(Z)[0]
+    #         nspan = np.shape(Z)[1]
+    #
+    #         nrows = nstream*nspan*5
+    #         ncols = nrows
+    #         enlarged_matrix = np.zeros((nrows, ncols))
+    #
+    #         irow = 0
+    #         for i in range(nstream):
+    #             for j in range(nspan):
+    #                 block = np.zeros((5, ncols)) + Z[i, j]
+    #                 enlarged_matrix[irow:irow+5, :] = block
+    #                 irow +=5
+    #
+    #         return enlarged_matrix
+    #
+    #     # enlarge_matrix_for_sun(self.Omega)
+    #     self.Omega_sun = enlarge_matrix_for_sun(self.Omega)
+    #     self.tau_sun = enlarge_matrix_for_sun(self.tau)
 
 
     def shock_smoothing(self, i_shock, extension_points=4, blending_function='linear'):

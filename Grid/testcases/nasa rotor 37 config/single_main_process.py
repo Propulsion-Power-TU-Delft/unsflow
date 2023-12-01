@@ -5,34 +5,14 @@ import pickle
 import numpy as np
 import Grid
 from pympler import asizeof
+from Grid.src.config import Config
 
 start_time = time.time()
 print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-MESH_TYPE = 'default'
-REGRESSION = True
-INLET_NZ = 15
-BLADE_NZ = 20
-OUTLET_NZ = 30
-NR = 20
-AVG_MODE = 'cell centered'
-cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
-MULTIBLOCK_FILTERING = False
-SHOCK_SMOOTHING = False
-INTERP_METHOD = 'linear'
-INLET_BLOCK = True
-BLADE_BLOCK = True
-OUTLET_BLOCK = True
-GRAD_METHOD = 'linear'
-geo_folder = 'nasa_rotor_37/cordinates/'
-units = '[m]'
-rho_ref = 1.014  # reference density [kg/m3]
-x_ref = 0.252  # reference length, tip radius [m]
-rpm_ref = -17189  # shaft rpm with sign
-T_ref = 288.15  # reference temperature [K]
-rescale_factor = 0.01  # cordinates of data files are in [cm]
-sigmoid_coeff_stream = 10
-sigmoid_coeff_span = 10
+configuration_file = 'nasa_rotor_37.ini'
+config = Config(configuration_file)
+config.print_config()
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(geo_folder + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)

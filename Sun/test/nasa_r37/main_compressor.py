@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import Sun
 
 # INPUT
-filename = '../../../Grid/testcases/nasa rotor 37/data/inlet_20_blade_20_outlet_40_nspan_20.pickle'
+filename = '../../../Grid/testcases/nasa rotor 37/data/inlet_15_blade_20_outlet_30_nspan_20.pickle'
 with open(filename, "rb") as file:
     meridional_obj = pickle.load(file)
 rpm = -17.189e3
@@ -25,17 +25,17 @@ sun_obj.ComputeSpectralGrid()
 sun_obj.ShowSpectralGrid(save_filename='computational_grid', mode='lines')
 sun_obj.ComputeJacobianPhysical(routine=gradient_routine, order=gradient_order)
 sun_obj.ContourTransformation(save_filename='jacobian')
-sun_obj.AddAMatrixToNodesFrancesco2()
-sun_obj.AddBMatrixToNodesFrancesco2()
-sun_obj.AddCMatrixToNodesFrancesco2(m=m)
-sun_obj.AddEMatrixToNodesFrancesco2()
-sun_obj.AddRMatrixToNodesFrancesco2()
-# sun_obj.AddAMatrixToNodes()
-# sun_obj.AddBMatrixToNodes()
-# sun_obj.AddCMatrixToNodes(m=m)
-# sun_obj.AddEMatrixToNodes()
-# sun_obj.AddRMatrixToNodes()
-sun_obj.AddSMatrixToNodes(turbo=False)
+# sun_obj.AddAMatrixToNodesFrancesco2()
+# sun_obj.AddBMatrixToNodesFrancesco2()
+# sun_obj.AddCMatrixToNodesFrancesco2(m=m)
+# sun_obj.AddEMatrixToNodesFrancesco2()
+# sun_obj.AddRMatrixToNodesFrancesco2()
+sun_obj.AddAMatrixToNodes()
+sun_obj.AddBMatrixToNodes()
+sun_obj.AddCMatrixToNodes(m=m)
+sun_obj.AddEMatrixToNodes()
+sun_obj.AddRMatrixToNodes()
+sun_obj.AddSMatrixToNodes(turbo=True)
 sun_obj.AddHatMatricesToNodes()
 sun_obj.ApplySpectralDifferentiation()
 sun_obj.build_A_global_matrix()
