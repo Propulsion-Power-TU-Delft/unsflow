@@ -14,6 +14,7 @@ configuration_file = 'nasa_rotor_37.ini'
 config = Config(configuration_file)
 config.print_config()
 
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(geo_folder + 'profile.curve', rescale_factor=rescale_factor, x_ref=x_ref)
 blade.find_inlet_points(geometry_type='axial')
