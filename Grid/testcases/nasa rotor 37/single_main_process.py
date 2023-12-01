@@ -10,19 +10,20 @@ start_time = time.time()
 print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 MESH_TYPE = 'default'
-REGRESSION = True
-INLET_NZ = 15
-BLADE_NZ = 20
-OUTLET_NZ = 30
-NR = 15
+REGRESSION = False
+INLET_NZ = 30
+BLADE_NZ = 50
+OUTLET_NZ = 40
+NR = 70
 AVG_MODE = 'cell centered'
 cfd_filename = 'data/meta/config_09_meridional_data_grads.csv'
 MULTIBLOCK_FILTERING = False
-SHOCK_SMOOTHING = True
+SHOCK_SMOOTHING = False
 INTERP_METHOD = 'linear'
-INLET_BLOCK = True
+INLET_BLOCK = False
 BLADE_BLOCK = True
-OUTLET_BLOCK = True
+OUTLET_BLOCK = False
+GRAD_METHOD = 'linear'
 geo_folder = 'nasa_rotor_37/cordinates/'
 units = '[m]'
 rho_ref = 1.014  # reference density [kg/m3]
@@ -91,6 +92,7 @@ if INLET_BLOCK:
     inlet_process = Grid.src.MeridionalProcess(data, block=block, verbose=True, GAMMA=1.4)
     inlet_process.compute_streamline_length()
     inlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    inlet_process.compute_field_gradients(method=GRAD_METHOD)
     if REGRESSION:
         inlet_process.compute_regressed_fields()
     # else:
@@ -145,7 +147,8 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     blade_process.interpolate_on_working_grid(method=INTERP_METHOD)
-    # blade_process.compute_field_gradients(method='rbf')
+    blade_process.compute_field_gradients(method=GRAD_METHOD)
+
     if REGRESSION:
         blade_process.compute_regressed_fields()
     # else:
@@ -188,6 +191,7 @@ if OUTLET_BLOCK:
     outlet_process = Grid.src.MeridionalProcess(data, block=block, blade=blade, verbose=True)
     outlet_process.compute_streamline_length()
     outlet_process.interpolate_on_working_grid(method=INTERP_METHOD)
+    outlet_process.compute_field_gradients(method=GRAD_METHOD)
     if REGRESSION:
         outlet_process.compute_regressed_fields()
     # else:

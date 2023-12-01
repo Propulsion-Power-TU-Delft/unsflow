@@ -58,7 +58,7 @@ class MeridionalProcess:
         self.x_ref = data.x_ref
         self.omega_ref = data.omega_ref
         self.t_ref = data.t_ref
-        self.omega_shaft = data.omega_shaft*self.omega_ref
+        self.omega_shaft = data.omega_shaft * self.omega_ref
         self.p_ref = data.p_ref
         self.GAMMA = GAMMA
 
@@ -88,7 +88,6 @@ class MeridionalProcess:
                 self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
                 self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
 
-
     def get_data_from_meridional_dataset(self):
         """
         Read 2D dataset related to the meridional post-processed results in anysis, and obtain the 2D field by regression of
@@ -105,8 +104,6 @@ class MeridionalProcess:
         self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.data.p)
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.data.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.data.s)
-
-
 
     def circumferential_average(self, mode, fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
@@ -232,7 +229,7 @@ class MeridionalProcess:
             print("WARNING: the fields have been artificially smoothed")
             self.gauss_filtering()
 
-        self.u_mag = np.sqrt(self.ur**2 + self.ut**2 + self.uz**2)
+        self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
@@ -285,7 +282,6 @@ class MeridionalProcess:
         self.ds_dz = np.zeros((self.nstream, self.nspan))
         self.dT_dr = np.zeros((self.nstream, self.nspan))
         self.dT_dz = np.zeros((self.nstream, self.nspan))
-
 
     # def instantiate_2d_bfm_fields(self):
     #     """
@@ -407,12 +403,12 @@ class MeridionalProcess:
         z = self.data.z[idx]
         r_c = self.r_cg[istream, ispan]  # grid point (center) that will contain the averaged value
         z_c = self.z_cg[istream, ispan]
-        d = np.sqrt((r-r_c)**2 + (z-z_c)**2)  # distances of points from the center
+        d = np.sqrt((r - r_c) ** 2 + (z - z_c) ** 2)  # distances of points from the center
         dmax = np.max(d)  # maximum distance of all points considered
         if RBF:
-            weight = (1+d/dmax)**5 * (1-d/dmax)**5  # C4 RBF by Mendez
+            weight = (1 + d / dmax) ** 5 * (1 - d / dmax) ** 5  # C4 RBF by Mendez
         else:
-            weight = np.zeros_like(rho)+1
+            weight = np.zeros_like(rho) + 1
         avg = np.sum(field * rho * volume * weight) / np.sum(rho * volume * weight)
         return avg
 
@@ -543,8 +539,8 @@ class MeridionalProcess:
         Compute the fourth order polynomial regressed fields, as described in the original papers
         :param order: order of the regression. 4 is the values used in the literature.
         """
-        print("Regression of the Flow Fields, order: %i" %(order))
-        if order!=4:
+        print("Regression of the Flow Fields, order: %i" % (order))
+        if order != 4:
             raise ValueError("Choose the regression order equal to 4!")
         self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
         self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
@@ -556,7 +552,6 @@ class MeridionalProcess:
         self.p, self.dp_dr, self.dp_dtheta, self.dp_dz = self.polynomial_regression_solution(self.p)
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.s)
-
 
     def polynomial_regression_solution(self, field):
         """
@@ -573,7 +568,6 @@ class MeridionalProcess:
         regr_field_dr = regression_evaluation(W_dr, coeff_vector, Nz, Nr)
         regr_field_dtheta = np.zeros_like(field)  # theta derivatives always zero
         return regr_field, regr_field_dr, regr_field_dtheta, regr_field_dz
-
 
     def compute_rbf_gradients(self):
         """
@@ -616,32 +610,193 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream)/1000
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan)/1000
+        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream) * 3
+        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan) * 3
+
+        z_plus = self.z_cg + dz
+        z_minus = self.z_cg - dz
+        r_plus = self.r_cg + dr
+        r_minus = self.r_cg - dr
 
         # Perform the RBF interpolation of the left points
-        field_interp_right = rbf(self.z_cg + dz, self.r_cg)
-        field_interp_left = rbf(self.z_cg - dz, self.r_cg)
-        field_interp_up = rbf(self.z_cg, self.r_cg + dr)
-        field_interp_down = rbf(self.z_cg, self.r_cg - dr)
+        field_interp = rbf(self.z_cg, self.r_cg)
+        field_interp_right = rbf(z_plus, self.r_cg)
+        field_interp_left = rbf(z_minus, self.r_cg)
+        field_interp_up = rbf(self.z_cg, r_plus)
+        field_interp_down = rbf(self.z_cg, r_minus)
         dfield_dz = ((field_interp_right - field_interp_left) / (2 * dz))
         dfield_dr = ((field_interp_up - field_interp_down) / (2 * dr))
 
-        # plt.figure()
-        # plt.contourf(self.z_cg, self.r_cg, field, levels=50)
-        #
-        # plt.figure()
-        # plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=50)
-        # plt.title('d/dz')
+        # check routine
+        lev = 100
+        map = 'jet'
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, field_interp, levels=lev, cmap=map)
+        plt.title('field')
+        plt.colorbar()
+
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_right, levels=lev, cmap=map)
+        # plt.title('field right')
         # plt.colorbar()
         #
-        # plt.figure()
-        # plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=50)
-        # plt.title('d/dr')
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_left, levels=lev, cmap=map)
+        # plt.title('field left')
         # plt.colorbar()
+        #
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_down, levels=lev, cmap=map)
+        # plt.title('field down')
+        # plt.colorbar()
+        #
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_up, levels=lev, cmap=map)
+        # plt.title('field up')
+        # plt.colorbar()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=lev, cmap=map)
+        plt.title('d/dz')
+        plt.colorbar()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=lev, cmap=map)
+        plt.title('d/dr')
+        plt.colorbar()
 
         return dfield_dr, dfield_dz
 
+    def tangent_finite_difference_gradient(self, field):
+        """
+        Computes the gradients of field based on the gradient obtained with tangent vectors.
+        :param field: field used
+        """
+        import math
+        dfield_dr, dfield_dz = np.zeros_like(self.z_cg), np.zeros_like(self.z_cg)
+        for i in range(self.nstream):
+            for j in range(self.nspan):
+                if (i == 0 and j == 0):
+                    im = 0
+                    ip = 1
+                    jm = 0
+                    jp = 1
+                elif (i == 0 and j == self.nspan - 1):
+                    im = 0
+                    ip = 1
+                    jm = -1
+                    jp = 0
+                elif (i == self.nstream - 1 and j == 0):
+                    im = -1
+                    ip = 0
+                    jm = 0
+                    jp = 1
+                elif (i == self.nstream - 1 and j == self.nspan - 1):
+                    im = -1
+                    ip = 0
+                    jm = -1
+                    jp = 0
+                elif i == 0:
+                    im = 0
+                    ip = 1
+                    jm = -1
+                    jp = 1
+                elif i == self.nstream - 1:
+                    im = -1
+                    ip = 0
+                    jm = -1
+                    jp = 1
+                elif j == 0:
+                    im = -1
+                    ip = 1
+                    jm = 0
+                    jp = 1
+                elif j == self.nspan - 1:
+                    im = -1
+                    ip = 1
+                    jm = -1
+                    jp = 0
+                else:
+                    im = -1
+                    ip = 1
+                    jm = -1
+                    jp = 1
+
+                # streamwise
+                dz_st = self.z_cg[i + ip, j] - self.z_cg[i + im, j]
+                dr_st = self.r_cg[i + ip, j] - self.r_cg[i + im, j]
+                dl_st = sqrt(dz_st ** 2 + dr_st ** 2)
+                alpha_st = np.arctan2(dr_st, dz_st)
+                df_dst = (field[i + ip, j] - field[i + im, j]) / dl_st
+                st_vers = np.array([[dz_st, dr_st]]) / dl_st
+
+                # spanwise
+                dz_sp = self.z_cg[i, j + jp] - self.z_cg[i, j + jm]
+                dr_sp = self.r_cg[i, j + jp] - self.r_cg[i, j + jm]
+                dl_sp = sqrt(dz_sp ** 2 + dr_sp ** 2)
+                alpha_sp = np.arctan2(dr_sp, dz_sp)
+                df_dsp = (field[i, j + jp] - field[i, j + jm]) / dl_sp
+                sp_vers = np.array([[dz_sp, dr_sp]]) / dl_sp
+
+                df_vect = np.array([[df_dst],
+                                    [df_dsp]])
+
+                A = np.concatenate((st_vers, sp_vers), axis=0)
+                df_dxdy = np.linalg.inv(A) @ df_vect
+                dfield_dz[i, j] = df_dxdy[0]
+                dfield_dr[i, j] = df_dxdy[1]
+                # #projection on cartesian axes
+                # if math.isnan(df_dst):
+                #     dfield_dz[i, j] = (np.cos(alpha_sp) * df_dsp)
+                #     dfield_dr[i, j] = (np.sin(alpha_sp) * df_dsp)
+                # elif math.isnan(df_dsp):
+                #     dfield_dz[i, j] = (np.cos(alpha_st)*df_dst)
+                #     dfield_dr[i, j] = (np.sin(alpha_st)*df_dst)
+                # else:
+                #     dfield_dz[i, j] = (np.cos(alpha_st)*df_dst + np.cos(alpha_sp)*df_dsp)/2
+                #     dfield_dr[i, j] = (np.sin(alpha_st) * df_dst + np.sin(alpha_sp) * df_dsp)/2
+
+        # check routine
+        lev = 100
+        map = 'jet'
+        #
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, field, levels=lev, cmap=map)
+        plt.title('field')
+        plt.colorbar()
+
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_right, levels=lev, cmap=map)
+        # plt.title('field right')
+        # plt.colorbar()
+        #
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_left, levels=lev, cmap=map)
+        # plt.title('field left')
+        # plt.colorbar()
+        #
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_down, levels=lev, cmap=map)
+        # plt.title('field down')
+        # plt.colorbar()
+        #
+        # plt.figure(figsize = self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, field_interp_up, levels=lev, cmap=map)
+        # plt.title('field up')
+        # plt.colorbar()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=lev, cmap=map)
+        plt.title('d/dz')
+        plt.colorbar()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=lev, cmap=map)
+        plt.title('d/dr')
+        plt.colorbar()
+
+        return dfield_dr, dfield_dz
 
     @staticmethod
     def copy_borders(field):
@@ -654,7 +809,6 @@ class MeridionalProcess:
         field[-1, :] = field[-2, :]
         field[:, 0] = field[:, 1]
         field[:, -1] = field[:, -2]
-
 
     def plot_stream_line(self, field, n, save_filename=None):
         """
@@ -756,7 +910,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
-
 
     def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
@@ -1575,7 +1728,7 @@ class MeridionalProcess:
         r = self.r_cg
         s = self.s.copy()
         for istream in range(1, self.nstream):
-            s[istream, :] = s[istream, :] - s[istream-1, :]
+            s[istream, :] = s[istream, :] - s[istream - 1, :]
         s[0, :] = s[1, :]
 
         plt.figure(figsize=self.picture_size_contour)
@@ -1586,7 +1739,6 @@ class MeridionalProcess:
             plt.savefig('pictures/local_entropy_generation_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             plt.close()
 
-
     def compute_body_fource_S(self, domain):
         """
         if the domain is bladed compute the body force steady state matrices. Otherwise, instantiate zeros
@@ -1595,12 +1747,12 @@ class MeridionalProcess:
         """
         self.domain = domain
         if domain == 'rotor' or domain == 'stator':
-            print("%s Domain" %(domain))
+            print("%s Domain" % (domain))
             tr = self.Floss_r / self.Floss
             ttheta = self.Floss_t / self.Floss
             tz = self.Floss_z / self.Floss
 
-            nr = self.Fturn_r/self.Fturn
+            nr = self.Fturn_r / self.Fturn
             ntheta = self.Fturn_t / self.Fturn
             nz = self.Fturn_z / self.Fturn
 
@@ -1636,16 +1788,16 @@ class MeridionalProcess:
 
             # compute quantities needed for the Sun Model Algorithm Variant
             if domain == 'rotor':
-                self.Omega = np.zeros_like(self.z_cg)+self.omega_shaft
+                self.Omega = np.zeros_like(self.z_cg) + self.omega_shaft
             elif domain == 'stator':
                 self.Omega = np.zeros_like(self.z_cg)
             else:
                 raise ValueError("Unknown domain type")
-            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length))*self.x_ref / \
-                              (np.max(self.u_meridional)*self.u_ref)
+            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length)) * self.x_ref / \
+                              (np.max(self.u_meridional) * self.u_ref)
             self.tau = np.zeros_like(self.z_cg) + tau_throughflow
 
-        elif domain=='unbladed':
+        elif domain == 'unbladed':
             print("Unbladed Domain...")
             self.S00 = np.zeros_like(self.ur)
             self.S01 = np.zeros_like(self.ur)
@@ -1678,9 +1830,6 @@ class MeridionalProcess:
         else:
             raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed!")
 
-
-
-
     def compute_Floss(self, mode):
         """
         Compute the Loss component of the body force
@@ -1692,14 +1841,15 @@ class MeridionalProcess:
         if mode == 'global':
             # compute the modulus, and then the components, which are opposed to the relative flow velocity
             self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
+            idx = np.where(self.Floss<0)
+            self.Floss[idx] = 0
 
             # compute the components, which are opposite to the relative velocity
             self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
             self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
             self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
 
-            self.Floss_check = self.Floss_r**2 + self.Floss_t**2 + self.Floss_z**2 - self.Floss**2
-
+            # self.Floss_check = self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2 - self.Floss ** 2
 
     def compute_ds_dl(self, mode):
         """
@@ -1740,16 +1890,28 @@ class MeridionalProcess:
                                          self.dut_dr[istream, ispan] * dir_vector[1]
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
+        if self.omega_shaft<0:
+            idx = np.where(self.Ftheta > 0)
+            self.Ftheta[idx] = 0
+        else:
+            idx = np.where(self.Ftheta < 0)
+            self.Ftheta[idx] = 0
 
     def compute_Fturn(self):
         """
         Starting from the Ftheta and camber normal vectors, compute the magnitude of the turning force
         """
         self.Fturn_t = self.Ftheta - self.Floss_t
+        if self.omega_shaft<0:
+            idx = np.where(self.Fturn_t > 0)
+            self.Fturn_t[idx] = 0
+        else:
+            idx = np.where(self.Fturn_t < 0)
+            self.Fturn_t[idx] = 0
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
-        self.Fturn_check = self.Fturn_r**2 + self.Fturn_t**2 + self.Fturn_z**2 - self.Fturn**2
+        self.Fturn_check = self.Fturn_r ** 2 + self.Fturn_t ** 2 + self.Fturn_z ** 2 - self.Fturn ** 2
 
     def compute_averaged_fluxes(self):
         """
@@ -1767,8 +1929,8 @@ class MeridionalProcess:
                 self.dA[istream, ispan] = np.sqrt(dz ** 2 + dr ** 2)
 
                 # normal of the flux area (-90 deg rotation of the edge, normalized)
-                self.dA_nz[istream, ispan] = dr/self.dA[istream, ispan]
-                self.dA_nr[istream, ispan] = -dz/self.dA[istream, ispan]
+                self.dA_nz[istream, ispan] = dr / self.dA[istream, ispan]
+                self.dA_nr[istream, ispan] = -dz / self.dA[istream, ispan]
 
         self.rho_flux = self.compute_flux(self.rho)
         self.ur_flux = self.compute_flux(self.ur)
@@ -1797,7 +1959,6 @@ class MeridionalProcess:
                               np.sum(self.rho[istream, :] * self.dA[istream, :] * normal_velocity)
         return fluxes
 
-
     def plot_averaged_fluxes(self, field, save_filename=None):
         """
         Plot the averaged fluxes.
@@ -1811,7 +1972,7 @@ class MeridionalProcess:
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux, '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
         elif field == 'ur':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux*self.u_ref, '--s')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux * self.u_ref, '--s')
             ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
         elif field == 'ut':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.ut_flux, '--s')
@@ -1875,14 +2036,22 @@ class MeridionalProcess:
         self.s = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method, return_type='field')
 
         try:
-            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method, return_type='field')
-            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method, return_type='field')
-            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method, return_type='field')
-            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method, return_type='field')
-            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method, return_type='field')
-            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method, return_type='field')
-            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method, return_type='field')
-            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method, return_type='field')
+            self.drho_dr = self.interpolate_function(self.data.drho_dr, self.data.z, self.data.r, method=method,
+                                                     return_type='field')
+            self.drho_dz = self.interpolate_function(self.data.drho_dz, self.data.z, self.data.r, method=method,
+                                                     return_type='field')
+            self.dur_dr = self.interpolate_function(self.data.dur_dr, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
+            self.dur_dz = self.interpolate_function(self.data.dur_dz, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
+            self.dut_dr = self.interpolate_function(self.data.dut_dr, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
+            self.dut_dz = self.interpolate_function(self.data.dut_dz, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
+            self.duz_dr = self.interpolate_function(self.data.duz_dr, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
+            self.duz_dz = self.interpolate_function(self.data.duz_dz, self.data.z, self.data.r, method=method,
+                                                    return_type='field')
             self.dp_dr = self.interpolate_function(self.data.dp_dr, self.data.z, self.data.r, method=method, return_type='field')
             self.dp_dz = self.interpolate_function(self.data.dp_dz, self.data.z, self.data.r, method=method, return_type='field')
             self.ds_dr = self.interpolate_function(self.data.ds_dr, self.data.z, self.data.r, method=method, return_type='field')
@@ -1890,13 +2059,12 @@ class MeridionalProcess:
         except:
             pass
 
-
-
     def weight_least_square_regression(self):
         self.instantiate_2d_fields()
 
         print("WLS regression of Density...")
-        self.rho, self.drho_dz, self.drho_dr = self.approximate_with_weighted_least_square(self.data.rho, self.data.z, self.data.r)
+        self.rho, self.drho_dz, self.drho_dr = self.approximate_with_weighted_least_square(self.data.rho, self.data.z,
+                                                                                           self.data.r)
 
         print("WLS regression of Radial Velocity...")
         self.ur, self.dur_dz, self.dur_dr = self.approximate_with_weighted_least_square(self.data.ur, self.data.z, self.data.r)
@@ -1916,24 +2084,22 @@ class MeridionalProcess:
         print("WLS regression of Temperature...")
         self.T, self.dT_dz, self.dT_dr = self.approximate_with_weighted_least_square(self.data.T, self.data.z, self.data.r)
 
-
     def approximate_with_weighted_least_square(self, f_points, z_points, r_points):
         F = np.zeros_like(self.z_cg)
         dFdZ = np.zeros_like(self.z_cg)
         dFdR = np.zeros_like(self.z_cg)
-        distance_limit = ((np.max(z_points) - np.min(z_points)) + (np.max(r_points) - np.min(r_points)))*1000
+        distance_limit = ((np.max(z_points) - np.min(z_points)) + (np.max(r_points) - np.min(r_points))) * 1000
 
         for ii in range(self.nstream):
             for jj in range(self.nspan):
                 print("Regression %i of %i" % (jj + ii * self.nspan, self.nstream * self.nspan))
-                distance = np.sqrt((self.z_cg[ii, jj]-z_points)**2 + (self.r_cg[ii, jj]-r_points)**2)
-                idx = np.where(distance<distance_limit)
+                distance = np.sqrt((self.z_cg[ii, jj] - z_points) ** 2 + (self.r_cg[ii, jj] - r_points) ** 2)
+                idx = np.where(distance < distance_limit)
                 F[ii, jj], dFdZ[ii, jj], dFdR[ii, jj] = compute_function_and_gradient_approximation(
-                                                                        self.z_cg[ii, jj], self.r_cg[ii, jj],
-                                                                        z_points[idx], r_points[idx], f_points[idx])
+                    self.z_cg[ii, jj], self.r_cg[ii, jj],
+                    z_points[idx], r_points[idx], f_points[idx])
 
         return F, dFdZ, dFdR
-
 
     def compute_field_gradients(self, method='linear'):
         """
@@ -1948,54 +2114,63 @@ class MeridionalProcess:
             self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
             self.dT_dr, self.dT_dz = self.rbf_finite_difference(self.T)
             self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
-        elif method == 'linear':
-            self.drho_dr, self.drho_dz = self.linear_interpolation_gradient(self.data.rho, self.data.r, self.data.z)
-            self.dur_dr, self.dur_dz = self.linear_interpolation_gradient(self.data.ur, self.data.r, self.data.z)
-            self.dut_dr, self.dut_dz = self.linear_interpolation_gradient(self.data.ut, self.data.r, self.data.z)
-            self.duz_dr, self.duz_dz = self.linear_interpolation_gradient(self.data.uz, self.data.r, self.data.z)
-            self.dp_dr, self.dp_dz = self.linear_interpolation_gradient(self.data.p, self.data.r, self.data.z)
-            self.dT_dr, self.dT_dz = self.linear_interpolation_gradient(self.data.T, self.data.r, self.data.z)
-            self.ds_dr, self.ds_dz = self.linear_interpolation_gradient(self.data.s, self.data.r, self.data.z)
+        elif method == 'linear' or method == 'cubic':
+            self.drho_dr, self.drho_dz = self.interpolation_gradient(self.data.rho, self.data.r, self.data.z, method=method)
+            self.dur_dr, self.dur_dz = self.interpolation_gradient(self.data.ur, self.data.r, self.data.z, method=method)
+            self.dut_dr, self.dut_dz = self.interpolation_gradient(self.data.ut, self.data.r, self.data.z, method=method)
+            self.duz_dr, self.duz_dz = self.interpolation_gradient(self.data.uz, self.data.r, self.data.z, method=method)
+            self.dp_dr, self.dp_dz = self.interpolation_gradient(self.data.p, self.data.r, self.data.z, method=method)
+            self.dT_dr, self.dT_dz = self.interpolation_gradient(self.data.T, self.data.r, self.data.z, method=method)
+            self.ds_dr, self.ds_dz = self.interpolation_gradient(self.data.s, self.data.r, self.data.z, method=method)
+        elif method == 'tangent gradient':
+            self.drho_dr, self.drho_dz = self.tangent_finite_difference_gradient(self.rho)
+            self.dur_dr, self.dur_dz = self.tangent_finite_difference_gradient(self.ur)
+            self.dut_dr, self.dut_dz = self.tangent_finite_difference_gradient(self.ut)
+            self.duz_dr, self.duz_dz = self.tangent_finite_difference_gradient(self.uz)
+            self.dp_dr, self.dp_dz = self.tangent_finite_difference_gradient(self.p)
+            self.dT_dr, self.dT_dz = self.tangent_finite_difference_gradient(self.T)
+            self.ds_dr, self.ds_dz = self.tangent_finite_difference_gradient(self.s)
         else:
             raise ValueError("Method not recognized.")
 
-    def linear_interpolation_gradient(self, f, r, z):
+    def interpolation_gradient(self, f, r, z, method):
         """
-        Linear interpolation method in order to compute the gradient of f
+        Linear interpolation method in order to compute the gradient of f(z,r)
         """
-        Z = self.z_cg.copy()
-        R = self.r_cg.copy()
-        Zplus = np.zeros_like(self.z_cg)
-        Rplus = np.zeros_like(self.r_cg)
-        Zminus = np.zeros_like(self.z_cg)
-        Rminus = np.zeros_like(self.r_cg)
-        for ii in range(0, self.nstream):
-            for jj in range(0, self.nspan):
-                if ii==self.nstream-1 or jj==self.nspan-1:
-                    Zplus[ii, jj] = Z[ii, jj] + np.abs((Z[ii, jj] - Z[ii-1, jj]) / 2)
-                    Zminus[ii, jj] = Z[ii, jj] - np.abs((Z[ii, jj] - Z[ii-1, jj]) / 2)
-                    Rplus[ii, jj] = R[ii, jj] + np.abs((R[ii, jj] - R[ii, jj-1]) / 2)
-                    Rminus[ii, jj] = R[ii, jj] - np.abs((R[ii, jj] - R[ii, jj-1]) / 2)
-                else:
-                    Zplus[ii, jj] = Z[ii, jj]+ np.abs((Z[ii+1, jj] - Z[ii, jj])/2)
-                    Rplus[ii, jj] = R[ii, jj] + np.abs((R[ii, jj+1] - R[ii, jj]) / 2)
-                    Zminus[ii, jj] = Z[ii, jj] - np.abs((Z[ii+1, jj] - Z[ii, jj]) / 2)
-                    Rminus[ii, jj] = R[ii, jj] - np.abs((R[ii, jj+1] - R[ii, jj]) / 2)
+        # Zplus = np.zeros_like(self.z_cg)
+        # Rplus = np.zeros_like(self.r_cg)
+        # Zminus = np.zeros_like(self.z_cg)
+        # Rminus = np.zeros_like(self.r_cg)
 
-        values = f.copy()
+        dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
+        for ii in range(1, self.nstream - 1):
+            tmp = np.min(np.abs(self.z_cg[ii+1, :] - self.z_cg[ii, :]))
+            if tmp < dz_min:
+                dz_min = tmp
 
-        points = np.column_stack((r, z))
-        f_zplus = griddata(points, values, (Zplus, R), method='linear')
-        f_zminus = griddata(points, values, (Zminus, R), method='linear')
-        f_rplus = griddata(points, values, (Z, Rplus), method='linear')
-        f_rminus = griddata(points, values, (Z, Rminus), method='linear')
-        df_dz = (f_zplus-f_zminus)/(Zplus-Zminus)
-        df_dz = np.reshape(df_dz, self.z_cg.shape)
-        df_dr = (f_rplus - f_rminus) / (Rplus - Rminus)
-        df_dr = np.reshape(df_dr, self.z_cg.shape)
+        dr_min = np.min(np.abs(self.r_cg[:, 1] - self.r_cg[:, 0]))
+        for jj in range(1, self.nspan - 1):
+            tmp = np.min(np.abs(self.r_cg[:, jj+1] - self.r_cg[:, jj]))
+            if tmp < dr_min:
+                dr_min = tmp
+
+        diff_factor = 10
+        dz = dz_min/diff_factor
+        dr = dr_min/diff_factor
+
+        Zplus = self.z_cg + dz
+        Zminus = self.z_cg - dz
+        Rplus = self.r_cg + dr
+        Rminus = self.r_cg - dr
+
+        f_zplus = griddata((z, r), f, (Zplus, self.r_cg), method=method)
+        f_zminus = griddata((z, r), f, (Zminus, self.r_cg), method=method)
+        f_rplus = griddata((z, r), f, (self.z_cg, Rplus), method=method)
+        f_rminus = griddata((z, r), f, (self.z_cg, Rminus), method=method)
+        df_dz = (f_zplus - f_zminus) / 2 / dz
+        df_dr = (f_rplus - f_rminus) / 2 / dr
 
         return df_dr, df_dz
-
 
     def interpolate_function(self, f, z, r, method, return_type='all'):
         """
@@ -2008,24 +2183,24 @@ class MeridionalProcess:
         """
         Xnew = self.z_cg  # original grid
         Ynew = self.r_cg  # original grid
-        dx = np.abs(np.max(z)-np.min(z)) / 20
+        dx = np.abs(np.max(z) - np.min(z)) / 20
         dy = np.abs(np.max(r) - np.min(r)) / 20
 
         if method != 'rbf':
             f_new = griddata((z, r), f, (Xnew, Ynew), method=method)
             if return_type == 'all':
-                f_new_dx = griddata((z, r), f, (Xnew+dx, Ynew), method=method)
-                f_new_dy = griddata((z, r), f, (Xnew, Ynew+dy), method=method)
+                f_new_dx = griddata((z, r), f, (Xnew + dx, Ynew), method=method)
+                f_new_dy = griddata((z, r), f, (Xnew, Ynew + dy), method=method)
         else:
             rbf = Rbf(z, r, f, function='linear')
             f_new = rbf(Xnew, Ynew)
             if return_type == 'all':
-                f_new_dx = rbf(Xnew+dx, Ynew)
-                f_new_dy = rbf(Xnew, Ynew+dy)
+                f_new_dx = rbf(Xnew + dx, Ynew)
+                f_new_dy = rbf(Xnew, Ynew + dy)
 
         try:
-            df_dx_new = (f_new_dx-f_new)/dx
-            df_dy_new = (f_new_dy-f_new)/dy
+            df_dx_new = (f_new_dx - f_new) / dx
+            df_dy_new = (f_new_dy - f_new) / dy
             return f_new, df_dx_new, df_dy_new
         except:
             return f_new
