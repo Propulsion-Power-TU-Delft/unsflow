@@ -1780,8 +1780,8 @@ class MeridionalProcess:
                 self.Omega = np.zeros_like(self.z_cg)
             else:
                 raise ValueError("Unknown domain type")
-            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length)) * self.x_ref / \
-                              (np.max(self.u_meridional) * self.u_ref)
+            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length)) * self.config.get_reference_length() / \
+                              (np.max(self.u_meridional) * self.config.get_reference_velocity())
             self.tau = np.zeros_like(self.z_cg) + tau_throughflow
 
         elif domain == 'unbladed':

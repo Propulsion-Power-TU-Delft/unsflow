@@ -112,14 +112,12 @@ class Block:
                                      self.outlet[1:-1, :],
                                      np.reshape(self.point_shroud_outlet, (1, 2))))
 
-        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], nstream=self.nspan,
-                                  mode='cordinates', rescale_factor=1, x_ref=1)
+        self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], mode='cordinates')
 
         outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
         outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
 
-        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
-                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, mode='cordinates')
 
     def sample_hub_shroud(self, sampling_mode='default'):
         """

@@ -4,13 +4,24 @@ import numpy as np
 
 
 class Config:
-    def __init__(self, config_file='input.cfg'):
+    def __init__(self, config_file='input.ini'):
         # Initialize a ConfigParser
         self.config_parser = configparser.ConfigParser()
 
         # Read the configuration file
         self.config_parser.read(config_file)
-        # self.create_attributes()
+
+        self.picture_name_template = self.compute_picture_name_template(config_file)
+
+
+    def compute_picture_name_template(self, config_file):
+        prefix = config_file.split('.')[0]
+        streamwise = self.get_streamwise_points()
+        spanwise = self.get_spanwise_points()
+        for st in streamwise:
+            prefix += '_' + str(st)
+        prefix += '_' + str(spanwise)
+        return prefix
 
     def get_config_value(self, section, option, default=None):
         """

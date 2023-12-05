@@ -20,10 +20,11 @@ class MeridionalProcessGroup:
     Group of meridional Process object, used to plot the full machine data together
     """
 
-    def __init__(self):
+    def __init__(self, config):
         """
         Construct the object contaning all the meridional objects related to the subdomains.
         """
+        self.config = config
         self.group = []
         self.domains_type = []
         self.nstream = 0
@@ -50,54 +51,20 @@ class MeridionalProcessGroup:
         """
         Assemble together the fields contained in all the blocks.
         """
-        self.x_ref = self.group[0].x_ref
-        self.u_ref = self.group[0].u_ref
-        self.t_ref = self.group[0].t_ref
-        self.T_ref = self.group[0].T_ref
-        self.s_ref = self.group[0].s_ref
-        self.p_ref = self.group[0].p_ref
-        self.rho_ref = self.group[0].rho_ref
-        self.omega_ref = self.group[0].omega_ref
-        self.omega_shaft = self.group[0].omega_shaft
         self.Omega = self.group[0].Omega
         self.tau = self.group[0].tau
-        self.GAMMA = self.group[0].GAMMA
-
-        # check that reference quantities were coherent:
-        for block in self.group[1:]:
-            if (block.x_ref != self.x_ref):
-                raise ValueError("The blocks have different reference Length!")
-            elif (block.u_ref != self.u_ref):
-                raise ValueError("The blocks have different reference Velocity!")
-            elif (block.t_ref != self.t_ref):
-                raise ValueError("The blocks have different reference Time!")
-            elif (block.T_ref != self.T_ref):
-                raise ValueError("The blocks have different reference Temperatures!")
-            elif (block.s_ref != self.s_ref):
-                raise ValueError("The blocks have different reference Entropies!")
-            elif (block.p_ref != self.p_ref):
-                raise ValueError("The blocks have different reference Pressures!")
-            elif (block.rho_ref != self.rho_ref):
-                raise ValueError("The blocks have different reference Density!")
-            elif (block.omega_ref != self.omega_ref):
-                raise ValueError("The blocks have different reference Omega!")
-            elif (block.omega_shaft != self.omega_shaft):
-                raise ValueError("The blocks have different shaft Omega!")
-            elif (block.GAMMA != self.GAMMA):
-                raise ValueError("The blocks have different Gamma!")
-            else:
-                pass
+        self.GAMMA = self.config.get_fluid_gamma()
 
         print_banner_begin('GLOBAL REFERENCE QUANTITIES')
-        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.omega_shaft:>{total_chars_mid}.3f}")
-        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.omega_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.rho_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.x_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.p_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.t_ref:>{total_chars_mid}.6f}")
-        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.T_ref:>{total_chars_mid}.3f}")
-        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.s_ref:>{total_chars_mid}.3f}")
+        print(f"{'Shaft Omega [rad/s]:':<{total_chars_mid}}{self.config.get_omega_shaft():>{total_chars_mid}.3f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.3f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.3f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.3f}")
+        print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
+        print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.config.get_reference_temperature():>{total_chars_mid}.3f}")
+        print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.config.get_reference_entropy():>{total_chars_mid}.3f}")
         print_banner_end()
 
         self.z_cg = self.group[0].z_cg
@@ -263,7 +230,7 @@ class MeridionalProcessGroup:
         """
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.rho * self.group[0].rho_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.rho * self.config.get_reference_density(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -273,7 +240,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.ur * self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.ur * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -283,7 +250,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -293,7 +260,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.uz * self.group[0].u_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.uz * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -303,7 +270,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.p * self.group[0].p_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.p * self.config.get_reference_pressure(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -313,7 +280,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.T * self.group[0].T_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.T * self.config.get_reference_temperature(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -323,7 +290,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.s * self.group[0].s_ref, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.s * self.config.get_reference_entropy(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -661,7 +628,7 @@ class MeridionalProcessGroup:
             ax.grid(alpha=0.3)
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
-                fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+                fig.savefig(folder_name + save_filename + '_' + field + '.pdf', bbox_inches='tight')
                 plt.close()
 
     def compute_performance(self):
@@ -694,14 +661,14 @@ class MeridionalProcessGroup:
         print on terminal the performance of the machine. only total to total
         """
         print_banner_begin('MACHINE PERFORMANCE')
-        print(f"{'Inlet P [Pa]:':<{total_chars_mid}}{self.P1*self.p_ref:>{total_chars_mid}.2f}")
-        print(f"{'Inlet Pt [Pa]:':<{total_chars_mid}}{self.Pt1 * self.p_ref:>{total_chars_mid}.2f}")
-        print(f"{'Outlet P [Pa]:':<{total_chars_mid}}{self.P2 * self.p_ref:>{total_chars_mid}.2f}")
-        print(f"{'Outlet Pt [Pa]:':<{total_chars_mid}}{self.Pt2 * self.p_ref:>{total_chars_mid}.2f}")
-        print(f"{'Inlet T [K]:':<{total_chars_mid}}{self.T1 * self.T_ref:>{total_chars_mid}.2f}")
-        print(f"{'Inlet Tt [K]:':<{total_chars_mid}}{self.Tt1*self.T_ref:>{total_chars_mid}.2f}")
-        print(f"{'Outlet T [K]:':<{total_chars_mid}}{self.T2 * self.T_ref:>{total_chars_mid}.2f}")
-        print(f"{'Outlet Tt [K]:':<{total_chars_mid}}{self.Tt2 * self.T_ref:>{total_chars_mid}.2f}")
+        print(f"{'Inlet P [Pa]:':<{total_chars_mid}}{self.P1*self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(f"{'Inlet Pt [Pa]:':<{total_chars_mid}}{self.Pt1 * self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(f"{'Outlet P [Pa]:':<{total_chars_mid}}{self.P2 * self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(f"{'Outlet Pt [Pa]:':<{total_chars_mid}}{self.Pt2 * self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(f"{'Inlet T [K]:':<{total_chars_mid}}{self.T1 * self.config.get_reference_temperature():>{total_chars_mid}.2f}")
+        print(f"{'Inlet Tt [K]:':<{total_chars_mid}}{self.Tt1*self.config.get_reference_temperature():>{total_chars_mid}.2f}")
+        print(f"{'Outlet T [K]:':<{total_chars_mid}}{self.T2 * self.config.get_reference_temperature():>{total_chars_mid}.2f}")
+        print(f"{'Outlet Tt [K]:':<{total_chars_mid}}{self.Tt2 * self.config.get_reference_temperature():>{total_chars_mid}.2f}")
         print(f"{'Beta_ts:':<{total_chars_mid}}{self.beta_ts:>{total_chars_mid}.2f}")
         print(f"{'Beta_tt [-]:':<{total_chars_mid}}{self.beta_tt:>{total_chars_mid}.2f}")
         print(f"{'Eta_ts:':<{total_chars_mid}}{self.eta_ts:>{total_chars_mid}.2f}")
