@@ -180,5 +180,43 @@ class Config:
     def get_gradient_interpolation_method(self):
         return str(self.config_parser.get('CFD PROCESSING', 'GRADIENT_INTERPOLATION_METHOD'))
 
+    def get_meridional_pickle_filepath(self):
+        return str(self.config_parser.get('SUN MODEL', 'MERIDIONAL_PICKLE_FILEPATH'))
+
+    def get_grid_transformation_gradient_routine(self):
+        return str(self.config_parser.get('SUN MODEL', 'GRID_TRANSFORMATION_GRADIENT_ROUTINE'))
+
+    def get_grid_transformation_gradient_order(self):
+        return int(self.config_parser.get('SUN MODEL', 'GRID_TRANSFORMATION_GRADIENT_ORDER'))
+
+    def get_circumferential_harmonic_order(self):
+        return int(self.config_parser.get('SUN MODEL', 'CIRCUMFERENTIAL_HARMONIC_ORDER'))
+
+    def get_normalize_instability_equations(self):
+        res = self.config_parser.get('SUN MODEL', 'NORMALIZE_INSTABILITY_EQUATIONS')
+        if res.lower() == 'true':
+            return True
+        else:
+            return False
+
+    def get_research_center_omega_eigenvalues(self):
+        return complex(self.config_parser.get('SUN MODEL', 'OMEGA_EIGV_RESEARCH_CENTER'))
+
+    def get_research_number_omega_eigenvalues(self):
+        return int(self.config_parser.get('SUN MODEL', 'NUMBER_EIGV_RESEARCH'))
+
+    def get_inlet_bc(self):
+        return str(self.config_parser.get('SUN MODEL', 'INLET_BC'))
+
+    def get_outlet_bc(self):
+        return str(self.config_parser.get('SUN MODEL', 'OUTLET_BC'))
+
+    def get_hub_bc(self):
+        return str(self.config_parser.get('SUN MODEL', 'HUB_BC'))
+
+    def get_shroud_bc(self):
+        return str(self.config_parser.get('SUN MODEL', 'SHROUD_BC'))
+
+
 
 

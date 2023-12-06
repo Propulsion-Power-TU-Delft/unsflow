@@ -1812,8 +1812,8 @@ class MeridionalProcess:
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
 
-            self.omega_sun_param = np.zeros_like(self.z_cg)
-            self.tau_sun_param = np.zeros_like(self.z_cg)
+            self.omega_sun_param = 0
+            self.tau_sun_param = 0
         else:
             raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed.")
 

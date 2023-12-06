@@ -94,7 +94,6 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     blade_process.interpolate_on_working_grid()
-    # blade_process.compute_field_gradients(method=GRAD_METHOD)
 
     if config.get_standard_regression():
         blade_process.compute_regressed_fields()
@@ -125,7 +124,6 @@ if OUTLET_BLOCK:
     outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
     outlet_process.compute_streamline_length()
     outlet_process.interpolate_on_working_grid()
-    # outlet_process.compute_field_gradients(method=GRAD_METHOD)
     if config.get_standard_regression():
         outlet_process.compute_regressed_fields()
     else:
@@ -169,7 +167,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    delattr(obj, 'group')
     obj.store_pickle(file_name=config.picture_name_template)
 
 
