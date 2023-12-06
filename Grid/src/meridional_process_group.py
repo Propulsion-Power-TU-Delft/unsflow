@@ -51,8 +51,6 @@ class MeridionalProcessGroup:
         """
         Assemble together the fields contained in all the blocks.
         """
-        self.Omega = self.group[0].Omega
-        self.tau = self.group[0].tau
         self.GAMMA = self.config.get_fluid_gamma()
 
         print_banner_begin('GLOBAL REFERENCE QUANTITIES')
@@ -93,8 +91,6 @@ class MeridionalProcessGroup:
             self.T = np.concatenate((self.T, obj.T), axis=0)
             self.s = np.concatenate((self.s, obj.s), axis=0)
             self.M = np.concatenate((self.M, obj.M), axis=0)
-            self.Omega = np.concatenate((self.Omega, obj.Omega), axis=0)
-            self.tau = np.concatenate((self.tau, obj.tau), axis=0)
 
     def assemble_body_force_fields(self):
         """
@@ -309,25 +305,6 @@ class MeridionalProcessGroup:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
             plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Omega, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.xticks([])
-        plt.yticks([])
-        plt.title(r'$\Omega_{SUN} \ \mathrm{[rad/s]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_OmegaSun.pdf', bbox_inches='tight')
-            plt.close()
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.tau, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.xticks([])
-        plt.yticks([])
-        plt.title(r'$\tau_{SUN} \ \mathrm{[rad/s]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_tauSun.pdf', bbox_inches='tight')
-            plt.close()
 
     def show_grid(self, save_filename=None, grid_centers=False):
         """
@@ -628,7 +605,7 @@ class MeridionalProcessGroup:
             ax.grid(alpha=0.3)
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
-                fig.savefig(folder_name + save_filename + '_' + field + '.pdf', bbox_inches='tight')
+                fig.savefig(folder_name + save_filename + '_flux_' + field + '.pdf', bbox_inches='tight')
                 plt.close()
 
     def compute_performance(self):

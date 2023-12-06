@@ -169,9 +169,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    # obj.compose_global_sun_Omega_tau()
-    obj.contour_fields()
-    obj.contour_field_gradients()
     delattr(obj, 'group')
     obj.store_pickle(file_name=config.picture_name_template)
 
@@ -184,7 +181,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
             tot_size += size_in_bytes
             print(f"Size of {attribute_name}: {size_in_bytes} bytes")
         print(f"Total size: {tot_size} bytes")
-
     print_attribute_sizes(obj)
 
 end_time = time.time()

@@ -1775,14 +1775,14 @@ class MeridionalProcess:
 
             # compute quantities needed for the Sun Model Algorithm Variant
             if domain == 'rotor':
-                self.Omega = np.zeros_like(self.z_cg) + self.config.get_omega_shaft()
+                self.omega_sun_param = self.config.get_omega_shaft()
             elif domain == 'stator':
-                self.Omega = np.zeros_like(self.z_cg)
+                self.omega_sun_param = 0
             else:
                 raise ValueError("Unknown domain type")
             tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length)) * self.config.get_reference_length() / \
                               (np.max(self.u_meridional) * self.config.get_reference_velocity())
-            self.tau = np.zeros_like(self.z_cg) + tau_throughflow
+            self.tau_sun_param = tau_throughflow
 
         elif domain == 'unbladed':
             print("Unbladed Domain...")
@@ -1812,10 +1812,10 @@ class MeridionalProcess:
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
 
-            self.Omega = np.zeros_like(self.z_cg)
-            self.tau = np.zeros_like(self.z_cg)
+            self.omega_sun_param = np.zeros_like(self.z_cg)
+            self.tau_sun_param = np.zeros_like(self.z_cg)
         else:
-            raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed!")
+            raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed.")
 
     def compute_Floss(self, mode):
         """

@@ -25,6 +25,7 @@ class SunGrid():
         :param meridional_obj: object storing the 2D meridional flow fields, processed from CFD.
         :param mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates.
         """
+        self.grid_config = meridional_obj.config
         self.meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
         self.n_stream = meridional_obj.nstream
         self.nAxialNodes = self.n_stream

@@ -43,6 +43,7 @@ class SunModel:
         :param gridObject: is the object contaning all the data, physical and spectral organized in a grid of Node objects.
         """
         self.data = gridObject  # grid object containing also the meridional object with the data
+        self.grid_config = gridObject.grid_config
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
 
         self.gmma = 1.4  # cp/cv for standard air for the moment
@@ -70,53 +71,53 @@ class SunModel:
         print()
 
 
-    def set_normalization_quantities(self, mode='meridional object'):
-        """
-        Quantities needed to non-dimensionalize the governing equations, in order to make the system better posed numerically.
-        If the data obtained from CFD post-process was already non-dimensional just set unity values.
-        The non-dimensionalizations terms come from the equations advection terms, and are:
-            [x]/[rho][u] for the continuity equation,
-            [x]/[u]^2 for the momentum equations,
-            [x]/[rho][u]^3 for the pressure equation.
-        The fundamental entities selected for non-dimensionalization are:
-            a reference density,
-            a reference omega, generally taken as the shaft angular velocity
-            reference length, generally taken as the blade inlet tip radius
-        All the rest is obtained from these 3 fundamental quantities (pressure, time, etc...).
-        :param mode: decides if taking the reference quantities are related to the annular duct (test-case), or to a meridional
-        object in the general case
-        """
-        if mode == 'meridional multiblock object':
-            self.rho_ref = self.data.meridional_obj.group[0].rho_ref
-            self.u_ref = self.data.meridional_obj.group[0].u_ref
-            self.x_ref = self.data.meridional_obj.group[0].x_ref
-            self.p_ref = self.data.meridional_obj.group[0].p_ref
-            self.omega_ref = self.data.meridional_obj.group[0].omega_ref
-            self.t_ref = 1/self.omega_ref
-        elif mode == 'meridional object':
-            self.rho_ref = self.data.meridional_obj.rho_ref
-            self.u_ref = self.data.meridional_obj.u_ref
-            self.x_ref = self.data.meridional_obj.x_ref
-            self.p_ref = self.data.meridional_obj.p_ref
-            self.omega_ref = self.data.meridional_obj.omega_ref
-            self.t_ref = 1/self.omega_ref
-        elif mode =='duct object':
-            self.rho_ref = self.data.meridional_obj.rho_ref
-            self.u_ref = self.data.meridional_obj.u_ref
-            self.x_ref = self.data.meridional_obj.x_ref
-            self.p_ref = self.data.meridional_obj.p_ref
-            self.omega_ref = self.data.meridional_obj.omega_ref
-            self.t_ref = self.data.meridional_obj.t_ref
-        else:
-            raise ValueError("unknown type of object")
-
-        self.print_normalization_information()
-
-        # normalization terms = inverse of advections, to be used for governing equations' normalization. They are correct
-        # only for the form of the equations used. Otherwise, they must be changed
-        self.continuity_norm = self.x_ref / self.rho_ref / self.u_ref
-        self.momentum_norm = self.x_ref / self.u_ref ** 2
-        self.pressure_norm = self.x_ref / self.rho_ref / self.u_ref ** 3
+    # def set_normalization_quantities(self, mode='meridional object'):
+    #     """
+    #     Quantities needed to non-dimensionalize the governing equations, in order to make the system better posed numerically.
+    #     If the data obtained from CFD post-process was already non-dimensional just set unity values.
+    #     The non-dimensionalizations terms come from the equations advection terms, and are:
+    #         [x]/[rho][u] for the continuity equation,
+    #         [x]/[u]^2 for the momentum equations,
+    #         [x]/[rho][u]^3 for the pressure equation.
+    #     The fundamental entities selected for non-dimensionalization are:
+    #         a reference density,
+    #         a reference omega, generally taken as the shaft angular velocity
+    #         reference length, generally taken as the blade inlet tip radius
+    #     All the rest is obtained from these 3 fundamental quantities (pressure, time, etc...).
+    #     :param mode: decides if taking the reference quantities are related to the annular duct (test-case), or to a meridional
+    #     object in the general case
+    #     """
+    #     if mode == 'meridional multiblock object':
+    #         self.rho_ref = self.data.meridional_obj.group[0].rho_ref
+    #         self.u_ref = self.data.meridional_obj.group[0].u_ref
+    #         self.x_ref = self.data.meridional_obj.group[0].x_ref
+    #         self.p_ref = self.data.meridional_obj.group[0].p_ref
+    #         self.omega_ref = self.data.meridional_obj.group[0].omega_ref
+    #         self.t_ref = 1/self.omega_ref
+    #     elif mode == 'meridional object':
+    #         self.rho_ref = self.data.meridional_obj.rho_ref
+    #         self.u_ref = self.data.meridional_obj.u_ref
+    #         self.x_ref = self.data.meridional_obj.x_ref
+    #         self.p_ref = self.data.meridional_obj.p_ref
+    #         self.omega_ref = self.data.meridional_obj.omega_ref
+    #         self.t_ref = 1/self.omega_ref
+    #     elif mode =='duct object':
+    #         self.rho_ref = self.data.meridional_obj.rho_ref
+    #         self.u_ref = self.data.meridional_obj.u_ref
+    #         self.x_ref = self.data.meridional_obj.x_ref
+    #         self.p_ref = self.data.meridional_obj.p_ref
+    #         self.omega_ref = self.data.meridional_obj.omega_ref
+    #         self.t_ref = self.data.meridional_obj.t_ref
+    #     else:
+    #         raise ValueError("unknown type of object")
+    #
+    #     self.print_normalization_information()
+    #
+    #     # normalization terms = inverse of advections, to be used for governing equations' normalization. They are correct
+    #     # only for the form of the equations used. Otherwise, they must be changed
+    #     self.continuity_norm = self.x_ref / self.rho_ref / self.u_ref
+    #     self.momentum_norm = self.x_ref / self.u_ref ** 2
+    #     self.pressure_norm = self.x_ref / self.rho_ref / self.u_ref ** 3
 
 
 
@@ -385,7 +386,8 @@ class SunModel:
                     # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
                     # should be 1 by construction. In this case the non-dimensional equations are exactly the same
                     # of the dimensional ones
-                    strouhal = self.x_ref / (self.u_ref * self.t_ref)
+                    strouhal = self.grid_config.get_reference_length() / (self.grid_config.get_reference_velocity() *
+                                                                          self.grid_config.get_reference_time())
                     A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -1645,13 +1647,13 @@ class SunModel:
         """
 
         m = self.harmonic_order
-        Omega = self.data.meridional_obj.Omega_sun  # dimensional algebraic omega of the shaft
+        # Omega = self.data.meridional_obj.Omega_sun  # dimensional algebraic omega of the shaft
         omega_shaft = self.data.meridional_obj.omega_shaft  # dimensional omega of reference
         omega_ref = self.omega_ref  # dimensional omega of reference
         x_ref = self.x_ref
         u_ref = self.u_ref
         t_ref = self.t_ref
-        tau = self.data.meridional_obj.tau_sun  # time delay of the body force model (it could also be through flow time)
+        # tau = self.data.meridional_obj.tau_sun  # time delay of the body force model (it could also be through flow time)
         sigma = omega_search / omega_ref  # non-dimensional center point of research
 
         print_banner_begin('ARNOLDI SOLVER')
