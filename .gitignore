@@ -6,6 +6,8 @@
 # Node artifact files
 node_modules/
 dist/
+venv/
+unsflow.egg-info/
 
 # Compiled Java class files
 *.class
