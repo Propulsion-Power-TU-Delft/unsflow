@@ -4,7 +4,6 @@ import sys
 import pickle
 import numpy as np
 import Grid
-from pympler import asizeof
 from Grid.src.config import Config
 
 start_time = time.time()

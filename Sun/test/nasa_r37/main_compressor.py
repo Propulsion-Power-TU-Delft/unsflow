@@ -41,7 +41,7 @@ for sun_obj in sun_blocks:
 for sun_obj in sun_blocks:
     Y = sun_obj.Y
     P = sun_obj.P
-    # now concatenate, apply interface boundary conditions, and solve the final system. easily said, but not done
+    # now concatenate, apply interface boundary conditions, and solve the final system. easily said than done
 
 
 
