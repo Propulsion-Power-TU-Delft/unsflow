@@ -2141,7 +2141,7 @@ class MeridionalProcess:
             if tmp < dr_min:
                 dr_min = tmp
 
-        diff_factor = 10
+        diff_factor = 50
         dz = dz_min/diff_factor
         dr = dr_min/diff_factor
 

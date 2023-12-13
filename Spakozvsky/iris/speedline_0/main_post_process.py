@@ -51,6 +51,7 @@ for file in filenames:
 # the first index is the number of flow conditions, the second is the number of harmonics
 n_harmonics = len(poles[0].keys())
 GFactor = np.zeros((len(poles), n_harmonics))
+RSpeed = np.zeros((len(poles), n_harmonics))
 Mflow = np.zeros((len(poles), n_harmonics))
 
 for i in range(len(poles)):
@@ -61,8 +62,11 @@ for i in range(len(poles)):
     for key in pole.keys():
         real_part = pole[key].real
         imag_part = pole[key].imag
-        growth_factor = np.max(real_part)
+        idx_max = np.where(real_part == np.max(real_part))
+        growth_factor = real_part[idx_max]
+        rot_speed = imag_part[idx_max]
         GFactor[i, j] = growth_factor
+        RSpeed[i, j] = rot_speed/key
         Mflow[i, j] = mass_flow[idx]
         j += 1
 
@@ -78,7 +82,20 @@ plt.xlabel(r'$\dot{m}$ [kg/s]')
 plt.ylabel(r'GF')
 plt.title(r'$%.1f$ [krpm]' %(rpm[speedline]/1000))
 plt.grid(alpha=0.2)
-plt.savefig('pictures/iris_growth_factors_speedline_%i.pdf' %(speedline), bbox_inches='tight')
+# plt.savefig('pictures/iris_growth_factors_speedline_%i.pdf' %(speedline), bbox_inches='tight')
+
+plt.figure()
+for j in range(n_harmonics):
+    plt.plot(Mflow[:, j], RSpeed[:, j], '-s', label='n:%i' %(j+1), linewidth=1, markersize=3)
+boundary_x = np.linspace(np.min(Mflow), np.max(Mflow))
+boundary_y = np.zeros_like(boundary_x)
+plt.plot(boundary_x, boundary_y, '--k')
+plt.legend()
+plt.xlabel(r'$\dot{m}$ [kg/s]')
+plt.ylabel(r'RS')
+plt.title(r'$%.1f$ [krpm]' %(rpm[speedline]/1000))
+plt.grid(alpha=0.2)
+# plt.savefig('pictures/iris_rot_speed_speedline_%i.pdf' %(speedline), bbox_inches='tight')
 
 idx_instability = 5
 plt.figure()

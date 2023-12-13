@@ -109,7 +109,7 @@ if BLADE_BLOCK:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if OUTLET_BLOCK:
     print("\nOUTLET BLOCK PROCESSING...")
-    block = Grid.src.Block(config, nstream=config.get_streamwise_points()[1], nspan=config.get_spanwise_points())
+    block = Grid.src.Block(config, nstream=config.get_streamwise_points()[2], nspan=config.get_spanwise_points())
     block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
     block.extend_inlet_outlet_curves()
     block.find_intersections()
