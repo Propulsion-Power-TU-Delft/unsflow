@@ -665,9 +665,9 @@ class SunModel:
                 R[3, 4] = 0
 
                 R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz)
-                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho
+                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho  # from Bird book this term could be zero
                 R[4, 2] = 0
-                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz
+                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz  # from Bird book this term could be zero
                 R[4, 4] = (-node.ur * node.drho_dr - node.uz * node.drho_dz) * self.gmma / node.rho
 
                 if self.config.get_normalize_instability_equations():
