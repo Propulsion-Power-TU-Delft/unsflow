@@ -246,7 +246,7 @@ class MeridionalProcessGroup:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, np.abs(self.ut) * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.ut * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
@@ -341,116 +341,116 @@ class MeridionalProcessGroup:
 
     def contour_field_gradients(self, save_filename=None):
         """
-        Contours of the gradients, non-dimensional quantities.
+        Contours of the gradients, multiplied by the dimensional factors.
         :param save_filename: if you wish specify the prefix-names of the figure that will be saved.
         """
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.drho_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.drho_dr*self.config.get_reference_density()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial \rho / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial \rho / \partial r \ \mathrm{[kg/m^4]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.drho_dz, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.drho_dz*self.config.get_reference_density()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial \rho / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial \rho / \partial {z} \ \mathrm{[kg/m^4]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dur_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dur_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_r / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_r / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dur_dz, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dur_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_r / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_r / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dut_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dut_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_{\theta} / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_{\theta} / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dut_dz, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dut_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_{\theta} / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_{\theta} / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.duz_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.duz_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_z / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_z / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.duz_dz, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.duz_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial u_z / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial u_z / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dp_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dp_dr*self.config.get_reference_pressure()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial p / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial p / \partial r \ \mathrm{[kg/m^2 s^2]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.dp_dz, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.dp_dz*self.config.get_reference_pressure()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial p / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial p / \partial {z} \ \mathrm{[kg/m^2 s^2]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.ds_dr, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.ds_dr*self.config.get_reference_entropy()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial s / \partial r \ \mathrm{[-]}$')
+        plt.title(r'$\partial s / \partial r \ \mathrm{[m/s^2 K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ds_dr.pdf', bbox_inches='tight')
             plt.close()
@@ -460,7 +460,7 @@ class MeridionalProcessGroup:
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])
-        plt.title(r'$\partial s / \partial {z} \ \mathrm{[-]}$')
+        plt.title(r'$\partial s / \partial {z} \ \mathrm{[m/s^2 K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ds_dz.pdf', bbox_inches='tight')
             plt.close()
@@ -567,32 +567,32 @@ class MeridionalProcessGroup:
 
             # plots
             if field == 'rho':
-                ax.plot(x, obj.rho_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
+                ax.plot(x, obj.rho_flux*self.config.get_reference_density(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
             elif field == 'ur':
-                ax.plot(x, obj.ur_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$u_r \ \mathrm{[-]}$')
+                ax.plot(x, obj.ur_flux*self.config.get_reference_velocity(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
             elif field == 'ut':
-                ax.plot(x, obj.ut_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
+                ax.plot(x, obj.ut_flux*self.config.get_reference_velocity(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
             elif field == 'uz':
-                ax.plot(x, obj.uz_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+                ax.plot(x, obj.uz_flux*self.config.get_reference_velocity(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
             elif field == 'p':
-                ax.plot(x, obj.p_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+                ax.plot(x, obj.p_flux*self.config.get_reference_pressure(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
             elif field == 'T':
-                ax.plot(x, obj.T_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$T \ \mathrm{[-]}$')
+                ax.plot(x, obj.T_flux*self.config.get_reference_temperature(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$T \ \mathrm{[K]}$')
             elif field == 's':
-                ax.plot(x, obj.s_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+                ax.plot(x, obj.s_flux*self.config.get_reference_entropy(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$s \ \mathrm{[J/kgK]}$')
             elif field == 'p_tot':
-                ax.plot(x, obj.p_tot_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$p_t \ \mathrm{[-]}$')
+                ax.plot(x, obj.p_tot_flux*self.config.get_reference_pressure(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$p_t \ \mathrm{[Pa]}$')
             elif field == 'T_tot':
-                ax.plot(x, obj.T_tot_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
-                ax.set_ylabel(r'$T_t \ \mathrm{[-]}$')
+                ax.plot(x, obj.T_tot_flux*self.config.get_reference_temperature(), '--s', linewidth=light_line_width, markersize=marker_size_small)
+                ax.set_ylabel(r'$T_t \ \mathrm{[K]}$')
             elif field == 'M':
                 ax.plot(x, obj.M_flux, '--s', linewidth=light_line_width, markersize=marker_size_small)
                 ax.set_ylabel(r'$M \ \mathrm{[-]}$')

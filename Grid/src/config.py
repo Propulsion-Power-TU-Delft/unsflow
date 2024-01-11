@@ -217,6 +217,13 @@ class Config:
     def get_shroud_bc(self):
         return str(self.config_parser.get('SUN MODEL', 'SHROUD_BC'))
 
+    def get_clipping_bfm(self):
+        res = self.config_parser.get('CFD PROCESSING', 'CLIPPING_BFM')
+        if res.lower() == 'true':
+            return True
+        else:
+            return False
+
 
 
 

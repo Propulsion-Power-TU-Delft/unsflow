@@ -871,7 +871,7 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     return x_spline
 
 
-def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz_dy, duz_dz, r, theta):
+def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz_dy, duz_dz, ur, ut, r, theta):
     """
     Having a tensor defined in cartesian cordinates, express the same quantity in cylindrical terms
     :param dux_dx: component of the tensor, following convention grad*velocity^T
@@ -880,7 +880,7 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
     """
 
     # cartesian tensor
-    Sigma = np.array([[dux_dx, duy_dx, duz_dx],
+    T = np.array([[dux_dx, duy_dx, duz_dx],
                       [dux_dy, duy_dy, duz_dy],
                       [dux_dz, duy_dz, duz_dz]])
 
@@ -889,11 +889,19 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
                   [-sin(theta), cos(theta), 0],
                   [0, 0, 1]])
 
-    Sigma_prime = R @ Sigma @ R.T
+    T_prime = R @ T @ R.T
 
-    return Sigma_prime[0, 0], Sigma_prime[0, 1], Sigma_prime[0, 2],\
-        r * Sigma_prime[1, 0], r * Sigma_prime[1, 1], r * Sigma_prime[1, 2], \
-        Sigma_prime[2, 0], Sigma_prime[2, 1], Sigma_prime[2, 2]
+    dur_dr = T_prime[0, 0]
+    dur_dt = (T_prime[0, 1] + ut/r)*r
+    dur_dz = T_prime[0, 2]
+    dut_dr = T_prime[1, 0]
+    dut_dt = (T_prime[1, 1] - ur/r)*r
+    dut_dz = T_prime[1, 2]
+    duz_dr = T_prime[2, 0]
+    duz_dt = T_prime[2, 1] * r
+    duz_dz = T_prime[2, 2]
+
+    return dur_dr, dur_dt, dur_dz, dut_dr, dut_dt, dut_dz, duz_dr, duz_dt, T_prime[2, 2]
 
 
 def project_2d_gradient_to_cylindrical(du_dx, du_dy, r, theta):

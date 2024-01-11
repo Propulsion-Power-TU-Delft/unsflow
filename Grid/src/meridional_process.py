@@ -1828,8 +1828,10 @@ class MeridionalProcess:
         if mode == 'global':
             # compute the modulus, and then the components, which are opposed to the relative flow velocity
             self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
-            idx = np.where(self.Floss<0)
-            self.Floss[idx] = 0
+
+            if self.config.get_clipping_bfm():
+                idx = np.where(self.Floss<0)
+                self.Floss[idx] = 0
 
             # compute the components, which are opposite to the relative velocity
             self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
@@ -1877,24 +1879,26 @@ class MeridionalProcess:
                                          self.dut_dr[istream, ispan] * dir_vector[1]
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
-        if self.config.get_omega_shaft()<0:
-            idx = np.where(self.Ftheta > 0)
-            self.Ftheta[idx] = 0
-        else:
-            idx = np.where(self.Ftheta < 0)
-            self.Ftheta[idx] = 0
+        if self.config.get_clipping_bfm():
+            if self.config.get_omega_shaft()<0:
+                idx = np.where(self.Ftheta > 0)
+                self.Ftheta[idx] = 0
+            else:
+                idx = np.where(self.Ftheta < 0)
+                self.Ftheta[idx] = 0
 
     def compute_Fturn(self):
         """
         Starting from the Ftheta and camber normal vectors, compute the magnitude of the turning force
         """
         self.Fturn_t = self.Ftheta - self.Floss_t
-        if self.config.get_omega_shaft()<0:
-            idx = np.where(self.Fturn_t > 0)
-            self.Fturn_t[idx] = 0
-        else:
-            idx = np.where(self.Fturn_t < 0)
-            self.Fturn_t[idx] = 0
+        if self.config.get_clipping_bfm():
+            if self.config.get_omega_shaft()<0:
+                idx = np.where(self.Fturn_t > 0)
+                self.Fturn_t[idx] = 0
+            else:
+                idx = np.where(self.Fturn_t < 0)
+                self.Fturn_t[idx] = 0
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
@@ -2141,7 +2145,7 @@ class MeridionalProcess:
             if tmp < dr_min:
                 dr_min = tmp
 
-        diff_factor = 50
+        diff_factor = 10
         dz = dz_min/diff_factor
         dr = dr_min/diff_factor
 

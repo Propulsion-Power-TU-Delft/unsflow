@@ -9,6 +9,7 @@ import pandas as pd
 from .functions import *
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
+from numpy import sin, cos, tan, sqrt
 
 
 class CfdData:
@@ -117,41 +118,31 @@ class CfdData:
         self.r = sqrt(self.x ** 2 + self.y ** 2)
         self.theta = np.arctan2(self.y, self.x)
         self.rho = self.data[' Density MCA on Meridional Surface [ kg m^-3 ]'].values
-        self.ux = self.data[' Velocity in Stn Frame u MCA on Meridional Surface [ m s^-1 ]'].values
-        self.uy = self.data[' Velocity in Stn Frame v MCA on Meridional Surface [ m s^-1 ]'].values
-        self.uz = self.data[' Velocity in Stn Frame w MCA on Meridional Surface [ m s^-1 ]'].values
+        # self.ux = self.data[' Velocity in Stn Frame u MCA on Meridional Surface [ m s^-1 ]'].values
+        # self.uy = self.data[' Velocity in Stn Frame v MCA on Meridional Surface [ m s^-1 ]'].values
+        # self.uz = self.data[' Velocity in Stn Frame w MCA on Meridional Surface [ m s^-1 ]'].values
+        self.ur = self.data[' Velocity Radial MCA on Meridional Surface [ m s^-1 ]'].values
+        self.ut = self.data[' Velocity in Stn Frame Circumferential MCA on Meridional Surface [ m s^-1 ]'].values
+        self.uz = self.data[' Velocity Axial MCA on Meridional Surface [ m s^-1 ]'].values
         self.p = self.data[' Pressure MCA on Meridional Surface [ Pa ]'].values
         self.T = self.data[' Temperature MCA on Meridional Surface [ K ]'].values
         self.s = self.data[' Static Entropy MCA on Meridional Surface [ J kg^-1 K^-1 ]'].values
 
-        try:
-            self.drho_dx = self.data[' Density.Gradient X MCA on Meridional Surface [ kg m^-4 ]'].values
-            self.drho_dy = self.data[' Density.Gradient Y MCA on Meridional Surface [ kg m^-4 ]'].values
-            self.drho_dz = self.data[' Density.Gradient Z MCA on Meridional Surface [ kg m^-4 ]'].values
+        self.drho_dr = self.data[' drhodr MCA on Meridional Surface [ kg m^-4 ]']
+        self.drho_dz = self.data[' Density.Gradient Z MCA on Meridional Surface [ kg m^-4 ]']
+        self.dur_dr = self.data[' durdr MCA on Meridional Surface [ s^-1 ]']
+        self.dur_dz = self.data[' durdz MCA on Meridional Surface [ s^-1 ]']
+        self.dut_dr = self.data[' dutdr MCA on Meridional Surface [ s^-1 ]']
+        self.dut_dz = self.data[' dutdz MCA on Meridional Surface [ s^-1 ]']
+        self.duz_dr = self.data[' duzdr MCA on Meridional Surface [ s^-1 ]']
+        self.duz_dz = self.data[' Velocity in Stn Frame w.Gradient Z MCA on Meridional Surface [ s^-1 ]']
+        self.dp_dr = self.data[' dpdr MCA on Meridional Surface [ kg m^-2 s^-2 ]']
+        self.dp_dz = self.data[' Pressure.Gradient Z MCA on Meridional Surface [ kg m^-2 s^-2 ]']
+        self.ds_dr = self.data[' dsdr MCA on Meridional Surface [ m s^-2 K^-1 ]']
+        self.ds_dz = self.data[' Static Entropy.Gradient Z MCA on Meridional Surface [ m s^-2 K^-1 ]']
 
-            self.dux_dx = self.data[' Velocity in Stn Frame u.Gradient X MCA on Meridional Surface [ s^-1 ]'].values
-            self.dux_dy = self.data[' Velocity in Stn Frame u.Gradient Y MCA on Meridional Surface [ s^-1 ]'].values
-            self.dux_dz = self.data[' Velocity in Stn Frame u.Gradient Z MCA on Meridional Surface [ s^-1 ]'].values
 
-            self.duy_dx = self.data[' Velocity in Stn Frame v.Gradient X MCA on Meridional Surface [ s^-1 ]'].values
-            self.duy_dy = self.data[' Velocity in Stn Frame v.Gradient Y MCA on Meridional Surface [ s^-1 ]'].values
-            self.duy_dz = self.data[' Velocity in Stn Frame v.Gradient Z MCA on Meridional Surface [ s^-1 ]'].values
 
-            self.duz_dx = self.data[' Velocity in Stn Frame w.Gradient X MCA on Meridional Surface [ s^-1 ]'].values
-            self.duz_dy = self.data[' Velocity in Stn Frame w.Gradient Y MCA on Meridional Surface [ s^-1 ]'].values
-            self.duz_dz = self.data[' Velocity in Stn Frame w.Gradient Z MCA on Meridional Surface [ s^-1 ]'].values
-
-            self.dp_dx = self.data[' Pressure.Gradient X MCA on Meridional Surface [ kg m^-2 s^-2 ]'].values
-            self.dp_dy = self.data[' Pressure.Gradient Y MCA on Meridional Surface [ kg m^-2 s^-2 ]'].values
-            self.dp_dz = self.data[' Pressure.Gradient Z MCA on Meridional Surface [ kg m^-2 s^-2 ]'].values
-
-            self.ds_dx = self.data[' Static Entropy.Gradient X MCA on Meridional Surface [ m s^-2 K^-1 ]'].values
-            self.ds_dy = self.data[' Static Entropy.Gradient Y MCA on Meridional Surface [ m s^-2 K^-1 ]'].values
-            self.ds_dz = self.data[' Static Entropy.Gradient Z MCA on Meridional Surface [ m s^-2 K^-1 ]'].values
-
-        except:
-            print("Gradient fields not found in .csv file.")
-            pass
 
         if self.config.get_normalize_data():
             self.normalize_data()
@@ -173,41 +164,11 @@ class CfdData:
         """
         Compute derived quantities, in particular the vector components in the cylindrical reference frame.
         """
-        self.instantiate_derived_fields_arrays()
-        self.u_mag = sqrt(self.ux ** 2 + self.uy ** 2 + self.uz ** 2)
-        self.ur, self.ut = project_vector_to_cylindrical(self.ux, self.uy, self.theta)
+        self.u_mag = sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.ut_drag = self.r * self.omega_shaft  # drag velocity
         self.ut_rel = self.ut - self.ut_drag  # relative velocity
         self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
-        # #gradients in cylindrical cordinates
-        try:
-            for i in range(len(self.r)):
-                self.drho_dr[i], _, = project_2d_gradient_to_cylindrical(self.drho_dx[i], self.drho_dy[i], self.r[i], self.theta[i])
-
-                self.dur_dr[i], self.dut_dr[i], self.duz_dr[i], _, _, _, self.dur_dz[i], self.dut_dz[i], self.duz_dz[i] = \
-                    rotate_3d_tensor(self.dux_dx[i], self.dux_dy[i], self.dux_dz[i],
-                                     self.duy_dx[i], self.duy_dy[i], self.duy_dz[i],
-                                     self.duz_dx[i], self.duz_dy[i], self.duz_dz[i],
-                                     self.r[i], self.theta[i])
-
-                self.dp_dr[i], _ = project_2d_gradient_to_cylindrical(self.dp_dx[i], self.dp_dy[i], self.r[i], self.theta[i])
-                self.ds_dr[i], _ = project_2d_gradient_to_cylindrical(self.ds_dx[i], self.ds_dy[i], self.r[i], self.theta[i])
-
-        except:
-            pass
-
-
-
-    def instantiate_derived_fields_arrays(self):
-        """
-        Instantiate the fields for the derived quantities
-        """
-        self.drho_dr = np.zeros_like(self.r)
-        self.dur_dr, self.dut_dr, self.duz_dr, self.dur_dz, self.dut_dz, self.duz_dz = np.zeros_like(self.r), \
-            np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r), np.zeros_like(self.r)
-        self.dp_dr = np.zeros_like(self.r)
-        self.ds_dr = np.zeros_like(self.r)
 
     def compute_bfm_radial_fields(self):
         """
@@ -407,39 +368,58 @@ class CfdData:
 
         # normalization of the fields
         self.rho /= self.config.get_reference_density()
-        self.ux /= self.config.get_reference_velocity()
-        self.uy /= self.config.get_reference_velocity()
+        self.ur /= self.config.get_reference_velocity()
+        self.ut /= self.config.get_reference_velocity()
         self.uz /= self.config.get_reference_velocity()
         self.p /= self.config.get_reference_pressure()
         self.T /= self.config.get_reference_temperature()
         self.s /= self.config.get_reference_entropy()
 
-        # normalization of the gradients
-        try:
-            self.drho_dx /= (self.config.get_reference_density() / self.config.get_reference_length())
-            self.drho_dy /= (self.config.get_reference_density() / self.config.get_reference_length())
-            self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
+        # # normalization of the gradients
+        # try:
+        #     self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
+        #     self.drho_dy /= (self.config.get_reference_density() / self.config.get_reference_length())
+        #     self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
+        #
+        #     self.dux_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.dux_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.dux_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #
+        #     self.duy_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.duy_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.duy_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #
+        #     self.duz_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.duz_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #     self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        #
+        #     self.dp_dx /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        #     self.dp_dy /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        #     self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        #
+        #     self.ds_dx /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        #     self.ds_dy /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        #     self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        #
+        # except:
+        #     pass
 
-            self.dux_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.dux_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.dux_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
+        self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
 
-            self.duy_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.duy_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.duy_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.dur_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.dur_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.duz_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.duz_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-            self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.dut_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.dut_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.dp_dx /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-            self.dp_dy /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-            self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        self.duz_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
 
-            self.ds_dx /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-            self.ds_dy /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-            self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        self.dp_dr /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
 
-        except:
-            pass
+        self.ds_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+
 
