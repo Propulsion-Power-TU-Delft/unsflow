@@ -215,8 +215,8 @@ class MeridionalProcessGroup:
             self.duz_dz = np.concatenate((self.duz_dz, obj.duz_dz), axis=0)
             self.dp_dr = np.concatenate((self.dp_dr, obj.dp_dr), axis=0)
             self.dp_dz = np.concatenate((self.dp_dz, obj.dp_dz), axis=0)
-            self.ds_dr = np.concatenate((self.ds_dr, obj.dp_dr), axis=0)
-            self.ds_dz = np.concatenate((self.ds_dz, obj.dp_dz), axis=0)
+            self.ds_dr = np.concatenate((self.ds_dr, obj.ds_dr), axis=0)
+            self.ds_dz = np.concatenate((self.ds_dz, obj.ds_dz), axis=0)
 
 
     def contour_fields(self, save_filename=None):

@@ -4,6 +4,7 @@
 Created on Wed Jul 12 11:41:53 2023
 @author: F. Neri, TU Delft
 """
+import matplotlib.pyplot as plt
 from numpy import array
 import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
@@ -12,6 +13,7 @@ from .functions import cartesian_to_cylindrical
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size
+from Grid.src.profile import Profile
 
 # import Grid.src.functions
 from .styles import *
@@ -100,6 +102,51 @@ class Blade:
         self.z_main = self.z[self.idx_main]
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
+
+        #inspect points
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
+        ax.set_xlabel('X Axis')
+        ax.set_ylabel('Y Axis')
+        ax.set_zlabel('Z Axis')
+
+        number_main_profiles = np.unique(self.profile).shape[0]
+        if len(self.x_main)%number_main_profiles!=0:
+            raise ValueError('Something is wrong with the blade profiles cordinates')
+        else:
+            number_points_per_profile = len(self.x_main)//number_main_profiles
+
+        # create a list of profiles, which store information of the pressure and suction side
+        profiles = []
+        zss = []
+        rss = []
+        thetass = []
+        zps = []
+        rps = []
+        thetaps = []
+        for i in range(number_main_profiles):
+            ss_idxs = slice(i * number_points_per_profile, i * number_points_per_profile + number_points_per_profile // 2)
+            ps_idxs = slice(i * number_points_per_profile + number_points_per_profile//2, i * number_points_per_profile + number_points_per_profile)
+            profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs],
+                                    self.x_main[ps_idxs], self.y_main[ps_idxs], self.z_main[ps_idxs]))
+            # profiles[i].plot_profile()
+            zss.append(profiles[i].zss)
+            rss.append(profiles[i].rss)
+            thetass.append(profiles[i].thetass)
+
+            zps.append(profiles[i].zps)
+            rps.append(profiles[i].rps)
+            thetaps.append(profiles[i].thetaps)
+        self.zss_points = np.concatenate(zss)
+        self.rss_points = np.concatenate(rss)
+        self.thetass_points = np.concatenate(thetass)
+        self.zps_points = np.concatenate(zps)
+        self.rps_points = np.concatenate(rps)
+        self.thetaps_points = np.concatenate(thetaps)
+
+
+
 
         if self.splitter:
             self.idx_splitter = np.where(self.blade == 'SPLITTER')
@@ -190,6 +237,58 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
+    def find_ss_surface(self, blade_block, degree=4):
+        """
+        Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
+        :param blade_block: the block storing the meridional mesh of the bladed domain
+        :param degree: degree of the regression
+        """
+
+        self.camber_degree = degree  # mixed polynomial order
+        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
+        X = self.camber_poly_features.fit_transform(np.column_stack((self.zss_points, self.rss_points)))  # dataset in right format
+        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
+        self.camber_model.fit(X, self.thetass_points)  # least square fit of the regression coefficient
+        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
+        self.camber_intercept = self.camber_model.intercept_  # constant term
+
+        # evaluate the camber surface on the (r,z) points of the primary structured grid
+        self.z_ss = blade_block.z_grid_points
+        self.r_ss = blade_block.r_grid_points
+        z_eval = self.z_ss.flatten()
+        r_eval = self.r_ss.flatten()
+        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
+        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
+        self.theta_ss = camber_surface_values.reshape(self.z_camber.shape)
+        self.x_ss = self.r_ss * np.cos(self.theta_ss)
+        self.y_ss = self.r_ss * np.sin(self.theta_ss)
+
+    def find_ps_surface(self, blade_block, degree=4):
+        """
+        Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
+        :param blade_block: the block storing the meridional mesh of the bladed domain
+        :param degree: degree of the regression
+        """
+
+        self.camber_degree = degree  # mixed polynomial order
+        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
+        X = self.camber_poly_features.fit_transform(np.column_stack((self.zps_points, self.rps_points)))  # dataset in right format
+        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
+        self.camber_model.fit(X, self.thetaps_points)  # least square fit of the regression coefficient
+        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
+        self.camber_intercept = self.camber_model.intercept_  # constant term
+
+        # evaluate the camber surface on the (r,z) points of the primary structured grid
+        self.z_ps = blade_block.z_grid_points
+        self.r_ps = blade_block.r_grid_points
+        z_eval = self.z_ps.flatten()
+        r_eval = self.r_ps.flatten()
+        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
+        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
+        self.theta_ps = camber_surface_values.reshape(self.z_camber.shape)
+        self.x_ps = self.r_ps * np.cos(self.theta_ps)
+        self.y_ps = self.r_ps * np.sin(self.theta_ps)
+
 
 
     def plot_camber_surface(self, save_filename=None):
@@ -198,8 +297,10 @@ class Blade:
         """
         fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.x_main, self.y_main, self.z_main, s=scatter_point_size, label='main blade points')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
+        # ax.scatter(self.x_main, self.y_main, self.z_main, s=scatter_point_size, label='main blade points')
+        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='green', label='camber')
+        ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.5, color='red', label='ss')
+        ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.5, color='blue', label='ps')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -533,6 +634,26 @@ class Blade:
         ax.set_title('spanline vectors')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+    def compute_blade_thickness(self):
+        self.thk = self.r_ss*self.theta_ss - self.r_ps*self.theta_ps
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_ss, self.r_ss, self.thk, cmap='jet', levels=N_levels)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$t$')
+
+    def compute_blade_blockage(self, Nb, save_filename=None):
+        self.blockage = 1-Nb*(np.abs(self.theta_ss-self.theta_ps))/2/np.pi
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_ss, self.r_ss, self.blockage, cmap='jet', levels=N_levels)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$b$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + 'blockage_factor.pdf', bbox_inches='tight')
 
 
 

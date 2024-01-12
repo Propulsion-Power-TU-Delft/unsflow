@@ -1241,6 +1241,11 @@ class MeridionalProcess:
             ax.set_title(r'$M$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'um':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.u_meridional, N_levels, cmap=color_map)
+            ax.set_title(r'$u_m$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'drho_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{r}$')
@@ -1563,7 +1568,7 @@ class MeridionalProcess:
         with open(folder + file_name + '.pickle', "wb") as file:
             pickle.dump(self, file)
 
-    def compute_bfm_axial(self, mode='global', save_fig=False):
+    def compute_bfm_axial(self, mode='averaged', save_fig=False):
         """
         Compute the BFM fields, following the description in Fang et al. 2023.
         :param mode: if global is the default one, without any artifical fixing.
@@ -1664,9 +1669,9 @@ class MeridionalProcess:
             plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, np.abs(self.Fturn), cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.title(r'$F_{t}$')
+        plt.title(r'$|F_{t}|$')
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             plt.close()
@@ -1825,18 +1830,17 @@ class MeridionalProcess:
         # meridional flow velocity
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
         self.compute_ds_dl(mode=mode)
-        if mode == 'global':
-            # compute the modulus, and then the components, which are opposed to the relative flow velocity
-            self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
 
-            if self.config.get_clipping_bfm():
-                idx = np.where(self.Floss<0)
-                self.Floss[idx] = 0
+        self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
 
-            # compute the components, which are opposite to the relative velocity
-            self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
-            self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
-            self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
+        if self.config.get_clipping_bfm():
+            idx = np.where(self.Floss<0)
+            self.Floss[idx] = 0
+
+        # compute the components, which are opposite to the relative velocity
+        self.Floss_r = -self.Floss * self.ur / self.u_mag_rel
+        self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
+        self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
 
             # self.Floss_check = self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2 - self.Floss ** 2
 
@@ -1877,8 +1881,11 @@ class MeridionalProcess:
                 dir_vector /= np.linalg.norm(dir_vector)
                 dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
                                          self.dut_dr[istream, ispan] * dir_vector[1]
+        for ispan in range(self.nRadialNodes):
+            dut_dl[:,ispan] = (self.ut[-1,ispan]-self.ut[0,ispan])/self.stream_line_length[-1, ispan]
+            dr_dl[:,ispan] = (self.r_cg[-1,ispan]-self.r_cg[0,ispan])/self.stream_line_length[-1, ispan]
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
-        self.Ftheta = self.u_meridional / self.r_cg * self.drut_dl
+        self.Ftheta = self.u_meridional * self.drut_dl / self.r_cg
         if self.config.get_clipping_bfm():
             if self.config.get_omega_shaft()<0:
                 idx = np.where(self.Ftheta > 0)
