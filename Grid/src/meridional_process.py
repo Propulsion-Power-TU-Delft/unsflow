@@ -832,6 +832,10 @@ class MeridionalProcess:
         elif field == 'M_rel':
             ax.plot(self.stream_line_length[:, n] / sl_max, self.M_rel[:, n], '--s')
             ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
+        elif field == 'F_turn':
+            ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Fturn[:, n]), '--s')
+            ax.set_ylabel(r'$|F_{t}| \ \mathrm{[-]}$')
+            ax.set_title('Span %.1f' %(n/self.nspan*100))
         else:
             raise ValueError("Field name unknown!")
 
@@ -840,6 +844,34 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
+
+    def plot_stream_line_superposed(self, field, n_array, save_filename=None):
+        """
+        Plot the quantity along a streamline.
+        :param field: quantitiy to plot
+        :param n_array: array of the streamlines to consider.
+        :param save_filename: if specified, saves the figure
+        """
+        fig, ax = plt.subplots(figsize=fig_size)
+        if field == 'F_turn':
+            for n in n_array:
+                sl_max = self.stream_line_length[:, n].max()
+                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Fturn[:, n]), '--s', label='%.1f %%' %(n/self.nspan*100))
+            ax.set_ylabel(r'$|F_{t}| \ \mathrm{[-]}$')
+        elif field == 'F_loss':
+            for n in n_array:
+                sl_max = self.stream_line_length[:, n].max()
+                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Floss[:, n]), '--s', label='%.1f %%' %(n/self.nspan*100))
+            ax.set_ylabel(r'$F_{l} \ \mathrm{[-]}$')
+        else:
+            raise ValueError("Field name unknown!")
+        plt.legend()
+        ax.grid(alpha=0.3)
+        ax.set_xlabel(r'$l \ \mathrm{[-]}$')
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '_streamlines.pdf', bbox_inches='tight')
+            plt.close()
+
 
     def compute_streamline_length(self):
         """
@@ -895,6 +927,43 @@ class MeridionalProcess:
         ax.set_xlabel(r'$s \ \mathrm{[m]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
+
+    def plot_span_line_superposed(self, field, n_array, save_filename=None):
+        """
+        Plot the quantity along an array of spanlines.
+        :param field: quantitiy to plot
+        :param n_array: streamline to consider.
+        :param save_filename: if specified, saves the figure
+        """
+
+        fig, ax = plt.subplots()
+        if field == 'rho':
+            for n in n_array:
+                ax.plot(self.rho[n, :], '--s', self.span_wise_length[n, :], label='%.1f %%' %(n/self.nstream*100))
+            ax.set_xlabel(r'$\rho \ \mathrm{[kg/m^3]}$')
+        # elif field == 'ur':
+        #     ax.plot(self.span_wise_length[n, :], self.ur[n, :], '--s')
+        #     ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
+        # elif field == 'ut':
+        #     ax.plot(self.span_wise_length[n, :], self.ut[n, :], '--s')
+        #     ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
+        # elif field == 'uz':
+        #     ax.plot(self.span_wise_length[n, :], self.uz[n, :], '--s')
+        #     ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
+        # elif field == 'p':
+        #     ax.plot(self.span_wise_length[n, :], self.p[n, :], '--s')
+        #     ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
+        if field == 'F_loss':
+            for n in n_array:
+                sp_max = self.span_wise_length[n, :].max()
+                ax.plot(self.Floss[n, :], self.span_wise_length[n, :]/sp_max,  '--s', label='%.1f %%' %(n/self.nstream*100))
+            ax.set_xlabel(r'$F_{l} \ \mathrm{[-]}$')
+
+        ax.set_ylabel(r'$s \ \mathrm{[-]}$')
+        plt.legend()
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '_spanlines.pdf', bbox_inches='tight')
             plt.close()
 
     def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
@@ -2007,16 +2076,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
-
-    # def interpolate_on_working_grid_and_compute_gradients(self, method):
-    #     self.instantiate_2d_fields()
-    #     self.rho, self.drho_dz, self.drho_dr = self.interpolate_function(self.data.rho, self.data.z, self.data.r, method=method)
-    #     self.ur, self.dur_dz, self.dur_dr = self.interpolate_function(self.data.ur, self.data.z, self.data.r, method=method)
-    #     self.ut, self.dut_dz, self.dut_dr = self.interpolate_function(self.data.ut, self.data.z, self.data.r, method=method)
-    #     self.uz, self.duz_dz, self.duz_dr = self.interpolate_function(self.data.uz, self.data.z, self.data.r, method=method)
-    #     self.p, self.dp_dz, self.dp_dr = self.interpolate_function(self.data.p, self.data.z, self.data.r, method=method)
-    #     self.T, self.dT_dz, self.dT_dr = self.interpolate_function(self.data.T, self.data.z, self.data.r, method=method)
-    #     self.s, self.ds_dz, self.ds_dr = self.interpolate_function(self.data.s, self.data.z, self.data.r, method=method)
 
     def interpolate_on_working_grid(self):
         """

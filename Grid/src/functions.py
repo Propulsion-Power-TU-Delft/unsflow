@@ -5,6 +5,7 @@ Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
 import matplotlib.pyplot as plt
+import sys
 import numpy as np
 from numpy import sin, cos
 import pickle
@@ -224,7 +225,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     f2_prime = np.zeros((nx, ny))
     f2_second = np.zeros((nx, ny))
     for ispan in range(ny):
-        if x_stretching=='default':
+        if x_stretching == 'default':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
@@ -237,7 +238,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         else:
             raise ValueError('Check the value of x-strecthing parameter!')
     for istream in range(0, nx):
-        if y_stretching=='default':
+        if y_stretching == 'default':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
         elif y_stretching == 'sigmoid':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff_y)
@@ -851,7 +852,7 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     t = np.linspace(0, 1, sampling_points)
     spline = CubicSpline(t, x)
 
-    if sample_method =='default':
+    if sample_method == 'default':
         t_scaled = t.copy()
     elif sample_method == 'sigmoid':
         t_scaled = scaled_sigmoid(t, sample_coeff)[0]
@@ -881,8 +882,8 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
 
     # cartesian tensor
     T = np.array([[dux_dx, duy_dx, duz_dx],
-                      [dux_dy, duy_dy, duz_dy],
-                      [dux_dz, duy_dz, duz_dz]])
+                  [dux_dy, duy_dy, duz_dy],
+                  [dux_dz, duy_dz, duz_dz]])
 
     # rotation matrix
     R = np.array([[cos(theta), +sin(theta), 0],
@@ -892,10 +893,10 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
     T_prime = R @ T @ R.T
 
     dur_dr = T_prime[0, 0]
-    dur_dt = (T_prime[0, 1] + ut/r)*r
+    dur_dt = (T_prime[0, 1] + ut / r) * r
     dur_dz = T_prime[0, 2]
     dut_dr = T_prime[1, 0]
-    dut_dt = (T_prime[1, 1] - ur/r)*r
+    dut_dt = (T_prime[1, 1] - ur / r) * r
     dut_dz = T_prime[1, 2]
     duz_dr = T_prime[2, 0]
     duz_dt = T_prime[2, 1] * r
@@ -913,5 +914,24 @@ def project_2d_gradient_to_cylindrical(du_dx, du_dy, r, theta):
     grad_xy = np.array([du_dx, du_dy])
     du_dr = np.dot(grad_xy, r_vers)
     du_dtheta = np.dot(grad_xy, theta_vers)
-    return du_dr, r*du_dtheta
+    return du_dr, r * du_dtheta
 
+
+def print_object_memory_info(Object):
+    """
+    For the object argument, print the information related to the memory usage
+    """
+    tot_size = 0
+    for attribute_name in dir(Object):
+        attribute = getattr(Object, attribute_name)
+        size_in_bytes = sys.getsizeof(attribute)
+        tot_size += size_in_bytes
+        if size_in_bytes<1000:
+            print(f"Size of {attribute_name}: {size_in_bytes} bytes")
+        elif 1e3 <= size_in_bytes <= 1e6:
+            print(f"Size of {attribute_name}: {size_in_bytes/1e3} kbytes")
+        elif 1e6 <= size_in_bytes <= 1e9:
+            print(f"Size of {attribute_name}: {size_in_bytes / 1e6} Mbytes")
+        else:
+            print(f"Size of {attribute_name}: {size_in_bytes / 1e9} Gbytes")
+    print(f"Total size: {tot_size/1e6} Mbytes")

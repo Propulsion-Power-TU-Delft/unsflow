@@ -17,13 +17,6 @@ BLADE_BLOCK = True
 OUTLET_BLOCK = True
 
 
-
-
-
-
-
-
-
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(config)
 blade.find_inlet_points()
@@ -31,13 +24,6 @@ blade.find_outlet_points()
 
 data = Grid.src.CfdData(config, blade)
 data.process_from_ansys_csv()
-
-
-
-
-
-
-
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCKPROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK:
@@ -62,9 +48,6 @@ if INLET_BLOCK:
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
     # inlet_process.contour_all_plots()
     delattr(inlet_process, 'data')  # release useless memory
-
-
-
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,6 +77,7 @@ if BLADE_BLOCK:
     blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
+    blade_process.compute_spanwise_length()
     blade_process.interpolate_on_working_grid()
     # blade_process.compute_field_gradients()
     blade_process.compute_derived_quantities()
@@ -102,6 +86,9 @@ if BLADE_BLOCK:
     blade_process.compute_bfm_axial(save_fig=True)
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
+    blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
+    # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
+    blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
     # blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
@@ -160,17 +147,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.compute_performance()
     obj.print_performance()
     obj.store_pickle(file_name=config.picture_name_template)
-
-
-    def print_attribute_sizes(Object):
-        tot_size = 0
-        for attribute_name in dir(Object):
-            attribute = getattr(Object, attribute_name)
-            size_in_bytes = sys.getsizeof(attribute)
-            tot_size += size_in_bytes
-            print(f"Size of {attribute_name}: {size_in_bytes} bytes")
-        print(f"Total size: {tot_size} bytes")
-    print_attribute_sizes(obj)
+    obj.print_memory_info()
 
 end_time = time.time()
 delta_time = end_time - start_time

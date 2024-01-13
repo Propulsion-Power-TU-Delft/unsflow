@@ -12,7 +12,7 @@ from scipy.ndimage import gaussian_filter
 import pickle
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size
+from Grid.src.functions import compute_picture_size, print_object_memory_info
 
 
 class MeridionalProcessGroup:
@@ -781,6 +781,13 @@ class MeridionalProcessGroup:
             f[islice, :] = f[islice, :] + 0.5*c*(f[islicep, :] - 2*f[islice, :] + f[islicem, :])  
         f = (1-self.blending_function)*f_original + self.blending_function*f
         return f
+
+    def print_memory_info(self):
+        """
+        Print the information related to the memory needed by the object
+        """
+        print_object_memory_info(self)
+
 
 
 
