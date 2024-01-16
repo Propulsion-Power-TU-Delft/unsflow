@@ -239,3 +239,21 @@ def annular_duct_analytical_transformation(z, L1, L2):
     """
     dcomputational_dphysical = -np.sin(np.pi * (z - L1) / (L2 - L1)) * np.pi / (L2 - L1)
     return dcomputational_dphysical
+
+
+def enlarge_square_matrices(A_list):
+    """
+    Given a list of square arrays, construct a single one matrix including those arrays blocks on the diagonal
+    """
+    tot_rows = 0
+    tot_cols = 0
+    for A in A_list:
+        tot_rows += A.shape[0]
+        tot_cols += A.shape[0]
+    A_g = np.zeros((tot_rows, tot_cols), dtype=complex)
+    counter = 0
+    for A in A_list:
+        A_g[counter:counter+A.shape[0], counter:counter+A.shape[1]] = A
+        counter += A.shape[0]
+    return A_g
+

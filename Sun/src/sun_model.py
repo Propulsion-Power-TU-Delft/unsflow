@@ -46,7 +46,6 @@ class SunModel:
         self.data = gridObject  # grid object containing also the meridional object with the data
         self.config = config
 
-
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
 
         self.gmma = self.config.get_fluid_gamma()
@@ -60,19 +59,18 @@ class SunModel:
         Select an equation to overwrite with the euler wall. Avilable options: ur, utheta, uz.
         :param equation: specify which equation will be overwritten from the euler wall condition.
         """
-        if equation=='ur':
+        if equation == 'ur':
             self.substituted_equation = 'ur'
             print("Equation to overwrite with Euler Wall condition set to: Radial Momentum!")
-        elif equation=='utheta':
+        elif equation == 'utheta':
             self.substituted_equation = 'utheta'
             print("Equation to overwrite with Euler Wall condition set to: Tangential Momentum!")
-        elif equation=='uz':
+        elif equation == 'uz':
             self.substituted_equation = 'ur'
             print("Equation to overwrite with Euler Wall condition set to: Axial Momentum!")
         else:
             raise ValueError("Not recognized option")
         print()
-
 
     # def set_normalization_quantities(self, mode='meridional object'):
     #     """
@@ -121,8 +119,6 @@ class SunModel:
     #     self.continuity_norm = self.x_ref / self.rho_ref / self.u_ref
     #     self.momentum_norm = self.x_ref / self.u_ref ** 2
     #     self.pressure_norm = self.x_ref / self.rho_ref / self.u_ref ** 3
-
-
 
     def print_normalization_information(self):
         """
@@ -173,7 +169,7 @@ class SunModel:
         plt.ylabel(r'$\hat{r} \quad  [-]$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     def ShowSpectralGrid(self, save_filename=None, mode=None):
         """
@@ -187,10 +183,10 @@ class SunModel:
         plt.ylabel(r'$\eta \quad  [-]$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf', artificial_refinement=False,
-                                dx_dz = None, dx_dr=None, dy_dz = None, dy_dr = None):
+                                dx_dz=None, dx_dr=None, dy_dz=None, dy_dr=None):
         """
         It computes the transformation gradients for every grid point, and stores the value at the node level.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
@@ -222,7 +218,6 @@ class SunModel:
             y = GaussLobattoPoints(Nr_fine)
             Y, X = np.meshgrid(y, x)
 
-
             if routine == 'numpy':
                 dzdx, dzdy, drdx, drdy = JacobianTransform2(Z, R, X, Y)
             elif routine == 'hard-coded':
@@ -240,37 +235,36 @@ class SunModel:
             else:
                 self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
             self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
-            self.dxdz = (1/self.J) * (self.drdy)
-            self.dxdr = (1/self.J) * (-self.dzdy)
-            self.dydz = (1/self.J) * (-self.drdx)
-            self.dydr =(1/self.J) * (self.dzdx)
+            self.dxdz = (1 / self.J) * (self.drdy)
+            self.dxdr = (1 / self.J) * (-self.dzdy)
+            self.dydz = (1 / self.J) * (-self.drdx)
+            self.dydr = (1 / self.J) * (self.dzdx)
         else:
             if dx_dz is not None:
                 self.dxdz = dx_dz
-                self.dzdx = 1/dx_dz
+                self.dzdx = 1 / dx_dz
             else:
                 self.dxdz = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
                 self.dzdx = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
             if dx_dr is not None:
                 self.dxdr = dx_dr
-                self.drdx = 1/dx_dr
+                self.drdx = 1 / dx_dr
             else:
                 self.dxdr = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
                 self.drdx = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
             if dy_dz is not None:
                 self.dydz = dy_dz
-                self.dydz = 1/dy_dz
+                self.dydz = 1 / dy_dz
             else:
                 self.dydz = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
                 self.dzdy = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
             if dy_dr is not None:
                 self.dydr = dy_dr
-                self.drdy = 1/dy_dr
+                self.drdy = 1 / dy_dr
             else:
                 self.dydr = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
                 self.drdy = np.zeros((self.data.nAxialNodes, self.data.nRadialNodes))
             self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
-
 
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -278,7 +272,6 @@ class SunModel:
                 self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj],
                                                                      self.drdx[ii, jj], self.drdy[ii, jj])
                 self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
-
 
     def ContourTransformation(self, save_filename=None):
         """
@@ -293,7 +286,7 @@ class SunModel:
         plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
@@ -303,7 +296,7 @@ class SunModel:
         plt.colorbar()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
@@ -313,7 +306,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
@@ -323,7 +316,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
@@ -333,7 +326,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels_fine, cmap=color_map)
@@ -343,7 +336,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_5.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels_fine, cmap=color_map)
@@ -353,7 +346,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_6.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels_fine, cmap=color_map)
@@ -363,7 +356,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_7.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels_fine, cmap=color_map)
@@ -373,7 +366,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_8.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     def AddAMatrixToNodes(self):
         """
@@ -390,7 +383,7 @@ class SunModel:
                     # should be 1 by construction. In this case the non-dimensional equations are exactly the same
                     # of the dimensional ones
                     strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                          self.config.get_reference_time())
+                                                                     self.config.get_reference_time())
                     A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -399,7 +392,7 @@ class SunModel:
                   "parameter to false")
         else:
             print("Initial data from meridional object were already non-dimensional. Matrix A has been multiplied by Strouhal"
-                  " Number: %.2f" %(strouhal))
+                  " Number: %.2f" % (strouhal))
 
     def AddAMatrixToNodesFrancesco2(self):
         """
@@ -417,7 +410,8 @@ class SunModel:
                     # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
                     # should be 1 by construction. In this case the non-dimensional equations are exactly the same
                     # of the dimensional ones
-                    strouhal = self.x_ref/(self.u_ref*self.t_ref)
+                    strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
+                                                                     self.config.get_reference_time())
                     A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -426,8 +420,7 @@ class SunModel:
                   "parameter to false")
         else:
             print("Initial data from meridional object were already non-dimensional. Matrix A has been multiplied by Strouhal"
-                  " Number: %.2f" %(strouhal))
-
+                  " Number: %.2f" % (strouhal))
 
     def AddBMatrixToNodes(self):
         """
@@ -505,7 +498,6 @@ class SunModel:
             if self.config.get_normalize_instability_equations():
                 print("C Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                       "parameter to false")
-
 
     def AddCMatrixToNodesFrancesco2(self):
         """
@@ -628,7 +620,6 @@ class SunModel:
                 print("R Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
                       "parameter to false")
 
-
     def AddRMatrixToNodesFrancesco2(self):
         """
         Compute and store at the node level the R matrix.
@@ -640,7 +631,7 @@ class SunModel:
                 R = np.zeros((5, 5), dtype=complex)
                 node = self.data.dataSet[ii, jj]
 
-                R[0, 0] = node.dur_dr + node.duz_dz + node.ur/node.r
+                R[0, 0] = node.dur_dr + node.duz_dz + node.ur / node.r
                 R[0, 1] = node.rho / node.r + node.drho_dr
                 R[0, 2] = 0
                 R[0, 3] = node.drho_dz
@@ -798,7 +789,6 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
-
     def apply_finite_differences_on_physical_grid(self, verbose=False):
         """
        This method differentiates directly the problem on the physical grid. It saves a new global (for all the nodes) matrix
@@ -809,9 +799,9 @@ class SunModel:
 
         # the cordinates on the spectral grid directions, necessary for the differentiation matrices Dx and Dy
         z = self.data.zGrid[:, 0]
-        dz = z[1]-z[0]
+        dz = z[1] - z[0]
         r = self.data.rGrid[0, :]
-        dr = r[1]-r[0]
+        dr = r[1] - r[0]
 
         # Q_const is the global matrix storing B and E elements after finite differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
@@ -822,56 +812,56 @@ class SunModel:
                 B_ij = self.data.dataSet[ii, jj].B  # B matrix of the ij node
                 E_ij = self.data.dataSet[ii, jj].E  # E matrix of the ij node
 
-                if ii==0 and jj==0:  # bottom left corner
+                if ii == 0 and jj == 0:  # bottom left corner
                     ip = 1
                     im = 0
                     deltaz = 1
                     jp = 1
                     jm = 0
                     deltar = 1
-                elif ii==0 and jj==self.data.nRadialNodes-1:  # top left corner
+                elif ii == 0 and jj == self.data.nRadialNodes - 1:  # top left corner
                     ip = 1
                     im = 0
                     deltaz = 1
                     jp = 0
                     jm = -1
                     deltar = 1
-                elif ii==self.data.nAxialNodes-1 and jj==0:  # bottom right corner
+                elif ii == self.data.nAxialNodes - 1 and jj == 0:  # bottom right corner
                     ip = 0
                     im = -1
                     deltaz = 1
                     jp = 1
                     jm = 0
                     deltar = 1
-                elif ii==self.data.nAxialNodes-1 and jj==self.data.nRadialNodes-1:  # top right corner
+                elif ii == self.data.nAxialNodes - 1 and jj == self.data.nRadialNodes - 1:  # top right corner
                     ip = 0
                     im = -1
                     deltaz = 1
                     jp = 0
                     jm = -1
                     deltar = 1
-                elif ii==0:  # left internal border
+                elif ii == 0:  # left internal border
                     ip = 1
                     im = 0
                     deltaz = 1
                     jp = 1
                     jm = -1
                     deltar = 2
-                elif ii==self.data.nAxialNodes-1:  # right internal border
+                elif ii == self.data.nAxialNodes - 1:  # right internal border
                     ip = 0
                     im = -1
                     deltaz = 1
                     jp = 1
                     jm = -1
                     deltar = 2
-                elif jj==0:  # bottom internal border
+                elif jj == 0:  # bottom internal border
                     ip = 1
                     im = -1
                     deltaz = 2
                     jp = 1
                     jm = 0
                     deltar = 1
-                elif jj==self.data.nRadialNodes-1:  # top internal border
+                elif jj == self.data.nRadialNodes - 1:  # top internal border
                     ip = 1
                     im = -1
                     deltaz = 2
@@ -887,21 +877,20 @@ class SunModel:
                     deltar = 2
 
                 # B differentiation
-                row = self.data.dataSet[ii, jj].nodeCounter*5
-                colp = self.data.dataSet[ii, jj + jp].nodeCounter*5
-                colm = self.data.dataSet[ii, jj + jm].nodeCounter*5
-                tmp = B_ij/(deltar*dr)
+                row = self.data.dataSet[ii, jj].nodeCounter * 5
+                colp = self.data.dataSet[ii, jj + jp].nodeCounter * 5
+                colm = self.data.dataSet[ii, jj + jm].nodeCounter * 5
+                tmp = B_ij / (deltar * dr)
                 self.AddToQ_const(tmp, row, colp)
                 self.AddToQ_const(-tmp, row, colm)
 
                 # E differentiation
-                row = self.data.dataSet[ii, jj].nodeCounter*5
-                colp = self.data.dataSet[ii+ip, jj].nodeCounter*5
-                colm = self.data.dataSet[ii+im, jj].nodeCounter*5
+                row = self.data.dataSet[ii, jj].nodeCounter * 5
+                colp = self.data.dataSet[ii + ip, jj].nodeCounter * 5
+                colm = self.data.dataSet[ii + im, jj].nodeCounter * 5
                 tmp = E_ij / (deltaz * dz)
                 self.AddToQ_const(tmp, row, colp)
                 self.AddToQ_const(-tmp, row, colm)
-
 
     def NormalizeMatrix(self, M):
         """
@@ -1481,6 +1470,33 @@ class SunModel:
         """
         self.Z_g = (self.Q_const + self.C_g + self.R_g)
 
+    def compute_L_matrices(self, block_i):
+        """
+        Compute the L0 matrix, defined as L0 = Z_g(1+j*m*Omega*tau)+S_g
+        :param block_i: number of the current block
+        """
+        block_type = self.config.get_blocks_type()[block_i]
+        m = self.config.get_circumferential_harmonic_order()
+
+        if block_type == 'unbladed':
+            Omega = 0
+            tau = 0
+        elif block_type == 'stator':
+            Omega = 0
+            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / \
+                  np.mean(self.data.meridional_obj.u_meridional[0, :])
+        elif block_type == 'rotor':
+            Omega = self.config.get_omega_shaft() / self.config.get_reference_omega()
+            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / \
+                  np.mean(self.data.meridional_obj.u_meridional[0, :])
+        else:
+            raise ValueError('Unknown block type!')
+
+        self.L0 = self.Z_g * (1 + 1j * m * Omega * tau) + self.S_g
+        self.L1 = self.A_g * (m * Omega * tau - 1j) - 1j * tau * self.Z_g
+        self.L2 = -tau * self.A_g
+        print('test')
+
     def apply_boundary_conditions_generalized(self):
         """
         Apply the boundary conditions for the considered system, whose equations are:
@@ -1492,18 +1508,7 @@ class SunModel:
                 marker = self.data.dataSet[ii, jj].marker
                 counter = self.data.dataSet[ii, jj].nodeCounter
                 row = counter * 5  # 5 equations per node
-                # if ii==0 and jj ==0:
-                #     # self.apply_bc_condition(row, self.inlet_bc, ii, jj)
-                #     self.apply_bc_condition(row, self.hub_bc, ii, jj)
-                # elif ii==0 and jj ==self.data.nRadialNodes-1:
-                #     # self.apply_bc_condition(row, self.inlet_bc, ii, jj)
-                #     self.apply_bc_condition(row, self.shroud_bc, ii, jj)
-                # elif ii==self.data.nAxialNodes-1 and jj ==0:
-                #     # self.apply_bc_condition(row, self.outlet_bc, ii, jj)
-                #     self.apply_bc_condition(row, self.hub_bc, ii, jj)
-                # elif ii==self.data.nAxialNodes-1 and jj ==self.data.nRadialNodes-1:
-                #     # self.apply_bc_condition(row, self.outlet_bc, ii, jj)
-                #     self.apply_bc_condition(row, self.shroud_bc, ii, jj)
+
                 if marker == 'inlet':
                     self.apply_bc_condition(row, self.inlet_bc, ii, jj)
 
@@ -1546,8 +1551,6 @@ class SunModel:
         print(f"{'Hub Boundary set to:':<{total_chars_mid}}{self.hub_bc:>{total_chars_mid}}")
         print(f"{'Shroud Boundary set to:':<{total_chars_mid}}{self.shroud_bc:>{total_chars_mid}}")
         print_banner_end()
-
-
 
     def apply_bc_condition(self, row, condition, ii, jj):
         """
@@ -1623,7 +1626,6 @@ class SunModel:
         else:
             raise ValueError('unknown boundary condition type')
 
-
     def compute_block_Y_P_matrices(self, inspect_matrices=False):
         """
         Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy.
@@ -1695,11 +1697,6 @@ class SunModel:
         # self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
         # self.sort_eigensolution()
 
-
-
-
-
-
     def sort_eigensolution(self):
         """
         Sort the eigenvalues and eigenvectors from the most unstable to the least one.
@@ -1729,8 +1726,8 @@ class SunModel:
         fig, ax = plt.subplots(figsize=fig_size)
         for mode in self.eigenfields:
             # if mode.is_physical:
-            rs = mode.eigenfrequency.real/self.omega_ref
-            df = mode.eigenfrequency.imag/self.omega_ref
+            rs = mode.eigenfrequency.real / self.omega_ref
+            df = mode.eigenfrequency.imag / self.omega_ref
             ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
                        s=marker_size)
         ax.set_xlabel(r'RS [-]')
@@ -1907,7 +1904,6 @@ class SunModel:
         else:
             raise ValueError("Incorrect Extension of the output file.")
 
-
     def interpolation_on_original_grid(self, df, X, Y, method='rbf'):
         """
         Interpolate the gradient field df compute of the fine grid on the original one.
@@ -1918,19 +1914,18 @@ class SunModel:
         """
         Xnew = self.dataSpectral.zGrid  # original grid
         Ynew = self.dataSpectral.rGrid  # original grid
-        if method=='linear':
+        if method == 'linear':
             df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='linear')
-        elif method=='cubic':
+        elif method == 'cubic':
             df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='cubic')
-        elif method=='nearest':
+        elif method == 'nearest':
             df_new = griddata((X.flatten(), Y.flatten()), df.flatten(), (Xnew, Ynew), method='nearest')
-        elif method=='rbf':
+        elif method == 'rbf':
             rbf_interpolator = Rbf(X, Y, df, function='multiquadric')
             df_new = rbf_interpolator(Xnew, Ynew)
         else:
             raise ValueError("Method unknown")
         return df_new
-
 
     def free_dataset_memory(self):
         """

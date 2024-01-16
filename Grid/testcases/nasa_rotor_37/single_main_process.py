@@ -86,9 +86,9 @@ if BLADE_BLOCK:
     blade_process.compute_bfm_axial(save_fig=True)
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
+    # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
     # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
-    blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
+    # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
     # blade_process.contour_all_plots()
     delattr(blade_process, 'data')
 
@@ -108,12 +108,15 @@ if OUTLET_BLOCK:
 
     outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
     outlet_process.compute_streamline_length()
+    outlet_process.compute_spanwise_length()
     outlet_process.interpolate_on_working_grid()
     # outlet_process.compute_field_gradients()
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')
     # outlet_process.contour_all_plots()
+    outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
+    outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
     delattr(outlet_process, 'data')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASSEMBLY PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,11 +149,13 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    obj.store_pickle(file_name=config.picture_name_template)
+    obj.store_pickle(file_name=config.picture_name_template+'_cfg_09')
     obj.print_memory_info()
 
 end_time = time.time()
 delta_time = end_time - start_time
 print('Total time: %d sec' % (delta_time))
 
-# plt.show()
+
+
+plt.show()

@@ -899,7 +899,7 @@ class MeridionalProcess:
                 tmp_len += sqrt((z[ispan] - z[ispan - 1]) ** 2 + (r[ispan] - r[ispan - 1]) ** 2)
                 self.span_wise_length[istream, ispan] = tmp_len
 
-    def plot_spanline(self, field, n, save_filename=None):
+    def plot_spanline(self, field, n, save_filename=None, xlim=None):
         """
         Plot the quantity along a spanline.
         :param field: quantitiy to plot
@@ -909,22 +909,33 @@ class MeridionalProcess:
 
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
         if field == 'rho':
-            ax.plot(self.span_wise_length[n, :], self.rho[n, :], '--s')
-            ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
+            ax.plot(self.rho[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$\rho \ \mathrm{[kg/m^3]}$')
         elif field == 'ur':
-            ax.plot(self.span_wise_length[n, :], self.ur[n, :], '--s')
-            ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
+            ax.plot(self.ur[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$u_r \ \mathrm{[m/s]}$')
         elif field == 'ut':
-            ax.plot(self.span_wise_length[n, :], self.ut[n, :], '--s')
-            ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
+            ax.plot(self.ut[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$u_t \ \mathrm{[m/s]}$')
         elif field == 'uz':
-            ax.plot(self.span_wise_length[n, :], self.uz[n, :], '--s')
-            ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
+            ax.plot(self.uz[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$u_z \ \mathrm{[m/s]}$')
         elif field == 'p':
-            ax.plot(self.span_wise_length[n, :], self.p[n, :], '--s')
-            ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
+            ax.plot(self.p[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$p \ \mathrm{[Pa]}$')
+        elif field == 'p_tot':
+            ax.plot(self.p_tot[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$p_{t} \ \mathrm{[-]}$')
+        elif field == 'p_tot_ratio':
+            ax.plot(self.p_tot[n, :]/(101325/self.config.get_reference_pressure()), self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$p_{t} \ \mathrm{[-]}$')
+        elif field == 'T_tot_ratio':
+            ax.plot(self.T_tot[n, :]/(288.15/self.config.get_reference_temperature()), self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.set_xlabel(r'$T_{t} \ \mathrm{[-]}$')
 
-        ax.set_xlabel(r'$s \ \mathrm{[m]}$')
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        ax.set_ylabel(r'$s \ \mathrm{[-]}$')
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
@@ -1647,7 +1658,7 @@ class MeridionalProcess:
         self.compute_Ftheta()
         self.compute_Fturn()
         self.alpha = self.Floss / (self.u_mag_rel ** 2)
-        self.beta = self.Fturn / (self.u_meridional * self.ut_rel)
+        self.beta = self.Fturn_t / (self.u_meridional * self.ut_rel)
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
