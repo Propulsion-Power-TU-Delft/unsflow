@@ -201,20 +201,22 @@ class Block:
         Once the main grid is computed find the nodes that lie in the baricenter of the geometry. Note that the number of points
         will be lower than the number of the main grid lines, varying the dimensions of the matrices.
         """
-        self.r_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
-        self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
-
-        # slices of original arrays
-        i = slice(0, self.nstream - 1)
-        ip = slice(1, self.nstream)
-        j = slice(0, self.nspan - 1)
-        jp = slice(1, self.nspan)
-
-        self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j]
-                          + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) / 4
-
-        self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j]
-                          + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) / 4
+        # self.r_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
+        # self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
+        #
+        # # slices of original arrays
+        # i = slice(0, self.nstream - 1)
+        # ip = slice(1, self.nstream)
+        # j = slice(0, self.nspan - 1)
+        # jp = slice(1, self.nspan)
+        #
+        # self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j]
+        #                   + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) / 4
+        #
+        # self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j]
+        #                   + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) / 4
+        self.z_grid_cg = self.z_grid_points
+        self.r_grid_cg = self.r_grid_points
 
     def add_inlet_outlet_curves(self, inlet, outlet):
         """

@@ -835,7 +835,7 @@ class MeridionalProcess:
         elif field == 'F_turn':
             ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Fturn[:, n]), '--s')
             ax.set_ylabel(r'$|F_{t}| \ \mathrm{[-]}$')
-            ax.set_title('Span %.1f' %(n/self.nspan*100))
+            ax.set_title('Span %.1f' % (n / self.nspan * 100))
         else:
             raise ValueError("Field name unknown!")
 
@@ -856,12 +856,14 @@ class MeridionalProcess:
         if field == 'F_turn':
             for n in n_array:
                 sl_max = self.stream_line_length[:, n].max()
-                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Fturn[:, n]), '--s', label='%.1f %%' %(n/self.nspan*100))
+                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Fturn[:, n]), '--s',
+                        label='%.1f %%' % (n / self.nspan * 100))
             ax.set_ylabel(r'$|F_{t}| \ \mathrm{[-]}$')
         elif field == 'F_loss':
             for n in n_array:
                 sl_max = self.stream_line_length[:, n].max()
-                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Floss[:, n]), '--s', label='%.1f %%' %(n/self.nspan*100))
+                ax.plot(self.stream_line_length[:, n] / sl_max, np.abs(self.Floss[:, n]), '--s',
+                        label='%.1f %%' % (n / self.nspan * 100))
             ax.set_ylabel(r'$F_{l} \ \mathrm{[-]}$')
         else:
             raise ValueError("Field name unknown!")
@@ -871,7 +873,6 @@ class MeridionalProcess:
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '_streamlines.pdf', bbox_inches='tight')
             plt.close()
-
 
     def compute_streamline_length(self):
         """
@@ -909,28 +910,30 @@ class MeridionalProcess:
 
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
         if field == 'rho':
-            ax.plot(self.rho[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.rho[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$\rho \ \mathrm{[kg/m^3]}$')
         elif field == 'ur':
-            ax.plot(self.ur[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.ur[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$u_r \ \mathrm{[m/s]}$')
         elif field == 'ut':
-            ax.plot(self.ut[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.ut[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$u_t \ \mathrm{[m/s]}$')
         elif field == 'uz':
-            ax.plot(self.uz[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.uz[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$u_z \ \mathrm{[m/s]}$')
         elif field == 'p':
-            ax.plot(self.p[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.p[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$p \ \mathrm{[Pa]}$')
         elif field == 'p_tot':
-            ax.plot(self.p_tot[n, :], self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.p_tot[n, :], self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$p_{t} \ \mathrm{[-]}$')
         elif field == 'p_tot_ratio':
-            ax.plot(self.p_tot[n, :]/(101325/self.config.get_reference_pressure()), self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.p_tot[n, :] / (101325 / self.config.get_reference_pressure()),
+                    self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$p_{t} \ \mathrm{[-]}$')
         elif field == 'T_tot_ratio':
-            ax.plot(self.T_tot[n, :]/(288.15/self.config.get_reference_temperature()), self.span_wise_length[n, :]/self.span_wise_length[n, :].max(), '--s')
+            ax.plot(self.T_tot[n, :] / (288.15 / self.config.get_reference_temperature()),
+                    self.span_wise_length[n, :] / self.span_wise_length[n, :].max(), '--s')
             ax.set_xlabel(r'$T_{t} \ \mathrm{[-]}$')
 
         if xlim is not None:
@@ -951,7 +954,7 @@ class MeridionalProcess:
         fig, ax = plt.subplots()
         if field == 'rho':
             for n in n_array:
-                ax.plot(self.rho[n, :], '--s', self.span_wise_length[n, :], label='%.1f %%' %(n/self.nstream*100))
+                ax.plot(self.rho[n, :], '--s', self.span_wise_length[n, :], label='%.1f %%' % (n / self.nstream * 100))
             ax.set_xlabel(r'$\rho \ \mathrm{[kg/m^3]}$')
         # elif field == 'ur':
         #     ax.plot(self.span_wise_length[n, :], self.ur[n, :], '--s')
@@ -968,7 +971,7 @@ class MeridionalProcess:
         if field == 'F_loss':
             for n in n_array:
                 sp_max = self.span_wise_length[n, :].max()
-                ax.plot(self.Floss[n, :], self.span_wise_length[n, :]/sp_max,  '--s', label='%.1f %%' %(n/self.nstream*100))
+                ax.plot(self.Floss[n, :], self.span_wise_length[n, :] / sp_max, '--s', label='%.1f %%' % (n / self.nstream * 100))
             ax.set_xlabel(r'$F_{l} \ \mathrm{[-]}$')
 
         ax.set_ylabel(r'$s \ \mathrm{[-]}$')
@@ -1865,7 +1868,8 @@ class MeridionalProcess:
                 self.omega_sun_param = 0
             else:
                 raise ValueError("Unknown domain type")
-            tau_throughflow = (np.max(self.stream_line_length) - np.min(self.stream_line_length)) * self.config.get_reference_length() / \
+            tau_throughflow = (np.max(self.stream_line_length) - np.min(
+                self.stream_line_length)) * self.config.get_reference_length() / \
                               (np.max(self.u_meridional) * self.config.get_reference_velocity())
             self.tau_sun_param = tau_throughflow
 
@@ -1914,7 +1918,7 @@ class MeridionalProcess:
         self.Floss = self.T * self.u_meridional * self.ds_dl / self.u_mag_rel
 
         if self.config.get_clipping_bfm():
-            idx = np.where(self.Floss<0)
+            idx = np.where(self.Floss < 0)
             self.Floss[idx] = 0
 
         # compute the components, which are opposite to the relative velocity
@@ -1922,7 +1926,7 @@ class MeridionalProcess:
         self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
         self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
 
-            # self.Floss_check = self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2 - self.Floss ** 2
+        # self.Floss_check = self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2 - self.Floss ** 2
 
     def compute_ds_dl(self, mode):
         """
@@ -1962,12 +1966,12 @@ class MeridionalProcess:
                 dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
                                          self.dut_dr[istream, ispan] * dir_vector[1]
         for ispan in range(self.nRadialNodes):
-            dut_dl[:,ispan] = (self.ut[-1,ispan]-self.ut[0,ispan])/self.stream_line_length[-1, ispan]
-            dr_dl[:,ispan] = (self.r_cg[-1,ispan]-self.r_cg[0,ispan])/self.stream_line_length[-1, ispan]
+            dut_dl[:, ispan] = (self.ut[-1, ispan] - self.ut[0, ispan]) / self.stream_line_length[-1, ispan]
+            dr_dl[:, ispan] = (self.r_cg[-1, ispan] - self.r_cg[0, ispan]) / self.stream_line_length[-1, ispan]
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional * self.drut_dl / self.r_cg
         if self.config.get_clipping_bfm():
-            if self.config.get_omega_shaft()<0:
+            if self.config.get_omega_shaft() < 0:
                 idx = np.where(self.Ftheta > 0)
                 self.Ftheta[idx] = 0
             else:
@@ -1980,7 +1984,7 @@ class MeridionalProcess:
         """
         self.Fturn_t = self.Ftheta - self.Floss_t
         if self.config.get_clipping_bfm():
-            if self.config.get_omega_shaft()<0:
+            if self.config.get_omega_shaft() < 0:
                 idx = np.where(self.Fturn_t > 0)
                 self.Fturn_t[idx] = 0
             else:
@@ -1998,17 +2002,35 @@ class MeridionalProcess:
         self.dA = np.zeros_like(self.z_cg)
         self.dA_nz = np.zeros_like(self.z_cg)
         self.dA_nr = np.zeros_like(self.z_cg)
-        for istream in range(self.nstream):
-            for ispan in range(self.nspan):
-                dz = self.z_grid[istream, ispan + 1] - self.z_grid[istream, ispan]
-                dr = self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]
+        # for istream in range(self.nstream):
+        #     for ispan in range(self.nspan):
+        #
+        #         dz = self.z_grid[istream, ispan + 1] - self.z_grid[istream, ispan]
+        #         dr = self.r_grid[istream, ispan + 1] - self.r_grid[istream, ispan]
+        #
+        #         # Area of the flux per unit length in circumferential direction
+        #         self.dA[istream, ispan] = np.sqrt(dz ** 2 + dr ** 2)
+        #
+        #         # normal of the flux area (-90 deg rotation of the edge, normalized)
+        #         self.dA_nz[istream, ispan] = dr / self.dA[istream, ispan]
+        #         self.dA_nr[istream, ispan] = -dz / self.dA[istream, ispan]
+        for ispan in range(self.nspan):
+            if ispan == 0:
+                isplus = 1
+                isminus = 0
+            elif ispan == self.nspan - 1:
+                isplus = 0
+                isminus = -1
+            else:
+                isplus = 1
+                isminus = -1
+            dz = (self.z_grid[:, ispan + isplus] - self.z_grid[:, ispan + isminus]) / 2
+            dr = (self.r_grid[:, ispan + isplus] - self.r_grid[:, ispan + isminus]) / 2
 
-                # Area of the flux per unit length in circumferential direction
-                self.dA[istream, ispan] = np.sqrt(dz ** 2 + dr ** 2)
-
-                # normal of the flux area (-90 deg rotation of the edge, normalized)
-                self.dA_nz[istream, ispan] = dr / self.dA[istream, ispan]
-                self.dA_nr[istream, ispan] = -dz / self.dA[istream, ispan]
+            self.dA[:, ispan] = np.sqrt(dz ** 2 + dr ** 2)
+            # normal of the flux area (-90 deg rotation of the edge, normalized)
+            self.dA_nz[:, ispan] = dr / self.dA[:, ispan]
+            self.dA_nr[:, ispan] = -dz / self.dA[:, ispan]
 
         self.rho_flux = self.compute_flux(self.rho)
         self.ur_flux = self.compute_flux(self.ur)
@@ -2212,19 +2234,19 @@ class MeridionalProcess:
         """
         dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
         for ii in range(1, self.nstream - 1):
-            tmp = np.min(np.abs(self.z_cg[ii+1, :] - self.z_cg[ii, :]))
+            tmp = np.min(np.abs(self.z_cg[ii + 1, :] - self.z_cg[ii, :]))
             if tmp < dz_min:
                 dz_min = tmp
 
         dr_min = np.min(np.abs(self.r_cg[:, 1] - self.r_cg[:, 0]))
         for jj in range(1, self.nspan - 1):
-            tmp = np.min(np.abs(self.r_cg[:, jj+1] - self.r_cg[:, jj]))
+            tmp = np.min(np.abs(self.r_cg[:, jj + 1] - self.r_cg[:, jj]))
             if tmp < dr_min:
                 dr_min = tmp
 
         diff_factor = 10
-        dz = dz_min/diff_factor
-        dr = dr_min/diff_factor
+        dz = dz_min / diff_factor
+        dr = dr_min / diff_factor
 
         Zplus = self.z_cg + dz
         Zminus = self.z_cg - dz
@@ -2256,9 +2278,19 @@ class MeridionalProcess:
 
         if method != 'rbf':
             f_new = griddata((z, r), f, (Xnew, Ynew), method=method)
+
+            # take care of possible nan valus, due to extrapolation compared to dataset of points
+            contains_nan = np.isnan(f_new).any()
+            if contains_nan:
+                nan_rows, nan_cols = np.where(np.isnan(f_new))
+                for i in nan_rows:
+                    for j in nan_cols:
+                        f_new[i, j] = griddata((z, r), f, (Xnew[i, j], Ynew[i, j]), 'nearest')
+
             if return_type == 'all':
                 f_new_dx = griddata((z, r), f, (Xnew + dx, Ynew), method=method)
                 f_new_dy = griddata((z, r), f, (Xnew, Ynew + dy), method=method)
+
         else:
             rbf = Rbf(z, r, f, function='linear')
             f_new = rbf(Xnew, Ynew)
