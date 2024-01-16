@@ -1823,10 +1823,13 @@ class MeridionalProcess:
         self.domain = domain
         if domain == 'rotor' or domain == 'stator':
             print("%s Domain" % (domain))
-            tr = self.Floss_r / self.Floss
-            ttheta = self.Floss_t / self.Floss
-            tz = self.Floss_z / self.Floss
 
+            # cosine directors of the loss force
+            tr = self.ur / self.u_mag_rel
+            ttheta = self.ut_rel / self.u_mag_rel
+            tz = self.uz / self.u_mag_rel
+
+            # cosine directors of the turning force
             nr = self.Fturn_r / self.Fturn
             ntheta = self.Fturn_t / self.Fturn
             nz = self.Fturn_z / self.Fturn

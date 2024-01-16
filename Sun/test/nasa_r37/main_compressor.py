@@ -47,6 +47,9 @@ sun_multiblock.construct_L_global_matrices()
 sun_multiblock.apply_matching_conditions()
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
+sun_multiblock.extract_eigenfields()
+sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies')
+sun_multiblock.plot_eigenfields(n=10, save_filename='eigenmode')
 
 # single block outline
 # sun_obj.extract_eigenfields()
@@ -54,4 +57,4 @@ sun_multiblock.solve_evp()
 # sun_obj.plot_eigenfields(save_filename='eigenmode')
 # sun_obj.write_results()
 
-# plt.show()
+plt.show()

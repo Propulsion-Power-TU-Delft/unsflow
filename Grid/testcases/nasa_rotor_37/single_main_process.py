@@ -149,7 +149,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    obj.store_pickle(file_name=config.picture_name_template+'_cfg_09')
+    obj.store_pickle(file_name=config.picture_name_template+'_cfg_12')
     obj.print_memory_info()
 
 end_time = time.time()

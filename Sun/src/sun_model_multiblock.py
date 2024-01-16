@@ -40,64 +40,57 @@ class SunModelMultiBlock:
         self.number_blocks = len(self.blocks)
         self.streamwise_points = [block.data.nAxialNodes for block in self.blocks]
         self.spanwise_points = self.blocks[0].data.nRadialNodes
+        self.assemble_physical_grid()
+
+    def assemble_physical_grid(self):
+        self.z_grid = self.blocks[0].data.meridional_obj.z_grid
+        self.r_grid = self.blocks[0].data.meridional_obj.r_grid
+        for block in self.blocks[1:]:
+            self.z_grid = np.concatenate((self.z_grid, block.data.meridional_obj.z_grid), axis=0)
+            self.r_grid = np.concatenate((self.r_grid, block.data.meridional_obj.r_grid), axis=0)
 
     def construct_L_global_matrices(self):
+        """
+        Construct the global L matrices for the multiblock problem. Matching conditions between different blocks still need to be
+        imposed
+        """
         L0 = [block.L0 for block in self.blocks]
         self.L0 = enlarge_square_matrices(L0)
+        fig, ax = plt.subplots(1,4, figsize=(12,4))
+        ax[0].spy(np.abs(L0[0]))
+        ax[0].set_title(r'$L0_0$')
+        ax[1].spy(np.abs(L0[1]))
+        ax[1].set_title(r'$L0_1$')
+        ax[2].spy(np.abs(L0[2]))
+        ax[2].set_title(r'$L0_2$')
+        ax[3].spy(np.abs(self.L0))
+        ax[3].set_title(r'$L0_{tot}$')
 
-        plt.figure()
-        plt.imshow(np.abs(L0[0]))
-        plt.title('L0_0')
-
-        plt.figure()
-        plt.imshow(np.abs(L0[1]))
-        plt.title('L0_1')
-
-        plt.figure()
-        plt.imshow(np.abs(L0[2]))
-        plt.title('L0_2')
-
-        plt.figure()
-        plt.imshow(np.abs(self.L0))
-        plt.title('L0')
 
         L1 = [block.L1 for block in self.blocks]
         self.L1 = enlarge_square_matrices(L1)
+        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+        ax[0].spy(np.abs(L1[0]))
+        ax[0].set_title(r'$L1_0$')
+        ax[1].spy(np.abs(L1[1]))
+        ax[1].set_title(r'$L1_1$')
+        ax[2].spy(np.abs(L1[2]))
+        ax[2].set_title(r'$L1_2$')
+        ax[3].spy(np.abs(self.L1))
+        ax[3].set_title(r'$L1_{tot}$')
 
-        plt.figure()
-        plt.imshow(np.abs(L1[0]))
-        plt.title('L1_0')
-
-        plt.figure()
-        plt.imshow(np.abs(L1[1]))
-        plt.title('L1_1')
-
-        plt.figure()
-        plt.imshow(np.abs(L1[2]))
-        plt.title('L1_2')
-
-        plt.figure()
-        plt.imshow(np.abs(self.L1))
-        plt.title('L1')
 
         L2 = [block.L2 for block in self.blocks]
         self.L2 = enlarge_square_matrices(L2)
-
-        plt.figure()
-        plt.imshow(np.abs(L2[0]))
-        plt.title('L2_0')
-
-        plt.figure()
-        plt.imshow(np.abs(L2[1]))
-        plt.title('L2_1')
-
-        plt.figure()
-        plt.imshow(np.abs(L2[2]))
-        plt.title('L2_2')
-
-        plt.figure()
-        plt.imshow(np.abs(self.L2))
-        plt.title('L2')
+        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+        ax[0].spy(np.abs(L2[0]))
+        ax[0].set_title(r'$L2_0$')
+        ax[1].spy(np.abs(L2[1]))
+        ax[1].set_title(r'$L2_1$')
+        ax[2].spy(np.abs(L2[2]))
+        ax[2].set_title(r'$L2_2$')
+        ax[3].spy(np.abs(self.L2))
+        ax[3].set_title(r'$L2_{tot}$')
 
     def apply_matching_conditions(self):
         """
@@ -105,8 +98,36 @@ class SunModelMultiBlock:
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
         must be applied on the matrix L0, while the corresponding rows of L1 and L2 must be set to 0
         """
-        print('This is a bit of a problem since now the nodes are not the same, for the inlet and outlet. In other words, '
-              'or we add the coincident nodes, or it becomes a problem. z_grid, r_grid rather than z_cg,r_cg')
+
+        # starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
+        # block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
+        # variable, in the other we implement the same value of the derivative.
+
+        # Let's start from the block 2, and consider the block itself and the previous.
+        rows_band = self.config.get_spanwise_points()*5
+        eq_counter = self.blocks[0].L0.shape[0] # this is the equation counter at the end of the first block
+        for iblock in range(1, self.number_blocks):
+
+            # previous block (where same fluid conditions are implemented)
+            self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
+            self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
+            self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
+
+            # current block (where same fluid derivatives are implemented, by means of finite differences)
+            self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter+rows_band, :])
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band)
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2*rows_band:eq_counter - rows_band] = -np.eye(rows_band)
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2*rows_band] = -np.eye(rows_band)
+
+            # make zero all the relevant equations for the L1,L2 matrices
+            self.L1[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(self.L1[eq_counter - rows_band:eq_counter + rows_band, :])
+            self.L2[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(self.L2[eq_counter - rows_band:eq_counter + rows_band, :])
+
+            eq_counter += self.blocks[iblock].L0.shape[0]
+
+
+
 
     def compute_P_Y_matrices(self):
         """
@@ -154,3 +175,163 @@ class SunModelMultiBlock:
             self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
 
 
+    def extract_eigenfields(self, n=None):
+        """
+        From the eigenvectors obtained with Arnoldi Method, extract the eigenfields (density, velocity, pressure).
+        The eigensolution should be sorted before applying this method, otherwise the modes are randomly ordered.
+        :param n: number of eigenfields to extract
+        """
+        if n is None:
+            n = len(self.eigenfreqs)
+        elif n > len(self.eigenfreqs):
+            print("parameter n must be lower than the eigenvector number. n set to max allowed")
+            n = len(self.eigenfreqs)
+
+        Nz = sum([block.data.nAxialNodes for block in self.blocks])
+        Nr = self.blocks[0].data.nRadialNodes
+
+        self.eigenfields = []
+        for mode in range(n):
+            eigenfrequency = self.eigenfreqs[mode]
+            eigenvector = self.eigenmodes[:, mode]
+
+            rho_eig = []
+            ur_eig = []
+            ut_eig = []
+            uz_eig = []
+            p_eig = []
+            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled in this Alg.
+                if (i) % 5 == 0:
+                    rho_eig.append(eigenvector[i])
+                elif (i - 1) % 5 == 0 and i != 0:
+                    ur_eig.append(eigenvector[i])
+                elif (i - 2) % 5 == 0 and i != 0:
+                    ut_eig.append(eigenvector[i])
+                elif (i - 3) % 5 == 0 and i != 0:
+                    uz_eig.append(eigenvector[i])
+                elif (i - 4) % 5 == 0 and i != 0:
+                    p_eig.append(eigenvector[i])
+                else:
+                    raise ValueError("Not correct indexing for eigenvector retrieval!")
+
+            rho_eig_r = scaled_eigenvector_real(rho_eig, Nz, Nr)
+            ur_eig_r = scaled_eigenvector_real(ur_eig, Nz, Nr)
+            ut_eig_r = scaled_eigenvector_real(ut_eig, Nz, Nr)
+            uz_eig_r = scaled_eigenvector_real(uz_eig, Nz, Nr)
+            p_eig_r = scaled_eigenvector_real(p_eig, Nz, Nr)
+
+            self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
+
+    def plot_eigenfrequencies(self, delimit=False, save_filename=None):
+        """
+        Plot the eigenfrequencies obtained with the Arnoldi Method
+        :param delimit: if true, delimit the plot zone the important one for compressors
+        :param save_filename: if not None, save figure files
+        """
+        fig, ax = plt.subplots(figsize=fig_size)
+        for mode in self.eigenfields:
+            # if mode.is_physical:
+            rs = mode.eigenfrequency.real / self.config.get_reference_omega()
+            df = mode.eigenfrequency.imag / self.config.get_reference_omega()
+            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
+                       s=marker_size)
+        ax.set_xlabel(r'RS [-]')
+        ax.set_ylabel(r'DF [-]')
+        # ax.legend()
+        if delimit:
+            ax.set_xlim([-1.5, 1.5])
+            ax.set_ylim([-1, 0.5])
+        ax.grid(alpha=grid_opacity)
+        if save_filename is not None:
+            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.close()
+
+    def plot_eigenfields(self, n=None, save_filename=None):
+        """
+        Plot the first n eigenmodes structures.
+        :param n: specify the first n eigenfunctions to plot
+        :param save_filename: specify name of the figs to save
+        """
+        z = self.z_grid
+        r = self.r_grid
+        self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
+        Nz = np.shape(z)[0]
+        Nr = np.shape(z)[1]
+        modes_map = cm.bwr
+
+        if n is None:
+            n = len(self.eigenfields)
+        elif n > len(self.eigenfields):
+            print("parameter n must be lower than the eigenfields number. n set to max allowed!")
+            n = len(self.eigenfreqs)
+        elif n < 1:
+            raise ValueError("Select a positive number of modes to show")
+        else:
+            pass
+
+        imode = 0
+        for mode in self.eigenfields[0:n]:
+            imode += 1
+            # if mode.is_physical:
+            rs = mode.eigenfrequency.real / self.config.get_reference_omega()
+            df = mode.eigenfrequency.imag / self.config.get_reference_omega()
+
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            # for c in cnt.collections:
+            #     c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                # plt.close()
+
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            # for c in cnt.collections:
+            #     c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                # plt.close()
+
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            # for c in cnt.collections:
+            #     c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                # plt.close()
+
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            # for c in cnt.collections:
+            #     c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                # plt.close()
+
+            plt.figure(figsize=self.pic_size_contour)
+            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            # for c in cnt.collections:
+            #     c.set_edgecolor("face")
+            plt.xlabel(r'$z$ [-]')
+            plt.ylabel(r'$r$ [-]')
+            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                # plt.close()
