@@ -425,7 +425,8 @@ class Blade:
         # the normal is the vectorial product of the two
         normal = np.cross(vec_1, vec_2)
         normal /= np.linalg.norm(normal)
-
+        if normal[2]<0:
+            normal *= -1
         if check:
             fig = plt.figure(figsize=self.picture_size_blank)
             ax = fig.add_subplot(111, projection='3d')

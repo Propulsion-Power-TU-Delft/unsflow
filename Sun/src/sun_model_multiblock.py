@@ -335,3 +335,31 @@ class SunModelMultiBlock:
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 # plt.close()
+
+
+    def write_results(self, save_filename=None, extension='csv'):
+        """
+        Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
+        Possible file types are (csv, pickle).
+        csv: write only DF and RS in a csv file, organized in two columns
+        pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
+        """
+        if save_filename is not None:
+            filename = save_filename
+        else:
+            filename = 'eigenvalues'
+
+        eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
+
+        if extension == 'csv':
+            with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
+                fieldnames = ['RS', 'DF']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for num in eigenvalue_array:
+                    writer.writerow({'RS': num.real, 'DF': num.imag})
+        elif extension == 'pickle':
+            with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
+                pickle.dump(self.eigenfields, picklefile)
+        else:
+            raise ValueError("Incorrect Extension of the output file.")

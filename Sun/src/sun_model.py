@@ -66,7 +66,7 @@ class SunModel:
             self.substituted_equation = 'utheta'
             print("Equation to overwrite with Euler Wall condition set to: Tangential Momentum!")
         elif equation == 'uz':
-            self.substituted_equation = 'ur'
+            self.substituted_equation = 'uz'
             print("Equation to overwrite with Euler Wall condition set to: Axial Momentum!")
         else:
             raise ValueError("Not recognized option")
@@ -278,55 +278,55 @@ class SunModel:
         Show the gradient contours.
         :param save_filename: specify the names if you want to save the figs.
         """
-        plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
-        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        plt.title(r'$J$')
-        plt.colorbar()
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
-        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
-        plt.colorbar()
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
-        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
-        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=fig_size)
-        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
-        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=fig_size)
+        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
+        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        # plt.title(r'$J$')
+        # plt.colorbar()
+        # if save_filename is not None:
+        #     plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
+        #     # plt.close()
+        #
+        # plt.figure(figsize=fig_size)
+        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
+        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        # plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
+        # plt.colorbar()
+        # if save_filename is not None:
+        #     plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
+        #     # plt.close()
+        #
+        # plt.figure(figsize=fig_size)
+        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
+        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
+        # if save_filename is not None:
+        #     plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
+        #     # plt.close()
+        #
+        # plt.figure(figsize=fig_size)
+        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
+        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
+        # if save_filename is not None:
+        #     plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
+        #     # plt.close()
+        #
+        # plt.figure(figsize=fig_size)
+        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
+        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
+        # if save_filename is not None:
+        #     plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
+        #     # plt.close()
 
         plt.figure(figsize=fig_size)
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels_fine, cmap=color_map)
@@ -335,7 +335,7 @@ class SunModel:
         plt.colorbar()
         plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_5.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + save_filename + '_dxi_dr.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure(figsize=fig_size)
@@ -345,7 +345,7 @@ class SunModel:
         plt.colorbar()
         plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_6.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + save_filename + '_dxi_dz.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure(figsize=fig_size)
@@ -355,7 +355,7 @@ class SunModel:
         plt.colorbar()
         plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_7.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + save_filename + '_deta_dr.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure(figsize=fig_size)
@@ -365,7 +365,7 @@ class SunModel:
         plt.colorbar()
         plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_8.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + save_filename + '_deta_dz.pdf', bbox_inches='tight')
             # plt.close()
 
     def AddAMatrixToNodes(self):
@@ -1556,8 +1556,9 @@ class SunModel:
         """
         For the considered grid node, it modifes the 5 governing equations starting from row index,
         which is related to its continuity eq.
-        The considered system at hand is: (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z,
-        and A and S must be filled with zeros (since they are dependent on omega).
+        The considered system at hand is: (L0 + L1*omega + L2*omega**2)*tilde{phi}. Therefore BCs are imposed on L0, since
+        they must be respected for every possible value of omega.
+        L1 and L2 are then filled in the respective positions with zeros.
         :param row: row index of the equation to modify
         :param condition: type of boundary condition
         :param ii: i-th element of the node grid
@@ -1566,43 +1567,35 @@ class SunModel:
 
         if condition == 'zero pressure':
             # BC for zero pressure perturbation
-            self.Z_g[row + 4, :] = np.zeros(self.Z_g[row + 4, :].shape, dtype=complex)
-            self.Z_g[row + 4, row + 4] = 1  # zero pressure at that node
+            self.L0[row + 4, :] = np.zeros(self.L0[row + 4, :].shape, dtype=complex)
+            self.L0[row + 4, row + 4] = 1  # zero pressure at that node
 
-            self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
-            self.S_g[row + 4, :] = np.zeros(self.S_g[row + 4, :].shape, dtype=complex)  # zero row
-
-        elif condition == 'zero axial':
-            # BC for zero pressure perturbation
-            self.Z_g[row + 3, :] = np.zeros(self.Z_g[row + 3, :].shape, dtype=complex)
-            self.Z_g[row + 3, row + 3] = 1  # zero pressure at that node
-
-            self.A_g[row + 3, :] = np.zeros(self.A_g[row + 3, :].shape, dtype=complex)  # zero row
-            self.S_g[row + 3, :] = np.zeros(self.S_g[row + 3, :].shape, dtype=complex)  # zero row
+            self.L1[row + 4, :] = np.zeros(self.L1[row + 4, :].shape, dtype=complex)  # zero row
+            self.L2[row + 4, :] = np.zeros(self.L2[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'zero perturbation':
             # BC for zero pressure perturbation
-            self.Z_g[row:row + 5, :] = np.zeros(self.Z_g[row:row + 5, :].shape, dtype=complex)
-            self.Z_g[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
+            self.L0[row:row + 5, :] = np.zeros(self.L0[row:row + 5, :].shape, dtype=complex)
+            self.L0[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
 
-            self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
-            self.S_g[row:row + 5, :] = np.zeros(self.S_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
 
         elif condition == 'compressor inlet':
             # BCs are zero for every variable except the pressure at inlet
-            self.Z_g[row:row + 4, :] = np.zeros(self.Z_g[row:row + 4, :].shape, dtype=complex)
-            self.Z_g[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
+            self.L0[row:row + 4, :] = np.zeros(self.L0[row:row + 4, :].shape, dtype=complex)
+            self.L0[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
 
-            self.A_g[row:row + 5, :] = np.zeros(self.A_g[row:row + 5, :].shape, dtype=complex)  # zero rows
-            self.S_g[row:row + 5, :] = np.zeros(self.S_g[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
 
         elif condition == 'compressor outlet':
             # BC for zero pressure perturbation
-            self.Z_g[row + 4, :] = np.zeros(self.Z_g[row + 4, :].shape, dtype=complex)
-            self.Z_g[row + 4, row + 4] = 1  # zero pressure at that node
+            self.L0[row + 4, :] = np.zeros(self.L0[row + 4, :].shape, dtype=complex)
+            self.L0[row + 4, row + 4] = 1  # zero pressure at that node
 
-            self.A_g[row + 4, :] = np.zeros(self.A_g[row + 4, :].shape, dtype=complex)  # zero row
-            self.S_g[row + 4, :] = np.zeros(self.S_g[row + 4, :].shape, dtype=complex)  # zero row
+            self.L1[row + 4, :] = np.zeros(self.L1[row + 4, :].shape, dtype=complex)  # zero row
+            self.L2[row + 4, :] = np.zeros(self.L2[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'euler wall':
             # BC for non-penetration condition at the walls, the equation overwritten depends on configs
@@ -1617,11 +1610,11 @@ class SunModel:
 
             wall_normal = self.data.dataSet[ii, jj].n_wall
 
-            self.Z_g[row + loc, :] = np.zeros(self.Z_g[row + loc, :].shape, dtype=complex)
-            self.Z_g[row + loc, row + 1:row + 4] = wall_normal
+            self.L0[row + loc, :] = np.zeros(self.L0[row + loc, :].shape, dtype=complex)
+            self.L0[row + loc, row + 1:row + 4] = wall_normal
 
-            self.A_g[row + loc, :] = np.zeros(self.A_g[row + loc, :].shape, dtype=complex)  # zero known term
-            self.S_g[row + loc, :] = np.zeros(self.S_g[row + loc, :].shape, dtype=complex)  # zero known term
+            self.L1[row + loc, :] = np.zeros(self.L1[row + loc, :].shape, dtype=complex)  # zero known term
+            self.L2[row + loc, :] = np.zeros(self.L2[row + loc, :].shape, dtype=complex)  # zero known term
 
         else:
             raise ValueError('unknown boundary condition type')
@@ -1649,32 +1642,25 @@ class SunModel:
         print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
         print_banner_end()
 
-        Omega = self.data.meridional_obj.omega_sun_param
-        tau = self.data.meridional_obj.tau_sun_param
-
-        L0 = self.Z_g * (1 + 1j * m * Omega / omega_ref * tau / t_ref) + self.S_g
-        L1 = self.A_g * (m * Omega / omega_ref * tau / t_ref - 1j) - 1j * tau / t_ref * self.Z_g
-        L2 = -tau / t_ref * self.A_g
-
-        Y1 = np.concatenate((-L0, np.zeros_like(L0)), axis=1)
-        Y2 = np.concatenate((np.zeros_like(L0), np.eye(L0.shape[0])), axis=1)
+        Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
+        Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
         self.Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
 
-        P1 = np.concatenate((L1, L2), axis=1)
-        P2 = np.concatenate((np.eye(L0.shape[0]), np.zeros_like(L0)), axis=1)
+        P1 = np.concatenate((self.L1, self.L2), axis=1)
+        P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
         if inspect_matrices:
             plt.figure()
-            plt.spy(L0)
+            plt.spy(self.L0)
             plt.title(r'$\mathbf{L}_{0}$')
 
             plt.figure()
-            plt.spy(L1)
+            plt.spy(self.L1)
             plt.title(r'$\mathbf{L}_{1}$')
 
             plt.figure()
-            plt.spy(L2)
+            plt.spy(self.L2)
             plt.title(r'$\mathbf{L}_{2}$')
 
             plt.figure()

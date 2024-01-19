@@ -1841,21 +1841,21 @@ class MeridionalProcess:
             self.S04 = np.zeros_like(self.ur)
 
             self.S10 = np.zeros_like(self.ur)
-            self.S11 = tr * 2 * self.alpha * self.ur + nr * self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S12 = tr * 2 * self.alpha * self.ut_rel + nr * self.beta * self.u_meridional
-            self.S13 = tr * 2 * self.alpha * self.uz + nr * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S11 = tr * 2 * self.alpha * self.ur + nr / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S12 = tr * 2 * self.alpha * self.ut_rel + nr / ntheta * self.beta * self.u_meridional
+            self.S13 = tr * 2 * self.alpha * self.uz + nr / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S14 = np.zeros_like(self.ur)
 
             self.S20 = np.zeros_like(self.ur)
-            self.S21 = ttheta * 2 * self.alpha * self.ur + ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S22 = ttheta * 2 * self.alpha * self.ut_rel + ntheta * self.beta * self.u_meridional
-            self.S23 = ttheta * 2 * self.alpha * self.uz + ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S21 = ttheta * 2 * self.alpha * self.ur + self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S22 = ttheta * 2 * self.alpha * self.ut_rel + self.beta * self.u_meridional
+            self.S23 = ttheta * 2 * self.alpha * self.uz + self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S24 = np.zeros_like(self.ur)
 
             self.S30 = np.zeros_like(self.ur)
-            self.S31 = tz * 2 * self.alpha * self.ur + nz * self.ur * self.beta * self.ut_rel / self.u_meridional
-            self.S32 = tz * 2 * self.alpha * self.ut_rel + nz * self.beta * self.u_meridional
-            self.S33 = tz * 2 * self.alpha * self.uz + nz * self.uz * self.beta * self.ut_rel / self.u_meridional
+            self.S31 = tz * 2 * self.alpha * self.ur + nz / ntheta * self.ur * self.beta * self.ut_rel / self.u_meridional
+            self.S32 = tz * 2 * self.alpha * self.ut_rel + nz / ntheta * self.beta * self.u_meridional
+            self.S33 = tz * 2 * self.alpha * self.uz + nz / ntheta * self.uz * self.beta * self.ut_rel / self.u_meridional
             self.S34 = np.zeros_like(self.ur)
 
             self.S40 = np.zeros_like(self.ur)
@@ -1863,18 +1863,6 @@ class MeridionalProcess:
             self.S42 = np.zeros_like(self.ur)
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
-
-            # compute quantities needed for the Sun Model Algorithm Variant
-            if domain == 'rotor':
-                self.omega_sun_param = self.config.get_omega_shaft()
-            elif domain == 'stator':
-                self.omega_sun_param = 0
-            else:
-                raise ValueError("Unknown domain type")
-            tau_throughflow = (np.max(self.stream_line_length) - np.min(
-                self.stream_line_length)) * self.config.get_reference_length() / \
-                              (np.max(self.u_meridional) * self.config.get_reference_velocity())
-            self.tau_sun_param = tau_throughflow
 
         elif domain == 'unbladed':
             print("Unbladed Domain...")
@@ -1903,9 +1891,6 @@ class MeridionalProcess:
             self.S42 = np.zeros_like(self.ur)
             self.S43 = np.zeros_like(self.ur)
             self.S44 = np.zeros_like(self.ur)
-
-            self.omega_sun_param = 0
-            self.tau_sun_param = 0
         else:
             raise ValueError("Unknown domain type for body force calculation. Available choices: rotor, stator, unbladed.")
 
@@ -1996,7 +1981,18 @@ class MeridionalProcess:
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
-        self.Fturn_check = self.Fturn_r ** 2 + self.Fturn_t ** 2 + self.Fturn_z ** 2 - self.Fturn ** 2
+
+        fig, ax = plt.subplots(1,3,figsize=(14,8))
+        contour0 = ax[0].contourf(self.z_cg, self.r_cg, self.camber_normal_r, levels=15)
+        contour1 = ax[1].contourf(self.z_cg, self.r_cg, self.camber_normal_theta, levels=15)
+        contour2 = ax[2].contourf(self.z_cg, self.r_cg, self.camber_normal_z, levels=15)
+        cbar0 = plt.colorbar(contour0)
+        cbar1 = plt.colorbar(contour1)
+        cbar2 = plt.colorbar(contour2)
+        ax[0].set_title(r'n_{r}')
+        ax[1].set_title(r'n_{\theta}')
+        ax[2].set_title(r'n_{z}')
+        # self.Fturn_check = self.Fturn_r ** 2 + self.Fturn_t ** 2 + self.Fturn_z ** 2 - self.Fturn ** 2
 
     def compute_averaged_fluxes(self):
         """

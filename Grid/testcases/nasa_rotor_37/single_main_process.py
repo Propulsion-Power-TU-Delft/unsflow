@@ -118,7 +118,7 @@ if OUTLET_BLOCK:
     outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
     outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
     delattr(outlet_process, 'data')
-
+#
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASSEMBLY PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     print("\nASSEMBLY PROCESSING...")
@@ -149,7 +149,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    obj.store_pickle(file_name=config.picture_name_template+'_cfg_12')
+    obj.store_pickle(file_name=config.picture_name_template+'_cfg_09')
     obj.print_memory_info()
 
 end_time = time.time()
