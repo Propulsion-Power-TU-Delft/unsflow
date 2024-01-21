@@ -233,7 +233,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\rho \ \mathrm{[kg/m^3]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_rho.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ur * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
@@ -243,7 +243,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_r \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ur.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ut * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
@@ -253,7 +253,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{\theta} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ut.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.uz * self.config.get_reference_velocity(), cmap=color_map, levels=N_levels)
@@ -263,7 +263,7 @@ class MeridionalProcessGroup:
         plt.title(r'$u_{z} \ \mathrm{[m/s]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_uz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.p * self.config.get_reference_pressure(), cmap=color_map, levels=N_levels)
@@ -273,7 +273,7 @@ class MeridionalProcessGroup:
         plt.title(r'$p \ \mathrm{[Pa]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_p.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.T * self.config.get_reference_temperature(), cmap=color_map, levels=N_levels)
@@ -283,7 +283,7 @@ class MeridionalProcessGroup:
         plt.title(r'$T \ \mathrm{[K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_T.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.s * self.config.get_reference_entropy(), cmap=color_map, levels=N_levels)
@@ -293,7 +293,7 @@ class MeridionalProcessGroup:
         plt.title(r'$s \ \mathrm{[J/kgK]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_s.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
@@ -303,7 +303,7 @@ class MeridionalProcessGroup:
         plt.title(r'$M \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_M.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
 
     def show_grid(self, save_filename=None, grid_centers=False):
@@ -353,7 +353,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial r \ \mathrm{[kg/m^4]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drho_dz*self.config.get_reference_density()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -363,7 +363,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial \rho / \partial {z} \ \mathrm{[kg/m^4]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_drho_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -373,7 +373,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dur_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -383,7 +383,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_r / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dur_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -393,7 +393,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dut_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -403,7 +403,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_{\theta} / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dut_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dr*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -413,7 +413,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial r \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.duz_dz*self.config.get_reference_velocity()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -423,7 +423,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial u_z / \partial {z} \ \mathrm{[s^{-1}]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_duz_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dr*self.config.get_reference_pressure()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -433,7 +433,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial r \ \mathrm{[kg/m^2 s^2]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.dp_dz*self.config.get_reference_pressure()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -443,7 +443,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial p / \partial {z} \ \mathrm{[kg/m^2 s^2]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_dp_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ds_dr*self.config.get_reference_entropy()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -453,7 +453,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial s / \partial r \ \mathrm{[m/s^2 K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ds_dr.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ds_dz*self.config.get_reference_entropy()/self.config.get_reference_length(), cmap=color_map, levels=N_levels)
@@ -463,7 +463,7 @@ class MeridionalProcessGroup:
         plt.title(r'$\partial s / \partial {z} \ \mathrm{[m/s^2 K]}$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '_ds_dz.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     @staticmethod
     def apply_gaussian_filter(field, sigma=1.5):
@@ -606,7 +606,7 @@ class MeridionalProcessGroup:
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
                 fig.savefig(folder_name + save_filename + '_flux_' + field + '.pdf', bbox_inches='tight')
-                plt.close()
+                # plt.close()
 
     def compute_performance(self):
         """
@@ -787,6 +787,96 @@ class MeridionalProcessGroup:
         Print the information related to the memory needed by the object
         """
         print_object_memory_info(self)
+
+    def contour_bfm_matrices(self, save_filename=None):
+        """
+        Plots the S matrix elements of the BFM.
+        :param save_filename: name of the figures to be saved
+        """
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S11, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{11}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S11_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S12, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{12}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S12_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S13, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{13}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S13_.pdf', bbox_inches='tight')
+            # plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S21, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{21}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S21_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S22, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{22}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S22_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S23, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{23}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S23_.pdf', bbox_inches='tight')
+            # plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S31, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{31}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S31_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S32, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{32}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S32_.pdf', bbox_inches='tight')
+            # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.S33, cmap=color_map, levels=N_levels)
+        plt.title(r'$S_{33}$')
+        plt.xticks([])
+        plt.yticks([])
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '_S33_.pdf', bbox_inches='tight')
+            # plt.close()
+
 
 
 

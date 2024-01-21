@@ -42,11 +42,11 @@ if INLET_BLOCK:
     inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
     inlet_process.interpolate_on_working_grid()
-    # inlet_process.compute_field_gradients()
+    # inlet_process.compute_regressed_fields()
     inlet_process.compute_derived_quantities()
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
-    # inlet_process.contour_all_plots()
+    inlet_process.contour_all_plots()
     delattr(inlet_process, 'data')  # release useless memory
 
 
@@ -79,10 +79,9 @@ if BLADE_BLOCK:
     blade_process.compute_streamline_length()
     blade_process.compute_spanwise_length()
     blade_process.interpolate_on_working_grid()
-    # blade_process.compute_field_gradients()
+    # blade_process.compute_regressed_fields()
     blade_process.compute_derived_quantities()
     blade_process.contour_entropy_generation()
-    # blade_process.contour_plot('um', quiver=True)
     blade_process.compute_bfm_axial(save_fig=True)
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
@@ -110,13 +109,13 @@ if OUTLET_BLOCK:
     outlet_process.compute_streamline_length()
     outlet_process.compute_spanwise_length()
     outlet_process.interpolate_on_working_grid()
-    # outlet_process.compute_field_gradients()
+    # outlet_process.compute_regressed_fields()
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')
     # outlet_process.contour_all_plots()
-    outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
-    outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
+    # outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
+    # outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
     delattr(outlet_process, 'data')
 #
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASSEMBLY PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,4 +157,4 @@ print('Total time: %d sec' % (delta_time))
 
 
 
-plt.show()
+# plt.show()

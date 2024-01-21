@@ -43,6 +43,9 @@ class SunModelMultiBlock:
         self.assemble_physical_grid()
 
     def assemble_physical_grid(self):
+        """
+        Stack together the physical grids of the various blocks.
+        """
         self.z_grid = self.blocks[0].data.meridional_obj.z_grid
         self.r_grid = self.blocks[0].data.meridional_obj.r_grid
         for block in self.blocks[1:]:
@@ -51,12 +54,12 @@ class SunModelMultiBlock:
 
     def construct_L_global_matrices(self):
         """
-        Construct the global L matrices for the multiblock problem. Matching conditions between different blocks still need to be
-        imposed
+        Construct the global L matrices for the multiblock problem, stacking together along the diagonal the blocks of every
+        sub block.
         """
         L0 = [block.L0 for block in self.blocks]
         self.L0 = enlarge_square_matrices(L0)
-        fig, ax = plt.subplots(1,4, figsize=(12,4))
+        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
         ax[0].spy(np.abs(L0[0]))
         ax[0].set_title(r'$L0_0$')
         ax[1].spy(np.abs(L0[1]))
@@ -65,7 +68,6 @@ class SunModelMultiBlock:
         ax[2].set_title(r'$L0_2$')
         ax[3].spy(np.abs(self.L0))
         ax[3].set_title(r'$L0_{tot}$')
-
 
         L1 = [block.L1 for block in self.blocks]
         self.L1 = enlarge_square_matrices(L1)
@@ -78,7 +80,6 @@ class SunModelMultiBlock:
         ax[2].set_title(r'$L1_2$')
         ax[3].spy(np.abs(self.L1))
         ax[3].set_title(r'$L1_{tot}$')
-
 
         L2 = [block.L2 for block in self.blocks]
         self.L2 = enlarge_square_matrices(L2)
@@ -96,7 +97,8 @@ class SunModelMultiBlock:
         """
         Apply the matching conditions for the blocks composing the multiblock. At this moment the system is composed by:
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
-        must be applied on the matrix L0, while the corresponding rows of L1 and L2 must be set to 0
+        are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching conditions
+        are guaranteed no matter the value of omega.
         """
 
         # starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
@@ -104,34 +106,40 @@ class SunModelMultiBlock:
         # variable, in the other we implement the same value of the derivative.
 
         # Let's start from the block 2, and consider the block itself and the previous.
-        rows_band = self.config.get_spanwise_points()*5
-        eq_counter = self.blocks[0].L0.shape[0] # this is the equation counter at the end of the first block
+        rows_band = self.config.get_spanwise_points() * 5
+        eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
-            # previous block (where same fluid conditions are implemented)
+            # previous block rows (where same fluid conditions are implemented)
             self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
 
-            # current block (where same fluid derivatives are implemented, by means of finite differences)
-            self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter+rows_band, :])
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band)
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2*rows_band:eq_counter - rows_band] = -np.eye(rows_band)
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2*rows_band] = -np.eye(rows_band)
+            # current block rows (where same fluid derivatives are implemented, by means of finite differences for simplicity)
+            # carrying out the finite difference we end up with:
+            # (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])
+            self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
+
+            dxi_up = self.blocks[iblock - 1].dataSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].dataSpectral.zGrid[-2, 0]
+            dxi_dn = self.blocks[iblock].dataSpectral.zGrid[1, 0] - self.blocks[iblock].dataSpectral.zGrid[0, 0]
+
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band) / dxi_dn
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter-rows_band:eq_counter] = np.eye(rows_band) / dxi_up
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2 * rows_band:eq_counter - rows_band] = -np.eye(rows_band)/dxi_up
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2 * rows_band] = -np.eye(rows_band)/dxi_dn
 
             # make zero all the relevant equations for the L1,L2 matrices
-            self.L1[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(self.L1[eq_counter - rows_band:eq_counter + rows_band, :])
-            self.L2[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(self.L2[eq_counter - rows_band:eq_counter + rows_band, :])
+            self.L1[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(
+                self.L1[eq_counter - rows_band:eq_counter + rows_band, :])
+            self.L2[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(
+                self.L2[eq_counter - rows_band:eq_counter + rows_band, :])
 
             eq_counter += self.blocks[iblock].L0.shape[0]
 
-
-
-
     def compute_P_Y_matrices(self):
         """
-
+        Once the L0,L1,L2 matrices have been modified by the boundary and matching conditions, build the Y and P matrices of the
+        equivalent linearized eigenvalue problem
         """
         Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
         Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
@@ -142,6 +150,10 @@ class SunModelMultiBlock:
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
     def solve_evp(self, sigma=0):
+        """
+        Solve the EVP using the Arnoldi Algorithm.
+        :param sigma: research center zone
+        """
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(self.Y - sigma * self.P)
         Y_tilde = np.dot(Y_tilde, self.P)
@@ -156,7 +168,7 @@ class SunModelMultiBlock:
 
     def sort_eigensolution(self):
         """
-        Sort the eigenvalues and eigenvectors from the most unstable to the least one.
+        Sort the eigenvalues and eigenvectors from the most unstable (bigger imaginary part) to the least one.
         """
         # make copies of the arrays to sort
         eigenfreqs = np.copy(self.eigenfreqs)
@@ -173,7 +185,6 @@ class SunModelMultiBlock:
             self.eigenfreqs_df[i] = df[sorted_indices[i]]
             self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
             self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
-
 
     def extract_eigenfields(self, n=None):
         """
@@ -200,7 +211,8 @@ class SunModelMultiBlock:
             ut_eig = []
             uz_eig = []
             p_eig = []
-            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled in this Alg.
+            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled to pass from a quadratic
+                # to a linear EVP, therefore we only care about the first half of the eigenvector
                 if (i) % 5 == 0:
                     rho_eig.append(eigenvector[i])
                 elif (i - 1) % 5 == 0 and i != 0:
@@ -335,7 +347,6 @@ class SunModelMultiBlock:
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 # plt.close()
-
 
     def write_results(self, save_filename=None, extension='csv'):
         """

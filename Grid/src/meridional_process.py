@@ -956,18 +956,6 @@ class MeridionalProcess:
             for n in n_array:
                 ax.plot(self.rho[n, :], '--s', self.span_wise_length[n, :], label='%.1f %%' % (n / self.nstream * 100))
             ax.set_xlabel(r'$\rho \ \mathrm{[kg/m^3]}$')
-        # elif field == 'ur':
-        #     ax.plot(self.span_wise_length[n, :], self.ur[n, :], '--s')
-        #     ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
-        # elif field == 'ut':
-        #     ax.plot(self.span_wise_length[n, :], self.ut[n, :], '--s')
-        #     ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
-        # elif field == 'uz':
-        #     ax.plot(self.span_wise_length[n, :], self.uz[n, :], '--s')
-        #     ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
-        # elif field == 'p':
-        #     ax.plot(self.span_wise_length[n, :], self.p[n, :], '--s')
-        #     ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
         if field == 'F_loss':
             for n in n_array:
                 sp_max = self.span_wise_length[n, :].max()
@@ -1669,7 +1657,7 @@ class MeridionalProcess:
         plt.title(r'$\hat{u}_{m}$')
         if save_fig:
             plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
@@ -1677,7 +1665,7 @@ class MeridionalProcess:
         plt.title(r'$\frac{\partial s}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
@@ -1685,7 +1673,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l}$')
         if save_fig:
             plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
@@ -1693,7 +1681,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,r}$')
         if save_fig:
             plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
@@ -1701,7 +1689,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,\theta}$')
         if save_fig:
             plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
@@ -1709,7 +1697,7 @@ class MeridionalProcess:
         plt.title(r'$F_{l,z}$')
         if save_fig:
             plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
@@ -1717,7 +1705,7 @@ class MeridionalProcess:
         plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
         if save_fig:
             plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
@@ -1725,7 +1713,7 @@ class MeridionalProcess:
         plt.title(r'$F_{\theta}$')
         if save_fig:
             plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
@@ -1733,7 +1721,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, r}$')
         if save_fig:
             plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
@@ -1741,7 +1729,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, \theta}$')
         if save_fig:
             plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
@@ -1749,7 +1737,7 @@ class MeridionalProcess:
         plt.title(r'$F_{t, z}$')
         if save_fig:
             plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, np.abs(self.Fturn), cmap=color_map, levels=N_levels)
@@ -1757,7 +1745,7 @@ class MeridionalProcess:
         plt.title(r'$|F_{t}|$')
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
@@ -1765,7 +1753,7 @@ class MeridionalProcess:
         plt.title(r'$\alpha$')
         if save_fig:
             plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
@@ -1773,7 +1761,7 @@ class MeridionalProcess:
         plt.title(r'$\beta$')
         if save_fig:
             plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     def contour_entropy_generation(self, save_fig=None):
         """
@@ -1825,14 +1813,16 @@ class MeridionalProcess:
             print("%s Domain" % (domain))
 
             # cosine directors of the loss force
-            tr = self.ur / self.u_mag_rel
-            ttheta = self.ut_rel / self.u_mag_rel
-            tz = self.uz / self.u_mag_rel
+            tr = -self.ur / self.u_mag_rel
+            ttheta = -self.ut_rel / self.u_mag_rel
+            tz = -self.uz / self.u_mag_rel
 
             # cosine directors of the turning force
             nr = self.Fturn_r / self.Fturn
             ntheta = self.Fturn_t / self.Fturn
             nz = self.Fturn_z / self.Fturn
+
+            self.plot_bfm_angles(nr, ntheta, nz, tr, ttheta, tz)
 
             self.S00 = np.zeros_like(self.ur)
             self.S01 = np.zeros_like(self.ur)
@@ -1982,17 +1972,54 @@ class MeridionalProcess:
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
 
-        fig, ax = plt.subplots(1,3,figsize=(14,8))
-        contour0 = ax[0].contourf(self.z_cg, self.r_cg, self.camber_normal_r, levels=15)
-        contour1 = ax[1].contourf(self.z_cg, self.r_cg, self.camber_normal_theta, levels=15)
-        contour2 = ax[2].contourf(self.z_cg, self.r_cg, self.camber_normal_z, levels=15)
+    def plot_bfm_angles(self, nr, ntheta, nz, tr, ttheta, tz):
+        """
+        Plot the angles that define the direction of the body force
+        :param nr: radial component of the turning force
+        :param ntheta: theta component of the turning force
+        :param nz: axial component of the turning force
+        :param tr: radial component of the loss force
+        :param ttheta: theta component of the loss force
+        :param tz: axial component of the loss force
+        """
+        fig, ax = plt.subplots(1, 3, figsize=(14, 8))
+        contour0 = ax[0].contourf(self.z_cg, self.r_cg, nr, levels=15)
+        contour1 = ax[1].contourf(self.z_cg, self.r_cg, ntheta, levels=15)
+        contour2 = ax[2].contourf(self.z_cg, self.r_cg, nz, levels=15)
         cbar0 = plt.colorbar(contour0)
         cbar1 = plt.colorbar(contour1)
         cbar2 = plt.colorbar(contour2)
-        ax[0].set_title(r'n_{r}')
-        ax[1].set_title(r'n_{\theta}')
-        ax[2].set_title(r'n_{z}')
-        # self.Fturn_check = self.Fturn_r ** 2 + self.Fturn_t ** 2 + self.Fturn_z ** 2 - self.Fturn ** 2
+        ax[0].set_title(r'$n_{r}$')
+        ax[1].set_title(r'$n_{\theta}$')
+        ax[2].set_title(r'$n_{z}$')
+        for i in range(0, 3):
+            ax[i].set_xticks([])
+            ax[i].set_yticks([])
+
+        fig, ax = plt.subplots(1, 3, figsize=(14, 8))
+        contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr, levels=15)
+        contour1 = ax[1].contourf(self.z_cg, self.r_cg, ttheta, levels=15)
+        contour2 = ax[2].contourf(self.z_cg, self.r_cg, tz, levels=15)
+        cbar0 = plt.colorbar(contour0)
+        cbar1 = plt.colorbar(contour1)
+        cbar2 = plt.colorbar(contour2)
+        ax[0].set_title(r'$l_{r}$')
+        ax[1].set_title(r'$l_{\theta}$')
+        ax[2].set_title(r'$l_{z}$')
+        for i in range(0, 3):
+            ax[i].set_xticks([])
+            ax[i].set_yticks([])
+
+        fig, ax = plt.subplots(1, 2, figsize=(10, 8))
+        contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr**2+ttheta**2+tz**2, levels=15)
+        contour1 = ax[1].contourf(self.z_cg, self.r_cg, nr**2+ntheta**2+nz**2, levels=15)
+        cbar0 = plt.colorbar(contour0)
+        cbar1 = plt.colorbar(contour1)
+        ax[0].set_title(r'$|l|$')
+        ax[1].set_title(r'$|n|$')
+        for i in range(0, 2):
+            ax[i].set_xticks([])
+            ax[i].set_yticks([])
 
     def compute_averaged_fluxes(self):
         """
