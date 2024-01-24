@@ -104,12 +104,12 @@ class Blade:
         self.theta_main = self.theta[self.idx_main]
 
         #inspect points
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
-        ax.set_xlabel('X Axis')
-        ax.set_ylabel('Y Axis')
-        ax.set_zlabel('Z Axis')
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
+        # ax.set_xlabel('X Axis')
+        # ax.set_ylabel('Y Axis')
+        # ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
         if len(self.x_main)%number_main_profiles!=0:
@@ -636,19 +636,21 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_blade_thickness(self):
+    def compute_blade_thickness(self, save_filename=None):
         self.thk = self.r_ss*self.theta_ss - self.r_ps*self.theta_ps
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_ss, self.r_ss, self.thk, cmap='jet', levels=N_levels)
+        plt.contourf(self.z_ss, self.r_ss, self.thk, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$t$')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
 
     def compute_blade_blockage(self, Nb, save_filename=None):
         self.blockage = 1-Nb*(np.abs(self.theta_ss-self.theta_ps))/2/np.pi
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_ss, self.r_ss, self.blockage, cmap='jet', levels=N_levels)
+        plt.contourf(self.z_ss, self.r_ss, self.blockage, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')

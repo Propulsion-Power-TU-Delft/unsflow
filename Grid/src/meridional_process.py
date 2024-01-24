@@ -413,22 +413,16 @@ class MeridionalProcess:
         self.u_mag = self.apply_gaussian_filter(self.u_mag)
         self.u_mag_rel = self.apply_gaussian_filter(self.u_mag_rel)
         self.drho_dr = self.apply_gaussian_filter(self.drho_dr)
-        self.drho_dtheta = self.apply_gaussian_filter(self.drho_dtheta)
         self.drho_dz = self.apply_gaussian_filter(self.drho_dz)
         self.dur_dr = self.apply_gaussian_filter(self.dur_dr)
-        self.dur_dtheta = self.apply_gaussian_filter(self.dur_dtheta)
         self.dur_dz = self.apply_gaussian_filter(self.dur_dz)
         self.dut_dr = self.apply_gaussian_filter(self.dut_dr)
-        self.dut_dtheta = self.apply_gaussian_filter(self.dut_dtheta)
         self.dut_dz = self.apply_gaussian_filter(self.dut_dz)
         self.duz_dr = self.apply_gaussian_filter(self.duz_dr)
-        self.duz_dtheta = self.apply_gaussian_filter(self.duz_dr)
         self.duz_dz = self.apply_gaussian_filter(self.duz_dz)
         self.dp_dr = self.apply_gaussian_filter(self.dp_dr)
-        self.dp_dtheta = self.apply_gaussian_filter(self.dp_dr)
         self.dp_dz = self.apply_gaussian_filter(self.dp_dz)
         self.ds_dr = self.apply_gaussian_filter(self.ds_dr)
-        self.ds_dtheta = self.apply_gaussian_filter(self.ds_dtheta)
         self.ds_dz = self.apply_gaussian_filter(self.ds_dz)
         # if self.bfm == 'radial':
         #     self.k = self.apply_gaussian_filter(self.k)
@@ -982,37 +976,35 @@ class MeridionalProcess:
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
 
-    def contour_all_plots(self):
+    def contour_all_plots(self, save_filename=None):
         """
         call all the contour plots
         """
-        self.contour_plot(field='rho')
-        self.contour_plot(field='ur')
-        self.contour_plot(field='ut')
-        self.contour_plot(field='ut_rel')
-        self.contour_plot(field='ut_drag')
-        self.contour_plot(field='uz')
-        self.contour_plot(field='p')
-        self.contour_plot(field='s')
-        self.contour_plot(field='T')
-        self.contour_plot(field='drho_dr')
-        self.contour_plot(field='drho_dz')
-        self.contour_plot(field='dur_dr')
-        self.contour_plot(field='dur_dz')
-        self.contour_plot(field='dut_dr')
-        self.contour_plot(field='dut_dz')
-        self.contour_plot(field='duz_dr')
-        self.contour_plot(field='duz_dz')
-        self.contour_plot(field='dp_dr')
-        self.contour_plot(field='dp_dz')
-        self.contour_plot(field='dT_dr')
-        self.contour_plot(field='dT_dz')
-        self.contour_plot(field='ds_dr')
-        self.contour_plot(field='ds_dz')
-        self.contour_plot(field='M')
-        self.contour_plot(field='p_tot')
-        self.contour_plot(field='p_tot_bar')
-        self.contour_plot(field='T_tot')
+        self.contour_plot(field='rho', save_filename=save_filename+'_rho')
+        self.contour_plot(field='ur', save_filename=save_filename+'_ur')
+        self.contour_plot(field='ut', save_filename=save_filename+'_ut')
+        self.contour_plot(field='ut_rel', save_filename=save_filename+'_ut_rel')
+        self.contour_plot(field='ut_drag', save_filename=save_filename+'_ut_drag')
+        self.contour_plot(field='uz', save_filename=save_filename+'_uz')
+        self.contour_plot(field='p', save_filename=save_filename+'_p')
+        self.contour_plot(field='s', save_filename=save_filename+'_s')
+        self.contour_plot(field='T', save_filename=save_filename+'_T')
+        self.contour_plot(field='drho_dr', save_filename=save_filename+'_drho_dr')
+        self.contour_plot(field='drho_dz', save_filename=save_filename+'_drho_dz')
+        self.contour_plot(field='dur_dr', save_filename=save_filename+'_dur_dr')
+        self.contour_plot(field='dur_dz', save_filename=save_filename+'_dur_dz')
+        self.contour_plot(field='dut_dr', save_filename=save_filename+'_dut_dr')
+        self.contour_plot(field='dut_dz', save_filename=save_filename+'_dut_dz')
+        self.contour_plot(field='duz_dr', save_filename=save_filename+'_duz_dr')
+        self.contour_plot(field='duz_dz', save_filename=save_filename+'_duz_dz')
+        self.contour_plot(field='dp_dr', save_filename=save_filename+'_dp_dr')
+        self.contour_plot(field='dp_dz', save_filename=save_filename+'_dp_dz')
+        self.contour_plot(field='ds_dr', save_filename=save_filename+'_ds_dr')
+        self.contour_plot(field='ds_dz', save_filename=save_filename+'_ds_dz')
+        self.contour_plot(field='M', save_filename=save_filename+'_M')
+        self.contour_plot(field='p_tot', save_filename=save_filename+'_p_tot')
+        self.contour_plot(field='p_tot_bar', save_filename=save_filename+'_p_tot_bar')
+        self.contour_plot(field='T_tot', save_filename=save_filename+'_T_tot')
 
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
@@ -1652,6 +1644,22 @@ class MeridionalProcess:
         self.beta = self.Fturn_t / (self.u_meridional * self.ut_rel)
 
         plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\partial s / \partial l$')
+        if save_fig:
+            plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            # plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\partial (r u_{\theta}) / \partial l$')
+        if save_fig:
+            plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+            # plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.title(r'$\hat{u}_{m}$')
@@ -1928,11 +1936,14 @@ class MeridionalProcess:
                     self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan] * dir_vector[0] + \
                                                  self.ds_dr[istream, ispan] * dir_vector[1]
 
+
     def compute_Ftheta(self):
         """
         Compute the modulus of the global theta component of the body force
         """
         dr_dl = self.ur / self.u_meridional
+        # plt.figure()
+        # plt.contourf(self.z_cg, self.r_cg, dr_dl, levels=50)
         dut_dl = np.zeros_like(dr_dl)
 
         # find the derivative projecting the gradients along the meridional velocity direction

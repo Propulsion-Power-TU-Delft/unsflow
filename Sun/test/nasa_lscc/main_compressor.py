@@ -4,7 +4,7 @@ import Sun
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 
-config = Config('../../../Grid/testcases/nasa_rotor_37/nasa_rotor_37.ini')
+config = Config('../../../Grid/testcases/nasa_lscc/nasa_lscc.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 

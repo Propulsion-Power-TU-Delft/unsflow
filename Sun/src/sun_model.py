@@ -655,7 +655,8 @@ class SunModel:
                 R[3, 3] = node.duz_dz
                 R[3, 4] = 0
 
-                R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz)
+                # R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz) # first version
+                R[4, 0] = -self.gmma/node.rho**2 * (node.ur*node.p*node.drho_dr + node.uz*node.p*node.drho_dz) # second version
                 R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho  # from Bird book this term could be zero
                 R[4, 2] = 0
                 R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz  # from Bird book this term could be zero

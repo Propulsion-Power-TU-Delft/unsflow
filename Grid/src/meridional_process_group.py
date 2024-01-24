@@ -483,7 +483,7 @@ class MeridionalProcessGroup:
         :param folder_name: location to store. if None, default one is selected
         """
         if folder_name is None:
-            folder_name = 'data'
+            folder_name = 'data/pickle'
 
         if file_name is None:
             file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)

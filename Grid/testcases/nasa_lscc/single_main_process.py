@@ -9,12 +9,13 @@ from Grid.src.config import Config
 start_time = time.time()
 print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-configuration_file = 'nasa_rotor_37.ini'
+configuration_file = 'nasa_lscc.ini'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-INLET_BLOCK = True
+INLET_BLOCK = False
 BLADE_BLOCK = True
-OUTLET_BLOCK = True
+OUTLET_BLOCK = False
+
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(config)
@@ -33,6 +34,7 @@ if INLET_BLOCK:
     block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
     block.extend_inlet_outlet_curves()
     block.find_intersections()
+    block.trim_inlet(z_trim=-0.20373/config.get_reference_length())
     block.inlet_zone_trim(mode=config.get_blade_inlet_type())
     block.spline_of_hub_shroud()
     block.spline_of_outlet()
@@ -45,10 +47,9 @@ if INLET_BLOCK:
     inlet_process.interpolate_on_working_grid()
     # inlet_process.compute_regressed_fields()
     inlet_process.compute_derived_quantities()
-    inlet_process.gauss_filtering()
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
-    # inlet_process.contour_all_plots(save_filename='inlet_%i_%i' %(strwise_pts[0], spwise_pts))
+    inlet_process.contour_all_plots(save_filename='inlet_%i_%i' %(strwise_pts[0], spwise_pts))
     delattr(inlet_process, 'data')  # release useless memory
 
 
@@ -59,7 +60,7 @@ if BLADE_BLOCK:
     bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
     bladed_block.extend_inlet_outlet_curves()
     bladed_block.find_intersections()
-    bladed_block.bladed_zone_trim(machine_type='axial')
+    bladed_block.bladed_zone_trim(machine_type='radial')
     bladed_block.spline_of_hub_shroud()
     bladed_block.spline_of_leading_trailing_edge()
     bladed_block.sample_hub_shroud()
@@ -72,9 +73,9 @@ if BLADE_BLOCK:
     blade.plot_camber_surface()
     blade.compute_camber_vectors()
     blade.compute_blade_camber_angles()
-    blade.compute_blade_thickness()
-    blade.compute_blade_blockage(36, save_filename='nasar37')
-    blade.show_blade_angles_contour(save_filename='nasar37')
+    blade.compute_blade_thickness(save_filename='nasar_lscc')
+    blade.compute_blade_blockage(36, save_filename='nasa_lscc')
+    blade.show_blade_angles_contour(save_filename='nasar_lscc')
 
     blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
     blade_process.compute_camber_angles()
@@ -83,7 +84,6 @@ if BLADE_BLOCK:
     blade_process.interpolate_on_working_grid()
     # blade_process.compute_regressed_fields()
     blade_process.compute_derived_quantities()
-    blade_process.gauss_filtering()
     blade_process.contour_entropy_generation()
     blade_process.compute_bfm_axial(save_fig=True)
     blade_process.compute_body_fource_S('rotor')
@@ -91,7 +91,7 @@ if BLADE_BLOCK:
     # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
     # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
     # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
-    # blade_process.contour_all_plots()
+    blade_process.contour_all_plots(save_filename='blade_%i_%i' %(strwise_pts[1], spwise_pts))
     delattr(blade_process, 'data')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,6 +102,7 @@ if OUTLET_BLOCK:
     block.extend_inlet_outlet_curves()
     block.find_intersections()
     block.outlet_zone_trim(mode=config.get_blade_outlet_type())
+    block.trim_outlet(r_trim=1.67 / config.get_reference_length())
     block.spline_of_hub_shroud()
     block.spline_of_inlet()
     block.sample_hub_shroud()
@@ -114,10 +115,9 @@ if OUTLET_BLOCK:
     outlet_process.interpolate_on_working_grid()
     # outlet_process.compute_regressed_fields()
     outlet_process.compute_derived_quantities()
-    outlet_process.gauss_filtering()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')
-    # outlet_process.contour_all_plots()
+    outlet_process.contour_all_plots(save_filename='outlet_%i_%i' %(strwise_pts[2], spwise_pts))
     # outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
     # outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
     delattr(outlet_process, 'data')
@@ -134,8 +134,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.assemble_body_force_fields()
     # if config.get_shock_smoothing:
     #     obj.shock_smoothing(INLET_NZ - 1)
-    # obj.gauss_filtering()
-    # obj.gauss_filtering_gradients()
     obj.compute_streamline_length()
     obj.show_grid(save_filename=config.picture_name_template)
 
@@ -154,7 +152,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0])
+    obj.store_pickle(file_name=config.picture_name_template+'_design')
     obj.print_memory_info()
 
 end_time = time.time()
@@ -163,4 +161,4 @@ print('Total time: %d sec' % (delta_time))
 
 
 
-plt.show()
+# plt.show()
