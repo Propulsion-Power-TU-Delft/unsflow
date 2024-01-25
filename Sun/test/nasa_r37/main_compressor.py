@@ -12,6 +12,7 @@ with open(config.get_meridional_pickle_filepath(), "rb") as file:
 sun_blocks = []
 for meridional_block in meridional_obj.group:
     compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
+    # compressor_grid.check_fields()
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
@@ -24,6 +25,11 @@ for sun_obj in sun_blocks:
     sun_obj.ShowSpectralGrid(save_filename='spectral_grid_%i' %(ii), mode='lines')
     sun_obj.ComputeJacobianPhysical()
     sun_obj.ContourTransformation(save_filename='jacobian_%i' %(ii))
+    # sun_obj.AddAMatrixToNodes()
+    # sun_obj.AddBMatrixToNodes()
+    # sun_obj.AddCMatrixToNodes()
+    # sun_obj.AddEMatrixToNodes()
+    # sun_obj.AddRMatrixToNodes()
     sun_obj.AddAMatrixToNodesFrancesco2()
     sun_obj.AddBMatrixToNodesFrancesco2()
     sun_obj.AddCMatrixToNodesFrancesco2()

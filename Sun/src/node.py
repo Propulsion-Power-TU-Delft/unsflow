@@ -180,4 +180,5 @@ class Node:
         :param Bhat: 2D array
         :param Ehat: 2D array
         """
-        self.Bhat, self.Ehat = Bhat, Ehat
+        self.Bhat = Bhat
+        self.Ehat = Ehat

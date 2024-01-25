@@ -214,3 +214,67 @@ class SunGrid():
         for ii in range(0, self.n_stream):
             for jj in range(0, self.n_span):
                 self.dataSet[ii, jj].Normalize(rho_ref, u_ref, x_ref)
+
+    def return_2d_field(self, field):
+        """
+        Given the name of the field, return the 2D array
+        """
+        size = self.dataSet.shape
+        array = np.zeros(size)
+        for i in range(size[0]):
+            for j in range(size[1]):
+                if field == 'z':
+                    array[i, j] = self.dataSet[i, j].z
+                elif field == 'r':
+                    array[i, j] = self.dataSet[i, j].r
+                elif field == 'rho':
+                    array[i, j] = self.dataSet[i, j].rho
+                elif field == 'ur':
+                    array[i, j] = self.dataSet[i, j].ur
+                elif field == 'ut':
+                    array[i, j] = self.dataSet[i, j].ut
+                elif field == 'uz':
+                    array[i, j] = self.dataSet[i, j].uz
+                elif field == 'p':
+                    array[i, j] = self.dataSet[i, j].p
+
+                elif field == 'drho_dr':
+                    array[i, j] = self.dataSet[i, j].drho_dr
+                elif field == 'drho_dz':
+                    array[i, j] = self.dataSet[i, j].drho_dz
+                elif field == 'dur_dr':
+                    array[i, j] = self.dataSet[i, j].dur_dr
+                elif field == 'dur_dz':
+                    array[i, j] = self.dataSet[i, j].dur_dz
+                elif field == 'dut_dr':
+                    array[i, j] = self.dataSet[i, j].dut_dr
+                elif field == 'dut_dz':
+                    array[i, j] = self.dataSet[i, j].dut_dz
+                elif field == 'duz_dr':
+                    array[i, j] = self.dataSet[i, j].duz_dr
+                elif field == 'duz_dz':
+                    array[i, j] = self.dataSet[i, j].duz_dz
+                elif field == 'dp_dr':
+                    array[i, j] = self.dataSet[i, j].dp_dr
+                elif field == 'dp_dz':
+                    array[i, j] = self.dataSet[i, j].dp_dz
+        return array
+
+
+
+    def check_fields(self):
+        """
+        Check the fluid dynamic fields associated to the nodes dataset.
+        """
+        z = self.return_2d_field('z')
+        r = self.return_2d_field('r')
+
+        fields = ['rho', 'ur', 'ut', 'uz', 'p', 'drho_dr', 'drho_dz', 'dur_dr', 'dur_dz', 'dut_dr', 'dut_dz', 'duz_dr', 'duz_dz',
+                  'dp_dr', 'dp_dz']
+
+        for field in fields:
+            plt.figure()
+            plt.contourf(z, r, self.return_2d_field(field), levels=N_levels, cmap=color_map)
+            plt.title(field)
+            plt.colorbar()
+

@@ -657,10 +657,10 @@ class SunModel:
 
                 # R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz) # first version
                 R[4, 0] = -self.gmma/node.rho**2 * (node.ur*node.p*node.drho_dr + node.uz*node.p*node.drho_dz) # second version
-                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho  # from Bird book this term could be zero
+                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho
                 R[4, 2] = 0
-                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz  # from Bird book this term could be zero
-                R[4, 4] = (-node.ur * node.drho_dr - node.uz * node.drho_dz) * self.gmma / node.rho
+                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz
+                R[4, 4] = -(self.gmma / node.rho) * (node.ur * node.drho_dr + node.uz * node.drho_dz)
 
                 if self.config.get_normalize_instability_equations():
                     R = self.NormalizeMatrix(R)  # normalization
@@ -727,14 +727,14 @@ class SunModel:
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                Bhat = -(1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdy -
+                Bhat = (1 / self.data.dataSet[ii, jj].J) * (-self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdy +
                                                              self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdy)
                 Ehat = (1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdx -
                                                             self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdx)
-                # # alternative formulation, provides the same results. (Check)
-                # Bhat = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
+                # # # alternative formulation, provides the same results. (Check)
+                # Bhat2 = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
                 #        self.data.dataSet[ii, jj].E * self.dxdz[ii, jj]
-                # Ehat = self.data.dataSet[ii, jj].B * self.dydr[ii, jj] + \
+                # Ehat2 = self.data.dataSet[ii, jj].B * self.dydr[ii, jj] + \
                 #        self.data.dataSet[ii, jj].E * self.dydz[ii, jj]
                 self.data.dataSet[ii, jj].AddHatMatrices(Bhat, Ehat)
 
@@ -769,7 +769,7 @@ class SunModel:
                 for m in range(0, self.dataSpectral.nAxialNodes):
                     tmp = Dx[ii, m] * B_ij  # 5x5 matrix to be added to a certain block of Q
                     row = node_counter * 5  # this selects the correct block along i of Q
-                    column = (self.data.dataSet[m, jj].nodeCounter) * 5  # it selects the correct block along j of Q
+                    column = self.data.dataSet[m, jj].nodeCounter * 5  # it selects the correct block along j of Q
 
                     if verbose:
                         print('Node [i,j] = (%i,%i)' % (ii, jj))
@@ -1410,7 +1410,6 @@ class SunModel:
         self.A_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                # add all the remaining terms on the diagonal
                 diag_block_ij = self.data.dataSet[ii, jj].A
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
@@ -1504,6 +1503,16 @@ class SunModel:
         (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z (the only constant matrix), and A and S
         (omega dependent) filled with zeros in correspondance of those BCs.
         """
+        # plot the matrices before the BC implementations
+        fig, ax = plt.subplots(1, 3, figsize=(16,6))
+        ax[0].spy(self.L0)
+        ax[1].spy(self.L1)
+        ax[2].spy(self.L2)
+        ax[0].set_title(r'$L_0$')
+        ax[1].set_title(r'$L_1$')
+        ax[2].set_title(r'$L_2$')
+
+
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 marker = self.data.dataSet[ii, jj].marker
@@ -1524,6 +1533,14 @@ class SunModel:
 
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
+
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+        ax[0].spy(self.L0)
+        ax[1].spy(self.L1)
+        ax[2].spy(self.L2)
+        ax[0].set_title(r'$L_0$')
+        ax[1].set_title(r'$L_1$')
+        ax[2].set_title(r'$L_2$')
 
     def set_boundary_conditions(self):
         """

@@ -26,6 +26,7 @@ data.process_from_ansys_csv()
 
 strwise_pts = config.get_streamwise_points()
 spwise_pts = config.get_spanwise_points()
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCKPROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK:
     print("\nINLET BLOCK PROCESSING...")
@@ -45,7 +46,7 @@ if INLET_BLOCK:
     inlet_process.interpolate_on_working_grid()
     # inlet_process.compute_regressed_fields()
     inlet_process.compute_derived_quantities()
-    inlet_process.gauss_filtering()
+    # inlet_process.gauss_filtering()
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
     # inlet_process.contour_all_plots(save_filename='inlet_%i_%i' %(strwise_pts[0], spwise_pts))
@@ -83,7 +84,7 @@ if BLADE_BLOCK:
     blade_process.interpolate_on_working_grid()
     # blade_process.compute_regressed_fields()
     blade_process.compute_derived_quantities()
-    blade_process.gauss_filtering()
+    # blade_process.gauss_filtering()
     blade_process.contour_entropy_generation()
     blade_process.compute_bfm_axial(save_fig=True)
     blade_process.compute_body_fource_S('rotor')
@@ -114,7 +115,7 @@ if OUTLET_BLOCK:
     outlet_process.interpolate_on_working_grid()
     # outlet_process.compute_regressed_fields()
     outlet_process.compute_derived_quantities()
-    outlet_process.gauss_filtering()
+    # outlet_process.gauss_filtering()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')
     # outlet_process.contour_all_plots()
@@ -154,7 +155,8 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
-    obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0])
+    obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0]+'_%i_%i_%i_%i'
+                               %(strwise_pts[0], strwise_pts[1], strwise_pts[2], spwise_pts))
     obj.print_memory_info()
 
 end_time = time.time()

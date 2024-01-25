@@ -64,12 +64,12 @@ line_width = 1
 light_line_width = 0.5
 
 # set number of levels in contourf plots
-N_levels = 50
+N_levels = 25
 N_levels_fine = 250
 
 
 # set colormap for contourf plots
-color_map = cm.jet
+color_map = cm.viridis
 
 # number of chars for the banners
 total_chars = 100

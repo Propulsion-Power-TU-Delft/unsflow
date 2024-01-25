@@ -100,6 +100,15 @@ class SunModelMultiBlock:
         are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching conditions
         are guaranteed no matter the value of omega.
         """
+        # plot the matrices before the BC implementations
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+        ax[0].spy(self.L0)
+        ax[1].spy(self.L1)
+        ax[2].spy(self.L2)
+        ax[0].set_title(r'$L_0$')
+        ax[1].set_title(r'$L_1$')
+        ax[2].set_title(r'$L_2$')
+
 
         # starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
         # block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
@@ -136,6 +145,15 @@ class SunModelMultiBlock:
 
             eq_counter += self.blocks[iblock].L0.shape[0]
 
+        # plot the matrices after the BC implementations
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+        ax[0].spy(self.L0)
+        ax[1].spy(self.L1)
+        ax[2].spy(self.L2)
+        ax[0].set_title(r'$L_0$')
+        ax[1].set_title(r'$L_1$')
+        ax[2].set_title(r'$L_2$')
+
     def compute_P_Y_matrices(self):
         """
         Once the L0,L1,L2 matrices have been modified by the boundary and matching conditions, build the Y and P matrices of the
@@ -155,15 +173,14 @@ class SunModelMultiBlock:
         :param sigma: research center zone
         """
         print("Transforming generalized EVP in standard one...")
-        Y_tilde = np.linalg.inv(self.Y - sigma * self.P)
-        Y_tilde = np.dot(Y_tilde, self.P)
+        Y_tilde = np.linalg.inv(self.Y - sigma * self.P) @ self.P
 
         print("Solving standard EVP...")
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
-        self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega()
-        self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega()
+        self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+        self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
         self.sort_eigensolution()
 
     def sort_eigensolution(self):
@@ -243,10 +260,9 @@ class SunModelMultiBlock:
         fig, ax = plt.subplots(figsize=fig_size)
         for mode in self.eigenfields:
             # if mode.is_physical:
-            rs = mode.eigenfrequency.real / self.config.get_reference_omega()
-            df = mode.eigenfrequency.imag / self.config.get_reference_omega()
-            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
-                       s=marker_size)
+            rs = mode.eigenfrequency.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+            df = mode.eigenfrequency.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red', s=marker_size)
         ax.set_xlabel(r'RS [-]')
         ax.set_ylabel(r'DF [-]')
         # ax.legend()
@@ -256,7 +272,7 @@ class SunModelMultiBlock:
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            # plt.close()
 
     def plot_eigenfields(self, n=None, save_filename=None):
         """
@@ -269,7 +285,7 @@ class SunModelMultiBlock:
         self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
         Nz = np.shape(z)[0]
         Nr = np.shape(z)[1]
-        modes_map = cm.bwr
+        modes_map = cm.viridis
 
         if n is None:
             n = len(self.eigenfields)
@@ -290,8 +306,8 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
-            # for c in cnt.collections:
-            #     c.set_edgecolor("face")
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -302,8 +318,8 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
-            # for c in cnt.collections:
-            #     c.set_edgecolor("face")
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -314,8 +330,8 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
-            # for c in cnt.collections:
-            #     c.set_edgecolor("face")
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -326,8 +342,8 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
-            # for c in cnt.collections:
-            #     c.set_edgecolor("face")
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -338,8 +354,8 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
-            # for c in cnt.collections:
-            #     c.set_edgecolor("face")
+            for c in cnt.collections:
+                c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -348,7 +364,7 @@ class SunModelMultiBlock:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 # plt.close()
 
-    def write_results(self, save_filename=None, extension='csv'):
+    def write_results(self, save_filename=None):
         """
         Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
         Possible file types are (csv, pickle).
@@ -362,15 +378,15 @@ class SunModelMultiBlock:
 
         eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
 
-        if extension == 'csv':
-            with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
-                fieldnames = ['RS', 'DF']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for num in eigenvalue_array:
-                    writer.writerow({'RS': num.real, 'DF': num.imag})
-        elif extension == 'pickle':
-            with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
-                pickle.dump(self.eigenfields, picklefile)
-        else:
-            raise ValueError("Incorrect Extension of the output file.")
+        # save the csv of the eigenfrequencies already normalized
+        with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
+            fieldnames = ['RS', 'DF']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for num in eigenvalue_array:
+                writer.writerow({'RS': num.real, 'DF': num.imag})
+
+        # save the pickle with all the eigenmodes
+        with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
+            pickle.dump(self.eigenfields, picklefile)
+
