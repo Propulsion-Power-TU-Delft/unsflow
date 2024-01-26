@@ -7,7 +7,7 @@ class AnnulusMeridional():
     insert the meridional flow fields as 2D array, in order to compute the eigenfrequencies of the annulus duct.
     """
 
-    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, grid_refinement=1):
+    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, config,grid_refinement=1):
         """
         Build the 2D arrays on the meridional plane, to be compatible with meridional_process object of a compressor.
         The non-dimensionalization procedure is treated later.
@@ -22,8 +22,10 @@ class AnnulusMeridional():
         :param v: tang. velocity 2D field
         :param w: axial velocity 2D field
         :param p: pressure 2D field
+        :param config: configuration file
         :param grid_refinement: refinement of the grid, to compute metrics on the finer grid, interpolating later on the coarse.
         """
+        self.config = config
         self.nAxialNodes = Nz
         self.nRadialNodes = Nr
         self.nstream = Nz
@@ -52,6 +54,7 @@ class AnnulusMeridional():
         self.duz_dz = np.zeros_like(self.rho)
         self.dp_dr = np.zeros_like(self.rho)
         self.dp_dz = np.zeros_like(self.rho)
+        self.domain = 'unbladed'
 
 
     def normalize_data(self, rho_ref, u_ref, x_ref):

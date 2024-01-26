@@ -1458,11 +1458,6 @@ class SunModel:
                 column = node_counter * 5  # diagonal block
                 self.add_to_S_g(diag_block_ij, row, column)
 
-        # # release memory not needed anymore
-        # self.Q_const = None
-        # self.C_g = None
-        # self.R_g = None
-
     def build_Z_global_matrix(self):
         """
         Build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R), where B_d+E_d=Q_const have been obtained with

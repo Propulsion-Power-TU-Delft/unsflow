@@ -52,46 +52,49 @@ class SunModelMultiBlock:
             self.z_grid = np.concatenate((self.z_grid, block.data.meridional_obj.z_grid), axis=0)
             self.r_grid = np.concatenate((self.r_grid, block.data.meridional_obj.r_grid), axis=0)
 
-    def construct_L_global_matrices(self):
+    def construct_L_global_matrices(self, visual_check = False):
         """
         Construct the global L matrices for the multiblock problem, stacking together along the diagonal the blocks of every
         sub block.
         """
         L0 = [block.L0 for block in self.blocks]
         self.L0 = enlarge_square_matrices(L0)
-        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-        ax[0].spy(np.abs(L0[0]))
-        ax[0].set_title(r'$L0_0$')
-        ax[1].spy(np.abs(L0[1]))
-        ax[1].set_title(r'$L0_1$')
-        ax[2].spy(np.abs(L0[2]))
-        ax[2].set_title(r'$L0_2$')
-        ax[3].spy(np.abs(self.L0))
-        ax[3].set_title(r'$L0_{tot}$')
+        if visual_check:
+            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+            ax[0].spy(np.abs(L0[0]))
+            ax[0].set_title(r'$L0_0$')
+            ax[1].spy(np.abs(L0[1]))
+            ax[1].set_title(r'$L0_1$')
+            ax[2].spy(np.abs(L0[2]))
+            ax[2].set_title(r'$L0_2$')
+            ax[3].spy(np.abs(self.L0))
+            ax[3].set_title(r'$L0_{tot}$')
 
         L1 = [block.L1 for block in self.blocks]
         self.L1 = enlarge_square_matrices(L1)
-        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-        ax[0].spy(np.abs(L1[0]))
-        ax[0].set_title(r'$L1_0$')
-        ax[1].spy(np.abs(L1[1]))
-        ax[1].set_title(r'$L1_1$')
-        ax[2].spy(np.abs(L1[2]))
-        ax[2].set_title(r'$L1_2$')
-        ax[3].spy(np.abs(self.L1))
-        ax[3].set_title(r'$L1_{tot}$')
+        if visual_check:
+            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+            ax[0].spy(np.abs(L1[0]))
+            ax[0].set_title(r'$L1_0$')
+            ax[1].spy(np.abs(L1[1]))
+            ax[1].set_title(r'$L1_1$')
+            ax[2].spy(np.abs(L1[2]))
+            ax[2].set_title(r'$L1_2$')
+            ax[3].spy(np.abs(self.L1))
+            ax[3].set_title(r'$L1_{tot}$')
 
         L2 = [block.L2 for block in self.blocks]
         self.L2 = enlarge_square_matrices(L2)
-        fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-        ax[0].spy(np.abs(L2[0]))
-        ax[0].set_title(r'$L2_0$')
-        ax[1].spy(np.abs(L2[1]))
-        ax[1].set_title(r'$L2_1$')
-        ax[2].spy(np.abs(L2[2]))
-        ax[2].set_title(r'$L2_2$')
-        ax[3].spy(np.abs(self.L2))
-        ax[3].set_title(r'$L2_{tot}$')
+        if visual_check:
+            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+            ax[0].spy(np.abs(L2[0]))
+            ax[0].set_title(r'$L2_0$')
+            ax[1].spy(np.abs(L2[1]))
+            ax[1].set_title(r'$L2_1$')
+            ax[2].spy(np.abs(L2[2]))
+            ax[2].set_title(r'$L2_2$')
+            ax[3].spy(np.abs(self.L2))
+            ax[3].set_title(r'$L2_{tot}$')
 
     def apply_matching_conditions(self):
         """
@@ -167,10 +170,11 @@ class SunModelMultiBlock:
         P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
-    def solve_evp(self, sigma=0):
+    def solve_evp(self, sigma=0, sort_mode = 'imaginary decreasing'):
         """
         Solve the EVP using the Arnoldi Algorithm.
         :param sigma: research center zone
+        :param sort_mode: specify the criterion on which the eigenfreqencies and modes are sorted
         """
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(self.Y - sigma * self.P) @ self.P
@@ -181,9 +185,9 @@ class SunModelMultiBlock:
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
         self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
         self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-        self.sort_eigensolution()
+        self.sort_eigensolution(sort_mode = sort_mode)
 
-    def sort_eigensolution(self):
+    def sort_eigensolution(self, sort_mode='imaginary decreasing'):
         """
         Sort the eigenvalues and eigenvectors from the most unstable (bigger imaginary part) to the least one.
         """
@@ -194,7 +198,10 @@ class SunModelMultiBlock:
         eigenvectors = np.copy(self.eigenmodes)
 
         # get the sorting indices following descending order of the damping factor
-        sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
+        if sort_mode == 'imaginary decreasing':
+            sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
+        elif sort_mode == 'real increasing':
+            sorted_indices = sorted(range(len(rs)), key=lambda i: rs[i], reverse=False)
 
         # order the original arrays following the sorting indices
         for i in range(len(sorted_indices)):
@@ -251,30 +258,38 @@ class SunModelMultiBlock:
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfrequencies(self, delimit=False, save_filename=None):
+    def plot_eigenfrequencies(self, delimit=None, normalization = True, save_filename=None):
         """
         Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
+        :param normalization: if True plots the Damping factor and rotational speed, otherwise it plots the dimensional frequency
         :param save_filename: if not None, save figure files
         """
         fig, ax = plt.subplots(figsize=fig_size)
-        for mode in self.eigenfields:
-            # if mode.is_physical:
-            rs = mode.eigenfrequency.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-            df = mode.eigenfrequency.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red', s=marker_size)
-        ax.set_xlabel(r'RS [-]')
-        ax.set_ylabel(r'DF [-]')
-        # ax.legend()
-        if delimit:
-            ax.set_xlim([-1.5, 1.5])
-            ax.set_ylim([-1, 0.5])
+        if normalization:
+            for mode in self.eigenfields:
+                # if mode.is_physical:
+                rs = mode.eigenfrequency.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+                df = mode.eigenfrequency.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+                ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red', s=marker_size)
+            ax.set_xlabel(r'RS [-]')
+            ax.set_ylabel(r'DF [-]')
+        else:
+            for mode in self.eigenfields:
+                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='red', edgecolors='red', s=marker_size)
+            ax.set_xlabel(r'$\omega_R \mathrm{[rad/s]}$')
+            ax.set_ylabel(r'$\omega_I \mathrm{[rad/s]}$')
+
+        if delimit is not None:
+            ax.set_xlim(delimit[0])
+            ax.set_ylim(delimit[1])
+
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
-    def plot_eigenfields(self, n=None, save_filename=None):
+    def plot_eigenfields(self, n=None, remove_isolines=False, save_filename=None):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
@@ -285,7 +300,7 @@ class SunModelMultiBlock:
         self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
         Nz = np.shape(z)[0]
         Nr = np.shape(z)[1]
-        modes_map = cm.viridis
+        modes_map = cm.coolwarm
 
         if n is None:
             n = len(self.eigenfields)
@@ -306,8 +321,9 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
+            if remove_isolines:
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -318,8 +334,9 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
+            if remove_isolines:
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -330,8 +347,9 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
+            if remove_isolines:
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -342,8 +360,9 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
+            if remove_isolines:
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -354,8 +373,9 @@ class SunModelMultiBlock:
 
             plt.figure(figsize=self.pic_size_contour)
             cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
+            if remove_isolines:
+                for c in cnt.collections:
+                    c.set_edgecolor("face")
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
