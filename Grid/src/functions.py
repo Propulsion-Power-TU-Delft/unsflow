@@ -4,6 +4,8 @@
 Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
+import os.path
+
 import matplotlib.pyplot as plt
 import sys
 import numpy as np
@@ -926,12 +928,20 @@ def print_object_memory_info(Object):
         attribute = getattr(Object, attribute_name)
         size_in_bytes = sys.getsizeof(attribute)
         tot_size += size_in_bytes
-        if size_in_bytes<1000:
+        if size_in_bytes < 1000:
             print(f"Size of {attribute_name}: {size_in_bytes} bytes")
         elif 1e3 <= size_in_bytes <= 1e6:
-            print(f"Size of {attribute_name}: {size_in_bytes/1e3} kbytes")
+            print(f"Size of {attribute_name}: {size_in_bytes / 1e3} kbytes")
         elif 1e6 <= size_in_bytes <= 1e9:
             print(f"Size of {attribute_name}: {size_in_bytes / 1e6} Mbytes")
         else:
             print(f"Size of {attribute_name}: {size_in_bytes / 1e9} Gbytes")
-    print(f"Total size: {tot_size/1e6} Mbytes")
+    print(f"Total size: {tot_size / 1e6} Mbytes")
+
+
+def create_folder(foldername):
+    """
+    If a folder doesn't exist, create it.
+    """
+    if not os.path.exists(foldername):
+        os.makedirs(foldername)

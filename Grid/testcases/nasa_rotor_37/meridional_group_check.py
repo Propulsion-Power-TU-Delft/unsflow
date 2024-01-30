@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 
-with open('data/nasa_rotor_37_20_20_30_20_cfg_09.pickle', 'rb') as file:
+with open('data/pickle/nasar37_p130_20_20_40_20.pickle', 'rb') as file:
     obj = pickle.load(file)
 
 obj.contour_fields()
@@ -23,6 +23,4 @@ obj.plot_averaged_fluxes(field='M_rel')
 obj.compute_performance()
 obj.print_performance()
 obj.print_memory_info()
-
-
 plt.show()

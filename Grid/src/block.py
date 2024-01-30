@@ -11,6 +11,7 @@ from .functions import cluster_sample_u, elliptic_grid_generation, compute_pictu
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
+from .area_element import AreaElement
 
 
 class Block:
@@ -497,3 +498,18 @@ class Block:
         plt.plot(self.shroud_trim.z_sample, self.shroud_trim.r_sample, '-o')
         plt.plot(self.leading_edge.z_sample, self.leading_edge.r_sample, '-o')
         plt.plot(self.trailing_edge.z_sample, self.trailing_edge.r_sample, '-o')
+
+    def compute_area_elements(self):
+        """
+        For each point of the primary grid, compute the associated area element object, and store it in a 2d array ordered
+        as the primary grid
+        """
+        self.area_elements = np.empty((self.nstream, self.nspan), dtype=AreaElement)
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj],
+                                                         self.z_grid_centers[ii, jj], self.r_grid_centers[ii, jj],
+                                                         self.z_grid_centers[ii+1, jj], self.r_grid_centers[ii+1, jj],
+                                                         self.z_grid_centers[ii+1, jj+1], self.r_grid_centers[ii+1, jj+1],
+                                                         self.z_grid_centers[ii, jj+1], self.r_grid_centers[ii, jj+1])
+

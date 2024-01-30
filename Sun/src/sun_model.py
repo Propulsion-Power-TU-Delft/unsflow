@@ -20,7 +20,7 @@ from .styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
-from Grid.src.functions import compute_picture_size
+from Grid.src.functions import compute_picture_size, create_folder
 
 
 class SunModel:
@@ -1492,21 +1492,28 @@ class SunModel:
         self.L2 = -tau * self.A_g
         print('test')
 
-    def apply_boundary_conditions_generalized(self):
+    def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """
-        Apply the boundary conditions for the considered system, whose equations are:
-        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z (the only constant matrix), and A and S
-        (omega dependent) filled with zeros in correspondance of those BCs.
+        Plot the L matrices, to inspect their composition
         """
-        # plot the matrices before the BC implementations
-        fig, ax = plt.subplots(1, 3, figsize=(16,6))
+        if save_filename is not None:
+            create_folder(save_foldername)
+
+        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
         ax[0].spy(self.L0)
         ax[1].spy(self.L1)
         ax[2].spy(self.L2)
         ax[0].set_title(r'$L_0$')
         ax[1].set_title(r'$L_1$')
         ax[2].set_title(r'$L_2$')
+        plt.savefig(os.path.join(save_foldername, save_filename + '.pdf'), bbox_inches='tight')
 
+    def apply_boundary_conditions_generalized(self):
+        """
+        Apply the boundary conditions for the considered system, whose equations are:
+        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z (the only constant matrix), and A and S
+        (omega dependent) filled with zeros in correspondance of those BCs.
+        """
 
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -1529,13 +1536,6 @@ class SunModel:
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
 
-        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
-        ax[0].spy(self.L0)
-        ax[1].spy(self.L1)
-        ax[2].spy(self.L2)
-        ax[0].set_title(r'$L_0$')
-        ax[1].set_title(r'$L_1$')
-        ax[2].set_title(r'$L_2$')
 
     def set_boundary_conditions(self):
         """

@@ -11,6 +11,7 @@ import Sun
 import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
+from scipy.sparse.linalg import eigs
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -21,7 +22,7 @@ T = 288  # temperature [K]
 L = 0.08  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
-rho = p / (R * T)  # density [kg/m3]
+rho = 1.013  # density [kg/m3]
 a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
 HARMONIC_ORDER = 1
 
@@ -36,11 +37,11 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30//2
+Nz = 30
 Nr = 10
 # Nz = 10//2
 # Nr = 5
-number_search = 5
+number_search = 50
 gradient_routine = 'numpy'
 gradient_order = 2
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
@@ -60,10 +61,10 @@ for ii in range(0, Nz):
         pressure[ii, jj] = p
 
 config = Config('duct.ini')
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L/2, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, config, grid_refinement=1)
+duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
+                                     density, radialVel, tangentialVel, axialVel, pressure, config)
 duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, config, grid_refinement=1)
+                                     density, radialVel, tangentialVel, axialVel, pressure, config)
 duct_Obj1.normalize_data(rho_ref, u_ref, x_ref)
 duct_Obj2.normalize_data(rho_ref, u_ref, x_ref)
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
@@ -73,10 +74,10 @@ sun_obj2 = Sun.src.SunModel(duct_grid2, config=config)
 
 
 ii = 0
-sun_blocks = [sun_obj1, sun_obj2]
+sun_blocks = [sun_obj1]
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('utheta')
+    sun_obj.set_overwriting_equation_euler_wall('ur')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodesFrancesco2()
@@ -97,16 +98,137 @@ for sun_obj in sun_blocks:
     sun_obj.apply_boundary_conditions_generalized()
     ii += 1
 
-sun_multiblock = SunModelMultiBlock(sun_blocks, config)
-sun_multiblock.construct_L_global_matrices()
-sun_multiblock.apply_matching_conditions()
-sun_multiblock.compute_P_Y_matrices()
-sun_multiblock.solve_evp(sort_mode='real increasing', sigma=25000/config.get_reference_omega())
-sun_multiblock.extract_eigenfields()
-sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', delimit=[[0, 35e3], [-2e3, 2e3]], normalization=False)
-sun_multiblock.plot_eigenfields(n=20, save_filename='eigenmode')
-sun_multiblock.write_results()
+# sun_multiblock = SunModelMultiBlock(sun_blocks, config)
+# sun_multiblock.construct_L_global_matrices()
+# sun_multiblock.apply_matching_conditions()
+# sun_multiblock.compute_P_Y_matrices()
+# sun_multiblock.solve_evp(sort_mode='real increasing', sigma=25000/config.get_reference_omega())
+# sun_multiblock.extract_eigenfields()
+# sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', normalization=False)
+# sun_multiblock.plot_eigenfields(n=10, save_filename='eigenmode')
+# sun_multiblock.write_results()
+
+
+
+
+
+
+
+
+
+omega_search = 25000
+sigma = omega_search / omega_ref
+A = sun_obj.L0
+M = sun_obj.L1
+C = np.linalg.inv(A - sigma * M) @ M
+print('Searching Eigenvalues with ARPACK...')
+eigenvalues, eigenvectors = eigs(C, k=number_search)
+eigenvalues = sigma + 1 / eigenvalues
+eigenvalues *= omega_ref
+
+# make copies of the arrays to sort
+eigenfreqs = np.copy(eigenvalues)
+df = np.copy(eigenvalues.imag)
+rs = np.copy(eigenvalues.real)
+eigenvecs = np.copy(eigenvectors)
+sorted_indices = sorted(range(len(rs)), key=lambda i: rs[i], reverse=False)
+
+# order the original arrays following the sorting indices
+for i in range(len(sorted_indices)):
+    eigenvalues[i] = eigenfreqs[sorted_indices[i]]
+    eigenvectors[:, i] = eigenvecs[:, sorted_indices[i]]
+
+
+
+# PLOT RESULTS
+marker_size = 50
+fig, ax = plt.subplots()
+ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
+           s=marker_size, label=r'numerical')
+ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
+ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
+ax.legend()
+ax.grid(alpha=0.3)
+fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
+
+# EIGENFUNCTIONS
+z_grid = sun_obj.data.zGrid
+r_grid = sun_obj.data.rGrid
+
+for ivec in range(np.shape(eigenvectors)[1]):
+    eigenvec = eigenvectors[:, ivec]
+    rho_eig = []
+    ur_eig = []
+    ut_eig = []
+    uz_eig = []
+    p_eig = []
+
+    for i in range(len(eigenvec)):
+        if (i) % 5 == 0:
+            rho_eig.append(eigenvec[i])
+        elif (i - 1) % 5 == 0 and i != 0:
+            ur_eig.append(eigenvec[i])
+        elif (i - 2) % 5 == 0 and i != 0:
+            ut_eig.append(eigenvec[i])
+        elif (i - 3) % 5 == 0 and i != 0:
+            uz_eig.append(eigenvec[i])
+        elif (i - 4) % 5 == 0 and i != 0:
+            p_eig.append(eigenvec[i])
+        else:
+            raise ValueError("Not correct indexing for eigenvector retrieval!")
+
+
+    def scaled_eigenvector_real(eig_list):
+        array = np.array(eig_list, dtype=complex)
+        array = np.reshape(array, (Nz, Nr))
+        array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
+        return array_real_scaled
+
+
+    rho_eig_r = scaled_eigenvector_real(rho_eig)
+    ur_eig_r = scaled_eigenvector_real(ur_eig)
+    ut_eig_r = scaled_eigenvector_real(ut_eig)
+    uz_eig_r = scaled_eigenvector_real(uz_eig)
+    p_eig_r = scaled_eigenvector_real(p_eig)
+
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=200, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
+    plt.colorbar()
+    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=200, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
+    plt.colorbar()
+    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=200, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
+    plt.colorbar()
+    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=200, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
+    plt.colorbar()
+    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=200, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
+    plt.colorbar()
+    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
 plt.show()
-
-

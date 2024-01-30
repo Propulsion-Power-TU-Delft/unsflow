@@ -12,9 +12,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import det
 from scipy.special import chebyt
-from src.compressor import Compressor
-from src.grid import DataGrid
-from src.sun_model import SunModel
+# from src.compressor import Compressor
+# from src.grid import DataGrid
+# from src.sun_model import SunModel
 
 
 # #show the basis functions
@@ -274,8 +274,8 @@ for i in range(0,N+1):
     x_GL = np.append(x_GL, np.cos(np.pi*i/(N))) #gauss lobatto points of the higher order polynonial
 
 X_GL, Y_GL = np.meshgrid(x_GL, x_GL)
-plt.figure()
-plt.scatter(X_GL,Y_GL)
+# plt.figure()
+# plt.scatter(X_GL,Y_GL)
 
 def function2D(X,Y):
     return (X**2+Y-3*np.sin(5*X*Y))
@@ -295,12 +295,24 @@ Z_GL = function2D(X_GL, Y_GL)
 # plt.contourf(X_GL,Y_GL,Z_GL)
 # plt.title('function discretized on GL points')
 
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(10,6))
-surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-fig.colorbar(surf, shrink=0.5, aspect=5)
-ax.set_xlabel(r'$x$')
-ax.set_ylabel(r'$y$')
-fig.suptitle(r'$z(x,y)$')
+# fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(10,6))
+# surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+# fig.colorbar(surf, shrink=0.5, aspect=5)
+# ax.set_xlabel(r'$x$')
+# ax.set_ylabel(r'$y$')
+# fig.suptitle(r'$z(x,y)$')
+
+fig, ax = plt.subplots(1, 2, figsize=(12,5))
+cnt0 = ax[0].contourf(X, Y, Z, cmap=cm.coolwarm)
+fig.colorbar(cnt0)
+cnt1 = ax[1].contourf(X_GL, Y_GL, Z_GL, cmap=cm.coolwarm)
+fig.colorbar(cnt1)
+ax[0].set_xlabel(r'$x$')
+ax[0].set_ylabel(r'$y$')
+ax[0].set_title(r'analytical $z(x,y)$')
+ax[1].set_title(r'gauss-lobatto $z(x,y)$')
+ax[1].set_xlabel(r'$x$')
+ax[1].set_ylabel(r'$y$')
 
 
 # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
@@ -313,20 +325,20 @@ fig.suptitle(r'$z(x,y)$')
 
 dZdX, dZdY = function2DGradient(X, Y)
 
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(10,6))
-surf = ax.plot_surface(X, Y, dZdX, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-ax.set_xlabel(r'$x$')
-ax.set_ylabel(r'$y$')
-fig.colorbar(surf, shrink=0.5, aspect=5)
-fig.suptitle(r'$\partial z / \partial x$')
-
-
-fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(10,6))
-surf = ax.plot_surface(X, Y, dZdY, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-ax.set_xlabel(r'$x$')
-ax.set_ylabel(r'$y$')
-fig.colorbar(surf, shrink=0.5, aspect=5)
-fig.suptitle(r'$\partial z / \partial y$')
+# fig, ax = plt.subplots()
+# cnt = ax.contourf(X, Y, dZdX, cmap=cm.coolwarm)
+# ax.set_xlabel(r'$x$')
+# ax.set_ylabel(r'$y$')
+# fig.colorbar(cnt)
+# ax.set_title(r'$\partial z / \partial x$')
+#
+#
+# fig, ax = plt.subplots()
+# cnt = ax.contourf(X, Y, dZdY, cmap=cm.coolwarm)
+# ax.set_xlabel(r'$x$')
+# ax.set_ylabel(r'$y$')
+# fig.colorbar(cnt)
+# ax.set_title(r'$\partial z / \partial y$')
 
 
 def ChebyshevDerivativeMatrix(x):
@@ -403,34 +415,38 @@ for ii in range(0,len(x_GL)):
     dZdY_GL[:,ii] = ChebyshevFirstOrderDerivativeBayliss(z,y)
 
 
-fig, ax = plt.subplots(1,2,subplot_kw={"projection": "3d"}, figsize=(10,6))
-surf1 = ax[0].plot_surface(X, Y, dZdX, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig, ax = plt.subplots(1, 2, figsize=(12,5))
+surf1 = ax[0].contourf(X, Y, dZdX, cmap=cm.coolwarm)
 ax[0].set_xlabel(r'$x$')
 ax[0].set_ylabel(r'$y$')
 ax[0].set_title(r'analytical $\partial z / \partial x$')
-surf2 = ax[1].plot_surface(X_GL, Y_GL, dZdX_GL, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig.colorbar(surf1)
+surf2 = ax[1].contourf(X_GL, Y_GL, dZdX_GL, cmap=cm.coolwarm)
 ax[1].set_xlabel(r'$x$')
 ax[1].set_ylabel(r'$y$')
 ax[1].set_title(r'gauss-lobatto $\partial z / \partial x$')
-fig.savefig('chebyshev_2D_derivatives_dx.pdf' ,bbox_inches='tight')
+fig.colorbar(surf2)
+# fig.savefig('chebyshev_2D_derivatives_dx.pdf' ,bbox_inches='tight')
 
 
-fig, ax = plt.subplots(1,2,subplot_kw={"projection": "3d"}, figsize=(10,6))
-surf1 = ax[0].plot_surface(X, Y, dZdY, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig, ax = plt.subplots(1, 2, figsize=(12,5))
+surf1 = ax[0].contourf(X, Y, dZdY, cmap=cm.coolwarm)
 ax[0].set_xlabel(r'$x$')
 ax[0].set_ylabel(r'$y$')
 ax[0].set_title(r'analytical $\partial z / \partial y$')
-surf2 = ax[1].plot_surface(X_GL, Y_GL, dZdY_GL, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+fig.colorbar(surf1)
+surf2 = ax[1].contourf(X_GL, Y_GL, dZdY_GL, cmap=cm.coolwarm)
 ax[1].set_xlabel(r'$x$')
 ax[1].set_ylabel(r'$y$')
 ax[1].set_title(r'gauss-lobatto $\partial z / \partial y$')
-fig.savefig('chebyshev_2D_derivatives_dy.pdf' ,bbox_inches='tight')
+fig.colorbar(surf2)
+# fig.savefig('chebyshev_2D_derivatives_dy.pdf' ,bbox_inches='tight')
 
 
 
 
 
-
+plt.show()
 
 
 

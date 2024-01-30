@@ -2341,3 +2341,9 @@ class MeridionalProcess:
             return f_new, df_dx_new, df_dy_new
         except:
             return f_new
+
+    def compute_meridional_area(self):
+        """
+        compute the meridional area of the block
+        """
+        pass

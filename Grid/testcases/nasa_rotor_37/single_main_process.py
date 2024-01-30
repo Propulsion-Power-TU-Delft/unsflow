@@ -40,6 +40,7 @@ if INLET_BLOCK:
     block.sample_hub_shroud()
     block.sample_inlet_outlet()
     block.compute_grid_points()
+    block.compute_double_grid()
 
     inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
@@ -66,6 +67,7 @@ if BLADE_BLOCK:
     bladed_block.sample_hub_shroud()
     bladed_block.sample_inlet_outlet()
     bladed_block.compute_grid_points()
+    bladed_block.compute_double_grid()
 
     blade.find_camber_surface(bladed_block)
     blade.find_ss_surface(bladed_block)
@@ -108,6 +110,7 @@ if OUTLET_BLOCK:
     block.sample_hub_shroud()
     block.sample_inlet_outlet()
     block.compute_grid_points()
+    block.compute_double_grid()
 
     outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
     outlet_process.compute_streamline_length()
@@ -140,19 +143,19 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.compute_streamline_length()
     obj.show_grid(save_filename=config.picture_name_template)
 
-    obj.contour_fields(save_filename=config.picture_name_template)
-    obj.contour_field_gradients(save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
+    # obj.contour_fields(save_filename=config.picture_name_template)
+    # obj.contour_field_gradients(save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
     obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0]+'_%i_%i_%i_%i'
@@ -165,4 +168,4 @@ print('Total time: %d sec' % (delta_time))
 
 
 
-plt.show()
+# plt.show()
