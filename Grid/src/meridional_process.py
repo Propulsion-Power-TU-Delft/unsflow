@@ -980,31 +980,31 @@ class MeridionalProcess:
         """
         call all the contour plots
         """
-        self.contour_plot(field='rho', save_filename=save_filename+'_rho')
-        self.contour_plot(field='ur', save_filename=save_filename+'_ur')
-        self.contour_plot(field='ut', save_filename=save_filename+'_ut')
-        self.contour_plot(field='ut_rel', save_filename=save_filename+'_ut_rel')
-        self.contour_plot(field='ut_drag', save_filename=save_filename+'_ut_drag')
-        self.contour_plot(field='uz', save_filename=save_filename+'_uz')
-        self.contour_plot(field='p', save_filename=save_filename+'_p')
-        self.contour_plot(field='s', save_filename=save_filename+'_s')
-        self.contour_plot(field='T', save_filename=save_filename+'_T')
-        self.contour_plot(field='drho_dr', save_filename=save_filename+'_drho_dr')
-        self.contour_plot(field='drho_dz', save_filename=save_filename+'_drho_dz')
-        self.contour_plot(field='dur_dr', save_filename=save_filename+'_dur_dr')
-        self.contour_plot(field='dur_dz', save_filename=save_filename+'_dur_dz')
-        self.contour_plot(field='dut_dr', save_filename=save_filename+'_dut_dr')
-        self.contour_plot(field='dut_dz', save_filename=save_filename+'_dut_dz')
-        self.contour_plot(field='duz_dr', save_filename=save_filename+'_duz_dr')
-        self.contour_plot(field='duz_dz', save_filename=save_filename+'_duz_dz')
-        self.contour_plot(field='dp_dr', save_filename=save_filename+'_dp_dr')
-        self.contour_plot(field='dp_dz', save_filename=save_filename+'_dp_dz')
-        self.contour_plot(field='ds_dr', save_filename=save_filename+'_ds_dr')
-        self.contour_plot(field='ds_dz', save_filename=save_filename+'_ds_dz')
-        self.contour_plot(field='M', save_filename=save_filename+'_M')
-        self.contour_plot(field='p_tot', save_filename=save_filename+'_p_tot')
-        self.contour_plot(field='p_tot_bar', save_filename=save_filename+'_p_tot_bar')
-        self.contour_plot(field='T_tot', save_filename=save_filename+'_T_tot')
+        self.contour_plot(field='rho', save_filename=save_filename + '_rho')
+        self.contour_plot(field='ur', save_filename=save_filename + '_ur')
+        self.contour_plot(field='ut', save_filename=save_filename + '_ut')
+        self.contour_plot(field='ut_rel', save_filename=save_filename + '_ut_rel')
+        self.contour_plot(field='ut_drag', save_filename=save_filename + '_ut_drag')
+        self.contour_plot(field='uz', save_filename=save_filename + '_uz')
+        self.contour_plot(field='p', save_filename=save_filename + '_p')
+        self.contour_plot(field='s', save_filename=save_filename + '_s')
+        self.contour_plot(field='T', save_filename=save_filename + '_T')
+        self.contour_plot(field='drho_dr', save_filename=save_filename + '_drho_dr')
+        self.contour_plot(field='drho_dz', save_filename=save_filename + '_drho_dz')
+        self.contour_plot(field='dur_dr', save_filename=save_filename + '_dur_dr')
+        self.contour_plot(field='dur_dz', save_filename=save_filename + '_dur_dz')
+        self.contour_plot(field='dut_dr', save_filename=save_filename + '_dut_dr')
+        self.contour_plot(field='dut_dz', save_filename=save_filename + '_dut_dz')
+        self.contour_plot(field='duz_dr', save_filename=save_filename + '_duz_dr')
+        self.contour_plot(field='duz_dz', save_filename=save_filename + '_duz_dz')
+        self.contour_plot(field='dp_dr', save_filename=save_filename + '_dp_dr')
+        self.contour_plot(field='dp_dz', save_filename=save_filename + '_dp_dz')
+        self.contour_plot(field='ds_dr', save_filename=save_filename + '_ds_dr')
+        self.contour_plot(field='ds_dz', save_filename=save_filename + '_ds_dz')
+        self.contour_plot(field='M', save_filename=save_filename + '_M')
+        self.contour_plot(field='p_tot', save_filename=save_filename + '_p_tot')
+        self.contour_plot(field='p_tot_bar', save_filename=save_filename + '_p_tot_bar')
+        self.contour_plot(field='T_tot', save_filename=save_filename + '_T_tot')
 
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
         """
@@ -1936,7 +1936,6 @@ class MeridionalProcess:
                     self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan] * dir_vector[0] + \
                                                  self.ds_dr[istream, ispan] * dir_vector[1]
 
-
     def compute_Ftheta(self):
         """
         Compute the modulus of the global theta component of the body force
@@ -2022,8 +2021,8 @@ class MeridionalProcess:
             ax[i].set_yticks([])
 
         fig, ax = plt.subplots(1, 2, figsize=(10, 8))
-        contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr**2+ttheta**2+tz**2, levels=15)
-        contour1 = ax[1].contourf(self.z_cg, self.r_cg, nr**2+ntheta**2+nz**2, levels=15)
+        contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr ** 2 + ttheta ** 2 + tz ** 2, levels=15)
+        contour1 = ax[1].contourf(self.z_cg, self.r_cg, nr ** 2 + ntheta ** 2 + nz ** 2, levels=15)
         cbar0 = plt.colorbar(contour0)
         cbar1 = plt.colorbar(contour1)
         ax[0].set_title(r'$|l|$')
@@ -2347,3 +2346,143 @@ class MeridionalProcess:
         compute the meridional area of the block
         """
         pass
+
+    def check_bfm_local(self):
+        """
+        Check that the fields obtained in the bfm reflect the actual governing equations.
+        """
+        F_theta_check = self.u_meridional / self.r_cg * self.drut_dl - self.Ftheta
+        F_loss_check = self.T * self.u_meridional / self.u_mag_rel * self.ds_dl - self.Floss
+
+        plt.figure()
+        plt.contourf(self.z_cg, self.r_cg, F_theta_check, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title('F theta check')
+
+        plt.figure()
+        plt.contourf(self.z_cg, self.r_cg, F_loss_check, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title('F loss check')
+
+    def compute_mass_flow_rate(self):
+        """
+        For each element compute the mass flow rate, defined as the quantity of mass per time
+        """
+        self.mass_flow = np.zeros_like(self.z_cg)
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                dl_vec = self.block.area_elements[ii, jj].line_elements[1].l_orth
+                rho = self.rho[ii, jj]
+                u = np.array([self.uz[ii, jj], self.ur[ii, jj]])
+                r = self.r_cg[ii, jj]
+                blockage = self.blade.blockage[ii, jj]
+                self.mass_flow[ii, jj] = (dl_vec @ u) * rho * 2 * np.pi * r * blockage
+
+    def compute_mass_flow_in_out(self):
+        """
+        For each element compute the mass flow rate in and out of the domain
+        """
+        conversion_factor = self.config.get_reference_density() * self.config.get_reference_velocity() * self.config.get_reference_length() ** 2
+        self.mass_flow_in = np.sum(self.mass_flow[0, :]) * conversion_factor
+        self.mass_flow_out = np.sum(self.mass_flow[-1, :]) * conversion_factor
+
+        print('Inlet mass flow: %.3f [kg/s]' % (self.mass_flow_in))
+        print('Outlet mass flow: %.3f [kg/s]' % (self.mass_flow_out))
+
+    def check_mass_flow_streamwise(self):
+        """
+        For each stream position, compute the mass flow. Then check all of them together
+        """
+        conversion_factor = self.config.get_reference_density() * self.config.get_reference_velocity() * self.config.get_reference_length() ** 2
+        mdot = np.array([np.sum(self.mass_flow[i, :]) for i in range(self.nstream)]) * conversion_factor
+        plt.figure()
+        plt.plot([i for i in range(self.nstream)], mdot, '-o')
+        plt.xlabel('streamwise position index')
+        plt.ylabel(r'$\dot{m} \ \mathrm{[kg/s]}$')
+        plt.grid(alpha=0.2)
+
+    def check_bfm_global(self):
+        """
+        Check if the momentum equation is respected when integrating it over all the blade swept volume. The reference
+        equations to be check are the eqs. 3.1 in Benneke MSc thesis.
+        convection_term + pressure_term = force_term should be satisfied
+        """
+        force_term = self.compute_global_force()
+        pressure_term = self.compute_pressure_term()
+        convection_term = self.compute_convection_term()
+        self.check_body_force_residual = convection_term + pressure_term - force_term
+
+    def compute_global_force(self):
+        """
+        Integrate the BFM all over the domain
+        """
+        global_force = np.zeros(3)  # components (r, theta, z)
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                dv = self.block.area_elements[ii, jj].area*2*np.pi*self.r_cg[ii, jj]
+                global_force[0] += self.rho[ii, jj] * (self.Fturn_r[ii, jj] + self.Floss_r[ii, jj])*dv
+                global_force[1] += self.rho[ii, jj] * (self.Fturn_t[ii, jj] + self.Floss_t[ii, jj])*dv
+                global_force[2] += self.rho[ii, jj] * (self.Fturn_z[ii, jj] + self.Floss_z[ii, jj])*dv
+        return global_force
+
+    def compute_pressure_term(self):
+        """
+        Compute the pressure term all over the domain boundaries
+        """
+        pressure_term = np.zeros(3)  # components (r, theta, z)
+
+        # hub integration
+        for ii in range(self.nstream):
+            p = self.p[ii, 0]
+            dl_r = self.block.area_elements[ii, 0].line_elements[0].l_orth[1]
+            dl_z = self.block.area_elements[ii, 0].line_elements[0].l_orth[0]
+            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[ii, 0]
+            pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[ii, 0]
+
+        # shroud integration
+        for ii in range(self.nstream):
+            p = self.p[ii, -1]
+            dl_r = self.block.area_elements[ii, -1].line_elements[2].l_orth[1]
+            dl_z = self.block.area_elements[ii, -1].line_elements[2].l_orth[0]
+            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[ii, -1]
+            pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[ii, -1]
+
+        # inlet integration
+        for jj in range(self.nspan):
+            p = self.p[0, jj]
+            dl_r = self.block.area_elements[0, jj].line_elements[3].l_orth[1]
+            dl_z = self.block.area_elements[0, jj].line_elements[3].l_orth[0]
+            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[0, jj]
+            pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[0, jj]
+
+        # outlet integration
+        for jj in range(self.nspan):
+            p = self.p[-1, jj]
+            dl_r = self.block.area_elements[-1, jj].line_elements[1].l_orth[1]
+            dl_z = self.block.area_elements[-1, jj].line_elements[1].l_orth[0]
+            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[-1, jj]
+            pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[-1, jj]
+
+        return pressure_term
+
+    def compute_convection_term(self):
+        """
+        Compute the convection term all over the domain boundaries
+        """
+        convection_term = np.zeros(3)  # components (r, theta, z)
+
+        # inlet integration
+        for jj in range(self.nspan):
+            ur = self.ur[0, jj]
+            ut = self.ut[0, jj]
+            uz = self.uz[0, jj]
+            UU = np.array([[ur**2, ur*ut, ur*uz],
+                           [ur*ut, ut**2, ut*uz],
+                           [ur*uz, ut*uz, uz**2]])
+            dl = np.array([[self.block.area_elements[0, jj].line_elements[3].l_orth[1]],
+                           [0],
+                           [self.block.area_elements[0, jj].line_elements[3].l_orth[0]]])
+            convection_term += 2*np.pi*self.r_cg[0, jj]*(UU@dl.flatten())
+
+        return convection_term
+

@@ -499,7 +499,7 @@ class Block:
         plt.plot(self.leading_edge.z_sample, self.leading_edge.r_sample, '-o')
         plt.plot(self.trailing_edge.z_sample, self.trailing_edge.r_sample, '-o')
 
-    def compute_area_elements(self):
+    def create_area_elements(self):
         """
         For each point of the primary grid, compute the associated area element object, and store it in a 2d array ordered
         as the primary grid
@@ -512,4 +512,48 @@ class Block:
                                                          self.z_grid_centers[ii+1, jj], self.r_grid_centers[ii+1, jj],
                                                          self.z_grid_centers[ii+1, jj+1], self.r_grid_centers[ii+1, jj+1],
                                                          self.z_grid_centers[ii, jj+1], self.r_grid_centers[ii, jj+1])
+
+    def compute_areas(self):
+        """
+        For each area element of the grid, compute the associated area
+        """
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                self.area_elements[ii, jj].compute_area()
+
+    def compute_total_area(self):
+        """
+        Compute the total area
+        """
+        self.create_area_elements()  # generate the area elements
+        self.compute_areas()  # compute the area of the all the elements
+
+        # compute total area of the block
+        self.area_total = 0
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                self.area_total += self.area_elements[ii, jj].area
+
+
+    def plot_areas_distribution(self):
+        """
+        Given the information in the areas element, plot the areas scatter distribution
+        """
+        areas = np.zeros((self.nstream, self.nspan))
+        for ii in range(self.nstream):
+            for jj in range(self.nspan):
+                areas[ii, jj] = self.area_elements[ii, jj].area
+
+        plt.figure()
+        plt.scatter(self.z_grid_cg, self.r_grid_cg, c=areas)
+        for ii in range(self.nstream+1):
+            plt.plot(self.z_grid_centers[ii, :], self.r_grid_centers[ii, :], 'k', linewidth=0.5)
+        for jj in range(self.nspan+1):
+            plt.plot(self.z_grid_centers[:, jj], self.r_grid_centers[:, jj], 'k', linewidth=0.5)
+        # plt.gca().set_aspect('equal', adjustable='box')
+        plt.colorbar()
+        # plt.savefig('prova.pdf', bbox_inches='tight')
+
+
+
 

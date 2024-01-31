@@ -49,10 +49,16 @@ class AreaElement:
             if i==len(self.z_v)-1:
                 plt.plot([self.z_v[-1], self.z_v[0]], [self.r_v[-1], self.r_v[0]], 'k', linewidth=0.5)
 
-
         plt.legend()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
 
-
+    def compute_area(self):
+        """
+        Thanks to the information stored in the line elements, compute the area of the area element. Divide the rectangle
+        in 2, and use cross product in each obtained triangle.
+        """
+        A1 = np.linalg.norm(np.cross(self.line_elements[0].l_vec, self.line_elements[1].l_vec) / 2)
+        A2 = np.linalg.norm(np.cross(self.line_elements[2].l_vec, self.line_elements[3].l_vec) / 2)
+        self.area = A1+A2
 

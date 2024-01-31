@@ -41,6 +41,7 @@ if INLET_BLOCK:
     block.sample_inlet_outlet()
     block.compute_grid_points()
     block.compute_double_grid()
+    block.compute_total_area()
 
     inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
@@ -68,6 +69,7 @@ if BLADE_BLOCK:
     bladed_block.sample_inlet_outlet()
     bladed_block.compute_grid_points()
     bladed_block.compute_double_grid()
+    bladed_block.compute_total_area()
 
     blade.find_camber_surface(bladed_block)
     blade.find_ss_surface(bladed_block)
@@ -111,6 +113,7 @@ if OUTLET_BLOCK:
     block.sample_inlet_outlet()
     block.compute_grid_points()
     block.compute_double_grid()
+    block.compute_total_area()
 
     outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
     outlet_process.compute_streamline_length()

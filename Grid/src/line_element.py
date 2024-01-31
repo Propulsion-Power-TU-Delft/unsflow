@@ -23,10 +23,11 @@ class LineElement:
         self.r_cg = np.mean(self.r)
 
         self.l_vec = np.array([z2 - z1, r2 - r1])  # vector of the line, pointing from 1 to 2
+        self.l_orth = np.array([self.l_vec[1], -self.l_vec[0]])
         self.l_norm = np.linalg.norm(self.l_vec)  # line length
-        self.l_tan_dir = self.l_vec / self.l_norm  # direction of the line vector, from 1 to 2
-        self.l_orth_dir = np.array(
-            [self.l_vec[1], -self.l_vec[0]])  # direction of the orthogonal line vector, +90deg in clockwise direction
+        self.l_vec_dir = self.l_vec / self.l_norm  # direction of the line vector, from 1 to 2
+        self.l_orth_dir = self.l_orth / self.l_norm  # direction of the orthogonal vector, from 1 to 2
+
 
     def plot_line_element(self):
         """
