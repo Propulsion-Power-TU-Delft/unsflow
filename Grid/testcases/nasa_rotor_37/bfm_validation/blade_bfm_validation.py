@@ -6,9 +6,7 @@ import numpy as np
 import Grid
 from Grid.src.config import Config
 
-start_time = time.time()
-print('Start execution:')
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 configuration_file = 'nasa_rotor_37.ini'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
@@ -47,7 +45,7 @@ blade.compute_camber_vectors()
 blade.compute_blade_camber_angles()
 blade.compute_blade_thickness()
 blade.compute_blade_blockage(36, save_filename='nasar37')
-blade.show_blade_angles_contour(save_filename='nasar37')
+# blade.show_blade_angles_contour(save_filename='nasar37')
 
 blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
 blade_process.compute_camber_angles()
@@ -55,9 +53,9 @@ blade_process.compute_streamline_length()
 blade_process.compute_spanwise_length()
 blade_process.interpolate_on_working_grid()
 blade_process.compute_derived_quantities()
-blade_process.compute_bfm_axial(save_fig=True)
-# blade_process.compute_body_fource_S('rotor')
-# blade_process.compute_averaged_fluxes()
+blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
+blade_process.compute_body_fource_S('rotor')
+blade_process.compute_averaged_fluxes()
 blade_process.compute_mass_flow_rate()
 blade_process.compute_mass_flow_in_out()
 blade_process.check_mass_flow_streamwise()

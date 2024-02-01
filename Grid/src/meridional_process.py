@@ -19,6 +19,7 @@ from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Sun.src.styles import total_chars, total_chars_mid
 from scipy.interpolate import griddata
 from Grid.src.weighted_least_squares import *
+import matplotlib.lines as mlines
 
 
 class MeridionalProcess:
@@ -1634,11 +1635,11 @@ class MeridionalProcess:
     def compute_bfm_axial(self, mode='averaged', save_fig=False):
         """
         Compute the BFM fields, following the description in Fang et al. 2023.
-        :param mode: if global is the default one, without any artifical fixing.
+        :param mode: averaged uses the average inlet-outlet quantities to compute the gradients. The local uses the local values.
         :param save_fig: if specified, saves the figure
         """
         self.compute_Floss(mode=mode)
-        self.compute_Ftheta()
+        self.compute_Ftheta(mode=mode)
         self.compute_Fturn()
         self.alpha = self.Floss / (self.u_mag_rel ** 2)
         self.beta = self.Fturn_t / (self.u_meridional * self.ut_rel)
@@ -1926,7 +1927,7 @@ class MeridionalProcess:
             for ispan in range(self.nspan):
                 self.ds_dl[:, ispan] = (self.s[-1, ispan] - self.s[0, ispan]) / self.stream_line_length[-1, ispan]
 
-        elif mode == 'global':
+        elif mode == 'local':
             # calculate ds_dl projecting the gradient of s over the direction in which the particle is going
             for istream in range(self.nAxialNodes):
                 for ispan in range(self.nRadialNodes):
@@ -1936,28 +1937,31 @@ class MeridionalProcess:
                     self.ds_dl[istream, ispan] = self.ds_dz[istream, ispan] * dir_vector[0] + \
                                                  self.ds_dr[istream, ispan] * dir_vector[1]
 
-    def compute_Ftheta(self):
+    def compute_Ftheta(self, mode='averaged'):
         """
         Compute the modulus of the global theta component of the body force
         """
         dr_dl = self.ur / self.u_meridional
-        # plt.figure()
-        # plt.contourf(self.z_cg, self.r_cg, dr_dl, levels=50)
         dut_dl = np.zeros_like(dr_dl)
-
-        # find the derivative projecting the gradients along the meridional velocity direction
-        for istream in range(self.nAxialNodes):
+        if mode=='local':
+            # find the derivative projecting the gradients along the meridional velocity direction
+            for istream in range(self.nAxialNodes):
+                for ispan in range(self.nRadialNodes):
+                    dir_vector = np.array((self.uz[istream, ispan],
+                                           self.ur[istream, ispan]))
+                    dir_vector /= np.linalg.norm(dir_vector)
+                    dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
+                                             self.dut_dr[istream, ispan] * dir_vector[1]
+        elif mode == 'averaged':
             for ispan in range(self.nRadialNodes):
-                dir_vector = np.array((self.uz[istream, ispan],
-                                       self.ur[istream, ispan]))
-                dir_vector /= np.linalg.norm(dir_vector)
-                dut_dl[istream, ispan] = self.dut_dz[istream, ispan] * dir_vector[0] + \
-                                         self.dut_dr[istream, ispan] * dir_vector[1]
-        for ispan in range(self.nRadialNodes):
-            dut_dl[:, ispan] = (self.ut[-1, ispan] - self.ut[0, ispan]) / self.stream_line_length[-1, ispan]
-            dr_dl[:, ispan] = (self.r_cg[-1, ispan] - self.r_cg[0, ispan]) / self.stream_line_length[-1, ispan]
+                dut_dl[:, ispan] = (self.ut[-1, ispan] - self.ut[0, ispan]) / self.stream_line_length[-1, ispan]
+                dr_dl[:, ispan] = (self.r_cg[-1, ispan] - self.r_cg[0, ispan]) / self.stream_line_length[-1, ispan]
+        else:
+            raise ValueError("Mode not recognized")
+
         self.drut_dl = dr_dl * self.ut + self.r_cg * dut_dl
         self.Ftheta = self.u_meridional * self.drut_dl / self.r_cg
+
         if self.config.get_clipping_bfm():
             if self.config.get_omega_shaft() < 0:
                 idx = np.where(self.Ftheta > 0)
@@ -2396,7 +2400,7 @@ class MeridionalProcess:
         conversion_factor = self.config.get_reference_density() * self.config.get_reference_velocity() * self.config.get_reference_length() ** 2
         mdot = np.array([np.sum(self.mass_flow[i, :]) for i in range(self.nstream)]) * conversion_factor
         plt.figure()
-        plt.plot([i for i in range(self.nstream)], mdot, '-o')
+        plt.plot([i for i in range(self.nstream)], mdot, '-ko')
         plt.xlabel('streamwise position index')
         plt.ylabel(r'$\dot{m} \ \mathrm{[kg/s]}$')
         plt.grid(alpha=0.2)
@@ -2410,7 +2414,32 @@ class MeridionalProcess:
         force_term = self.compute_global_force()
         pressure_term = self.compute_pressure_term()
         convection_term = self.compute_convection_term()
-        self.check_body_force_residual = convection_term + pressure_term - force_term
+        self.check_body_force_residual_relative = (convection_term + pressure_term - force_term)/force_term*100
+        print('Relative Residual Error percent of BFM: r %.2f, theta %.2f, z %.2f.' %(self.check_body_force_residual_relative[0],
+                                                                          self.check_body_force_residual_relative[1],
+                                                                          self.check_body_force_residual_relative[2]))
+
+        width = 0.25  # the width of the bars
+        multiplier = 0
+        names = ("Radial", "Tangential", "Axial")
+        terms = {'Pressure Term' : pressure_term,
+                 'Convection Term' : convection_term,
+                 'BFM Term' : force_term}
+        x = np.arange(len(names))
+        fig, ax = plt.subplots(layout='constrained')
+
+        for attribute, measurement in terms.items():
+            offset = width * multiplier
+            rects = ax.bar(x + offset, measurement, width, label=attribute)
+            ax.bar_label(rects, padding=3)
+            multiplier += 1
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.set_ylabel('Balance Terms')
+        ax.set_title('Momentum Conservation')
+        ax.set_xticks(x + width, names)
+        ax.legend(loc='upper left', ncols=3)
+
 
     def compute_global_force(self):
         """
@@ -2427,16 +2456,18 @@ class MeridionalProcess:
 
     def compute_pressure_term(self):
         """
-        Compute the pressure term all over the domain boundaries
+        Compute the pressure term all over the domain boundaries. Given that the problem is axisymmetric, the radial summation
+        and the tangential summation will be zero by simmetry. Therefore, we only need to integrate the terms in the axial
+        direction
         """
         pressure_term = np.zeros(3)  # components (r, theta, z)
+
 
         # hub integration
         for ii in range(self.nstream):
             p = self.p[ii, 0]
             dl_r = self.block.area_elements[ii, 0].line_elements[0].l_orth[1]
             dl_z = self.block.area_elements[ii, 0].line_elements[0].l_orth[0]
-            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[ii, 0]
             pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[ii, 0]
 
         # shroud integration
@@ -2444,7 +2475,6 @@ class MeridionalProcess:
             p = self.p[ii, -1]
             dl_r = self.block.area_elements[ii, -1].line_elements[2].l_orth[1]
             dl_z = self.block.area_elements[ii, -1].line_elements[2].l_orth[0]
-            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[ii, -1]
             pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[ii, -1]
 
         # inlet integration
@@ -2452,7 +2482,6 @@ class MeridionalProcess:
             p = self.p[0, jj]
             dl_r = self.block.area_elements[0, jj].line_elements[3].l_orth[1]
             dl_z = self.block.area_elements[0, jj].line_elements[3].l_orth[0]
-            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[0, jj]
             pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[0, jj]
 
         # outlet integration
@@ -2460,7 +2489,6 @@ class MeridionalProcess:
             p = self.p[-1, jj]
             dl_r = self.block.area_elements[-1, jj].line_elements[1].l_orth[1]
             dl_z = self.block.area_elements[-1, jj].line_elements[1].l_orth[0]
-            pressure_term[0] += p * dl_r * 2 * np.pi * self.r_cg[-1, jj]
             pressure_term[2] += p * dl_z * 2 * np.pi * self.r_cg[-1, jj]
 
         return pressure_term
@@ -2483,6 +2511,19 @@ class MeridionalProcess:
                            [0],
                            [self.block.area_elements[0, jj].line_elements[3].l_orth[0]]])
             convection_term += 2*np.pi*self.r_cg[0, jj]*(UU@dl.flatten())
+
+        # outlet integration
+        for jj in range(self.nspan):
+            ur = self.ur[-1, jj]
+            ut = self.ut[-1, jj]
+            uz = self.uz[-1, jj]
+            UU = np.array([[ur ** 2, ur * ut, ur * uz],
+                           [ur * ut, ut ** 2, ut * uz],
+                           [ur * uz, ut * uz, uz ** 2]])
+            dl = np.array([[self.block.area_elements[-1, jj].line_elements[1].l_orth[1]],
+                           [0],
+                           [self.block.area_elements[-1, jj].line_elements[1].l_orth[0]]])
+            convection_term += 2 * np.pi * self.r_cg[-1, jj] * (UU @ dl.flatten())
 
         return convection_term
 
