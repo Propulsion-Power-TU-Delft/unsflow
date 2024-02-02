@@ -57,16 +57,16 @@ class AnnulusMeridional():
         self.domain = 'unbladed'
 
 
-    def normalize_data(self, rho_ref, u_ref, x_ref):
+    def normalize_data(self):
         """
         given the fundamental quantities, normalize everything
         """
-        self.rho_ref = rho_ref
-        self.u_ref = u_ref
-        self.x_ref = x_ref
-        self.p_ref = rho_ref*u_ref**2
-        self.t_ref = x_ref/u_ref
-        self.omega_ref = 1/self.t_ref
+        self.rho_ref = self.config.get_reference_density()
+        self.u_ref = self.config.get_reference_velocity()
+        self.x_ref = self.config.get_reference_length()
+        self.p_ref = self.rho_ref*self.u_ref**2
+        self.t_ref = self.config.get_reference_time()
+        self.omega_ref = self.config.get_reference_omega()
 
         self.r_grid /= self.x_ref
         self.z_grid /= self.x_ref
