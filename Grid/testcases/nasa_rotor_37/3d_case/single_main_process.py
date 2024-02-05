@@ -83,6 +83,13 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     blade_process.compute_spanwise_length()
+    # blade_process.circumferential_average()
+
+
+
+
+
+
     blade_process.interpolate_on_working_grid()
     blade_process.compute_derived_quantities()
     blade_process.contour_entropy_generation()

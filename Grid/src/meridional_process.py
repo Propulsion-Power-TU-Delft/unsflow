@@ -113,8 +113,8 @@ class MeridionalProcess:
         print_banner_end()
 
         self.instantiate_2d_fields()
-        if self.verbose:
-            print('performing circumferential averages...')
+        print('performing circumferential averages...')
+
         # loop over all the elements in the meridional grid
         for istream in range(0, self.nstream):
             for ispan in range(0, self.nspan):
@@ -181,34 +181,6 @@ class MeridionalProcess:
                 # self.ds_dtheta[istream, ispan] = self.mass_average(self.data.ds_dtheta, idx)
                 # self.ds_dz[istream, ispan] = self.mass_average(self.data.ds_dz, idx)
 
-                # body force model quantities
-                if bfm == 'radial':
-                    self.k[istream, ispan] = self.mass_average(self.data.k, idx, istream, ispan)
-                    self.F_ntheta[istream, ispan] = self.mass_average(self.data.F_ntheta, idx, istream, ispan)
-                    self.F_nr[istream, ispan] = self.mass_average(self.data.F_nr, idx, istream, ispan)
-                    self.F_nz[istream, ispan] = self.mass_average(self.data.F_nz, idx, istream, ispan)
-                    self.a1[istream, ispan] = self.mass_average(self.data.a1, idx, istream, ispan)
-                    self.a2[istream, ispan] = self.mass_average(self.data.a2, idx, istream, ispan)
-                    self.a3[istream, ispan] = self.mass_average(self.data.a3, idx, istream, ispan)
-                    self.Fn_prime_ss_00[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_00, idx, istream, ispan)
-                    self.Fn_prime_ss_01[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_01, idx, istream, ispan)
-                    self.Fn_prime_ss_02[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_02, idx, istream, ispan)
-                    self.Fn_prime_ss_10[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_10, idx, istream, ispan)
-                    self.Fn_prime_ss_11[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_11, idx, istream, ispan)
-                    self.Fn_prime_ss_12[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_12, idx, istream, ispan)
-                    self.Fn_prime_ss_20[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_20, idx, istream, ispan)
-                    self.Fn_prime_ss_21[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_21, idx, istream, ispan)
-                    self.Fn_prime_ss_22[istream, ispan] = self.mass_average(self.data.Fn_prime_ss_22, idx, istream, ispan)
-                    self.Ft_prime_ss_00[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_00, idx, istream, ispan)
-                    self.Ft_prime_ss_01[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_01, idx, istream, ispan)
-                    self.Ft_prime_ss_02[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_02, idx, istream, ispan)
-                    self.Ft_prime_ss_10[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_10, idx, istream, ispan)
-                    self.Ft_prime_ss_11[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_11, idx, istream, ispan)
-                    self.Ft_prime_ss_12[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_12, idx, istream, ispan)
-                    self.Ft_prime_ss_20[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_20, idx, istream, ispan)
-                    self.Ft_prime_ss_21[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_21, idx, istream, ispan)
-                    self.Ft_prime_ss_22[istream, ispan] = self.mass_average(self.data.Ft_prime_ss_22, idx, istream, ispan)
-
         if fix_borders:
             print("WARNING: borders have been artifically fixed")
             self.fix_borders()
@@ -218,7 +190,7 @@ class MeridionalProcess:
             self.gauss_filtering()
 
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
-        self.ut_drag = self.data.omega_shaft * self.r_cg
+        self.ut_drag = self.config.get_omega_shaft() * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
@@ -2527,3 +2499,34 @@ class MeridionalProcess:
 
         return convection_term
 
+    def compute_body_force_residuals(self):
+        """
+        Use the 2d meridional equations to check the body forces obtained from the residual of the simulations data averaged
+        """
+        Fr = self.ur*self.dur_dr + self.uz*self.dur_dz-self.ut**2/self.r_cg+1/self.rho*self.dp_dr
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, Fr, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_cg, self.r_cg, Fr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.title(r'$F_{r,res}$')
+
+        Ft = self.ur * self.dut_dr + self.uz * self.dut_dz + self.ur*self.ut/self.r_cg
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, Ft, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_cg, self.r_cg, Ft, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.title(r'$F_{\theta,res}$')
+
+        Fz = self.ur*self.duz_dr + self.uz*self.duz_dz + 1/self.rho*self.dp_dz
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, Fz, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_cg, self.r_cg, Fz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.title(r'$F_{z,res}$')
+
+        Wf = Fz*self.uz + self.ut*Ft + self.ur*Fr
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, Wf, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_cg, self.r_cg, Wf, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.title(r'$W_{F,res}$')

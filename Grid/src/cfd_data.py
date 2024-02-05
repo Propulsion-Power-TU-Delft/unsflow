@@ -63,49 +63,40 @@ class CfdData:
         read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
         as well as the correct names of the variables.
         """
-        self.data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
-        self.x = self.data[' X [ m ]'].values
-        self.y = self.data[' Y [ m ]'].values
-        self.z = self.data[' Z [ m ]'].values
+        data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
+        self.x = data[' X [ m ]'].values
+        self.y = data[' Y [ m ]'].values
+        self.z = data[' Z [ m ]'].values
         self.r = sqrt(self.x ** 2 + self.y ** 2)
         self.theta = np.arctan2(self.y, self.x)
-        self.rho = self.data[' Density [ kg m^-3 ]'].values
-        self.ux = self.data[' Velocity in Stn Frame u [ m s^-1 ]'].values
-        self.uy = self.data[' Velocity in Stn Frame v [ m s^-1 ]'].values
-        self.uz = self.data[' Velocity in Stn Frame w [ m s^-1 ]'].values
-        self.p = self.data[' Pressure [ Pa ]'].values
-        self.T = self.data[' Temperature [ K ]'].values
-        self.s = self.data[' Static Entropy [ J kg^-1 K^-1 ]'].values
-        self.volume = self.data[' Volume [ m^3 ]'].values
-        self.finite_volume = self.data[' Volume of Finite Volumes [ m^3 ]'].values
+        self.rho = data[' Density [ kg m^-3 ]'].values
+        self.ur = data[' Velocity Radial [ m s^-1 ]'].values
+        self.ut = data[' Velocity in Stn Frame Circumferential [ m s^-1 ]'].values
+        self.uz = data[' Velocity Axial [ m s^-1 ]'].values
+        self.p = data[' Pressure [ Pa ]'].values
+        self.T = data[' Temperature [ K ]'].values
+        self.s = data[' Static Entropy [ J kg^-1 K^-1 ]'].values
+        self.finite_volume = data[' Volume of Finite Volumes [ m^3 ]'].values
 
         # gradients
-        # self.drho_dx = self.data[' Density.Gradient X [ kg m^-4 ]'].values
-        # self.drho_dy = self.data[' Density.Gradient Y [ kg m^-4 ]'].values
-        # self.drho_dz = self.data[' Density.Gradient Z [ kg m^-4 ]'].values
-        # self.dux_dx = self.data[' Velocity in Stn Frame u.Gradient X [ s^-1 ]'].values
-        # self.dux_dy = self.data[' Velocity in Stn Frame u.Gradient Y [ s^-1 ]'].values
-        # self.dux_dz = self.data[' Velocity in Stn Frame u.Gradient Z [ s^-1 ]'].values
-        # self.duy_dx = self.data[' Velocity in Stn Frame v.Gradient X [ s^-1 ]'].values
-        # self.duy_dy = self.data[' Velocity in Stn Frame v.Gradient Y [ s^-1 ]'].values
-        # self.duy_dz = self.data[' Velocity in Stn Frame v.Gradient Z [ s^-1 ]'].values
-        # self.duz_dx = self.data[' Velocity in Stn Frame w.Gradient X [ s^-1 ]'].values
-        # self.duz_dy = self.data[' Velocity in Stn Frame w.Gradient Y [ s^-1 ]'].values
-        # self.duz_dz = self.data[' Velocity in Stn Frame w.Gradient Z [ s^-1 ]'].values
-        # self.dp_dx = self.data[' Pressure.Gradient X [ kg m^-2 s^-2 ]'].values
-        # self.dp_dy = self.data[' Pressure.Gradient Y [ kg m^-2 s^-2 ]'].values
-        # self.dp_dz = self.data[' Pressure.Gradient Z [ kg m^-2 s^-2 ]'].values
-        # self.ds_dx = self.data[' Static Entropy.Gradient X [ m s^-2 K^-1 ]'].values
-        # self.ds_dy = self.data[' Static Entropy.Gradient Y [ m s^-2 K^-1 ]'].values
-        # self.ds_dz = self.data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
+        self.drho_dr = data[' drhodr [ kg m^-4 ]'].values
+        self.drho_dz = data[' Density.Gradient Z [ kg m^-4 ]'].values
+        self.dur_dr = data[' durdr [ s^-1 ]'].values
+        self.dur_dz = data[' Velocity Radial.Gradient Z [ s^-1 ]'].values
+        self.dut_dr = data[' dutdr [ s^-1 ]'].values
+        self.dut_dz = data[' Velocity in Stn Frame Circumferential.Gradient Z [ s^-1 ]'].values
+        self.duz_dr = data[' duzdr [ s^-1 ]'].values
+        self.duz_dz = data[' Velocity in Stn Frame w.Gradient Z [ s^-1 ]'].values
+        self.dp_dr = data[' dpdr [ kg m^-2 s^-2 ]'].values
+        self.dp_dz = data[' Pressure.Gradient Z [ kg m^-2 s^-2 ]'].values
+        self.ds_dr = data[' dsdr [ m s^-2 K^-1 ]'].values
+        self.ds_dz = data[' Static Entropy.Gradient Z [ m s^-2 K^-1 ]'].values
 
         if self.config.get_normalize_data():
             self.normalize_data()
-            if self.verbose:
-                print('CFD data normalized')
+            print('CFD data normalized')
         else:
-            if self.verbose:
-                print('CFD data NOT normalized')
+            print('CFD data NOT normalized')
 
     def read_from_ansys_2D_csv(self):
         """
@@ -141,9 +132,6 @@ class CfdData:
         self.ds_dr = self.data[' dsdr MCA on Meridional Surface [ m s^-2 K^-1 ]']
         self.ds_dz = self.data[' Static Entropy.Gradient Z MCA on Meridional Surface [ m s^-2 K^-1 ]']
 
-
-
-
         if self.config.get_normalize_data():
             self.normalize_data()
 
@@ -153,10 +141,10 @@ class CfdData:
         It computes the derived quantities from the dataset, and the original ones all converted in cylindrical frame.
         :param cut: if True, it cuts the domain thanks to the information contained in the cut_block border (if present).
         """
-        if (self.config.get_cfd_filetype() == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
-            if self.verbose:
-                print('cutting domain...')
-            self.cut_domain(self.cut_block.border)
+        # if (self.config.get_cfd_filetype() == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
+        #     if self.verbose:
+        #         print('cutting domain...')
+        #     self.cut_domain(self.cut_block.border)
 
         self.compute_derived_quantities()
 
@@ -165,7 +153,7 @@ class CfdData:
         Compute derived quantities, in particular the vector components in the cylindrical reference frame.
         """
         self.u_mag = sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
-        self.ut_drag = self.r * self.omega_shaft  # drag velocity
+        self.ut_drag = self.r * self.config.get_omega_shaft()  # drag velocity
         self.ut_rel = self.ut - self.ut_drag  # relative velocity
         self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
@@ -421,5 +409,8 @@ class CfdData:
 
         self.ds_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
         self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+
+        # self.dT_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        # self.dT_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
 
 
