@@ -350,6 +350,8 @@ class CfdData:
         """
 
         # non-dimensionalize cordinates
+        self.x /= self.config.get_reference_length()
+        self.y /= self.config.get_reference_length()
         self.z /= self.config.get_reference_length()
         self.r /= self.config.get_reference_length()
         self.omega_shaft = self.config.get_omega_shaft() / self.config.get_reference_omega()

@@ -20,6 +20,10 @@ from Sun.src.styles import total_chars, total_chars_mid
 from scipy.interpolate import griddata
 from Grid.src.weighted_least_squares import *
 import matplotlib.lines as mlines
+from scipy.interpolate import LinearNDInterpolator
+from scipy import integrate
+
+
 
 
 class MeridionalProcess:
@@ -202,6 +206,92 @@ class MeridionalProcess:
             self.mu = self.compute_mu()
             self.F_t = self.mu * self.u_mag_rel ** 2
 
+    def circumferential_average_interpolation(self):
+        """
+        Perform circumferential averages of the CFD dataset on the Block grid, based on 3d interpolation.
+        """
+        print_banner_begin("CIRCUMFERENTIAL AVG. METHOD")
+        print(f"{'Averaging Method:':<{total_chars_mid}}{'3D Interpolation':>{total_chars_mid}}")
+        print_banner_end()
+
+        self.instantiate_2d_fields()
+        print('performing circumferential averages...')
+
+        # loop over all the elements in the meridional grid
+        for istream in range(0, self.nstream):
+            for ispan in range(0, self.nspan):
+                # get the indexes of the elements used for the interpolation
+                distance = ((self.data.z - self.z_cg[istream, ispan]) ** 2 + (self.data.r - self.r_cg[istream, ispan]) ** 2)
+
+
+                if istream==self.nstream-1 or ispan==self.nspan-1:
+                    ref_distance = np.sqrt((self.z_cg[istream, ispan] - self.z_cg[istream-1, ispan]) ** 2 + \
+                                           (self.r_cg[istream, ispan] - self.r_cg[istream, ispan-1]) ** 2)
+                else:
+                    ref_distance = np.sqrt((self.z_cg[istream + 1, ispan] - self.z_cg[istream, ispan]) ** 2 + \
+                                           (self.r_cg[istream, ispan + 1] - self.r_cg[istream, ispan + 1]) ** 2)
+                idx = np.where(distance < ref_distance)
+                points_considered = len(self.data.z[idx])
+                assert (points_considered > 1000)
+
+                # plt.figure()
+                # plt.plot(self.z_cg[:, 0], self.r_cg[:, 0], 'black')
+                # plt.plot(self.z_cg[:, -1], self.r_cg[:, -1], 'black')
+                # plt.plot(self.z_cg[0, :], self.r_cg[0, :], 'black')
+                # plt.plot(self.z_cg[-1, :], self.r_cg[-1, :], 'black')
+                # plt.scatter(self.z_cg[istream, ispan], self.r_cg[istream, ispan])
+                # theta = np.linspace(0, 2 * np.pi, 50)
+                # x = self.z_cg[istream, ispan] + ref_distance * np.cos(theta)
+                # y = self.r_cg[istream, ispan] + ref_distance * np.sin(theta)
+                # plt.plot(x, y, 'red')
+
+                # main quantities
+                self.rho[istream, ispan] = self.three_dimensional_weighted_interpolation(self.data.rho, idx, istream, ispan)
+                # self.ur[istream, ispan] = self.mass_average(self.data.ur, idx, istream, ispan)
+                # self.ut[istream, ispan] = self.mass_average(self.data.ut, idx, istream, ispan)
+                # self.uz[istream, ispan] = self.mass_average(self.data.uz, idx, istream, ispan)
+                # self.p[istream, ispan] = self.mass_average(self.data.p, idx, istream, ispan)
+                # self.T[istream, ispan] = self.mass_average(self.data.T, idx, istream, ispan)
+                # self.s[istream, ispan] = self.mass_average(self.data.s, idx, istream, ispan)
+                # self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx, istream, ispan)
+                # self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx, istream, ispan)
+
+                # gradients
+                # self.drho_dr[istream, ispan] = self.mass_average(self.data.drho_dr, idx)
+                # self.drho_dtheta[istream, ispan] = self.mass_average(self.data.drho_dtheta, idx)
+                # self.drho_dz[istream, ispan] = self.mass_average(self.data.drho_dz, idx)
+                # self.dur_dr[istream, ispan] = self.mass_average(self.data.dur_dr, idx)
+                # self.dur_dtheta[istream, ispan] = self.mass_average(self.data.dur_dtheta, idx)
+                # self.dur_dz[istream, ispan] = self.mass_average(self.data.dur_dz, idx)
+                # self.dut_dr[istream, ispan] = self.mass_average(self.data.dut_dr, idx)
+                # self.dut_dtheta[istream, ispan] = self.mass_average(self.data.dut_dtheta, idx)
+                # self.dut_dz[istream, ispan] = self.mass_average(self.data.dut_dz, idx)
+                # self.duz_dr[istream, ispan] = self.mass_average(self.data.duz_dr, idx)
+                # self.duz_dtheta[istream, ispan] = self.mass_average(self.data.duz_dtheta, idx)
+                # self.duz_dz[istream, ispan] = self.mass_average(self.data.duz_dz, idx)
+                # self.dp_dr[istream, ispan] = self.mass_average(self.data.dp_dr, idx)
+                # self.dp_dtheta[istream, ispan] = self.mass_average(self.data.dp_dtheta, idx)
+                # self.dp_dz[istream, ispan] = self.mass_average(self.data.dp_dz, idx)
+                # self.ds_dr[istream, ispan] = self.mass_average(self.data.ds_dr, idx)
+                # self.ds_dtheta[istream, ispan] = self.mass_average(self.data.ds_dtheta, idx)
+                # self.ds_dz[istream, ispan] = self.mass_average(self.data.ds_dz, idx)
+
+
+
+        # self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
+        # self.ut_drag = self.config.get_omega_shaft() * self.r_cg
+        # self.ut_rel = self.ut - self.ut_drag
+        # self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+        # self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
+        # self.M = self.u_mag / sqrt(self.GAMMA * self.p / self.rho)
+        # self.M_rel = self.u_mag_rel / sqrt(self.GAMMA * self.p / self.rho)
+        # self.compute_stagnation_quantities()
+
+        plt.figure()
+        plt.contourf(self.z_cg, self.r_cg, self.rho, levels=N_levels)
+        plt.colorbar()
+
+
     def compute_derived_quantities(self):
         """
         From the primary averaged fields, compute derived fields.
@@ -226,8 +316,7 @@ class MeridionalProcess:
         self.p = np.zeros((self.nstream, self.nspan))
         self.T = np.zeros((self.nstream, self.nspan))
         self.s = np.zeros((self.nstream, self.nspan))
-        self.u_mag = np.zeros((self.nstream, self.nspan))
-        self.u_mag_rel = np.zeros((self.nstream, self.nspan))
+
         self.drho_dr = np.zeros((self.nstream, self.nspan))
         self.drho_dz = np.zeros((self.nstream, self.nspan))
         self.dur_dr = np.zeros((self.nstream, self.nspan))
@@ -240,39 +329,6 @@ class MeridionalProcess:
         self.dp_dz = np.zeros((self.nstream, self.nspan))
         self.ds_dr = np.zeros((self.nstream, self.nspan))
         self.ds_dz = np.zeros((self.nstream, self.nspan))
-        self.dT_dr = np.zeros((self.nstream, self.nspan))
-        self.dT_dz = np.zeros((self.nstream, self.nspan))
-
-    # def instantiate_2d_bfm_fields(self):
-    #     """
-    #     instantiate the 2D fields necessary for the body force model, depending on the specific model used
-    #     """
-    #     if self.bfm == 'radial':
-    #         self.k = np.zeros((self.nstream, self.nspan))
-    #         self.F_ntheta = np.zeros((self.nstream, self.nspan))
-    #         self.F_nr = np.zeros((self.nstream, self.nspan))
-    #         self.F_nz = np.zeros((self.nstream, self.nspan))
-    #         self.a1 = np.zeros((self.nstream, self.nspan))
-    #         self.a2 = np.zeros((self.nstream, self.nspan))
-    #         self.a3 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_00 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_01 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_02 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_10 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_11 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_12 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_20 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_21 = np.zeros((self.nstream, self.nspan))
-    #         self.Fn_prime_ss_22 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_00 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_01 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_02 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_10 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_11 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_12 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_20 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_21 = np.zeros((self.nstream, self.nspan))
-    #         self.Ft_prime_ss_22 = np.zeros((self.nstream, self.nspan))
 
     def find_rectangle(self, istream, ispan, A=0):
         """
@@ -1915,7 +1971,7 @@ class MeridionalProcess:
         """
         dr_dl = self.ur / self.u_meridional
         dut_dl = np.zeros_like(dr_dl)
-        if mode=='local':
+        if mode == 'local':
             # find the derivative projecting the gradients along the meridional velocity direction
             for istream in range(self.nAxialNodes):
                 for ispan in range(self.nRadialNodes):
@@ -2386,17 +2442,18 @@ class MeridionalProcess:
         force_term = self.compute_global_force()
         pressure_term = self.compute_pressure_term()
         convection_term = self.compute_convection_term()
-        self.check_body_force_residual_relative = (convection_term + pressure_term - force_term)/force_term*100
-        print('Relative Residual Error percent of BFM: r %.2f, theta %.2f, z %.2f.' %(self.check_body_force_residual_relative[0],
-                                                                          self.check_body_force_residual_relative[1],
-                                                                          self.check_body_force_residual_relative[2]))
+        self.check_body_force_residual_relative = (convection_term + pressure_term - force_term) / force_term * 100
+        print('Relative Residual Error percent of BFM: r %.2f, theta %.2f, z %.2f.' % (self.check_body_force_residual_relative[0],
+                                                                                       self.check_body_force_residual_relative[1],
+                                                                                       self.check_body_force_residual_relative[
+                                                                                           2]))
 
         width = 0.25  # the width of the bars
         multiplier = 0
         names = ("Radial", "Tangential", "Axial")
-        terms = {'Pressure Term' : pressure_term,
-                 'Convection Term' : convection_term,
-                 'BFM Term' : force_term}
+        terms = {'Pressure Term': pressure_term,
+                 'Convection Term': convection_term,
+                 'BFM Term': force_term}
         x = np.arange(len(names))
         fig, ax = plt.subplots(layout='constrained')
 
@@ -2412,7 +2469,6 @@ class MeridionalProcess:
         ax.set_xticks(x + width, names)
         ax.legend(loc='upper left', ncols=3)
 
-
     def compute_global_force(self):
         """
         Integrate the BFM all over the domain
@@ -2420,10 +2476,10 @@ class MeridionalProcess:
         global_force = np.zeros(3)  # components (r, theta, z)
         for ii in range(self.nstream):
             for jj in range(self.nspan):
-                dv = self.block.area_elements[ii, jj].area*2*np.pi*self.r_cg[ii, jj]
-                global_force[0] += self.rho[ii, jj] * (self.Fturn_r[ii, jj] + self.Floss_r[ii, jj])*dv
-                global_force[1] += self.rho[ii, jj] * (self.Fturn_t[ii, jj] + self.Floss_t[ii, jj])*dv
-                global_force[2] += self.rho[ii, jj] * (self.Fturn_z[ii, jj] + self.Floss_z[ii, jj])*dv
+                dv = self.block.area_elements[ii, jj].area * 2 * np.pi * self.r_cg[ii, jj]
+                global_force[0] += self.rho[ii, jj] * (self.Fturn_r[ii, jj] + self.Floss_r[ii, jj]) * dv
+                global_force[1] += self.rho[ii, jj] * (self.Fturn_t[ii, jj] + self.Floss_t[ii, jj]) * dv
+                global_force[2] += self.rho[ii, jj] * (self.Fturn_z[ii, jj] + self.Floss_z[ii, jj]) * dv
         return global_force
 
     def compute_pressure_term(self):
@@ -2433,7 +2489,6 @@ class MeridionalProcess:
         direction
         """
         pressure_term = np.zeros(3)  # components (r, theta, z)
-
 
         # hub integration
         for ii in range(self.nstream):
@@ -2476,13 +2531,13 @@ class MeridionalProcess:
             ur = self.ur[0, jj]
             ut = self.ut[0, jj]
             uz = self.uz[0, jj]
-            UU = np.array([[ur**2, ur*ut, ur*uz],
-                           [ur*ut, ut**2, ut*uz],
-                           [ur*uz, ut*uz, uz**2]])
+            UU = np.array([[ur ** 2, ur * ut, ur * uz],
+                           [ur * ut, ut ** 2, ut * uz],
+                           [ur * uz, ut * uz, uz ** 2]])
             dl = np.array([[self.block.area_elements[0, jj].line_elements[3].l_orth[1]],
                            [0],
                            [self.block.area_elements[0, jj].line_elements[3].l_orth[0]]])
-            convection_term += 2*np.pi*self.r_cg[0, jj]*(UU@dl.flatten())
+            convection_term += 2 * np.pi * self.r_cg[0, jj] * (UU @ dl.flatten())
 
         # outlet integration
         for jj in range(self.nspan):
@@ -2503,30 +2558,111 @@ class MeridionalProcess:
         """
         Use the 2d meridional equations to check the body forces obtained from the residual of the simulations data averaged
         """
-        Fr = self.ur*self.dur_dr + self.uz*self.dur_dz-self.ut**2/self.r_cg+1/self.rho*self.dp_dr
+        Fr = self.ur * self.dur_dr + self.uz * self.dur_dz - self.ut ** 2 / self.r_cg + 1 / self.rho * self.dp_dr
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, Fr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_cg, self.r_cg, Fr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
         plt.title(r'$F_{r,res}$')
 
-        Ft = self.ur * self.dut_dr + self.uz * self.dut_dz + self.ur*self.ut/self.r_cg
+        Ft = self.ur * self.dut_dr + self.uz * self.dut_dz + self.ur * self.ut / self.r_cg
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, Ft, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_cg, self.r_cg, Ft, levels=[0], colors='white', linestyles='dashed', linewidths=2)
         plt.title(r'$F_{\theta,res}$')
 
-        Fz = self.ur*self.duz_dr + self.uz*self.duz_dz + 1/self.rho*self.dp_dz
+        Fz = self.ur * self.duz_dr + self.uz * self.duz_dz + 1 / self.rho * self.dp_dz
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, Fz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_cg, self.r_cg, Fz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
         plt.title(r'$F_{z,res}$')
 
-        Wf = Fz*self.uz + self.ut*Ft + self.ur*Fr
+        Wf = Fz * self.uz + self.ut * Ft + self.ur * Fr
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, Wf, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_cg, self.r_cg, Wf, levels=[0], colors='white', linestyles='dashed', linewidths=2)
         plt.title(r'$W_{F,res}$')
+
+    def three_dimensional_weighted_interpolation(self, field, idx, istream, ispan):
+        """
+        Create a line going from one periodic boundary to the other, truncated in the middle to make space for the blade.
+        Then interpolate the field value on it, and perform weighted integral to evaluate the circumferential average of it.
+        """
+        Nbins = 10
+        theta_min = np.min(self.data.theta[idx])
+        theta_max = np.max(self.data.theta[idx])
+        theta_ps = self.blade.theta_ps[istream, ispan]
+        theta_ss = self.blade.theta_ss[istream, ispan]
+
+        if theta_ps>theta_ss:
+            arc1 = np.linspace(theta_min, theta_ss, Nbins)
+            arc2 = np.linspace(theta_ps, theta_max, Nbins)
+        else:
+            arc1 = np.linspace(theta_min, theta_ps, Nbins)
+            arc2 = np.linspace(theta_ss, theta_max, Nbins)
+
+        # plt.figure()
+        # plt.scatter(theta_min, 0, label=r'$\theta_{min}$', marker='x')
+        # plt.scatter(theta_max, 0, label=r'$\theta_{max}$', marker='x')
+        # plt.scatter(theta_ps, 0, label=r'$\theta_{ps}$', marker='x')
+        # plt.scatter(theta_ss, 0, label=r'$\theta_{ss}$', marker='x')
+        # plt.plot(arc1, arc1*0, '-o', label='arc1')
+        # plt.plot(arc2, arc2*0, '-o', label='arc2')
+        # plt.legend()
+
+        points = np.column_stack((self.data.r[idx], self.data.theta[idx], self.data.z[idx]))
+        values = field[idx]
+
+        # interp = LinearNDInterpolator(points, values)
+        #
+        # # Perform interpolation, something wrong here
+        # interpolated_value = interp(self.r_cg[istream, ispan], arc_theta[4], self.z_cg[istream, ispan])
+        # print(interpolated_value)
+        arc_theta = np.concatenate((arc1, arc2))
+        r = np.zeros_like(arc_theta) + self.r_cg[istream, ispan]
+        z = np.zeros_like(arc_theta) + self.z_cg[istream, ispan]
+        f = np.zeros_like(arc_theta)
+
+        interp_values = griddata((self.data.r[idx], self.data.theta[idx], self.data.z[idx]), values,
+                                 (r, arc_theta, z), method='nearest')
+        # interp_values.reshape(np.shape(X_eval))
+        # Create a 3D scatter plot
+        #
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.scatter(self.data.x[idx][::50], self.data.y[idx][::50], self.data.z[idx][::50])
+        # ax.plot(r*np.cos(arc_theta), r*np.sin(arc_theta), z, 'red')
+        # # Set labels
+        # ax.set_xlabel('r')
+        # ax.set_ylabel('theta')
+        # ax.set_zlabel('z')
+
+        # ref_radius = np.sqrt((self.z_cg[istream + 1, ispan] - self.z_cg[istream, ispan]) ** 2 + \
+        #                        (self.r_cg[istream, ispan + 1] - self.r_cg[istream, ispan + 1]) ** 2)
+        #
+        # for i in range(len(r)):
+        #     xp = r[i]*np.cos(arc_theta[i])
+        #     yp = r[i] * np.sin(arc_theta[i])
+        #     zp = z[i]
+        #
+        #     d = ref_radius
+        #     idx_points = np.where(np.sqrt((self.data.x-xp)**2 + (self.data.y-yp)**2 + (self.data.z-zp)**2) < d)
+        #     while (len(self.data.x[idx_points])<1):
+        #         d *= 1.2
+        #         idx_points = np.where(np.sqrt((self.data.x - xp) ** 2 + (self.data.y - yp) ** 2 + (self.data.z - zp) ** 2) < d)
+        #
+        #     f_values = field[idx_points]
+        #     volume = self.data.finite_volume[idx_points]
+        #     f[i] = np.sum(f_values*volume)/np.sum(volume)
+
+        # plt.figure()
+        # plt.plot(arc_theta, interp_values)
+
+        integ = np.trapz(interp_values, arc_theta)/(theta_max-theta_min)
+        return integ
+
+
+

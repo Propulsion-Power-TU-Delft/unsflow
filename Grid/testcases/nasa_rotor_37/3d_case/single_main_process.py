@@ -83,90 +83,92 @@ if BLADE_BLOCK:
     blade_process.compute_camber_angles()
     blade_process.compute_streamline_length()
     blade_process.compute_spanwise_length()
-    # blade_process.circumferential_average()
+    blade_process.circumferential_average_interpolation()
+    blade_process.contour_plot(field='rho')
 
 
-
-
-
-
-    blade_process.interpolate_on_working_grid()
-    blade_process.compute_derived_quantities()
-    blade_process.contour_entropy_generation()
-    blade_process.compute_bfm_axial(save_fig=True)
-    blade_process.compute_body_fource_S('rotor')
-    blade_process.compute_averaged_fluxes()
-    # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
-    # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
-    # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
-    # blade_process.contour_all_plots()
-    delattr(blade_process, 'data')
-    blade_process.compute_body_force_residuals()
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if OUTLET_BLOCK:
-    print("\nOUTLET BLOCK PROCESSING...")
-    block = Grid.src.Block(config, nstream=config.get_streamwise_points()[2], nspan=config.get_spanwise_points())
-    block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
-    block.extend_inlet_outlet_curves()
-    block.find_intersections()
-    block.outlet_zone_trim(mode=config.get_blade_outlet_type())
-    block.spline_of_hub_shroud()
-    block.spline_of_inlet()
-    block.sample_hub_shroud()
-    block.sample_inlet_outlet()
-    block.compute_grid_points()
-    block.compute_double_grid()
-    block.compute_total_area()
-
-    outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
-    outlet_process.compute_streamline_length()
-    outlet_process.compute_spanwise_length()
-    outlet_process.interpolate_on_working_grid()
-    outlet_process.compute_derived_quantities()
-    outlet_process.compute_averaged_fluxes()
-    outlet_process.compute_body_fource_S('unbladed')
-    # outlet_process.contour_all_plots()
-    # outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
-    # outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
-    outlet_process.compute_body_force_residuals()
-    delattr(outlet_process, 'data')
 #
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASSEMBLY PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
-    print("\nASSEMBLY PROCESSING...")
-    obj = Grid.src.meridional_process_group.MeridionalProcessGroup(config)
-    obj.add_to_group(inlet_process)
-    obj.add_to_group(blade_process)
-    obj.add_to_group(outlet_process)
-    obj.assemble_fields()
-    obj.assemble_field_gradients()
-    obj.assemble_body_force_fields()
-    obj.compute_streamline_length()
-    obj.show_grid(save_filename=config.picture_name_template)
-
-    obj.contour_fields(save_filename=config.picture_name_template)
-    obj.contour_field_gradients(save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
-    obj.compute_performance()
-    obj.print_performance()
-    obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0]+'_%i_%i_%i_%i'
-                               %(strwise_pts[0], strwise_pts[1], strwise_pts[2], spwise_pts))
-    obj.print_memory_info()
-
-end_time = time.time()
-delta_time = end_time - start_time
-print('Total time: %d sec' % (delta_time))
+#
+#
+#
+#
+#     blade_process.interpolate_on_working_grid()
+#     blade_process.compute_derived_quantities()
+#     blade_process.contour_entropy_generation()
+#     blade_process.compute_bfm_axial(save_fig=True)
+#     blade_process.compute_body_fource_S('rotor')
+#     blade_process.compute_averaged_fluxes()
+#     # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
+#     # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
+#     # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
+#     # blade_process.contour_all_plots()
+#     delattr(blade_process, 'data')
+#     blade_process.compute_body_force_residuals()
+#
+# # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# if OUTLET_BLOCK:
+#     print("\nOUTLET BLOCK PROCESSING...")
+#     block = Grid.src.Block(config, nstream=config.get_streamwise_points()[2], nspan=config.get_spanwise_points())
+#     block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
+#     block.extend_inlet_outlet_curves()
+#     block.find_intersections()
+#     block.outlet_zone_trim(mode=config.get_blade_outlet_type())
+#     block.spline_of_hub_shroud()
+#     block.spline_of_inlet()
+#     block.sample_hub_shroud()
+#     block.sample_inlet_outlet()
+#     block.compute_grid_points()
+#     block.compute_double_grid()
+#     block.compute_total_area()
+#
+#     outlet_process = Grid.src.MeridionalProcess(config, data, block, blade=blade)
+#     outlet_process.compute_streamline_length()
+#     outlet_process.compute_spanwise_length()
+#     outlet_process.interpolate_on_working_grid()
+#     outlet_process.compute_derived_quantities()
+#     outlet_process.compute_averaged_fluxes()
+#     outlet_process.compute_body_fource_S('unbladed')
+#     # outlet_process.contour_all_plots()
+#     # outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
+#     # outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
+#     outlet_process.compute_body_force_residuals()
+#     delattr(outlet_process, 'data')
+# #
+# # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASSEMBLY PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
+#     print("\nASSEMBLY PROCESSING...")
+#     obj = Grid.src.meridional_process_group.MeridionalProcessGroup(config)
+#     obj.add_to_group(inlet_process)
+#     obj.add_to_group(blade_process)
+#     obj.add_to_group(outlet_process)
+#     obj.assemble_fields()
+#     obj.assemble_field_gradients()
+#     obj.assemble_body_force_fields()
+#     obj.compute_streamline_length()
+#     obj.show_grid(save_filename=config.picture_name_template)
+#
+#     obj.contour_fields(save_filename=config.picture_name_template)
+#     obj.contour_field_gradients(save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
+#     obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
+#     obj.compute_performance()
+#     obj.print_performance()
+#     obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0]+'_%i_%i_%i_%i'
+#                                %(strwise_pts[0], strwise_pts[1], strwise_pts[2], spwise_pts))
+#     obj.print_memory_info()
+#
+# end_time = time.time()
+# delta_time = end_time - start_time
+# print('Total time: %d sec' % (delta_time))
 
 
 
