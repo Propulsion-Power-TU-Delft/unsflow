@@ -7,7 +7,7 @@ class AnnulusMeridional():
     insert the meridional flow fields as 2D array, in order to compute the eigenfrequencies of the annulus duct.
     """
 
-    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, config,grid_refinement=1):
+    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, config, grid_refinement=1):
         """
         Build the 2D arrays on the meridional plane, to be compatible with meridional_process object of a compressor.
         The non-dimensionalization procedure is treated later.
@@ -33,17 +33,16 @@ class AnnulusMeridional():
         self.nPoints = Nz * Nr
         self.z = np.linspace(zmin, zmax, Nz)
         self.r = np.linspace(rmin, rmax, Nr)
-        # self.r = np.logspace(np.log10(rmin), np.log10(rmax), Nr)
         self.z_finegrid = np.linspace(zmin, zmax, Nz*grid_refinement)  # for transformation gradient computation
         self.r_finegrid = np.linspace(rmin, rmax, Nr*grid_refinement)
         self.r_grid, self.z_grid = np.meshgrid(self.r, self.z)
         self.r_cg, self.z_cg = np.meshgrid(self.r, self.z)
         self.r_cg_fine, self.z_cg_fine = np.meshgrid(self.r_finegrid, self.z_finegrid)
-        self.rho = rho
-        self.ur = u
-        self.ut = v
-        self.uz = w
-        self.p = p
+        self.rho = np.zeros_like(self.z_grid)+rho
+        self.ur = np.zeros_like(self.z_grid)+u
+        self.ut = np.zeros_like(self.z_grid)+v
+        self.uz = np.zeros_like(self.z_grid)+w
+        self.p = np.zeros_like(self.z_grid)+p
         self.drho_dr = np.zeros_like(self.rho)
         self.drho_dz = np.zeros_like(self.rho)
         self.dur_dr = np.zeros_like(self.rho)
