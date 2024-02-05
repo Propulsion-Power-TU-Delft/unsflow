@@ -170,17 +170,19 @@ class SunModelMultiBlock:
         P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
-    def solve_evp(self, sigma=0, sort_mode = 'imaginary decreasing'):
+    def solve_evp(self, sort_mode = 'imaginary decreasing'):
         """
         Solve the EVP using the Arnoldi Algorithm.
-        :param sigma: research center zone
         :param sort_mode: specify the criterion on which the eigenfreqencies and modes are sorted
         """
+        sigma = self.config.get_research_center_omega_eigenvalues()/self.config.get_reference_omega()
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(self.Y - sigma * self.P) @ self.P
 
         print("Solving standard EVP...")
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
+        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0]//2]
+
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
         self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
@@ -235,8 +237,7 @@ class SunModelMultiBlock:
             ut_eig = []
             uz_eig = []
             p_eig = []
-            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled to pass from a quadratic
-                # to a linear EVP, therefore we only care about the first half of the eigenvector
+            for i in range(len(eigenvector)):
                 if (i) % 5 == 0:
                     rho_eig.append(eigenvector[i])
                 elif (i - 1) % 5 == 0 and i != 0:
@@ -281,8 +282,8 @@ class SunModelMultiBlock:
             ax.set_ylabel(r'$\omega_I \mathrm{[rad/s]}$')
 
         if delimit is not None:
-            ax.set_xlim(delimit[0])
-            ax.set_ylim(delimit[1])
+            ax.set_xlim([delimit[0], delimit[1]])
+            ax.set_ylim([delimit[2], delimit[3]])
 
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
@@ -320,7 +321,7 @@ class SunModelMultiBlock:
             df = mode.eigenfrequency.imag / self.config.get_reference_omega()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels, cmap=modes_map)
             if remove_isolines:
                 for c in cnt.collections:
                     c.set_edgecolor("face")
@@ -333,7 +334,7 @@ class SunModelMultiBlock:
                 # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
             if remove_isolines:
                 for c in cnt.collections:
                     c.set_edgecolor("face")
@@ -346,7 +347,7 @@ class SunModelMultiBlock:
                 # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
             if remove_isolines:
                 for c in cnt.collections:
                     c.set_edgecolor("face")
@@ -359,7 +360,7 @@ class SunModelMultiBlock:
                 # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
             if remove_isolines:
                 for c in cnt.collections:
                     c.set_edgecolor("face")
@@ -372,7 +373,7 @@ class SunModelMultiBlock:
                 # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
             if remove_isolines:
                 for c in cnt.collections:
                     c.set_edgecolor("face")
