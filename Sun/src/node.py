@@ -23,9 +23,9 @@ class Node:
         :param drho_dr: drho_dr
         :param drho_dz: drho_dz
         """
-        self.rho = rho
-        self.drho_dr = drho_dr
-        self.drho_dz = drho_dz
+        self.rho = rho.copy()
+        self.drho_dr = drho_dr.copy()
+        self.drho_dz = drho_dz.copy()
 
     def AppendVelocityInfo(self, ur, ut, uz, dur_dr, dur_dz, dut_dr, dut_dz, duz_dr, duz_dz):
         """
@@ -120,42 +120,42 @@ class Node:
         It adds the A matrix.
         :param A: matrix to add
         """
-        self.A = A
+        self.A = A.copy()
 
     def AddBMatrix(self, B):
         """
         It adds the B matrix at the node level.
         :param B: matrix to add
         """
-        self.B = B
+        self.B = B.copy()
 
     def AddCMatrix(self, C):
         """
         It adds the C matrix, already multiplied by m and j at the node level.
         :param C: matrix to add
         """
-        self.C = C
+        self.C = C.copy()
 
     def AddEMatrix(self, E):
         """
         It adds the E matrix at the node level.
         :param E: matrix to add
         """
-        self.E = E
+        self.E = E.copy()
 
     def AddRMatrix(self, R):
         """
         It adds the R matrix at the node level.
         :param R: matrix to add
         """
-        self.R = R
+        self.R = R.copy()
 
     def AddSMatrix(self, S):
         """
         It adds the S matrix at the node level.
         :param S: matrix to add
         """
-        self.S = S
+        self.S = S.copy()
 
     def AddTransformationGradients(self, dzdx, dzdy, drdx, drdy):
         """
@@ -165,14 +165,14 @@ class Node:
         :param drdx: 2D array
         :param drdy: 2D array
         """
-        self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
+        self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx.copy(), dzdy.copy(), drdx.copy(), drdy.copy()
 
     def AddJacobian(self, J):
         """
         It adds the inverse jacobian as a function of the  spectral cordinates at the node level.
         :param J: 2D array of Jacobian values
         """
-        self.J = J
+        self.J = J.copy()
 
     def AddHatMatrices(self, Bhat, Ehat):
         """
@@ -180,5 +180,5 @@ class Node:
         :param Bhat: 2D array
         :param Ehat: 2D array
         """
-        self.Bhat = Bhat
-        self.Ehat = Ehat
+        self.Bhat = Bhat.copy()
+        self.Ehat = Ehat.copy()

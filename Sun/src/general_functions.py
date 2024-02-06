@@ -1,6 +1,6 @@
 import numpy as np
 from .styles import total_chars
-
+from findiff import FinDiff
 
 def JacobianTransform(X, Y, Z, R):
     """

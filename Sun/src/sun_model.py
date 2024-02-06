@@ -200,6 +200,8 @@ class SunModel:
         :param dy_dz: analytical transformation. If provided, gradients simply taken from here, not calculated
         :param dy_dr: analytical transformation. If provided, gradients simply taken from here, not calculated
         """
+        routine = self.config.get_grid_transformation_gradient_routine()
+        order = self.config.get_grid_transformation_gradient_order()
         print_banner_begin('TRANSFORMATION GRADIENTS')
         print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
         print(f"{'Order Used:':<{total_chars_mid}}{order:>{total_chars_mid}}")

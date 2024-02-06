@@ -33,7 +33,7 @@ class SunGrid():
         self.nRadialNodes = self.n_span
         self.nPoints = self.n_stream * self.n_span
         if mode == 'physical':
-            self.rGrid, self.zGrid = meridional_obj.r_cg, meridional_obj.z_cg
+            self.rGrid, self.zGrid = meridional_obj.r_cg.copy(), meridional_obj.z_cg.copy()
         elif mode == 'spectral':  # construct a gauss-lobatto grid for the spectral dataset
             self.z = GaussLobattoPoints(self.nAxialNodes)
             self.r = GaussLobattoPoints(self.nRadialNodes)
