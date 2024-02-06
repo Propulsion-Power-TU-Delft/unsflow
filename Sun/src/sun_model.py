@@ -331,7 +331,7 @@ class SunModel:
         #     # plt.close()
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels_fine, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -341,7 +341,7 @@ class SunModel:
             # plt.close()
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels_fine, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -351,7 +351,7 @@ class SunModel:
             # plt.close()
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels_fine, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -361,7 +361,7 @@ class SunModel:
             # plt.close()
 
         plt.figure(figsize=fig_size)
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels_fine, cmap=color_map)
+        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
@@ -915,7 +915,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.Q_const[row:row + 5, column:column + 5] += block
+        self.Q_const[row:row + 5, column:column + 5] += block.copy()
 
     def AddToQ_var(self, block, row, column):
         """
@@ -942,7 +942,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.A_g[row:row + 5, column:column + 5] += block
+        self.A_g[row:row + 5, column:column + 5] += block.copy()
 
     def add_to_C_g(self, block, row, column):
         """
@@ -951,7 +951,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.C_g[row:row + 5, column:column + 5] += block
+        self.C_g[row:row + 5, column:column + 5] += block.copy()
 
     def add_to_R_g(self, block, row, column):
         """
@@ -960,7 +960,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.R_g[row:row + 5, column:column + 5] += block
+        self.R_g[row:row + 5, column:column + 5] += block.copy()
 
     def add_to_S_g(self, block, row, column):
         """
@@ -969,7 +969,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.S_g[row:row + 5, column:column + 5] += block
+        self.S_g[row:row + 5, column:column + 5] += block.copy()
 
     def ApplyBoundaryConditions(self):
         """

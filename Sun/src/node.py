@@ -40,15 +40,15 @@ class Node:
         :param duz_dr: duz_dr
         :param duz_dz: duz_dz
         """
-        self.ur = ur
-        self.ut = ut
-        self.uz = uz
-        self.dur_dr = dur_dr
-        self.dur_dz = dur_dz
-        self.dut_dr = dut_dr
-        self.dut_dz = dut_dz
-        self.duz_dr = duz_dr
-        self.duz_dz = duz_dz
+        self.ur = ur.copy()
+        self.ut = ut.copy()
+        self.uz = uz.copy()
+        self.dur_dr = dur_dr.copy()
+        self.dur_dz = dur_dz.copy()
+        self.dut_dr = dut_dr.copy()
+        self.dut_dz = dut_dz.copy()
+        self.duz_dr = duz_dr.copy()
+        self.duz_dz = duz_dz.copy()
 
     def AppendPressureInfo(self, p, dp_dr, dp_dz):
         """
@@ -57,9 +57,9 @@ class Node:
         :param dp_dr: dp_dr
         :param dp_dz: dp_dz
         """
-        self.p = p
-        self.dp_dr = dp_dr
-        self.dp_dz = dp_dz
+        self.p = p.copy()
+        self.dp_dr = dp_dr.copy()
+        self.dp_dz = dp_dz.copy()
 
     def PrintInfo(self, datafile='terminal'):
         """
