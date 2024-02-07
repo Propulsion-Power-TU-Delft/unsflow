@@ -1,3 +1,6 @@
+import copy
+import numpy as np
+
 class Node:
     """
     Class of Node object, contaning cordinates, fluid dynamics field, markers and cordinates of the grid point.
@@ -11,6 +14,17 @@ class Node:
         :param marker: type of node, to distinguish boundary conditions
         :param nodeCounter: counter of the node.
         """
+        self.marker_types = ['inlet', 'outlet', 'hub', 'shroud', 'internal']
+
+        if not isinstance(z, float):
+            raise TypeError("z must be a float")
+        if not isinstance(r, float):
+            raise TypeError("r must be a float")
+        if marker not in self.marker_types:
+            raise ValueError("Marker type is not valid")
+        if not isinstance(nodeCounter, int):
+            raise TypeError("nodeCounter must be an int")
+
         self.z = z  # axial cordinate
         self.r = r  # radial cordinate
         self.marker = marker  # type of node if belonging to boundaries
@@ -23,9 +37,12 @@ class Node:
         :param drho_dr: drho_dr
         :param drho_dz: drho_dz
         """
-        self.rho = rho.copy()
-        self.drho_dr = drho_dr.copy()
-        self.drho_dz = drho_dz.copy()
+        if not all(isinstance(arg, float) for arg in (rho, drho_dr, drho_dz)):
+            raise TypeError("All arguments must be floats")
+
+        self.rho = rho
+        self.drho_dr = drho_dr
+        self.drho_dz = drho_dz
 
     def AppendVelocityInfo(self, ur, ut, uz, dur_dr, dur_dz, dut_dr, dut_dz, duz_dr, duz_dz):
         """
@@ -40,15 +57,17 @@ class Node:
         :param duz_dr: duz_dr
         :param duz_dz: duz_dz
         """
-        self.ur = ur.copy()
-        self.ut = ut.copy()
-        self.uz = uz.copy()
-        self.dur_dr = dur_dr.copy()
-        self.dur_dz = dur_dz.copy()
-        self.dut_dr = dut_dr.copy()
-        self.dut_dz = dut_dz.copy()
-        self.duz_dr = duz_dr.copy()
-        self.duz_dz = duz_dz.copy()
+        if not all(isinstance(arg, float) for arg in (ur, ut, uz, dur_dr, dur_dz, dut_dr, dut_dz, duz_dr, duz_dz)):
+            raise TypeError("All arguments must be floats")
+        self.ur = ur
+        self.ut = ut
+        self.uz = uz
+        self.dur_dr = dur_dr
+        self.dur_dz = dur_dz
+        self.dut_dr = dut_dr
+        self.dut_dz = dut_dz
+        self.duz_dr = duz_dr
+        self.duz_dz = duz_dz
 
     def AppendPressureInfo(self, p, dp_dr, dp_dz):
         """
@@ -57,9 +76,11 @@ class Node:
         :param dp_dr: dp_dr
         :param dp_dz: dp_dz
         """
-        self.p = p.copy()
-        self.dp_dr = dp_dr.copy()
-        self.dp_dz = dp_dz.copy()
+        if not all(isinstance(arg, float) for arg in (p, dp_dr, dp_dz)):
+            raise TypeError("All arguments must be floats")
+        self.p = p
+        self.dp_dr = dp_dr
+        self.dp_dz = dp_dz
 
     def PrintInfo(self, datafile='terminal'):
         """
@@ -85,6 +106,9 @@ class Node:
         :param u_ref: reference velocity [m/s]
         :param x_ref: reference length [m]
         """
+        if not all(isinstance(arg, float) for arg in (rho_ref, u_ref, x_ref)):
+            raise TypeError("All arguments must be floats or ints")
+
         p_ref = rho_ref * u_ref ** 2  # ref pressure
 
         # normalize the data
@@ -113,6 +137,8 @@ class Node:
         Adds the normal vector information to the node (used only for hub and shroud nodes).
         :param n: normal vector in (r,theta,z) ref. frame.
         """
+        if n.dtype != np.float64 or n.shape!=(3,):
+            raise ValueError("n must have dtype 'float' of size 3")
         self.n_wall = n
 
     def AddAMatrix(self, A):
@@ -120,42 +146,67 @@ class Node:
         It adds the A matrix.
         :param A: matrix to add
         """
-        self.A = A.copy()
+        if A.shape != (5, 5):
+            raise ValueError("A must have shape (5, 5)")
+        if A.dtype != np.complex128:
+            raise ValueError("A must have dtype 'complex128' (float complex)")
+        self.A = A
 
     def AddBMatrix(self, B):
         """
         It adds the B matrix at the node level.
         :param B: matrix to add
         """
-        self.B = B.copy()
+        if B.shape != (5, 5):
+            raise ValueError("B must have shape (5, 5)")
+        if B.dtype != np.complex128:
+            raise ValueError("B must have dtype 'complex128' (float complex)")
+        self.B = B
 
     def AddCMatrix(self, C):
         """
         It adds the C matrix, already multiplied by m and j at the node level.
         :param C: matrix to add
         """
-        self.C = C.copy()
+        if C.shape != (5, 5):
+            raise ValueError("C must have shape (5, 5)")
+        if C.dtype != np.complex128:
+            raise ValueError("C must have dtype 'complex128' (float complex)")
+        self.C = C
 
     def AddEMatrix(self, E):
         """
         It adds the E matrix at the node level.
         :param E: matrix to add
         """
-        self.E = E.copy()
+        if E.shape != (5, 5):
+            raise ValueError("E must have shape (5, 5)")
+        if E.dtype != np.complex128:
+            raise ValueError("E must have dtype 'complex128' (float complex)")
+        self.E = E
+
 
     def AddRMatrix(self, R):
         """
         It adds the R matrix at the node level.
         :param R: matrix to add
         """
-        self.R = R.copy()
+        if R.shape != (5, 5):
+            raise ValueError("R must have shape (5, 5)")
+        if R.dtype != np.complex128:
+            raise ValueError("R must have dtype 'complex128' (float complex)")
+        self.R = R
 
     def AddSMatrix(self, S):
         """
         It adds the S matrix at the node level.
         :param S: matrix to add
         """
-        self.S = S.copy()
+        # if S.shape != (5, 5):
+        #     raise ValueError("S must have shape (5, 5)")
+        # if S.dtype != np.complex128:
+        #     raise ValueError("S must have dtype 'complex128' (float complex)")
+        self.S = S
 
     def AddTransformationGradients(self, dzdx, dzdy, drdx, drdy):
         """
@@ -165,14 +216,18 @@ class Node:
         :param drdx: 2D array
         :param drdy: 2D array
         """
-        self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx.copy(), dzdy.copy(), drdx.copy(), drdy.copy()
+        if not all(isinstance(arg, float) for arg in (dzdx, dzdy, drdx, drdy)):
+            raise TypeError("All arguments must be floats or ints")
+        self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
 
     def AddJacobian(self, J):
         """
         It adds the inverse jacobian as a function of the  spectral cordinates at the node level.
         :param J: 2D array of Jacobian values
         """
-        self.J = J.copy()
+        if not isinstance(J, float):
+            raise TypeError("J must be a float")
+        self.J = J
 
     def AddHatMatrices(self, Bhat, Ehat):
         """
@@ -180,5 +235,11 @@ class Node:
         :param Bhat: 2D array
         :param Ehat: 2D array
         """
-        self.Bhat = Bhat.copy()
-        self.Ehat = Ehat.copy()
+        for arg in (Bhat, Ehat):
+            if arg.shape != (5, 5):
+                raise ValueError("arg must have shape (5, 5)")
+            if arg.dtype != np.complex128:
+                raise ValueError("arg must have dtype 'complex128' (float complex)")
+
+        self.Bhat = Bhat
+        self.Ehat = Ehat

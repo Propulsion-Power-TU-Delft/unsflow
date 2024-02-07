@@ -1855,9 +1855,12 @@ class MeridionalProcess:
             tz = -self.uz / self.u_mag_rel
 
             # cosine directors of the turning force
-            nr = self.Fturn_r / self.Fturn
-            ntheta = self.Fturn_t / self.Fturn
-            nz = self.Fturn_z / self.Fturn
+            # nr = self.Fturn_r / self.Fturn
+            # ntheta = self.Fturn_t / self.Fturn
+            # nz = self.Fturn_z / self.Fturn
+            nr = self.camber_normal_r.copy()
+            ntheta = self.camber_normal_theta.copy()
+            nz = self.camber_normal_z.copy()
 
             self.plot_bfm_angles(nr, ntheta, nz, tr, ttheta, tz)
 

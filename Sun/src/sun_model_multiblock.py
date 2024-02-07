@@ -23,7 +23,7 @@ from scipy.interpolate import Rbf
 from Grid.src.functions import compute_picture_size, create_folder
 
 
-class SunModelMultiBlock:
+class SunModelMultiBlock():
     """
     Class used for Sun Model instability prediction, multiblock approach.
     """
@@ -52,7 +52,7 @@ class SunModelMultiBlock:
             self.z_grid = np.concatenate((self.z_grid, block.data.meridional_obj.z_grid), axis=0)
             self.r_grid = np.concatenate((self.r_grid, block.data.meridional_obj.r_grid), axis=0)
 
-    def construct_L_global_matrices(self, visual_check = False):
+    def construct_L_global_matrices(self, visual_check=False):
         """
         Construct the global L matrices for the multiblock problem, stacking together along the diagonal the blocks of every
         sub block.
@@ -96,6 +96,9 @@ class SunModelMultiBlock:
             ax[3].spy(np.abs(self.L2))
             ax[3].set_title(r'$L2_{tot}$')
 
+        if any(arg.dtype != np.complex128 for arg in (self.L0, self.L1, self.L2)):
+            raise TypeError('The matrices are not complex')
+
     def apply_matching_conditions(self):
         """
         Apply the matching conditions for the blocks composing the multiblock. At this moment the system is composed by:
@@ -112,7 +115,6 @@ class SunModelMultiBlock:
         ax[1].set_title(r'$L_1$')
         ax[2].set_title(r'$L_2$')
 
-
         # starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
         # block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
         # variable, in the other we implement the same value of the derivative.
@@ -121,7 +123,6 @@ class SunModelMultiBlock:
         rows_band = self.config.get_spanwise_points() * 5
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
-
             # previous block rows (where same fluid conditions are implemented)
             self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
@@ -136,9 +137,11 @@ class SunModelMultiBlock:
             dxi_dn = self.blocks[iblock].dataSpectral.zGrid[1, 0] - self.blocks[iblock].dataSpectral.zGrid[0, 0]
 
             self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band) / dxi_dn
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter-rows_band:eq_counter] = np.eye(rows_band) / dxi_up
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2 * rows_band:eq_counter - rows_band] = -np.eye(rows_band)/dxi_up
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2 * rows_band] = -np.eye(rows_band)/dxi_dn
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band) / dxi_up
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2 * rows_band:eq_counter - rows_band] = -np.eye(
+                rows_band) / dxi_up
+            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2 * rows_band] = -np.eye(
+                rows_band) / dxi_dn
 
             # make zero all the relevant equations for the L1,L2 matrices
             self.L1[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(
@@ -170,24 +173,24 @@ class SunModelMultiBlock:
         P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
 
-    def solve_evp(self, sort_mode = 'imaginary decreasing'):
+    def solve_evp(self, sort_mode='imaginary decreasing'):
         """
         Solve the EVP using the Arnoldi Algorithm.
         :param sort_mode: specify the criterion on which the eigenfreqencies and modes are sorted
         """
-        sigma = self.config.get_research_center_omega_eigenvalues()/self.config.get_reference_omega()
+        sigma = self.config.get_research_center_omega_eigenvalues() / self.config.get_reference_omega()
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(self.Y - sigma * self.P) @ self.P
 
         print("Solving standard EVP...")
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0]//2]
+        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0] // 2]
 
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
         self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
         self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-        self.sort_eigensolution(sort_mode = sort_mode)
+        self.sort_eigensolution(sort_mode=sort_mode)
 
     def sort_eigensolution(self, sort_mode='imaginary decreasing'):
         """
@@ -259,7 +262,7 @@ class SunModelMultiBlock:
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfrequencies(self, delimit=None, normalization = True, save_filename=None):
+    def plot_eigenfrequencies(self, delimit=None, normalization=True, save_filename=None):
         """
         Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
@@ -277,7 +280,8 @@ class SunModelMultiBlock:
             ax.set_ylabel(r'DF [-]')
         else:
             for mode in self.eigenfields:
-                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='red', edgecolors='red', s=marker_size)
+                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='red', edgecolors='red',
+                           s=marker_size)
             ax.set_xlabel(r'$\omega_R \mathrm{[rad/s]}$')
             ax.set_ylabel(r'$\omega_I \mathrm{[rad/s]}$')
 
@@ -411,7 +415,6 @@ class SunModelMultiBlock:
         with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
             pickle.dump(self.eigenfields, picklefile)
 
-
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """
         Plot the L matrices, to inspect their composition
@@ -427,3 +430,16 @@ class SunModelMultiBlock:
         ax[1].set_title(r'$L_1$')
         ax[2].set_title(r'$L_2$')
         plt.savefig(os.path.join(save_foldername, save_filename + '.pdf'), bbox_inches='tight')
+
+    def hist_inspect_L_global_matrices(self):
+        matrix_dict = {r'$L_0$': self.L0, r'$L_1$': self.L1, r'$L_2$': self.L2}
+        for name, matrix in matrix_dict.items():
+            real_values = matrix.flatten().real[matrix.flatten().real!=0]
+            imag_values = matrix.flatten().imag[matrix.flatten().imag!=0]
+            plt.figure()
+            plt.hist(real_values, bins=20, color='blue', alpha=0.5, label='real')
+            plt.hist(imag_values, bins=20, color='red', alpha=0.5, label='imag')
+            plt.legend()
+            plt.title(name)
+            plt.xlabel('Value')
+            plt.ylabel('N elements')

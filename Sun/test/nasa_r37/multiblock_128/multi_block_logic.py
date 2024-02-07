@@ -8,23 +8,19 @@ config = Config('nasa_rotor_37.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 
-# STABILITY ANALYSIS
-sun_blocks = []
+compressor_grids = []
 for meridional_block in meridional_obj.group:
-    compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
-    # compressor_grid.check_fields()
+    compressor_grids.append(Sun.src.sun_grid.SunGrid(meridional_block))
+
+sun_blocks = []
+for compressor_grid in compressor_grids:
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    # sun_obj.ShowNormals()
-    sun_obj.set_overwriting_equation_euler_wall('utheta')
-    # sun_obj.ShowPhysicalGrid(save_filename='physical_grid_%i' % (ii), mode='lines')
     sun_obj.ComputeSpectralGrid()
-    # sun_obj.ShowSpectralGrid(save_filename='spectral_grid_%i' % (ii), mode='lines')
     sun_obj.ComputeJacobianPhysical()
-    # sun_obj.ContourTransformation(save_filename='jacobian_%i' % (ii))
     sun_obj.AddAMatrixToNodesFrancesco2()
     sun_obj.AddBMatrixToNodesFrancesco2()
     sun_obj.AddCMatrixToNodesFrancesco2()
@@ -40,17 +36,13 @@ for sun_obj in sun_blocks:
     sun_obj.build_Z_global_matrix()
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
-    # sun_obj.inspect_L_matrices(save_foldername='bc_logic', save_filename='before_bc_block_%i' %(ii))
     sun_obj.apply_boundary_conditions_generalized()
-    # sun_obj.inspect_L_matrices(save_foldername='bc_logic', save_filename='after_bc_block_%i' %(ii))
     ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-
-# sun_multiblock.inspect_L_matrices(save_foldername='bc_logic', save_filename='before_bc_multiblock')
 sun_multiblock.apply_matching_conditions()
-# sun_multiblock.inspect_L_matrices(save_foldername='bc_logic', save_filename='after_bc_multiblock')
+sun_multiblock.hist_inspect_L_global_matrices()
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()

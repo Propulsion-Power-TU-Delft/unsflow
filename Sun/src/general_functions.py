@@ -2,6 +2,7 @@ import numpy as np
 from .styles import total_chars
 from findiff import FinDiff
 
+
 def JacobianTransform(X, Y, Z, R):
     """
     It computes the jacobian of the transformation between two sets of cordinates. It uses central differences in the central
@@ -193,11 +194,13 @@ def GaussLobattoPoints(N):
     It returns an array of ordered Gauss-Lobatto points, between 1 and -1.
     :param N: number of points (=maximum chebyshev polynomial order)
     """
-    x = np.array(())
-    # the difference in notation with respect to mathematics books is due to the python index notation, starting from 0 and not 1
-    for i in range(0, N):
-        xnew = np.cos(i * np.pi / (N - 1))  # gauss lobatto points
-        x = np.append(x, xnew)
+    # x = np.array(())
+    # # the difference in notation with respect to mathematics books is due to the python index notation, starting from 0 and not 1
+    # for i in range(0, N):
+    #     xnew = np.cos(i * np.pi / (N - 1))  # gauss lobatto points
+    #     x = np.append(x, xnew)
+
+    x = np.array([np.cos(i * np.pi / (N - 1)) for i in range(0, N)])
     return x
 
 
@@ -253,7 +256,6 @@ def enlarge_square_matrices(A_list):
     A_g = np.zeros((tot_rows, tot_cols), dtype=complex)
     counter = 0
     for A in A_list:
-        A_g[counter:counter+A.shape[0], counter:counter+A.shape[1]] = A
+        A_g[counter:counter + A.shape[0], counter:counter + A.shape[1]] = A
         counter += A.shape[0]
     return A_g
-

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.linalg import det
 from scipy.special import chebyt
 import sys
-from src.compressor import Compressor
+# from Grid.src. import Compressor
 from src.grid import DataGrid
 from src.sun_model import SunModel
 

@@ -4,6 +4,7 @@
 Created on Fri Jun  2 15:52:09 2023
 @author: F. Neri, TU Delft
 """
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,26 +26,25 @@ class SunGrid():
         :param meridional_obj: object storing the 2D meridional flow fields, processed from CFD.
         :param mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates.
         """
-        self._grid_config = meridional_obj.config
         self._meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
-        self._n_stream = meridional_obj.nstream
-        self._nAxialNodes = self.n_stream
-        self._n_span = meridional_obj.nspan
-        self._nRadialNodes = self.n_span
-        self._nPoints = self.n_stream*self.n_span
+        self.n_stream = meridional_obj.nstream
+        self.nAxialNodes = self.n_stream
+        self.n_span = meridional_obj.nspan
+        self.nRadialNodes = self.n_span
+        self.nPoints = self.n_stream*self.n_span
 
         if mode == 'physical':
-            self._rGrid, self._zGrid = meridional_obj.r_cg.copy(), meridional_obj.z_cg.copy()
+            self.rGrid, self.zGrid = meridional_obj.r_cg.copy(), meridional_obj.z_cg.copy()
         elif mode == 'spectral':  # construct a gauss-lobatto grid for the spectral dataset
             self.z = GaussLobattoPoints(self.nAxialNodes)
             self.r = GaussLobattoPoints(self.nRadialNodes)
-            self._rGrid, self._zGrid = np.meshgrid(self.r, self.z)
+            self.rGrid, self.zGrid = np.meshgrid(self.r, self.z)
 
-        self.dataSet = np.empty((meridional_obj.n_stream, meridional_obj.n_span), dtype=Node)  # an array of Node elements
+        self.dataSet = np.empty((self.n_stream, self.n_span), dtype=Node)  # an array of Node elements
         counter = 0
 
-        Nz = meridional_obj.n_stream
-        Nr = meridional_obj.nspan
+        Nz = self.n_stream
+        Nr = self.n_span
         for ii in range(0, self.n_stream):
             for jj in range(0, self.n_span):
                 # add first topological quantities
@@ -60,8 +60,6 @@ class SunGrid():
                     self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'internal', counter)
                 else:
                     raise ValueError("The constructor of the grid has some problems")
-
-                counter = counter + 1
 
                 # add the fluid dynamic field if is a physical grid
                 if mode == 'physical':
@@ -83,13 +81,14 @@ class SunGrid():
                                                             meridional_obj.dp_dr[ii, jj],
                                                             meridional_obj.dp_dz[ii, jj])
 
-    @property
-    def n_stream(self):
-        return self._n_stream
+                if counter != jj+ii*self.n_span:
+                    raise ValueError('Error in the numbering of the nodes')
+                counter += 1
+
 
     @property
-    def n_span(self):
-        return self._n_span
+    def meridional_obj(self):
+        return self._meridional_obj
 
     def PrintInfo(self, datafile='terminal'):
         """

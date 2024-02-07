@@ -51,7 +51,7 @@ class SunModel:
         self.gmma = self.config.get_fluid_gamma()
         print(f"Gamma set to Default Value: {self.gmma}")
 
-        self.substituted_equation = 'ur'  # decides which equation overwrite with the euler wall condition
+        self.substituted_equation = 'utheta'  # decides which equation overwrite with the euler wall condition
         print(f"Default Equation Substitude by Euler Wall: {self.substituted_equation}")
 
     def set_overwriting_equation_euler_wall(self, equation):
@@ -756,6 +756,8 @@ class SunModel:
         # compute the spectral Matrices for x and y direction with the Bayliss formulation
         Dx = ChebyshevDerivativeMatrixBayliss(x)  # derivative operator in xi
         Dy = ChebyshevDerivativeMatrixBayliss(y)  # derivative operator in eta
+        # Dx = ChebyshevDerivativeMatrix(x)  # derivative operator in xi
+        # Dy = ChebyshevDerivativeMatrix(y)  # derivative operator in eta
 
         # Q_const is the global matrix storing B and E elements after spectral differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
@@ -915,7 +917,9 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.Q_const[row:row + 5, column:column + 5] += block.copy()
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
+        self.Q_const[row:row + 5, column:column + 5] += block
 
     def AddToQ_var(self, block, row, column):
         """
@@ -924,6 +928,8 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
         self.Q_var[row:row + 5, column:column + 5] += block
 
     def add_to_Y(self, block, row, column):
@@ -933,6 +939,8 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
         self.Y[row:row + 5, column:column + 5] += block
 
     def add_to_A_g(self, block, row, column):
@@ -942,7 +950,9 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.A_g[row:row + 5, column:column + 5] += block.copy()
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
+        self.A_g[row:row + 5, column:column + 5] += block
 
     def add_to_C_g(self, block, row, column):
         """
@@ -951,7 +961,9 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.C_g[row:row + 5, column:column + 5] += block.copy()
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
+        self.C_g[row:row + 5, column:column + 5] += block
 
     def add_to_R_g(self, block, row, column):
         """
@@ -960,7 +972,9 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.R_g[row:row + 5, column:column + 5] += block.copy()
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
+        self.R_g[row:row + 5, column:column + 5] += block
 
     def add_to_S_g(self, block, row, column):
         """
@@ -969,7 +983,9 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        self.S_g[row:row + 5, column:column + 5] += block.copy()
+        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+            raise TypeError('The block must be a 5x5 complex')
+        self.S_g[row:row + 5, column:column + 5] += block
 
     def ApplyBoundaryConditions(self):
         """
@@ -1409,63 +1425,56 @@ class SunModel:
         """
         Build the A global matrix, stacking together the A matrices of all the nodes.
         """
-        self.A_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
+        self.A_g = np.zeros(self.Q_const.shape, dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                diag_block_ij = self.data.dataSet[ii, jj].A
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_A_g(diag_block_ij, row, column)
+                self.add_to_A_g(self.data.dataSet[ii, jj].A, row, column)
 
     def build_C_global_matrix(self):
         """
         Build the C*j*m/r global matrix, stacking together the C*j*m/r matrices of all the nodes.
         """
-        self.C_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
+        self.C_g = np.zeros(self.Q_const.shape, dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                # add all the remaining terms on the diagonal
-                diag_block_ij = self.data.dataSet[ii, jj].C
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_C_g(diag_block_ij, row, column)
+                self.add_to_C_g(self.data.dataSet[ii, jj].C, row, column)
 
     def build_R_global_matrix(self):
         """
         Build the R global matrix.
         """
-        self.R_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
+        self.R_g = np.zeros(self.Q_const.shape, dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                # add all the remaining terms on the diagonal
-                diag_block_ij = self.data.dataSet[ii, jj].R
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_R_g(diag_block_ij, row, column)
+                self.add_to_R_g(self.data.dataSet[ii, jj].R, row, column)
 
     def build_S_global_matrix(self):
         """
         Build the S global matrix.
         """
-        self.S_g = np.zeros((self.Q_const.shape[0], self.Q_const.shape[1]), dtype=complex)
+        self.S_g = np.zeros(self.Q_const.shape, dtype=complex)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                # add all the remaining terms on the diagonal
-                diag_block_ij = self.data.dataSet[ii, jj].S
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
-                self.add_to_S_g(diag_block_ij, row, column)
+                self.add_to_S_g(self.data.dataSet[ii, jj].S, row, column)
 
     def build_Z_global_matrix(self):
         """
         Build the Z global matrix, synonym of J. J = Z = (B_d + C + E_d + R), where B_d+E_d=Q_const have been obtained with
         the spectral differentiation method.
         """
-        self.Z_g = (self.Q_const + self.C_g + self.R_g)
+        self.Z_g = self.Q_const + self.C_g + self.R_g
 
     def compute_L_matrices(self, block_i):
         """
@@ -1492,7 +1501,6 @@ class SunModel:
         self.L0 = self.Z_g * (1 + 1j * m * Omega * tau) + self.S_g
         self.L1 = self.A_g * (m * Omega * tau - 1j) - 1j * tau * self.Z_g
         self.L2 = -tau * self.A_g
-        print('test')
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """
