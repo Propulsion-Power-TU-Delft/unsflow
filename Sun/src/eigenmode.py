@@ -14,7 +14,7 @@ from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
-from .styles import *
+from Utils.styles import *
 
 
 class Eigenmode:

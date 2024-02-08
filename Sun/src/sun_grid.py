@@ -9,7 +9,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from .node import Node
-from .styles import *
+import Utils
 from .general_functions import GaussLobattoPoints
 
 
@@ -50,40 +50,43 @@ class SunGrid():
             Nr = self.n_span
             for ii in range(0, self.n_stream):
                 for jj in range(0, self.n_span):
-                    # add first topological quantities
                     if ii == 0:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'inlet', counter)
+                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                                                    'inlet', counter)
                     elif ii == Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'outlet', counter)
+                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                                                    'outlet', counter)
                     elif jj == 0 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'hub', counter)
+                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                                                    'hub', counter)
                     elif jj == Nr - 1 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'shroud', counter)
+                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                                                    'shroud', counter)
                     elif ii != 0 and ii != Nz - 1 and jj != 0 and jj != Nr - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj], 'internal', counter)
+                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                                                    'internal', counter)
                     else:
                         raise ValueError("The constructor of the grid has some problems")
 
-                    # add the fluid dynamic field if is a physical grid
-                    if mode == 'physical':
-                        self.dataSet[ii, jj].AppendDensityInfo(meridional_obj.rho[ii, jj],
-                                                               meridional_obj.drho_dr[ii, jj],
-                                                               meridional_obj.drho_dz[ii, jj])
-
-                        self.dataSet[ii, jj].AppendVelocityInfo(meridional_obj.ur[ii, jj],
-                                                                meridional_obj.ut[ii, jj],
-                                                                meridional_obj.uz[ii, jj],
-                                                                meridional_obj.dur_dr[ii, jj],
-                                                                meridional_obj.dur_dz[ii, jj],
-                                                                meridional_obj.dut_dr[ii, jj],
-                                                                meridional_obj.dut_dz[ii, jj],
-                                                                meridional_obj.duz_dr[ii, jj],
-                                                                meridional_obj.duz_dz[ii, jj])
-
-                        self.dataSet[ii, jj].AppendPressureInfo(meridional_obj.p[ii, jj],
-                                                                meridional_obj.dp_dr[ii, jj],
-                                                                meridional_obj.dp_dz[ii, jj])
-
+                    # # add the fluid dynamic field if is a physical grid
+                    # if mode == 'physical':
+                    #     self.dataSet[ii, jj].AppendDensityInfo(meridional_obj.rho[ii, jj],
+                    #                                            meridional_obj.drho_dr[ii, jj],
+                    #                                            meridional_obj.drho_dz[ii, jj])
+                    #
+                    #     self.dataSet[ii, jj].AppendVelocityInfo(meridional_obj.ur[ii, jj],
+                    #                                             meridional_obj.ut[ii, jj],
+                    #                                             meridional_obj.uz[ii, jj],
+                    #                                             meridional_obj.dur_dr[ii, jj],
+                    #                                             meridional_obj.dur_dz[ii, jj],
+                    #                                             meridional_obj.dut_dr[ii, jj],
+                    #                                             meridional_obj.dut_dz[ii, jj],
+                    #                                             meridional_obj.duz_dr[ii, jj],
+                    #                                             meridional_obj.duz_dz[ii, jj])
+                    #
+                    #     self.dataSet[ii, jj].AppendPressureInfo(meridional_obj.p[ii, jj],
+                    #                                             meridional_obj.dp_dr[ii, jj],
+                    #                                             meridional_obj.dp_dz[ii, jj])
                     if counter != jj+ii*self.n_span:
                         raise ValueError('Error in the numbering of the nodes')
                     counter += 1

@@ -16,11 +16,12 @@ from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
-from .styles import *
+from Utils.styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
 from Grid.src.functions import compute_picture_size, create_folder
+import os
 
 
 class SunModelMultiBlock():
@@ -269,14 +270,15 @@ class SunModelMultiBlock():
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfrequencies(self, delimit=None, normalization=True, save_filename=None):
+    def plot_eigenfrequencies(self, delimit=None, normalization=True, save_filename=None, save_foldername='pictures'):
         """
         Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
         :param normalization: if True plots the Damping factor and rotational speed, otherwise it plots the dimensional frequency
         :param save_filename: if not None, save figure files
+        :param save_foldername: folder name of the pictures
         """
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots()
         if normalization:
             for mode in self.eigenfields:
                 # if mode.is_physical:
@@ -300,10 +302,10 @@ class SunModelMultiBlock():
 
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(save_foldername + save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
-    def plot_eigenfields(self, n=None, save_filename=None):
+    def plot_eigenfields(self, n=None, save_filename=None, save_foldername='pictures'):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
@@ -340,7 +342,7 @@ class SunModelMultiBlock():
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(save_foldername + '/' + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure(figsize=self.pic_size_contour)
             plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
@@ -349,7 +351,7 @@ class SunModelMultiBlock():
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(save_foldername + '/' + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure(figsize=self.pic_size_contour)
             plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
@@ -357,6 +359,8 @@ class SunModelMultiBlock():
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(save_foldername + '/' + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure(figsize=self.pic_size_contour)
             plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
@@ -365,7 +369,7 @@ class SunModelMultiBlock():
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(save_foldername + '/' + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure(figsize=self.pic_size_contour)
             plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
@@ -374,9 +378,9 @@ class SunModelMultiBlock():
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(save_foldername + '/' + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
-    def write_results(self, save_filename=None):
+    def write_results(self, save_filename=None, folder_name='pictures'):
         """
         Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
         Possible file types are (csv, pickle).
@@ -391,7 +395,7 @@ class SunModelMultiBlock():
         eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
 
         # save the csv of the eigenfrequencies already normalized
-        with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
+        with open(folder_name + '/' + filename + '.csv', 'w', newline='') as csvfile:
             fieldnames = ['RS', 'DF']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
@@ -399,7 +403,7 @@ class SunModelMultiBlock():
                 writer.writerow({'RS': num.real, 'DF': num.imag})
 
         # save the pickle with all the eigenmodes
-        with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
+        with open(folder_name + '/' + 'eigenfields.pickle', 'wb') as picklefile:
             pickle.dump(self.eigenfields, picklefile)
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):

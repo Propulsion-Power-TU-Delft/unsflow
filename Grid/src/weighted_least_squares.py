@@ -160,21 +160,25 @@ def compute_X_matrix(x, y, order=4):
         raise ValueError('Order of regression not recognized!')
     return W
 
+
 def compute_X_matrix_derivatives(x, y, order=4):
     """
     Starting from the basis function matrix, calculate the basis function matrices corresponding to the x
     and y derivatives. only fourth order implemented since is the one used in the instability model.
     """
-    #order 2
+    # order 2
     # Wdx = np.array([0, 1, 0, 2*x, 0, y])
     # Wdy = np.array([0, 0, 1, 0, 2*y, x])
 
-    #order 4
+    # order 4
 
-    Wdx = np.array([0, 1, 0, 2 * x, 0, y, 3*x**2, 0, 2*x*y, y**2, 4*x**3, 0, 3*x**2*y, y**3, 2*x*y**2])
-    Wdy = np.array([0, 0, 1, 0, 2 * y, x, 0, 3*y**2, x**2, 2*x*y, 0, 4*y**3, x**3, 3*x*y**2, 2*x**2*y])
+    Wdx = np.array(
+        [0, 1, 0, 2 * x, 0, y, 3 * x ** 2, 0, 2 * x * y, y ** 2, 4 * x ** 3, 0, 3 * x ** 2 * y, y ** 3, 2 * x * y ** 2])
+    Wdy = np.array(
+        [0, 0, 1, 0, 2 * y, x, 0, 3 * y ** 2, x ** 2, 2 * x * y, 0, 4 * y ** 3, x ** 3, 3 * x * y ** 2, 2 * x ** 2 * y])
 
     return Wdx, Wdy
+
 
 def compute_W_matrix(xc, yc, x, y, wfunc_type='risd'):
     """
@@ -195,7 +199,7 @@ def compute_W_matrix(xc, yc, x, y, wfunc_type='risd'):
     elif wfunc_type == 'risd':
         weight = 1 / (d ** 2 + h ** 2)
     elif wfunc_type == 'constant':
-        weight = np.zeros_like(d)+1
+        weight = np.zeros_like(d) + 1
     else:
         raise ValueError("Invalid weight function type")
 

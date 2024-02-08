@@ -6,4 +6,3 @@ from .config import Config
 from .functions import *
 from .meridional_process import MeridionalProcess
 from .meridional_process_group import MeridionalProcessGroup
-from .styles import *

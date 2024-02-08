@@ -7,11 +7,10 @@ Created on Thu Jun 15 17:07:05 2023
 import os.path
 
 import numpy as np
-from .styles import *
+from Utils.styles import *
 from scipy.ndimage import gaussian_filter
 import pickle
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size, print_object_memory_info
 
 

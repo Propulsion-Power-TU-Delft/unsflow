@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from numpy import sin, cos
 import pickle
-from .styles import *
+from Utils.styles import *
 import math
 from scipy.optimize import fsolve
 from scipy.optimize import minimize

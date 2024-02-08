@@ -11,12 +11,10 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
+from Utils.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size
 from Grid.src.profile import Profile
-
-# import Grid.src.functions
-from .styles import *
+from Utils.styles import *
 
 
 class Blade:

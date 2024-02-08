@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from .styles import N_levels
+from Utils.styles import N_levels
 
 
 class DiffuserMeridional():

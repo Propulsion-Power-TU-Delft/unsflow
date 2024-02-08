@@ -6,11 +6,10 @@ Created on Wed Jun 14 18:29:29 2023
 """
 import numpy as np
 from scipy.spatial import KDTree
-from .styles import *
+from Utils.styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
 from .area_element import AreaElement
 
 

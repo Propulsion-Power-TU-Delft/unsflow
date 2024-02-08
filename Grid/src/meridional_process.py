@@ -12,11 +12,10 @@ from scipy.ndimage import gaussian_filter
 from scipy.interpolate import Rbf
 import pickle
 import sympy as sp
-from .styles import *
+from Utils.styles import *
 from .polynomial_ls_regression import *
 from .functions import compute_picture_size
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
 from scipy.interpolate import griddata
 from Grid.src.weighted_least_squares import *
 import matplotlib.lines as mlines

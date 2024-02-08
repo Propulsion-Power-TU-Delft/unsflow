@@ -8,7 +8,7 @@ from numpy import sqrt
 import pandas as pd
 from .functions import *
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
+from Utils.styles import total_chars, total_chars_mid
 from numpy import sin, cos, tan, sqrt
 
 

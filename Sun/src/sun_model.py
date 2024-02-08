@@ -16,7 +16,8 @@ from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
-from .styles import *
+from Utils import styles
+from Utils.styles import total_chars, total_chars_mid
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
@@ -322,23 +323,22 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_deta_dz.pdf', bbox_inches='tight')
             # plt.close()
 
-    def AddAMatrixToNodes(self):
-        """
-        Compute and store at the node level the A matrix. Sun Formulation
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                A = np.eye(5, dtype=complex)
-
-                # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
-                # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
-                # should be 1 by construction. In this case the non-dimensional equations are exactly the same
-                # of the dimensional ones
-                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                 self.config.get_reference_time())
-                A *= strouhal
-                self.data.dataSet[ii, jj].AddAMatrix(A)
-
+    # def AddAMatrixToNodes(self):
+    #     """
+    #     Compute and store at the node level the A matrix. Sun Formulation
+    #     """
+    #     for ii in range(0, self.data.nAxialNodes):
+    #         for jj in range(0, self.data.nRadialNodes):
+    #             A = np.eye(5, dtype=complex)
+    #
+    #             # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
+    #             # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+    #             # should be 1 by construction. In this case the non-dimensional equations are exactly the same
+    #             # of the dimensional ones
+    #             strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
+    #                                                              self.config.get_reference_time())
+    #             A *= strouhal
+    #             self.data.dataSet[ii, jj].AddAMatrix(A)
 
     def AddAMatrixToNodesFrancesco2(self):
         """
@@ -347,7 +347,7 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 A = np.eye(5, dtype=complex)
-                A[4, 0] = -self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].rho
+                A[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.gmma / self.data.meridional_obj.rho[ii, jj]
 
                 """ Multiply only matrix A times the strouhal number. If the reference velocity was defined as:
                  u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
@@ -358,22 +358,22 @@ class SunModel:
                 A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
-    def AddBMatrixToNodes(self):
-        """
-        Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                B = np.zeros((5, 5), dtype=complex)
-                B[0, 0] = self.data.dataSet[ii, jj].ur
-                B[1, 1] = self.data.dataSet[ii, jj].ur
-                B[2, 2] = self.data.dataSet[ii, jj].ur
-                B[3, 3] = self.data.dataSet[ii, jj].ur
-                B[4, 4] = self.data.dataSet[ii, jj].ur
-                B[0, 1] = self.data.dataSet[ii, jj].rho
-                B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
-                B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
-                self.data.dataSet[ii, jj].AddBMatrix(B)
+    # def AddBMatrixToNodes(self):
+    #     """
+    #     Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
+    #     """
+    #     for ii in range(0, self.data.nAxialNodes):
+    #         for jj in range(0, self.data.nRadialNodes):
+    #             B = np.zeros((5, 5), dtype=complex)
+    #             B[0, 0] = self.data.dataSet[ii, jj].ur
+    #             B[1, 1] = self.data.dataSet[ii, jj].ur
+    #             B[2, 2] = self.data.dataSet[ii, jj].ur
+    #             B[3, 3] = self.data.dataSet[ii, jj].ur
+    #             B[4, 4] = self.data.dataSet[ii, jj].ur
+    #             B[0, 1] = self.data.dataSet[ii, jj].rho
+    #             B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
+    #             B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
+    #             self.data.dataSet[ii, jj].AddBMatrix(B)
 
     def AddBMatrixToNodesFrancesco2(self):
         """
@@ -381,40 +381,35 @@ class SunModel:
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                B = np.zeros((5, 5), dtype=complex)
-                B[0, 0] = self.data.dataSet[ii, jj].ur
-                B[1, 1] = self.data.dataSet[ii, jj].ur
-                B[2, 2] = self.data.dataSet[ii, jj].ur
-                B[3, 3] = self.data.dataSet[ii, jj].ur
-                B[4, 4] = self.data.dataSet[ii, jj].ur
-                B[0, 1] = self.data.dataSet[ii, jj].rho
-                B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
-                B[4, 0] = - self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ur * self.gmma / self.data.dataSet[ii, jj].rho
+                B = np.eye(5, dtype=complex) * self.data.meridional_obj.ur[ii, jj]
+                B[0, 1] = self.data.meridional_obj.rho[ii, jj]
+                B[1, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
+                B[4, 0] = - self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ur[ii, jj] * \
+                        self.gmma / self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddBMatrix(B)
 
-
-    def AddCMatrixToNodes(self):
-        """
-        Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
-        Sun Formulation.
-        """
-        m = self.config.get_circumferential_harmonic_order()
-        print(f"Circumferential Harmonic Order set to: {m}")
-
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                C = np.zeros((5, 5), dtype=complex)
-                C[0, 0] = self.data.dataSet[ii, jj].ut
-                C[1, 1] = self.data.dataSet[ii, jj].ut
-                C[2, 2] = self.data.dataSet[ii, jj].ut
-                C[3, 3] = self.data.dataSet[ii, jj].ut
-                C[4, 4] = self.data.dataSet[ii, jj].ut
-                C[0, 2] = self.data.dataSet[ii, jj].rho
-                C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
-                C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
-
-                C = C * 1j * m / self.data.dataSet[ii, jj].r
-                self.data.dataSet[ii, jj].AddCMatrix(C)
+    # def AddCMatrixToNodes(self):
+    #     """
+    #     Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
+    #     Sun Formulation.
+    #     """
+    #     m = self.config.get_circumferential_harmonic_order()
+    #     print(f"Circumferential Harmonic Order set to: {m}")
+    #
+    #     for ii in range(0, self.data.nAxialNodes):
+    #         for jj in range(0, self.data.nRadialNodes):
+    #             C = np.zeros((5, 5), dtype=complex)
+    #             C[0, 0] = self.data.dataSet[ii, jj].ut
+    #             C[1, 1] = self.data.dataSet[ii, jj].ut
+    #             C[2, 2] = self.data.dataSet[ii, jj].ut
+    #             C[3, 3] = self.data.dataSet[ii, jj].ut
+    #             C[4, 4] = self.data.dataSet[ii, jj].ut
+    #             C[0, 2] = self.data.dataSet[ii, jj].rho
+    #             C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
+    #             C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
+    #
+    #             C = C * 1j * m / self.data.dataSet[ii, jj].r
+    #             self.data.dataSet[ii, jj].AddCMatrix(C)
 
     def AddCMatrixToNodesFrancesco2(self):
         """
@@ -426,39 +421,33 @@ class SunModel:
 
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                C = np.zeros((5, 5), dtype=complex)
-                C[0, 0] = self.data.dataSet[ii, jj].ut
-                C[1, 1] = self.data.dataSet[ii, jj].ut
-                C[2, 2] = self.data.dataSet[ii, jj].ut
-                C[3, 3] = self.data.dataSet[ii, jj].ut
-                C[4, 4] = self.data.dataSet[ii, jj].ut
-                C[0, 2] = self.data.dataSet[ii, jj].rho
-                C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
-                C[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ut * self.gmma / self.data.dataSet[ii, jj].rho
-
-                C = C * 1j * m / self.data.dataSet[ii, jj].r
+                C = np.eye(5, dtype=complex) * self.data.meridional_obj.ut[ii, jj]
+                C[0, 2] = self.data.meridional_obj.rho[ii, jj]
+                C[2, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
+                C[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ut[ii, jj] \
+                          * self.gmma /self.data.meridional_obj.rho[ii, jj]
+                C *= 1j * m / self.data.meridional_obj.r_cg[ii, jj]
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
-
-    def AddEMatrixToNodes(self):
-        """
-        Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                E = np.zeros((5, 5), dtype=complex)
-
-                E[0, 0] = self.data.dataSet[ii, jj].uz
-                E[1, 1] = self.data.dataSet[ii, jj].uz
-                E[2, 2] = self.data.dataSet[ii, jj].uz
-                E[3, 3] = self.data.dataSet[ii, jj].uz
-                E[4, 4] = self.data.dataSet[ii, jj].uz
-
-                E[0, 3] = self.data.dataSet[ii, jj].rho
-                E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
-                E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
-
-                self.data.dataSet[ii, jj].AddEMatrix(E)
+    # def AddEMatrixToNodes(self):
+    #     """
+    #     Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
+    #     """
+    #     for ii in range(0, self.data.nAxialNodes):
+    #         for jj in range(0, self.data.nRadialNodes):
+    #             E = np.zeros((5, 5), dtype=complex)
+    #
+    #             E[0, 0] = self.data.dataSet[ii, jj].uz
+    #             E[1, 1] = self.data.dataSet[ii, jj].uz
+    #             E[2, 2] = self.data.dataSet[ii, jj].uz
+    #             E[3, 3] = self.data.dataSet[ii, jj].uz
+    #             E[4, 4] = self.data.dataSet[ii, jj].uz
+    #
+    #             E[0, 3] = self.data.dataSet[ii, jj].rho
+    #             E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
+    #             E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
+    #
+    #             self.data.dataSet[ii, jj].AddEMatrix(E)
 
     def AddEMatrixToNodesFrancesco2(self):
         """
@@ -466,54 +455,48 @@ class SunModel:
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                E = np.zeros((5, 5), dtype=complex)
-                E[0, 0] = self.data.dataSet[ii, jj].uz
-                E[1, 1] = self.data.dataSet[ii, jj].uz
-                E[2, 2] = self.data.dataSet[ii, jj].uz
-                E[3, 3] = self.data.dataSet[ii, jj].uz
-                E[4, 4] = self.data.dataSet[ii, jj].uz
-                E[0, 3] = self.data.dataSet[ii, jj].rho
-                E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
-                E[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].uz * self.gmma / self.data.dataSet[ii, jj].rho
+                E = np.eye(5, dtype=complex) * self.data.meridional_obj.uz[ii, jj]
+                E[0, 3] = self.data.meridional_obj.rho[ii, jj]
+                E[3, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
+                E[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.uz[ii, jj] \
+                          * self.gmma / self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddEMatrix(E)
 
-
-    def AddRMatrixToNodes(self):
-        """
-        Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
-        """
-        for ii in range(0, self.data.nAxialNodes):
-            for jj in range(0, self.data.nRadialNodes):
-                R = np.zeros((5, 5), dtype=complex)
-                R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
-                                                                                                 / self.data.dataSet[ii, jj].r)
-                R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
-                R[0, 2] = 0
-                R[0, 3] = self.data.dataSet[ii, jj].drho_dz
-                R[0, 4] = 0
-                R[1, 0] = -self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
-                R[1, 1] = self.data.dataSet[ii, jj].dur_dr
-                R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[1, 3] = self.data.dataSet[ii, jj].dur_dz
-                R[1, 4] = 0
-                R[2, 0] = 0
-                R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-                R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
-                R[2, 3] = self.data.dataSet[ii, jj].dut_dz
-                R[2, 4] = 0
-                R[3, 0] = -self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
-                R[3, 1] = self.data.dataSet[ii, jj].duz_dr
-                R[3, 2] = 0
-                R[3, 3] = self.data.dataSet[ii, jj].duz_dz
-                R[3, 4] = 0
-                R[4, 0] = 0
-                R[4, 1] = self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].dp_dr
-                R[4, 2] = 0
-                R[4, 3] = self.data.dataSet[ii, jj].dp_dz
-                R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
-                                       self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
-                self.data.dataSet[ii, jj].AddRMatrix(R)
-
+    # def AddRMatrixToNodes(self):
+    #     """
+    #     Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
+    #     """
+    #     for ii in range(0, self.data.nAxialNodes):
+    #         for jj in range(0, self.data.nRadialNodes):
+    #             R = np.zeros((5, 5), dtype=complex)
+    #             R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
+    #                                                                                              / self.data.dataSet[ii, jj].r)
+    #             R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
+    #             R[0, 2] = 0
+    #             R[0, 3] = self.data.dataSet[ii, jj].drho_dz
+    #             R[0, 4] = 0
+    #             R[1, 0] = -self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
+    #             R[1, 1] = self.data.dataSet[ii, jj].dur_dr
+    #             R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
+    #             R[1, 3] = self.data.dataSet[ii, jj].dur_dz
+    #             R[1, 4] = 0
+    #             R[2, 0] = 0
+    #             R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
+    #             R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
+    #             R[2, 3] = self.data.dataSet[ii, jj].dut_dz
+    #             R[2, 4] = 0
+    #             R[3, 0] = -self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
+    #             R[3, 1] = self.data.dataSet[ii, jj].duz_dr
+    #             R[3, 2] = 0
+    #             R[3, 3] = self.data.dataSet[ii, jj].duz_dz
+    #             R[3, 4] = 0
+    #             R[4, 0] = 0
+    #             R[4, 1] = self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].dp_dr
+    #             R[4, 2] = 0
+    #             R[4, 3] = self.data.dataSet[ii, jj].dp_dz
+    #             R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
+    #                                    self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
+    #             self.data.dataSet[ii, jj].AddRMatrix(R)
 
     def AddRMatrixToNodesFrancesco2(self):
         """
@@ -523,41 +506,41 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
-                node = copy.deepcopy(self.data.dataSet[ii, jj])
 
-                R[0, 0] = node.dur_dr + node.duz_dz + node.ur / node.r
-                R[0, 1] = node.rho / node.r + node.drho_dr
-                R[0, 2] = 0
-                R[0, 3] = node.drho_dz
-                R[0, 4] = 0
+                R[0, 0] = self.data.meridional_obj.dur_dr[ii, jj] + self.data.meridional_obj.duz_dz[ii, jj] \
+                          + self.data.meridional_obj.ur[ii, jj] / self.data.meridional_obj.r_cg[ii, jj]
+                R[0, 1] = self.data.meridional_obj.rho[ii, jj] / self.data.meridional_obj.r_cg[ii, jj] + \
+                          self.data.meridional_obj.drho_dr[ii, jj]
+                R[0, 3] = self.data.meridional_obj.drho_dz[ii, jj]
 
-                R[1, 0] = node.dp_dr / (node.rho ** 2)
-                R[1, 1] = node.dur_dr
-                R[1, 2] = -2 * node.ut / node.r
-                R[1, 3] = node.dur_dz
-                R[1, 4] = 0
+                R[1, 0] = self.data.meridional_obj.dp_dr[ii, jj] / (self.data.meridional_obj.rho[ii, jj] ** 2)
+                R[1, 1] = self.data.meridional_obj.dur_dr[ii, jj]
+                R[1, 2] = -2 * self.data.meridional_obj.ut[ii, jj] / self.data.meridional_obj.r_cg[ii, jj]
+                R[1, 3] = self.data.meridional_obj.dur_dz[ii, jj]
 
-                R[2, 0] = 0
-                R[2, 1] = node.dut_dr + node.ut / node.r
-                R[2, 2] = node.ur / node.r
-                R[2, 3] = node.dut_dz
-                R[2, 4] = 0
+                R[2, 1] = self.data.meridional_obj.dut_dr[ii, jj] + self.data.meridional_obj.ut[ii, jj] / \
+                          self.data.meridional_obj.r_cg[ii, jj]
+                R[2, 2] = self.data.meridional_obj.ur[ii, jj] / self.data.meridional_obj.r_cg[ii, jj]
+                R[2, 3] = self.data.meridional_obj.dut_dz[ii, jj]
 
-                R[3, 0] = node.dp_dz / (node.rho ** 2)
-                R[3, 1] = node.duz_dr
-                R[3, 2] = 0
-                R[3, 3] = node.duz_dz
-                R[3, 4] = 0
+                R[3, 0] = self.data.meridional_obj.dp_dz[ii, jj] / (self.data.meridional_obj.rho[ii, jj] ** 2)
+                R[3, 1] = self.data.meridional_obj.duz_dr[ii, jj]
+                R[3, 3] = self.data.meridional_obj.duz_dz[ii, jj]
 
                 # R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz) # first version
-                R[4, 0] = -self.gmma/node.rho**2 * (node.ur*node.p*node.drho_dr + node.uz*node.p*node.drho_dz)  # second version
-                R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho
-                R[4, 2] = 0
-                R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz
-                R[4, 4] = -(self.gmma / node.rho) * (node.ur * node.drho_dr + node.uz * node.drho_dz)
+                R[4, 0] = -self.gmma / (self.data.meridional_obj.rho[ii, jj] ** 2) * (
+                        self.data.meridional_obj.ur[ii, jj] * self.data.meridional_obj.p[ii, jj] *
+                        self.data.meridional_obj.drho_dr[ii, jj] + self.data.meridional_obj.uz[ii, jj] *
+                        self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])  # second version
+                R[4, 1] = self.data.meridional_obj.dp_dr[ii, jj] - self.data.meridional_obj.p[ii, jj] * \
+                          self.data.meridional_obj.drho_dr[ii, jj] * self.gmma / self.data.meridional_obj.rho[ii, jj]
+                R[4, 3] = self.data.meridional_obj.dp_dz[ii, jj] - self.gmma / self.data.meridional_obj.rho[ii, jj] * \
+                          self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj]
+                R[4, 4] = (-self.gmma / self.data.meridional_obj.rho[ii, jj]) * (self.data.meridional_obj.ur[ii, jj] *
+                            self.data.meridional_obj.drho_dr[ii, jj] + self.data.meridional_obj.uz[ii, jj] *
+                            self.data.meridional_obj.drho_dz[ii, jj])
 
                 self.data.dataSet[ii, jj].AddRMatrix(R)
-
 
     def AddSMatrixToNodes(self):
         """
@@ -567,14 +550,7 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
-
                 if self.data.meridional_obj.domain == 'rotor' or self.data.meridional_obj.domain == 'stator':
-                    S[0, 0] = self.data.meridional_obj.S00[ii, jj]
-                    S[0, 1] = self.data.meridional_obj.S01[ii, jj]
-                    S[0, 2] = self.data.meridional_obj.S02[ii, jj]
-                    S[0, 3] = self.data.meridional_obj.S03[ii, jj]
-                    S[0, 4] = self.data.meridional_obj.S04[ii, jj]
-
                     S[1, 0] = self.data.meridional_obj.S10[ii, jj]
                     S[1, 1] = self.data.meridional_obj.S11[ii, jj]
                     S[1, 2] = self.data.meridional_obj.S12[ii, jj]
@@ -592,12 +568,6 @@ class SunModel:
                     S[3, 2] = self.data.meridional_obj.S32[ii, jj]
                     S[3, 3] = self.data.meridional_obj.S33[ii, jj]
                     S[3, 4] = self.data.meridional_obj.S34[ii, jj]
-
-                    S[4, 0] = self.data.meridional_obj.S40[ii, jj]
-                    S[4, 1] = self.data.meridional_obj.S41[ii, jj]
-                    S[4, 2] = self.data.meridional_obj.S42[ii, jj]
-                    S[4, 3] = self.data.meridional_obj.S43[ii, jj]
-                    S[4, 4] = self.data.meridional_obj.S44[ii, jj]
                 else:
                     pass
 
@@ -610,10 +580,10 @@ class SunModel:
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                Bhat = (1 / self.data.dataSet[ii, jj].J) * (-self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdy +
-                                                             self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdy)
-                Ehat = (1 / self.data.dataSet[ii, jj].J) * (self.data.dataSet[ii, jj].B * self.data.dataSet[ii, jj].dzdx -
-                                                            self.data.dataSet[ii, jj].E * self.data.dataSet[ii, jj].drdx)
+                Bhat = (1 / self.J[ii, jj]) * (-self.data.dataSet[ii, jj].B * self.dzdy[ii, jj] +
+                                                self.data.dataSet[ii, jj].E * self.drdy[ii, jj])
+                Ehat = (1 / self.J[ii, jj]) * (self.data.dataSet[ii, jj].B * self.dzdx[ii, jj] -
+                                                self.data.dataSet[ii, jj].E * self.drdx[ii, jj])
                 # # # alternative formulation, provides the same results. (Check)
                 # Bhat2 = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
                 #        self.data.dataSet[ii, jj].E * self.dxdz[ii, jj]
@@ -623,20 +593,16 @@ class SunModel:
 
     def ApplySpectralDifferentiation(self, verbose=False):
         """
-       This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
-       derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
-       which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
-       The spectral differentiation formula has been double-checked in the respective debug file.
-       :param verbose: print additional info.
-       """
-
-        # the cordinates on the spectral grid directions, necessary for the differentiation matrices Dx and Dy
-        x = self.dataSpectral.z
-        y = self.dataSpectral.r
+        This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
+        derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
+        which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
+        The spectral differentiation formula has been double-checked in the respective debug file.
+        :param verbose: print additional info.
+        """
 
         # compute the spectral Matrices for x and y direction with the Bayliss formulation
-        Dx = ChebyshevDerivativeMatrixBayliss(x)  # derivative operator in xi
-        Dy = ChebyshevDerivativeMatrixBayliss(y)  # derivative operator in eta
+        Dx = ChebyshevDerivativeMatrixBayliss(self.dataSpectral.z)  # derivative operator in xi
+        Dy = ChebyshevDerivativeMatrixBayliss(self.dataSpectral.r)  # derivative operator in eta
 
         # Q_const is the global matrix storing B and E elements after spectral differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
@@ -644,8 +610,8 @@ class SunModel:
         # differentiation of a general perturbation vector (for the node (i,j)) along xi  and eta. (formula double-checked)
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
-                B_ij = self.data.dataSet[ii, jj].Bhat  # Bhat matrix of the ij node
-                E_ij = self.data.dataSet[ii, jj].Ehat  # Ehat matrix of the ij node
+                B_ij = self.data.dataSet[ii, jj].Bhat.copy()  # Bhat matrix of the ij node
+                E_ij = self.data.dataSet[ii, jj].Ehat.copy()  # Ehat matrix of the ij node
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
 
                 # xi differentiation. m is in the range of axial nodes, first axis of the matrix
@@ -782,7 +748,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+        if (block.dtype != np.complex128 or block.shape != (5, 5)):
             raise TypeError('The block must be a 5x5 complex')
         self.Q_const[row:row + 5, column:column + 5] += block
 
@@ -815,7 +781,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+        if (block.dtype != np.complex128 or block.shape != (5, 5)):
             raise TypeError('The block must be a 5x5 complex')
         self.A_g[row:row + 5, column:column + 5] += block
 
@@ -826,7 +792,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+        if (block.dtype != np.complex128 or block.shape != (5, 5)):
             raise TypeError('The block must be a 5x5 complex')
         self.C_g[row:row + 5, column:column + 5] += block
 
@@ -837,7 +803,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+        if (block.dtype != np.complex128 or block.shape != (5, 5)):
             raise TypeError('The block must be a 5x5 complex')
         self.R_g[row:row + 5, column:column + 5] += block
 
@@ -848,7 +814,7 @@ class SunModel:
         :param row: row index of the first element for positioning.
         :param column: column index of the first element for positioning.
         """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+        if (block.dtype != np.complex128 or block.shape != (5, 5)):
             raise TypeError('The block must be a 5x5 complex')
         self.S_g[row:row + 5, column:column + 5] += block
 
@@ -1410,7 +1376,6 @@ class SunModel:
 
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
-
 
     def set_boundary_conditions(self):
         """

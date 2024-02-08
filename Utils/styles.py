@@ -6,27 +6,17 @@ Created on Mon May  8 12:45:00 2023
 
 common styles used throughout the code for pictures
 """
-import matplotlib.pyplot as plt
-import os 
 from matplotlib import cm
 
-
-plt.rc('text')      
-plt.rc('xtick', labelsize=10)
-plt.rc('ytick', labelsize=10)
-plt.rcParams['font.size'] = 14
-
-# pictures folder
-folder_name = 'pictures/'
-if not os.path.exists(folder_name):
-    os.makedirs(folder_name)
-
-
 # default size of the figures
-fig_size = (7, 5)
+fig_size_single = (7, 5)
+fig_size_12 = (12, 5)
+fig_size_13 = (15, 4)
+fig_size_22 = (12, 10)
+fig_size_3 = (15, 13)
 
 # Set grid opacity:
-grid_opacity = 0.3
+grid_opacity = 0.2
 
 # Set font size for axis ticks:
 font_axes = 16
@@ -56,25 +46,23 @@ font_colorbar_axes = 18
 marker_size_big = 50
 marker_size = 20
 marker_size_small = 5
+scatter_point_size = 10
 
 # Set the scale for marker size plotted in the legend entries:
 marker_scale_legend = 1
 
-# Set point size for all scatter plots:
-scatter_point_size = 10
-
 # Set line width for all line plots:
-line_width = 2
-
-# Set light-line width for all line plots:
+heavy_line_width = 3
+line_width = 1
 light_line_width = 0.5
 
-#set number of levels in contourf plots
-N_levels = 30
-N_levels_2 = 30
+# set number of levels in contourf plots
+N_levels = 25
+N_fine = 100
 
-#set colormap for contourf plots
-# color_map = cm.coolwarm
-# color_map = cm.viridis
-# color_map = cm.inferno
+# set colormap for contourf plots
 color_map = cm.viridis
+
+# number of chars for the banners
+total_chars = 100
+total_chars_mid = total_chars//2
