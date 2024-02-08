@@ -115,22 +115,25 @@ class SunModelMultiBlock():
         ax[1].set_title(r'$L_1$')
         ax[2].set_title(r'$L_2$')
 
-        # starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
-        # block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
-        # variable, in the other we implement the same value of the derivative.
+        """
+        Starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
+        block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
+        block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
+        """
 
         # Let's start from the block 2, and consider the block itself and the previous.
         rows_band = self.config.get_spanwise_points() * 5
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
-            # previous block rows (where same fluid conditions are implemented)
+
+            """previous block rows (where same fluid conditions are implemented)"""
             self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
 
-            # current block rows (where same fluid derivatives are implemented, by means of finite differences for simplicity)
-            # carrying out the finite difference we end up with:
-            # (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])
+            """Current block rows (where same fluid derivatives are implemented, by means of finite differences for simplicity)
+            carrying out the finite difference we end up with:
+            (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])"""
             self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
             dxi_up = self.blocks[iblock - 1].dataSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].dataSpectral.zGrid[-2, 0]
@@ -188,8 +191,10 @@ class SunModelMultiBlock():
 
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
-        self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-        self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+        self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / \
+                             self.config.get_circumferential_harmonic_order()
+        self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / \
+                             self.config.get_circumferential_harmonic_order()
         self.sort_eigensolution(sort_mode=sort_mode)
 
     def sort_eigensolution(self, sort_mode='imaginary decreasing'):
@@ -204,9 +209,11 @@ class SunModelMultiBlock():
 
         # get the sorting indices following descending order of the damping factor
         if sort_mode == 'imaginary decreasing':
-            sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
+            sorted_indices = sorted(range(len(df)), key=lambda ii: df[ii], reverse=True)
         elif sort_mode == 'real increasing':
-            sorted_indices = sorted(range(len(rs)), key=lambda i: rs[i], reverse=False)
+            sorted_indices = sorted(range(len(rs)), key=lambda ii: rs[ii], reverse=False)
+        else:
+            raise ValueError('Unknown sort mode')
 
         # order the original arrays following the sorting indices
         for i in range(len(sorted_indices)):
@@ -273,8 +280,10 @@ class SunModelMultiBlock():
         if normalization:
             for mode in self.eigenfields:
                 # if mode.is_physical:
-                rs = mode.eigenfrequency.real / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
-                df = mode.eigenfrequency.imag / self.config.get_reference_omega() / self.config.get_circumferential_harmonic_order()
+                rs = mode.eigenfrequency.real / self.config.get_reference_omega() / \
+                     self.config.get_circumferential_harmonic_order()
+                df = mode.eigenfrequency.imag / self.config.get_reference_omega() / \
+                     self.config.get_circumferential_harmonic_order()
                 ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red', s=marker_size)
             ax.set_xlabel(r'RS [-]')
             ax.set_ylabel(r'DF [-]')
@@ -294,7 +303,7 @@ class SunModelMultiBlock():
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
-    def plot_eigenfields(self, n=None, remove_isolines=False, save_filename=None):
+    def plot_eigenfields(self, n=None, save_filename=None):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
@@ -325,69 +334,47 @@ class SunModelMultiBlock():
             df = mode.eigenfrequency.imag / self.config.get_reference_omega()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels, cmap=modes_map)
-            if remove_isolines:
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
+            plt.contourf(z, r, mode.eigen_rho, levels=N_levels, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
-            if remove_isolines:
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
+            plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
-            if remove_isolines:
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
+            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
-            if remove_isolines:
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
+            plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                # plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
-            if remove_isolines:
-                for c in cnt.collections:
-                    c.set_edgecolor("face")
+            plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
                 plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                # plt.close()
 
     def write_results(self, save_filename=None):
         """

@@ -21,6 +21,7 @@ from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
 from Grid.src.functions import compute_picture_size, create_folder
+import copy
 
 
 class SunModel:
@@ -72,54 +73,6 @@ class SunModel:
             raise ValueError("Not recognized option")
         print()
 
-    # def set_normalization_quantities(self, mode='meridional object'):
-    #     """
-    #     Quantities needed to non-dimensionalize the governing equations, in order to make the system better posed numerically.
-    #     If the data obtained from CFD post-process was already non-dimensional just set unity values.
-    #     The non-dimensionalizations terms come from the equations advection terms, and are:
-    #         [x]/[rho][u] for the continuity equation,
-    #         [x]/[u]^2 for the momentum equations,
-    #         [x]/[rho][u]^3 for the pressure equation.
-    #     The fundamental entities selected for non-dimensionalization are:
-    #         a reference density,
-    #         a reference omega, generally taken as the shaft angular velocity
-    #         reference length, generally taken as the blade inlet tip radius
-    #     All the rest is obtained from these 3 fundamental quantities (pressure, time, etc...).
-    #     :param mode: decides if taking the reference quantities are related to the annular duct (test-case), or to a meridional
-    #     object in the general case
-    #     """
-    #     if mode == 'meridional multiblock object':
-    #         self.rho_ref = self.data.meridional_obj.group[0].rho_ref
-    #         self.u_ref = self.data.meridional_obj.group[0].u_ref
-    #         self.x_ref = self.data.meridional_obj.group[0].x_ref
-    #         self.p_ref = self.data.meridional_obj.group[0].p_ref
-    #         self.omega_ref = self.data.meridional_obj.group[0].omega_ref
-    #         self.t_ref = 1/self.omega_ref
-    #     elif mode == 'meridional object':
-    #         self.rho_ref = self.data.meridional_obj.rho_ref
-    #         self.u_ref = self.data.meridional_obj.u_ref
-    #         self.x_ref = self.data.meridional_obj.x_ref
-    #         self.p_ref = self.data.meridional_obj.p_ref
-    #         self.omega_ref = self.data.meridional_obj.omega_ref
-    #         self.t_ref = 1/self.omega_ref
-    #     elif mode =='duct object':
-    #         self.rho_ref = self.data.meridional_obj.rho_ref
-    #         self.u_ref = self.data.meridional_obj.u_ref
-    #         self.x_ref = self.data.meridional_obj.x_ref
-    #         self.p_ref = self.data.meridional_obj.p_ref
-    #         self.omega_ref = self.data.meridional_obj.omega_ref
-    #         self.t_ref = self.data.meridional_obj.t_ref
-    #     else:
-    #         raise ValueError("unknown type of object")
-    #
-    #     self.print_normalization_information()
-    #
-    #     # normalization terms = inverse of advections, to be used for governing equations' normalization. They are correct
-    #     # only for the form of the equations used. Otherwise, they must be changed
-    #     self.continuity_norm = self.x_ref / self.rho_ref / self.u_ref
-    #     self.momentum_norm = self.x_ref / self.u_ref ** 2
-    #     self.pressure_norm = self.x_ref / self.rho_ref / self.u_ref ** 3
-
     def print_normalization_information(self):
         """
         Print information on non-dimensionalization in the sun module. It should provide only ones if the data
@@ -142,13 +95,14 @@ class SunModel:
         :param rpm: rpm of the shaft, with sign according to z.
         """
         self.omega_shaft = 2 * np.pi * rpm / 60
-        self.omega_ref = np.abs(np.copy(self.omega_shaft))
+        self.omega_ref = np.abs(self.omega_shaft)
 
     def NormalizeData(self):
         """
         Non-dimensionalise the node quantities, if they were not already non-dimensional
         """
-        self.data.Normalize(self.rho_ref, self.u_ref, self.x_ref)
+        self.data.Normalize(self.config.get_reference_density(), self.config.get_reference_velocity(),
+                            self.config.get_reference_length())
 
     def ComputeSpectralGrid(self):
         """
@@ -185,14 +139,12 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
-    def ComputeJacobianPhysical(self, routine='numpy', order=2, method='rbf', artificial_refinement=False,
+    def ComputeJacobianPhysical(self, method='rbf', artificial_refinement=False,
                                 dx_dz=None, dx_dr=None, dy_dz=None, dy_dr=None):
         """
         It computes the transformation gradients for every grid point, and stores the value at the node level.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
         found by inversion (usgin the Jacobian).
-        :param routine: routine used to compute the finite differences between the grids.
-        :param order: order of the finite differences (only for findiff routine)
         :param method: method used to interpolate on the operating grid the gradients calculated on the refined grid.
         :param artificial_refinement: True to set artifical refinement method for grid differentiation
         :param dx_dz: analytical transformation. If provided, gradients simply taken from here, not calculated
@@ -377,52 +329,34 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 A = np.eye(5, dtype=complex)
-                if self.config.get_normalize_instability_equations():
-                    A = self.NormalizeMatrix(A)
-                else:
-                    # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
-                    # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
-                    # should be 1 by construction. In this case the non-dimensional equations are exactly the same
-                    # of the dimensional ones
-                    strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                     self.config.get_reference_time())
-                    A *= strouhal
+
+                # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
+                # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+                # should be 1 by construction. In this case the non-dimensional equations are exactly the same
+                # of the dimensional ones
+                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
+                                                                 self.config.get_reference_time())
+                A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
-        if self.config.get_normalize_instability_equations():
-            print("A Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
-        else:
-            print("Initial data from meridional object were already non-dimensional. Matrix A has been multiplied by Strouhal"
-                  " Number: %.2f" % (strouhal))
 
     def AddAMatrixToNodesFrancesco2(self):
         """
         Compute and store at the node level the A matrix. My Formulation.
-        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 A = np.eye(5, dtype=complex)
                 A[4, 0] = -self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].rho
-                if self.config.get_normalize_instability_equations():
-                    A = self.NormalizeMatrix(A)
-                else:
-                    # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
-                    # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
-                    # should be 1 by construction. In this case the non-dimensional equations are exactly the same
-                    # of the dimensional ones
-                    strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                     self.config.get_reference_time())
-                    A *= strouhal
-                self.data.dataSet[ii, jj].AddAMatrix(A)
 
-        if self.config.get_normalize_instability_equations():
-            print("A Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
-        else:
-            print("Initial data from meridional object were already non-dimensional. Matrix A has been multiplied by Strouhal"
-                  " Number: %.2f" % (strouhal))
+                """ Multiply only matrix A times the strouhal number. If the reference velocity was defined as:
+                 u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+                should be 1 by construction. In this case the non-dimensional equations are exactly the same
+                of the dimensional ones."""
+                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
+                                                                 self.config.get_reference_time())
+                A *= strouhal
+                self.data.dataSet[ii, jj].AddAMatrix(A)
 
     def AddBMatrixToNodes(self):
         """
@@ -439,18 +373,11 @@ class SunModel:
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
-                if self.config.get_normalize_instability_equations():
-                    B = self.NormalizeMatrix(B)  # normalization
                 self.data.dataSet[ii, jj].AddBMatrix(B)
-
-            if self.config.get_normalize_instability_equations():
-                print("B Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                      "parameter to false")
 
     def AddBMatrixToNodesFrancesco2(self):
         """
         Compute and store at the node level the B matrix, needed to compute hat{B} later. My Formulation.
-        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -463,14 +390,8 @@ class SunModel:
                 B[0, 1] = self.data.dataSet[ii, jj].rho
                 B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
                 B[4, 0] = - self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ur * self.gmma / self.data.dataSet[ii, jj].rho
-
-                if self.config.get_normalize_instability_equations():
-                    B = self.NormalizeMatrix(B)  # normalization
                 self.data.dataSet[ii, jj].AddBMatrix(B)
 
-        if self.config.get_normalize_instability_equations():
-            print("B Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
 
     def AddCMatrixToNodes(self):
         """
@@ -493,13 +414,7 @@ class SunModel:
                 C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
 
                 C = C * 1j * m / self.data.dataSet[ii, jj].r
-                if self.config.get_normalize_instability_equations():
-                    C = self.NormalizeMatrix(C)  # normalization
                 self.data.dataSet[ii, jj].AddCMatrix(C)
-
-            if self.config.get_normalize_instability_equations():
-                print("C Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                      "parameter to false")
 
     def AddCMatrixToNodesFrancesco2(self):
         """
@@ -522,13 +437,8 @@ class SunModel:
                 C[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].ut * self.gmma / self.data.dataSet[ii, jj].rho
 
                 C = C * 1j * m / self.data.dataSet[ii, jj].r
-                if self.config.get_normalize_instability_equations():
-                    C = self.NormalizeMatrix(C)  # normalization
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
-        if self.config.get_normalize_instability_equations():
-            print("C Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
 
     def AddEMatrixToNodes(self):
         """
@@ -548,18 +458,11 @@ class SunModel:
                 E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
                 E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
 
-                if self.config.get_normalize_instability_equations():
-                    E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
-
-            if self.config.get_normalize_instability_equations():
-                print("E Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                      "parameter to false")
 
     def AddEMatrixToNodesFrancesco2(self):
         """
         Compute and store at the node level the E matrix, needed to compute hat{E}. My Formulation.
-        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -572,13 +475,8 @@ class SunModel:
                 E[0, 3] = self.data.dataSet[ii, jj].rho
                 E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
                 E[4, 0] = -self.data.dataSet[ii, jj].p * self.data.dataSet[ii, jj].uz * self.gmma / self.data.dataSet[ii, jj].rho
-                if self.config.get_normalize_instability_equations():
-                    E = self.NormalizeMatrix(E)  # normalization
                 self.data.dataSet[ii, jj].AddEMatrix(E)
 
-        if self.config.get_normalize_instability_equations():
-            print("E Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
 
     def AddRMatrixToNodes(self):
         """
@@ -614,24 +512,18 @@ class SunModel:
                 R[4, 3] = self.data.dataSet[ii, jj].dp_dz
                 R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
                                        self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
-                if self.config.get_normalize_instability_equations():
-                    R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-            if self.config.get_normalize_instability_equations():
-                print("R Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                      "parameter to false")
 
     def AddRMatrixToNodesFrancesco2(self):
         """
         Compute and store at the node level the R matrix.
         My version of the equations.
-        :param normalize: if True normalize also the data. If the data were already non-dimensional, use False.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
-                node = self.data.dataSet[ii, jj]
+                node = copy.deepcopy(self.data.dataSet[ii, jj])
 
                 R[0, 0] = node.dur_dr + node.duz_dz + node.ur / node.r
                 R[0, 1] = node.rho / node.r + node.drho_dr
@@ -658,19 +550,14 @@ class SunModel:
                 R[3, 4] = 0
 
                 # R[4, 0] = (1 / node.rho) * (node.ur * node.dp_dr + node.uz * node.dp_dz) # first version
-                R[4, 0] = -self.gmma/node.rho**2 * (node.ur*node.p*node.drho_dr + node.uz*node.p*node.drho_dz) # second version
+                R[4, 0] = -self.gmma/node.rho**2 * (node.ur*node.p*node.drho_dr + node.uz*node.p*node.drho_dz)  # second version
                 R[4, 1] = node.dp_dr - node.p * node.drho_dr * self.gmma / node.rho
                 R[4, 2] = 0
                 R[4, 3] = node.dp_dz - self.gmma / node.rho * node.p * node.drho_dz
                 R[4, 4] = -(self.gmma / node.rho) * (node.ur * node.drho_dr + node.uz * node.drho_dz)
 
-                if self.config.get_normalize_instability_equations():
-                    R = self.NormalizeMatrix(R)  # normalization
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
-        if self.config.get_normalize_instability_equations():
-            print("R Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
 
     def AddSMatrixToNodes(self):
         """
@@ -714,13 +601,7 @@ class SunModel:
                 else:
                     pass
 
-                if self.config.get_normalize_instability_equations():
-                    S = self.NormalizeMatrix(S)  # normalization
                 self.data.dataSet[ii, jj].AddSMatrix(S)
-
-        if self.config.get_normalize_instability_equations():
-            print("S Matrix data has been normalized. The Meridional Object data was dimensional? If Not, change normalize "
-                  "parameter to false")
 
     def AddHatMatricesToNodes(self):
         """
@@ -756,8 +637,6 @@ class SunModel:
         # compute the spectral Matrices for x and y direction with the Bayliss formulation
         Dx = ChebyshevDerivativeMatrixBayliss(x)  # derivative operator in xi
         Dy = ChebyshevDerivativeMatrixBayliss(y)  # derivative operator in eta
-        # Dx = ChebyshevDerivativeMatrix(x)  # derivative operator in xi
-        # Dy = ChebyshevDerivativeMatrix(y)  # derivative operator in eta
 
         # Q_const is the global matrix storing B and E elements after spectral differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
@@ -794,12 +673,11 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
-    def apply_finite_differences_on_physical_grid(self, verbose=False):
+    def apply_finite_differences_on_physical_grid(self):
         """
        This method differentiates directly the problem on the physical grid. It saves a new global (for all the nodes) matrix
        Q_const, which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
        The method should only be used for those cases having a cartesian physical grid, otherwise is wrong.
-       :param verbose: print additional info.
        """
 
         # the cordinates on the spectral grid directions, necessary for the differentiation matrices Dx and Dy
@@ -897,19 +775,6 @@ class SunModel:
                 self.AddToQ_const(tmp, row, colp)
                 self.AddToQ_const(-tmp, row, colm)
 
-    def NormalizeMatrix(self, M):
-        """
-        Normalize a 5x5 matrix, where the first row is continuity, then 3 equations for momentum, and one for pressure.
-        The multiplication factors guarantee that the final equations are non-dimensional (only if the matrix coefficients
-        are taken from the same source). If the data used in the analysis were already non-dimensional, there is no need for this.
-        """
-        print("WARNING: Normalization of matrices elements has been called. Your data were dimensional? Consider passing to "
-              "non-dimensional formulation")
-        M[0, :] = M[0, :] * self.continuity_norm
-        M[1:4, :] = M[1:4, :] * self.momentum_norm
-        M[4, :] = M[4, :] * self.pressure_norm
-        return M
-
     def AddToQ_const(self, block, row, column):
         """
         Add 5x5 block to the Qconst matrix, specifying the first element location.
@@ -921,27 +786,27 @@ class SunModel:
             raise TypeError('The block must be a 5x5 complex')
         self.Q_const[row:row + 5, column:column + 5] += block
 
-    def AddToQ_var(self, block, row, column):
-        """
-        Add 5x5 block to the Q_var matrix, specifying the first element location.
-        :param block: 5x5 block to add
-        :param row: row index of the first element for positioning.
-        :param column: column index of the first element for positioning.
-        """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
-            raise TypeError('The block must be a 5x5 complex')
-        self.Q_var[row:row + 5, column:column + 5] += block
+    # def AddToQ_var(self, block, row, column):
+    #     """
+    #     Add 5x5 block to the Q_var matrix, specifying the first element location.
+    #     :param block: 5x5 block to add
+    #     :param row: row index of the first element for positioning.
+    #     :param column: column index of the first element for positioning.
+    #     """
+    #     if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+    #         raise TypeError('The block must be a 5x5 complex')
+    #     self.Q_var[row:row + 5, column:column + 5] += block
 
-    def add_to_Y(self, block, row, column):
-        """
-        Add 5x5 block to the Y matrix, specifying the first element location.
-        :param block: 5x5 block to add
-        :param row: row index of the first element for positioning.
-        :param column: column index of the first element for positioning.
-        """
-        if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
-            raise TypeError('The block must be a 5x5 complex')
-        self.Y[row:row + 5, column:column + 5] += block
+    # def add_to_Y(self, block, row, column):
+    #     """
+    #     Add 5x5 block to the Y matrix, specifying the first element location.
+    #     :param block: 5x5 block to add
+    #     :param row: row index of the first element for positioning.
+    #     :param column: column index of the first element for positioning.
+    #     """
+    #     if (block.dtype!=np.complex128 or block.shape!=(5, 5)):
+    #         raise TypeError('The block must be a 5x5 complex')
+    #     self.Y[row:row + 5, column:column + 5] += block
 
     def add_to_A_g(self, block, row, column):
         """
@@ -1013,26 +878,26 @@ class SunModel:
                 elif (marker != 'internal'):
                     raise Exception('Boundary condition unknown. Check the grid markers!')
 
-    def AddRemainingMatrices(self, omega):
-        """
-        it adds the remaning diagonal block matrices to the full Qtot = Q_const + Q_var. Q_const is constant for every model,
-        while Q_var depends on omega, which should be already provided as non-dimensional.
-        :param omega: dicrete omega value for the SVD calculation.
-        """
-        # Q_var is composed by A, C, R, S. Q_const is composed by B,E spectrally differentiated. Q_tot is the global sum
-        print("WARNING: deprecated method")
-        self.Q_var = np.zeros((self.Q_const.shape),
-                              dtype=complex)  # variable part of the stability matrix. Instantiated for every new value of omega
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
-                # add all the remaining terms on the diagonal
-                diag_block_ij = -1j * omega * self.data.dataSet[ii, jj].A + self.data.dataSet[ii, jj].C + self.data.dataSet[
-                    ii, jj].R + self.data.dataSet[ii, jj].S
-                node_counter = self.data.dataSet[ii, jj].nodeCounter
-                row = node_counter * 5
-                column = node_counter * 5  # diagonal block
-                self.AddToQ_var(diag_block_ij, row, column)
-        self.Q_tot = self.Q_const + self.Q_var  # compute the global stability matrix
+    # def AddRemainingMatrices(self, omega):
+    #     """
+    #     it adds the remaning diagonal block matrices to the full Qtot = Q_const + Q_var. Q_const is constant for every model,
+    #     while Q_var depends on omega, which should be already provided as non-dimensional.
+    #     :param omega: dicrete omega value for the SVD calculation.
+    #     """
+    #     # Q_var is composed by A, C, R, S. Q_const is composed by B,E spectrally differentiated. Q_tot is the global sum
+    #     print("WARNING: deprecated method")
+    #     self.Q_var = np.zeros((self.Q_const.shape),
+    #                           dtype=complex)  # variable part of the stability matrix. Instantiated for every new value of omega
+    #     for ii in range(0, self.dataSpectral.nAxialNodes):
+    #         for jj in range(0, self.dataSpectral.nRadialNodes):
+    #             # add all the remaining terms on the diagonal
+    #             diag_block_ij = -1j * omega * self.data.dataSet[ii, jj].A + self.data.dataSet[ii, jj].C + self.data.dataSet[
+    #                 ii, jj].R + self.data.dataSet[ii, jj].S
+    #             node_counter = self.data.dataSet[ii, jj].nodeCounter
+    #             row = node_counter * 5
+    #             column = node_counter * 5  # diagonal block
+    #             self.AddToQ_var(diag_block_ij, row, column)
+    #     self.Q_tot = self.Q_const + self.Q_var  # compute the global stability matrix
 
     def ApplyBCCondition(self, row, condition, wall_normal=np.array([1, 0, 0])):
         """
@@ -1290,34 +1155,34 @@ class SunModel:
         if (verbose):
             print('Total SVD time: \t %1.d hrs %1.d mins %1.d sec' % (hrs, mins, sec))
 
-    def PlotInverseConditionNumberCompressor(self, sing_val=False, scale=None, save_filename=None, formatFig=(10, 6)):
-        """
-        Plots the chi map for the problem modeled. Log scale can be applied to see better the valleys.
-        :param sing_val: if true plots also the singular values contours
-        :param scale: if 'log' plots the contours with log scale, to improve visibility
-        :param save_filename: specify names of the figs to save
-        :param formatFig: figure size of the contours
-        """
-        x = np.linspace(self.RS_domain[0], self.RS_domain[1])
-        y = np.linspace(self.DF_domain[0], self.DF_domain[1])
-        critical_line = np.zeros(len(x))  # superpose a critical line
-
-        fig, ax = plt.subplots(figsize=formatFig)
-        if scale == 'log':
-            cs = ax.contourf(self.RS, self.DF, self.chi, N_levels, locator=ticker.LogLocator(), cmap=color_map)
-        else:
-            cs = ax.contourf(self.RS, self.DF, self.chi, N_levels, cmap=color_map)
-        ax.plot(x, critical_line, '--w')
-        ax.set_xlabel(r'$RS \ \mathrm{[-]}$')
-        ax.set_ylabel(r'$DF \ \mathrm{[-]}$')
-        ax.set_title(r'$\chi$')
-        fig.colorbar(cs)
-        if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
-
-        if sing_val:
-            self.PlotSingularValues()
+    # def PlotInverseConditionNumberCompressor(self, sing_val=False, scale=None, save_filename=None, formatFig=(10, 6)):
+    #     """
+    #     Plots the chi map for the problem modeled. Log scale can be applied to see better the valleys.
+    #     :param sing_val: if true plots also the singular values contours
+    #     :param scale: if 'log' plots the contours with log scale, to improve visibility
+    #     :param save_filename: specify names of the figs to save
+    #     :param formatFig: figure size of the contours
+    #     """
+    #     x = np.linspace(self.RS_domain[0], self.RS_domain[1])
+    #     y = np.linspace(self.DF_domain[0], self.DF_domain[1])
+    #     critical_line = np.zeros(len(x))  # superpose a critical line
+    #
+    #     fig, ax = plt.subplots(figsize=formatFig)
+    #     if scale == 'log':
+    #         cs = ax.contourf(self.RS, self.DF, self.chi, N_levels, locator=ticker.LogLocator(), cmap=color_map)
+    #     else:
+    #         cs = ax.contourf(self.RS, self.DF, self.chi, N_levels, cmap=color_map)
+    #     ax.plot(x, critical_line, '--w')
+    #     ax.set_xlabel(r'$RS \ \mathrm{[-]}$')
+    #     ax.set_ylabel(r'$DF \ \mathrm{[-]}$')
+    #     ax.set_title(r'$\chi$')
+    #     fig.colorbar(cs)
+    #     if save_filename is not None:
+    #         fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+    #         plt.close()
+    #
+    #     if sing_val:
+    #         self.PlotSingularValues()
 
     def FindLocalMinima(self, field):
         """
@@ -1642,276 +1507,276 @@ class SunModel:
         else:
             raise ValueError('unknown boundary condition type')
 
-    def compute_block_Y_P_matrices(self, inspect_matrices=False):
-        """
-        Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy.
-        :param inspect_matrices: plot the structure of the involved matrices, to check sparsity
-        """
+    # def compute_block_Y_P_matrices(self, inspect_matrices=False):
+    #     """
+    #     Solve EVP with implicitly restarted Arnoldi Algorithm, with shift-invert strategy.
+    #     :param inspect_matrices: plot the structure of the involved matrices, to check sparsity
+    #     """
+    #
+    #     m = self.config.get_circumferential_harmonic_order()
+    #     omega_shaft = self.config.get_omega_shaft()
+    #     omega_ref = self.config.get_reference_omega()
+    #     x_ref = self.config.get_reference_length()
+    #     u_ref = self.config.get_reference_velocity()
+    #     t_ref = self.config.get_reference_time()
+    #     sigma = self.config.get_research_center_omega_eigenvalues() / omega_ref  # non-dimensional center point of research
+    #     number_search = self.config.get_research_number_omega_eigenvalues()
+    #
+    #     print_banner_begin('ARNOLDI SOLVER')
+    #     print(f"{'Circumferential Harmonic:':<{total_chars_mid}}{m:>{total_chars_mid}}")
+    #     print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{omega_shaft:>{total_chars_mid}.2f}")
+    #     print(f"{'Ref. Angular Speed [rad/s]:':<{total_chars_mid}}{omega_ref:>{total_chars_mid}.2f}")
+    #     print(f"{'Initial Searching Point [-]:':<{total_chars_mid}}{sigma:>{total_chars_mid}.2f}")
+    #     print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
+    #     print_banner_end()
+    #
+    #     Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
+    #     Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
+    #     self.Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
+    #
+    #     P1 = np.concatenate((self.L1, self.L2), axis=1)
+    #     P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
+    #     self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
+    #
+    #     if inspect_matrices:
+    #         plt.figure()
+    #         plt.spy(self.L0)
+    #         plt.title(r'$\mathbf{L}_{0}$')
+    #
+    #         plt.figure()
+    #         plt.spy(self.L1)
+    #         plt.title(r'$\mathbf{L}_{1}$')
+    #
+    #         plt.figure()
+    #         plt.spy(self.L2)
+    #         plt.title(r'$\mathbf{L}_{2}$')
+    #
+    #         plt.figure()
+    #         plt.spy(self.Y)
+    #         plt.title(r'$\mathbf{Y}$')
+    #
+    #         plt.figure()
+    #         plt.spy(self.P)
+    #         plt.title(r'$\mathbf{P}$')
+    #
+    #     # print("Transforming generalized EVP in standard one...")
+    #     # Y_tilde = np.linalg.inv(Y - sigma * P)
+    #     # Y_tilde = np.dot(Y_tilde, P)
+    #     #
+    #     # print("Solving standard EVP...")
+    #     # self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
+    #     # self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
+    #     # self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
+    #     # self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
+    #     # self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
+    #     # self.sort_eigensolution()
 
-        m = self.config.get_circumferential_harmonic_order()
-        omega_shaft = self.config.get_omega_shaft()
-        omega_ref = self.config.get_reference_omega()
-        x_ref = self.config.get_reference_length()
-        u_ref = self.config.get_reference_velocity()
-        t_ref = self.config.get_reference_time()
-        sigma = self.config.get_research_center_omega_eigenvalues() / omega_ref  # non-dimensional center point of research
-        number_search = self.config.get_research_number_omega_eigenvalues()
+    # def sort_eigensolution(self):
+    #     """
+    #     Sort the eigenvalues and eigenvectors from the most unstable to the least one.
+    #     """
+    #     # make copies of the arrays to sort
+    #     eigenfreqs = np.copy(self.eigenfreqs)
+    #     df = np.copy(self.eigenfreqs_df)
+    #     rs = np.copy(self.eigenfreqs_rs)
+    #     eigenvectors = np.copy(self.eigenmodes)
+    #
+    #     # get the sorting indices following descending order of the damping factor
+    #     sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
+    #
+    #     # order the original arrays following the sorting indices
+    #     for i in range(len(sorted_indices)):
+    #         self.eigenfreqs[i] = eigenfreqs[sorted_indices[i]]
+    #         self.eigenfreqs_df[i] = df[sorted_indices[i]]
+    #         self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
+    #         self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
 
-        print_banner_begin('ARNOLDI SOLVER')
-        print(f"{'Circumferential Harmonic:':<{total_chars_mid}}{m:>{total_chars_mid}}")
-        print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{omega_shaft:>{total_chars_mid}.2f}")
-        print(f"{'Ref. Angular Speed [rad/s]:':<{total_chars_mid}}{omega_ref:>{total_chars_mid}.2f}")
-        print(f"{'Initial Searching Point [-]:':<{total_chars_mid}}{sigma:>{total_chars_mid}.2f}")
-        print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
-        print_banner_end()
+    # def plot_eigenfrequencies(self, delimit=False, save_filename=None):
+    #     """
+    #     Plot the eigenfrequencies obtained with the Arnoldi Method
+    #     :param delimit: if true, delimit the plot zone the important one for compressors
+    #     :param save_filename: if not None, save figure files
+    #     """
+    #     fig, ax = plt.subplots(figsize=fig_size)
+    #     for mode in self.eigenfields:
+    #         # if mode.is_physical:
+    #         rs = mode.eigenfrequency.real / self.omega_ref
+    #         df = mode.eigenfrequency.imag / self.omega_ref
+    #         ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
+    #                    s=marker_size)
+    #     ax.set_xlabel(r'RS [-]')
+    #     ax.set_ylabel(r'DF [-]')
+    #     # ax.legend()
+    #     if delimit:
+    #         ax.set_xlim([-1.5, 1.5])
+    #         ax.set_ylim([-1, 0.5])
+    #     ax.grid(alpha=grid_opacity)
+    #     if save_filename is not None:
+    #         fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+    #         plt.close()
 
-        Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
-        Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
-        self.Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
+    # def extract_eigenfields(self, n=None):
+    #     """
+    #     From the eigenvectors obtained with Arnoldi Method, extract the eigenfields (density, velocity, pressure).
+    #     The eigensolution should be sorted before applying this method, otherwise the modes are randomly ordered.
+    #     :param n: number of eigenfields to extract
+    #     """
+    #     if n is None:
+    #         n = len(self.eigenfreqs)
+    #     elif n > len(self.eigenfreqs):
+    #         print("parameter n must be lower than the eigenvector number. n set to max allowed")
+    #         n = len(self.eigenfreqs)
+    #
+    #     Nz = self.data.nAxialNodes
+    #     Nr = self.data.nRadialNodes
+    #     self.eigenfields = []
+    #     for mode in range(n):
+    #         eigenfrequency = self.eigenfreqs[mode]
+    #         eigenvector = self.eigenmodes[:, mode]
+    #
+    #         rho_eig = []
+    #         ur_eig = []
+    #         ut_eig = []
+    #         uz_eig = []
+    #         p_eig = []
+    #         for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled in this Alg.
+    #             if (i) % 5 == 0:
+    #                 rho_eig.append(eigenvector[i])
+    #             elif (i - 1) % 5 == 0 and i != 0:
+    #                 ur_eig.append(eigenvector[i])
+    #             elif (i - 2) % 5 == 0 and i != 0:
+    #                 ut_eig.append(eigenvector[i])
+    #             elif (i - 3) % 5 == 0 and i != 0:
+    #                 uz_eig.append(eigenvector[i])
+    #             elif (i - 4) % 5 == 0 and i != 0:
+    #                 p_eig.append(eigenvector[i])
+    #             else:
+    #                 raise ValueError("Not correct indexing for eigenvector retrieval!")
+    #
+    #         rho_eig_r = scaled_eigenvector_real(rho_eig, Nz, Nr)
+    #         ur_eig_r = scaled_eigenvector_real(ur_eig, Nz, Nr)
+    #         ut_eig_r = scaled_eigenvector_real(ut_eig, Nz, Nr)
+    #         uz_eig_r = scaled_eigenvector_real(uz_eig, Nz, Nr)
+    #         p_eig_r = scaled_eigenvector_real(p_eig, Nz, Nr)
+    #
+    #         self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-        P1 = np.concatenate((self.L1, self.L2), axis=1)
-        P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
-        self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
+    # def plot_eigenfields(self, n=None, save_filename=None):
+    #     """
+    #     Plot the first n eigenmodes structures.
+    #     :param n: specify the first n eigenfunctions to plot
+    #     :param save_filename: specify name of the figs to save
+    #     """
+    #     z = self.data.meridional_obj.z_cg
+    #     r = self.data.meridional_obj.r_cg
+    #     self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
+    #     Nz = np.shape(z)[0]
+    #     Nr = np.shape(z)[1]
+    #     modes_map = cm.bwr
+    #
+    #     if n is None:
+    #         n = len(self.eigenfields)
+    #     elif n > len(self.eigenfields):
+    #         print("parameter n must be lower than the eigenfields number. n set to max allowed!")
+    #         n = len(self.eigenfreqs)
+    #     elif n < 1:
+    #         raise ValueError("Select a positive number of modes to show")
+    #     else:
+    #         pass
+    #
+    #     imode = 0
+    #     for mode in self.eigenfields[0:n]:
+    #         imode += 1
+    #         # if mode.is_physical:
+    #         rs = mode.eigenfrequency.real / self.omega_ref
+    #         df = mode.eigenfrequency.imag / self.omega_ref
+    #
+    #         plt.figure(figsize=self.pic_size_contour)
+    #         cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
+    #         for c in cnt.collections:
+    #             c.set_edgecolor("face")
+    #         plt.xlabel(r'$z$ [-]')
+    #         plt.ylabel(r'$r$ [-]')
+    #         plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+    #         plt.colorbar()
+    #         if save_filename is not None:
+    #             plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+    #             plt.close()
+    #
+    #         plt.figure(figsize=self.pic_size_contour)
+    #         cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
+    #         for c in cnt.collections:
+    #             c.set_edgecolor("face")
+    #         plt.xlabel(r'$z$ [-]')
+    #         plt.ylabel(r'$r$ [-]')
+    #         plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+    #         plt.colorbar()
+    #         if save_filename is not None:
+    #             plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+    #             plt.close()
+    #
+    #         plt.figure(figsize=self.pic_size_contour)
+    #         cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
+    #         for c in cnt.collections:
+    #             c.set_edgecolor("face")
+    #         plt.xlabel(r'$z$ [-]')
+    #         plt.ylabel(r'$r$ [-]')
+    #         plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+    #         plt.colorbar()
+    #         if save_filename is not None:
+    #             plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+    #             plt.close()
+    #
+    #         plt.figure(figsize=self.pic_size_contour)
+    #         cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
+    #         for c in cnt.collections:
+    #             c.set_edgecolor("face")
+    #         plt.xlabel(r'$z$ [-]')
+    #         plt.ylabel(r'$r$ [-]')
+    #         plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+    #         plt.colorbar()
+    #         if save_filename is not None:
+    #             plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+    #             plt.close()
+    #
+    #         plt.figure(figsize=self.pic_size_contour)
+    #         cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
+    #         for c in cnt.collections:
+    #             c.set_edgecolor("face")
+    #         plt.xlabel(r'$z$ [-]')
+    #         plt.ylabel(r'$r$ [-]')
+    #         plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
+    #         plt.colorbar()
+    #         if save_filename is not None:
+    #             plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+    #             plt.close()
 
-        if inspect_matrices:
-            plt.figure()
-            plt.spy(self.L0)
-            plt.title(r'$\mathbf{L}_{0}$')
-
-            plt.figure()
-            plt.spy(self.L1)
-            plt.title(r'$\mathbf{L}_{1}$')
-
-            plt.figure()
-            plt.spy(self.L2)
-            plt.title(r'$\mathbf{L}_{2}$')
-
-            plt.figure()
-            plt.spy(self.Y)
-            plt.title(r'$\mathbf{Y}$')
-
-            plt.figure()
-            plt.spy(self.P)
-            plt.title(r'$\mathbf{P}$')
-
-        # print("Transforming generalized EVP in standard one...")
-        # Y_tilde = np.linalg.inv(Y - sigma * P)
-        # Y_tilde = np.dot(Y_tilde, P)
-        #
-        # print("Solving standard EVP...")
-        # self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-        # self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
-        # self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
-        # self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
-        # self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
-        # self.sort_eigensolution()
-
-    def sort_eigensolution(self):
-        """
-        Sort the eigenvalues and eigenvectors from the most unstable to the least one.
-        """
-        # make copies of the arrays to sort
-        eigenfreqs = np.copy(self.eigenfreqs)
-        df = np.copy(self.eigenfreqs_df)
-        rs = np.copy(self.eigenfreqs_rs)
-        eigenvectors = np.copy(self.eigenmodes)
-
-        # get the sorting indices following descending order of the damping factor
-        sorted_indices = sorted(range(len(df)), key=lambda i: df[i], reverse=True)
-
-        # order the original arrays following the sorting indices
-        for i in range(len(sorted_indices)):
-            self.eigenfreqs[i] = eigenfreqs[sorted_indices[i]]
-            self.eigenfreqs_df[i] = df[sorted_indices[i]]
-            self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
-            self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
-
-    def plot_eigenfrequencies(self, delimit=False, save_filename=None):
-        """
-        Plot the eigenfrequencies obtained with the Arnoldi Method
-        :param delimit: if true, delimit the plot zone the important one for compressors
-        :param save_filename: if not None, save figure files
-        """
-        fig, ax = plt.subplots(figsize=fig_size)
-        for mode in self.eigenfields:
-            # if mode.is_physical:
-            rs = mode.eigenfrequency.real / self.omega_ref
-            df = mode.eigenfrequency.imag / self.omega_ref
-            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
-                       s=marker_size)
-        ax.set_xlabel(r'RS [-]')
-        ax.set_ylabel(r'DF [-]')
-        # ax.legend()
-        if delimit:
-            ax.set_xlim([-1.5, 1.5])
-            ax.set_ylim([-1, 0.5])
-        ax.grid(alpha=grid_opacity)
-        if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
-
-    def extract_eigenfields(self, n=None):
-        """
-        From the eigenvectors obtained with Arnoldi Method, extract the eigenfields (density, velocity, pressure).
-        The eigensolution should be sorted before applying this method, otherwise the modes are randomly ordered.
-        :param n: number of eigenfields to extract
-        """
-        if n is None:
-            n = len(self.eigenfreqs)
-        elif n > len(self.eigenfreqs):
-            print("parameter n must be lower than the eigenvector number. n set to max allowed")
-            n = len(self.eigenfreqs)
-
-        Nz = self.data.nAxialNodes
-        Nr = self.data.nRadialNodes
-        self.eigenfields = []
-        for mode in range(n):
-            eigenfrequency = self.eigenfreqs[mode]
-            eigenvector = self.eigenmodes[:, mode]
-
-            rho_eig = []
-            ur_eig = []
-            ut_eig = []
-            uz_eig = []
-            p_eig = []
-            for i in range(len(eigenvector) // 2):  # remember that the flow state had been doubled in this Alg.
-                if (i) % 5 == 0:
-                    rho_eig.append(eigenvector[i])
-                elif (i - 1) % 5 == 0 and i != 0:
-                    ur_eig.append(eigenvector[i])
-                elif (i - 2) % 5 == 0 and i != 0:
-                    ut_eig.append(eigenvector[i])
-                elif (i - 3) % 5 == 0 and i != 0:
-                    uz_eig.append(eigenvector[i])
-                elif (i - 4) % 5 == 0 and i != 0:
-                    p_eig.append(eigenvector[i])
-                else:
-                    raise ValueError("Not correct indexing for eigenvector retrieval!")
-
-            rho_eig_r = scaled_eigenvector_real(rho_eig, Nz, Nr)
-            ur_eig_r = scaled_eigenvector_real(ur_eig, Nz, Nr)
-            ut_eig_r = scaled_eigenvector_real(ut_eig, Nz, Nr)
-            uz_eig_r = scaled_eigenvector_real(uz_eig, Nz, Nr)
-            p_eig_r = scaled_eigenvector_real(p_eig, Nz, Nr)
-
-            self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
-
-    def plot_eigenfields(self, n=None, save_filename=None):
-        """
-        Plot the first n eigenmodes structures.
-        :param n: specify the first n eigenfunctions to plot
-        :param save_filename: specify name of the figs to save
-        """
-        z = self.data.meridional_obj.z_cg
-        r = self.data.meridional_obj.r_cg
-        self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
-        Nz = np.shape(z)[0]
-        Nr = np.shape(z)[1]
-        modes_map = cm.bwr
-
-        if n is None:
-            n = len(self.eigenfields)
-        elif n > len(self.eigenfields):
-            print("parameter n must be lower than the eigenfields number. n set to max allowed!")
-            n = len(self.eigenfreqs)
-        elif n < 1:
-            raise ValueError("Select a positive number of modes to show")
-        else:
-            pass
-
-        imode = 0
-        for mode in self.eigenfields[0:n]:
-            imode += 1
-            # if mode.is_physical:
-            rs = mode.eigenfrequency.real / self.omega_ref
-            df = mode.eigenfrequency.imag / self.omega_ref
-
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_rho, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
-
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_ur, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
-
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
-
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_uz, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
-
-            plt.figure(figsize=self.pic_size_contour)
-            cnt = plt.contourf(z, r, mode.eigen_p, levels=N_levels_fine, cmap=modes_map)
-            for c in cnt.collections:
-                c.set_edgecolor("face")
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
-                plt.close()
-
-    def write_results(self, save_filename=None, extension='csv'):
-        """
-        Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
-        Possible file types are (csv, pickle).
-        csv: write only DF and RS in a csv file, organized in two columns
-        pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
-        """
-        if save_filename is not None:
-            filename = save_filename
-        else:
-            filename = 'eigenvalues'
-
-        eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
-
-        if extension == 'csv':
-            with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
-                fieldnames = ['RS', 'DF']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for num in eigenvalue_array:
-                    writer.writerow({'RS': num.real, 'DF': num.imag})
-        elif extension == 'pickle':
-            with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
-                pickle.dump(self.eigenfields, picklefile)
-        else:
-            raise ValueError("Incorrect Extension of the output file.")
+    # def write_results(self, save_filename=None, extension='csv'):
+    #     """
+    #     Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
+    #     Possible file types are (csv, pickle).
+    #     csv: write only DF and RS in a csv file, organized in two columns
+    #     pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
+    #     """
+    #     if save_filename is not None:
+    #         filename = save_filename
+    #     else:
+    #         filename = 'eigenvalues'
+    #
+    #     eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
+    #
+    #     if extension == 'csv':
+    #         with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
+    #             fieldnames = ['RS', 'DF']
+    #             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #             writer.writeheader()
+    #             for num in eigenvalue_array:
+    #                 writer.writerow({'RS': num.real, 'DF': num.imag})
+    #     elif extension == 'pickle':
+    #         with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
+    #             pickle.dump(self.eigenfields, picklefile)
+    #     else:
+    #         raise ValueError("Incorrect Extension of the output file.")
 
     def interpolation_on_original_grid(self, df, X, Y, method='rbf'):
         """

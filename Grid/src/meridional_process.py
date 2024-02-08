@@ -583,13 +583,13 @@ class MeridionalProcess:
         Compute the gradients of the relevant fields, using RBF interpolation in 2D and then finite differences
         """
         print("WARNING: deprecated method.")
-        self.drho_dr, self.drho_dtheta, self.drho_dz = self.rbf_finite_difference(self.rho)
-        self.dur_dr, self.dur_dtheta, self.dur_dz = self.rbf_finite_difference(self.ur)
-        self.dut_dr, self.dut_dtheta, self.dut_dz = self.rbf_finite_difference(self.ut)
-        self.duz_dr, self.duz_dtheta, self.duz_dz = self.rbf_finite_difference(self.uz)
-        self.dp_dr, self.dp_dtheta, self.dp_dz = self.rbf_finite_difference(self.p)
-        self.dT_dr, self.dT_dtheta, self.dT_dz = self.rbf_finite_difference(self.T)
-        self.ds_dr, self.ds_dtheta, self.ds_dz = self.rbf_finite_difference(self.s)
+        self.drho_dr, self.drho_dz = self.rbf_finite_difference(self.rho)
+        self.dur_dr, self.dur_dz = self.rbf_finite_difference(self.ur)
+        self.dut_dr, self.dut_dz = self.rbf_finite_difference(self.ut)
+        self.duz_dr, self.duz_dz = self.rbf_finite_difference(self.uz)
+        self.dp_dr, self.dp_dz = self.rbf_finite_difference(self.p)
+        self.dT_dr, self.dT_dz = self.rbf_finite_difference(self.T)
+        self.ds_dr, self.ds_dz = self.rbf_finite_difference(self.s)
 
     def rbf_interpolation(self, field):
         """
@@ -619,8 +619,24 @@ class MeridionalProcess:
         # Create the RBFInterpolator object with the 'multiquadric' radial basis function
         # You can also try other RBF functions like 'gaussian', 'linear', etc.
         rbf = Rbf(z_points_flat, r_points_flat, field_flat, function='multiquadric')
-        dz = ((np.max(self.z_cg) - np.min(self.z_cg)) / self.nstream) * 3
-        dr = ((np.max(self.r_cg) - np.min(self.r_cg)) / self.nspan) * 3
+
+        # find the step dz,dr based on the minimum streamwise-spanwise steps, divided by a diff_factor
+        dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
+        for ii in range(1, self.nstream - 1):
+            tmp = np.min(np.abs(self.z_cg[ii + 1, :] - self.z_cg[ii, :]))
+            if tmp < dz_min:
+                dz_min = tmp
+
+        dr_min = np.min(np.abs(self.r_cg[:, 1] - self.r_cg[:, 0]))
+        for jj in range(1, self.nspan - 1):
+            tmp = np.min(np.abs(self.r_cg[:, jj + 1] - self.r_cg[:, jj]))
+            if tmp < dr_min:
+                dr_min = tmp
+
+        diff_factor = 5
+        dz = dz_min / diff_factor
+        dr = dr_min / diff_factor
+
 
         z_plus = self.z_cg + dz
         z_minus = self.z_cg - dz
@@ -628,52 +644,13 @@ class MeridionalProcess:
         r_minus = self.r_cg - dr
 
         # Perform the RBF interpolation of the left points
-        field_interp = rbf(self.z_cg, self.r_cg)
+        # field_interp = rbf(self.z_cg, self.r_cg)
         field_interp_right = rbf(z_plus, self.r_cg)
         field_interp_left = rbf(z_minus, self.r_cg)
         field_interp_up = rbf(self.z_cg, r_plus)
         field_interp_down = rbf(self.z_cg, r_minus)
         dfield_dz = ((field_interp_right - field_interp_left) / (2 * dz))
         dfield_dr = ((field_interp_up - field_interp_down) / (2 * dr))
-
-        # check routine
-        lev = 100
-        map = 'jet'
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, field_interp, levels=lev, cmap=map)
-        plt.title('field')
-        plt.colorbar()
-
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_right, levels=lev, cmap=map)
-        # plt.title('field right')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_left, levels=lev, cmap=map)
-        # plt.title('field left')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_down, levels=lev, cmap=map)
-        # plt.title('field down')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_up, levels=lev, cmap=map)
-        # plt.title('field up')
-        # plt.colorbar()
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=lev, cmap=map)
-        plt.title('d/dz')
-        plt.colorbar()
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=lev, cmap=map)
-        plt.title('d/dr')
-        plt.colorbar()
 
         return dfield_dr, dfield_dz
 
@@ -755,53 +732,19 @@ class MeridionalProcess:
                 df_dxdy = np.linalg.inv(A) @ df_vect
                 dfield_dz[i, j] = df_dxdy[0]
                 dfield_dr[i, j] = df_dxdy[1]
-                # #projection on cartesian axes
-                # if math.isnan(df_dst):
-                #     dfield_dz[i, j] = (np.cos(alpha_sp) * df_dsp)
-                #     dfield_dr[i, j] = (np.sin(alpha_sp) * df_dsp)
-                # elif math.isnan(df_dsp):
-                #     dfield_dz[i, j] = (np.cos(alpha_st)*df_dst)
-                #     dfield_dr[i, j] = (np.sin(alpha_st)*df_dst)
-                # else:
-                #     dfield_dz[i, j] = (np.cos(alpha_st)*df_dst + np.cos(alpha_sp)*df_dsp)/2
-                #     dfield_dr[i, j] = (np.sin(alpha_st) * df_dst + np.sin(alpha_sp) * df_dsp)/2
 
-        # check routine
-        lev = 100
-        map = 'jet'
-        #
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, field, levels=lev, cmap=map)
+        plt.contourf(self.z_cg, self.r_cg, field, levels=N_levels, cmap=color_map)
         plt.title('field')
         plt.colorbar()
 
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_right, levels=lev, cmap=map)
-        # plt.title('field right')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_left, levels=lev, cmap=map)
-        # plt.title('field left')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_down, levels=lev, cmap=map)
-        # plt.title('field down')
-        # plt.colorbar()
-        #
-        # plt.figure(figsize = self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, field_interp_up, levels=lev, cmap=map)
-        # plt.title('field up')
-        # plt.colorbar()
-
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=lev, cmap=map)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dz, levels=N_levels, cmap=color_map)
         plt.title('d/dz')
         plt.colorbar()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=lev, cmap=map)
+        plt.contourf(self.z_cg, self.r_cg, dfield_dr, levels=N_levels, cmap=color_map)
         plt.title('d/dr')
         plt.colorbar()
 
@@ -2303,6 +2246,7 @@ class MeridionalProcess:
         """
         Linear interpolation method in order to compute the gradient of f(z,r)
         """
+        visual_check = True
         dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
         for ii in range(1, self.nstream - 1):
             tmp = np.min(np.abs(self.z_cg[ii + 1, :] - self.z_cg[ii, :]))
@@ -2315,7 +2259,7 @@ class MeridionalProcess:
             if tmp < dr_min:
                 dr_min = tmp
 
-        diff_factor = 10
+        diff_factor = 2
         dz = dz_min / diff_factor
         dr = dr_min / diff_factor
 
@@ -2324,12 +2268,26 @@ class MeridionalProcess:
         Rplus = self.r_cg + dr
         Rminus = self.r_cg - dr
 
+        f_interp = griddata((z, r), f, (self.z_cg, self.r_cg), method=method)
         f_zplus = griddata((z, r), f, (Zplus, self.r_cg), method=method)
         f_zminus = griddata((z, r), f, (Zminus, self.r_cg), method=method)
         f_rplus = griddata((z, r), f, (self.z_cg, Rplus), method=method)
         f_rminus = griddata((z, r), f, (self.z_cg, Rminus), method=method)
         df_dz = (f_zplus - f_zminus) / 2 / dz
         df_dr = (f_rplus - f_rminus) / 2 / dr
+
+        if visual_check:
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, f_interp, cmap=color_map, levels=N_levels)
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, df_dz, cmap=color_map, levels=N_levels)
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, df_dz, cmap=color_map, levels=N_levels)
+            plt.colorbar()
 
         return df_dr, df_dz
 
