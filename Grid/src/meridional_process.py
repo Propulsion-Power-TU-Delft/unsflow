@@ -1595,7 +1595,7 @@ class MeridionalProcess:
         :param folder: location to store. if None, default one is selected
         """
         if folder is None:
-            folder = folder_meta_data_default
+            folder = ''
         if file_name is None:
             file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)
 
@@ -1614,37 +1614,37 @@ class MeridionalProcess:
         self.alpha = self.Floss / (self.u_mag_rel ** 2)
         self.beta = self.Fturn_t / (self.u_meridional * self.ut_rel)
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\partial s / \partial l$')
-        if save_fig:
-            plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\partial s / \partial l$')
+        # if save_fig:
+        #     plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\partial (r u_{\theta}) / \partial l$')
-        if save_fig:
-            plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\partial (r u_{\theta}) / \partial l$')
+        # if save_fig:
+        #     plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\hat{u}_{m}$')
-        if save_fig:
-            plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.u_meridional, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\hat{u}_{m}$')
+        # if save_fig:
+        #     plt.savefig('pictures/u_meridional_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\frac{\partial s}{\partial m}$')
-        if save_fig:
-            plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.ds_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial s}{\partial m}$')
+        # if save_fig:
+        #     plt.savefig('pictures/ds_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Floss, cmap=color_map, levels=N_levels)
@@ -1654,37 +1654,37 @@ class MeridionalProcess:
             plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{l,r}$')
-        if save_fig:
-            plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_r, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,r}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fl_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{l,\theta}$')
-        if save_fig:
-            plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_t, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,\theta}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fl_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{l,z}$')
-        if save_fig:
-            plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Floss_z, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{l,z}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fl_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
-        if save_fig:
-            plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.drut_dl, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\frac{\partial (r u_{\theta})}{\partial m}$')
+        # if save_fig:
+        #     plt.savefig('pictures/drut_dl_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.Ftheta, cmap=color_map, levels=N_levels)
@@ -1694,53 +1694,53 @@ class MeridionalProcess:
             plt.savefig('pictures/F_theta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{t, r}$')
-        if save_fig:
-            plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_r, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, r}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fturn_r_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
+
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, \theta}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
+
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$F_{t, z}$')
+        # if save_fig:
+        #     plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Fturn_t, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cg, self.r_cg, self.Fturn, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.title(r'$F_{t, \theta}$')
-        if save_fig:
-            plt.savefig('pictures/Fturn_t_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.Fturn_z, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$F_{t, z}$')
-        if save_fig:
-            plt.savefig('pictures/Fturn_z_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
-
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, np.abs(self.Fturn), cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$|F_{t}|$')
+        plt.title(r'$F_{t}$')
         if save_fig:
             plt.savefig('pictures/F_turn_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\alpha$')
-        if save_fig:
-            plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.alpha, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\alpha$')
+        # if save_fig:
+        #     plt.savefig('pictures/alpha_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
-        plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.title(r'$\beta$')
-        if save_fig:
-            plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            # plt.close()
+        # plt.figure(figsize=self.picture_size_contour)
+        # plt.contourf(self.z_cg, self.r_cg, self.beta, cmap=color_map, levels=N_levels)
+        # plt.colorbar()
+        # plt.title(r'$\beta$')
+        # if save_fig:
+        #     plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        #     # plt.close()
 
     def contour_entropy_generation(self, save_fig=None):
         """
@@ -2363,12 +2363,27 @@ class MeridionalProcess:
         self.mass_flow = np.zeros_like(self.z_cg)
         for ii in range(self.nstream):
             for jj in range(self.nspan):
+
+                #mid-point rule. Center of the flux area
+                rp = self.block.area_elements[ii, jj].line_elements[1].r_cg
+                zp = self.block.area_elements[ii, jj].line_elements[1].z_cg
+
+                if ii<self.nstream-1:
+                    d_tot = np.sqrt((self.z_cg[ii+1, jj]-self.z_cg[ii, jj])**2 + (self.r_cg[ii+1, jj]-self.r_cg[ii, jj])**2)
+                    d_partial = np.sqrt((self.z_cg[ii, jj] - zp) ** 2 + (self.r_cg[ii, jj] - rp) ** 2)
+                    lmbda = 1 - d_partial / d_tot
+                    rho = lmbda * self.rho[ii, jj] + (1 - lmbda) * self.rho[ii + 1, jj]
+                    u = np.array([lmbda * self.uz[ii, jj] + (1 - lmbda) * self.uz[ii + 1, jj],
+                                  lmbda * self.ur[ii, jj] + (1 - lmbda) * self.ur[ii + 1, jj]])
+                    blockage = lmbda * self.blade.blockage[ii, jj] + (1 - lmbda) * self.blade.blockage[ii + 1, jj]
+                else:
+                    rho = self.rho[ii, jj]
+                    u = np.array([self.uz[ii, jj],
+                                  self.ur[ii, jj]])
+                    blockage = self.blade.blockage[ii, jj]
+
                 dl_vec = self.block.area_elements[ii, jj].line_elements[1].l_orth
-                rho = self.rho[ii, jj]
-                u = np.array([self.uz[ii, jj], self.ur[ii, jj]])
-                r = self.r_cg[ii, jj]
-                blockage = self.blade.blockage[ii, jj]
-                self.mass_flow[ii, jj] = (dl_vec @ u) * rho * 2 * np.pi * r * blockage
+                self.mass_flow[ii, jj] = (dl_vec @ u) * rho * 2 * np.pi * rp * blockage
 
     def compute_mass_flow_in_out(self):
         """
@@ -2376,7 +2391,7 @@ class MeridionalProcess:
         """
         conversion_factor = self.config.get_reference_density() * self.config.get_reference_velocity() * self.config.get_reference_length() ** 2
         self.mass_flow_in = np.sum(self.mass_flow[0, :]) * conversion_factor
-        self.mass_flow_out = np.sum(self.mass_flow[-1, :]) * conversion_factor
+        self.mass_flow_out = np.sum(self.mass_flow[-2, :]) * conversion_factor
 
         print('Inlet mass flow: %.3f [kg/s]' % (self.mass_flow_in))
         print('Outlet mass flow: %.3f [kg/s]' % (self.mass_flow_out))
@@ -2402,32 +2417,34 @@ class MeridionalProcess:
         force_term = self.compute_global_force()
         pressure_term = self.compute_pressure_term()
         convection_term = self.compute_convection_term()
-        self.check_body_force_residual_relative = (convection_term + pressure_term - force_term) / force_term * 100
-        print('Relative Residual Error percent of BFM: r %.2f, theta %.2f, z %.2f.' % (self.check_body_force_residual_relative[0],
-                                                                                       self.check_body_force_residual_relative[1],
-                                                                                       self.check_body_force_residual_relative[
-                                                                                           2]))
+        residual = ((convection_term + pressure_term - force_term) / force_term)
 
-        width = 0.25  # the width of the bars
-        multiplier = 0
-        names = ("Radial", "Tangential", "Axial")
-        terms = {'Pressure Term': pressure_term,
-                 'Convection Term': convection_term,
-                 'BFM Term': force_term}
-        x = np.arange(len(names))
-        fig, ax = plt.subplots(layout='constrained')
+        print_banner_begin("BFM RESIDUALS CHECK")
+        print(f"{'Radial Momentum Balance:':<{total_chars_mid}}{residual[0]:>{total_chars_mid}.2f}")
+        print(f"{'Tangential Momentum Balance:':<{total_chars_mid}}{residual[1]:>{total_chars_mid}.2f}")
+        print(f"{'Axial Momentum Balance:':<{total_chars_mid}}{residual[2]:>{total_chars_mid}.2f}")
+        print_banner_end()
 
-        for attribute, measurement in terms.items():
-            offset = width * multiplier
-            rects = ax.bar(x + offset, measurement, width, label=attribute)
-            ax.bar_label(rects, padding=3)
-            multiplier += 1
-
-        # Add some text for labels, title and custom x-axis tick labels, etc.
-        ax.set_ylabel('Balance Terms')
-        ax.set_title('Momentum Conservation')
-        ax.set_xticks(x + width, names)
-        ax.legend(loc='upper left', ncols=3)
+        # width = 0.25  # the width of the bars
+        # multiplier = 0
+        # names = ("Radial", "Tangential", "Axial")
+        # terms = {'Pressure Term': pressure_term,
+        #          'Convection Term': convection_term,
+        #          'BFM Term': force_term}
+        # x = np.arange(len(names))
+        # fig, ax = plt.subplots(layout='constrained')
+        #
+        # for attribute, measurement in terms.items():
+        #     offset = width * multiplier
+        #     rects = ax.bar(x + offset, measurement, width, label=attribute)
+        #     ax.bar_label(rects, padding=3)
+        #     multiplier += 1
+        #
+        # # Add some text for labels, title and custom x-axis tick labels, etc.
+        # ax.set_ylabel('Balance Terms')
+        # ax.set_title('Momentum Conservation')
+        # ax.set_xticks(x + width, names)
+        # ax.legend(loc='upper left', ncols=3)
 
     def compute_global_force(self):
         """

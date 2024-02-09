@@ -5,7 +5,6 @@ Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
 import os.path
-
 import matplotlib.pyplot as plt
 import sys
 import numpy as np

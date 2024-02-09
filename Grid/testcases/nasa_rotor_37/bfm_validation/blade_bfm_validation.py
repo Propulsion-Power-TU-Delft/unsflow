@@ -5,13 +5,13 @@ import pickle
 import numpy as np
 import Grid
 from Grid.src.config import Config
-
+from Grid.src.functions import create_folder
 
 configuration_file = 'nasa_rotor_37.ini'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-BLADE_BLOCK = True
-
+create_folder('pictures')
+foldername = 'pictures/'
 
 blade = Grid.src.Blade(config)
 blade.find_inlet_points()
@@ -40,11 +40,10 @@ bladed_block.compute_total_area()
 blade.find_camber_surface(bladed_block)
 blade.find_ss_surface(bladed_block)
 blade.find_ps_surface(bladed_block)
-blade.plot_camber_surface()
 blade.compute_camber_vectors()
 blade.compute_blade_camber_angles()
 blade.compute_blade_thickness()
-blade.compute_blade_blockage(36, save_filename='nasar37')
+blade.compute_blade_blockage(36)
 # blade.show_blade_angles_contour(save_filename='nasar37')
 
 blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
@@ -53,23 +52,12 @@ blade_process.compute_streamline_length()
 blade_process.compute_spanwise_length()
 blade_process.interpolate_on_working_grid()
 blade_process.compute_derived_quantities()
-blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
+blade_process.compute_bfm_axial(mode='averaged')
 blade_process.compute_body_fource_S('rotor')
 blade_process.compute_averaged_fluxes()
 blade_process.compute_mass_flow_rate()
 blade_process.compute_mass_flow_in_out()
 blade_process.check_mass_flow_streamwise()
-blade_process.check_bfm_local()
 blade_process.check_bfm_global()
-
-
-
-
-
-
-# blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
-# blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
-# blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
-# blade_process.contour_all_plots(save_filename='field')
 
 plt.show()

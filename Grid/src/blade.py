@@ -190,7 +190,7 @@ class Blade:
 
 
 
-    def plot_blade_points(self, save_filename=None):
+    def plot_blade_points(self, save_filename=None, folder_name=None):
         """
         Plot the blade points. Distinguish between main or main and splitter blade
         """
@@ -289,7 +289,7 @@ class Blade:
 
 
 
-    def plot_camber_surface(self, save_filename=None):
+    def plot_camber_surface(self, save_filename=None, folder_name=None):
         """
         plot the main blade points and the camber surface
         """
@@ -442,7 +442,7 @@ class Blade:
 
 
 
-    def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None):
+    def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
         """
         it plots all the blades around the full annulus of the machine.
         :param n_blades: how many blades the machines has.
@@ -569,7 +569,7 @@ class Blade:
 
 
 
-    def show_normal_vectors(self, save_filename=None):
+    def show_normal_vectors(self, save_filename=None, folder_name=None):
         """
         Show all the normal vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
@@ -592,7 +592,7 @@ class Blade:
 
 
 
-    def show_streamline_vectors(self, save_filename=None):
+    def show_streamline_vectors(self, save_filename=None, folder_name=None):
         """
         Show all the streamline vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
@@ -614,7 +614,7 @@ class Blade:
 
 
 
-    def show_spanline_vectors(self, save_filename=None):
+    def show_spanline_vectors(self, save_filename=None, folder_name=None):
         """
         Show all the spanline vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
@@ -634,7 +634,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_blade_thickness(self, save_filename=None):
+    def compute_blade_thickness(self, save_filename=None, folder_name=None):
         self.thk = self.r_ss*self.theta_ss - self.r_ps*self.theta_ps
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_ss, self.r_ss, self.thk, cmap=color_map, levels=N_levels)
@@ -645,8 +645,12 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
 
-    def compute_blade_blockage(self, Nb, save_filename=None):
+    def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
         self.blockage = 1-Nb*(np.abs(self.theta_ss-self.theta_ps))/2/np.pi
+        #
+        # #artifically fix leading and trailing edge
+        # self.blockage[0, :] = np.zeros_like(self.blockage[0, :])+1
+        # self.blockage[-1, :] = np.zeros_like(self.blockage[-1, :]) + 1
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_ss, self.r_ss, self.blockage, cmap=color_map, levels=N_levels)
         plt.colorbar()
@@ -695,7 +699,7 @@ class Blade:
 
 
 
-    def show_blade_angles_contour(self, save_filename=None):
+    def show_blade_angles_contour(self, save_filename=None, folder_name=None):
         """
         Contour of the blade angles.
         :param save_filename: if specified, saves the plots with the given name
