@@ -4,21 +4,21 @@ import Sun
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 
-config = Config('../../../Grid/testcases/nasa_lscc/nasa_lscc.ini')
+config = Config('nasa_rotor_37_fd.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 
-# STABILITY ANALYSIS
-sun_blocks = []
+compressor_grids = []
 for meridional_block in meridional_obj.group:
-    compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
+    compressor_grids.append(Sun.src.sun_grid.SunGrid(meridional_block))
+
+sun_blocks = []
+for compressor_grid in compressor_grids:
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.ShowNormals()
-    sun_obj.set_overwriting_equation_euler_wall('utheta')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodesFrancesco2()
@@ -29,6 +29,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
     sun_obj.ApplySpectralDifferentiation()
+    sun_obj.apply_finite_steps_differentiation()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()
@@ -42,11 +43,12 @@ for sun_obj in sun_blocks:
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 sun_multiblock.apply_matching_conditions()
+sun_multiblock.hist_inspect_L_global_matrices()
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()
 sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies')
-sun_multiblock.plot_eigenfields(n=20, save_filename='eigenmode')
+sun_multiblock.plot_eigenfields(n=30, save_filename='eigenmode')
 sun_multiblock.write_results()
 
 plt.show()

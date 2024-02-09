@@ -123,7 +123,7 @@ class SunModel:
         plt.xlabel(r'$\hat{z} \quad  [-]$')
         plt.ylabel(r'$\hat{r} \quad  [-]$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
     def ShowSpectralGrid(self, save_filename=None, mode=None):
@@ -137,7 +137,7 @@ class SunModel:
         plt.xlabel(r'$\xi \quad  [-]$')
         plt.ylabel(r'$\eta \quad  [-]$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
     def ComputeJacobianPhysical(self, method='rbf', artificial_refinement=False,
