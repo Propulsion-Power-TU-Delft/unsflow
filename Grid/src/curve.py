@@ -129,7 +129,7 @@ class Curve:
         it plots the spline, and the cordinates that have been given to generate it.
         If the spline has been trimmed, the trimmed parts are removed
         """
-        plt.figure(figsize=fig_size)
+        plt.figure()
         plt.plot(self.z, self.r, 'o', label='cordinates')
         plt.plot(self.z_spline, self.r_spline, label='B-spline')
         plt.legend()

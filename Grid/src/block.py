@@ -5,6 +5,7 @@ Created on Wed Jun 14 18:29:29 2023
 @author: F. Neri, TU Delft
 """
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size
@@ -390,7 +391,8 @@ class Block:
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True, ticks=False):
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True, ticks=False,
+                       save_foldername=None):
         """
         Plot the obtained grid.
         :param save_filename: specify path of the figures to be saved (if you want to save).
@@ -444,7 +446,7 @@ class Block:
             plt.scatter(self.z_grid_centers.flatten(), self.r_grid_centers.flatten(), c='blue', s=scatter_point_size,
                         label='secondary grid nodes')
 
-        if (primary_grid_points or secondary_grid_points or outline):
+        if primary_grid_points or secondary_grid_points or outline:
             plt.legend()
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
@@ -456,8 +458,8 @@ class Block:
             plt.xlabel('')
             plt.ylabel('')
 
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def find_border(self):
         """

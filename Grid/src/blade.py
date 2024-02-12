@@ -37,7 +37,6 @@ class Blade:
         self.read_from_curve_file()
         self.print_blade_info()
 
-
     def read_from_curve_file(self):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
@@ -72,8 +71,6 @@ class Blade:
         self.convert_to_floats()
         self.convert_to_arrays()
 
-
-
         self.x *= self.config.get_coordinates_rescaling_factor()
         self.x /= self.config.get_reference_length()
 
@@ -101,7 +98,7 @@ class Blade:
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
 
-        #inspect points
+        # inspect points
         # fig = plt.figure()
         # ax = fig.add_subplot(111, projection='3d')
         # ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
@@ -110,10 +107,10 @@ class Blade:
         # ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
-        if len(self.x_main)%number_main_profiles!=0:
+        if len(self.x_main) % number_main_profiles != 0:
             raise ValueError('Something is wrong with the blade profiles cordinates')
         else:
-            number_points_per_profile = len(self.x_main)//number_main_profiles
+            number_points_per_profile = len(self.x_main) // number_main_profiles
 
         # create a list of profiles, which store information of the pressure and suction side
         profiles = []
@@ -125,7 +122,8 @@ class Blade:
         thetaps = []
         for i in range(number_main_profiles):
             ss_idxs = slice(i * number_points_per_profile, i * number_points_per_profile + number_points_per_profile // 2)
-            ps_idxs = slice(i * number_points_per_profile + number_points_per_profile//2, i * number_points_per_profile + number_points_per_profile)
+            ps_idxs = slice(i * number_points_per_profile + number_points_per_profile // 2,
+                            i * number_points_per_profile + number_points_per_profile)
             profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs],
                                     self.x_main[ps_idxs], self.y_main[ps_idxs], self.z_main[ps_idxs]))
             # profiles[i].plot_profile()
@@ -143,9 +141,6 @@ class Blade:
         self.rps_points = np.concatenate(rps)
         self.thetaps_points = np.concatenate(thetaps)
 
-
-
-
         if self.splitter:
             self.idx_splitter = np.where(self.blade == 'SPLITTER')
             self.x_splitter = self.x[self.idx_splitter]
@@ -160,12 +155,11 @@ class Blade:
         """
         if self.config.get_verbosity():
             print_banner_begin('BLADE')
-            print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
+            print(
+                f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
             print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
             print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
             print_banner_end()
-
-
 
     def convert_to_floats(self):
         """
@@ -174,8 +168,6 @@ class Blade:
         self.x = [float(a) for a in self.x]
         self.y = [float(a) for a in self.y]
         self.z = [float(a) for a in self.z]
-
-
 
     def convert_to_arrays(self):
         """
@@ -187,8 +179,6 @@ class Blade:
         self.blade = array(self.blade)
         self.profile = array(self.profile)
         self.mark = array(self.mark)
-
-
 
     def plot_blade_points(self, save_filename=None, folder_name=None):
         """
@@ -205,8 +195,6 @@ class Blade:
         fig.legend()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     def find_camber_surface(self, blade_block, degree=4):
         """
@@ -244,7 +232,8 @@ class Blade:
 
         self.camber_degree = degree  # mixed polynomial order
         self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(np.column_stack((self.zss_points, self.rss_points)))  # dataset in right format
+        X = self.camber_poly_features.fit_transform(
+            np.column_stack((self.zss_points, self.rss_points)))  # dataset in right format
         self.camber_model = LinearRegression()  # object for linear regression (least square fit)
         self.camber_model.fit(X, self.thetass_points)  # least square fit of the regression coefficient
         self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
@@ -270,7 +259,8 @@ class Blade:
 
         self.camber_degree = degree  # mixed polynomial order
         self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(np.column_stack((self.zps_points, self.rps_points)))  # dataset in right format
+        X = self.camber_poly_features.fit_transform(
+            np.column_stack((self.zps_points, self.rps_points)))  # dataset in right format
         self.camber_model = LinearRegression()  # object for linear regression (least square fit)
         self.camber_model.fit(X, self.thetaps_points)  # least square fit of the regression coefficient
         self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
@@ -287,8 +277,6 @@ class Blade:
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-
-
     def plot_camber_surface(self, save_filename=None, folder_name=None):
         """
         plot the main blade points and the camber surface
@@ -302,11 +290,9 @@ class Blade:
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
-        plt.legend()
+        # fig.legend()
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     def compute_camber_vector(self, i, j, check=False):
         """
@@ -423,7 +409,7 @@ class Blade:
         # the normal is the vectorial product of the two
         normal = np.cross(vec_1, vec_2)
         normal /= np.linalg.norm(normal)
-        if normal[2]<0:  # if the axial component of the normal is negative, invert the direction
+        if normal[2] < 0:  # if the axial component of the normal is negative, invert the direction
             normal *= -1
         if check:
             fig = plt.figure(figsize=self.picture_size_blank)
@@ -439,8 +425,6 @@ class Blade:
             ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                       normal[0], normal[1], normal[2], length=0.004)
         return normal, vec_1, vec_2
-
-
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
         """
@@ -471,11 +455,9 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def find_inlet_points(self):
         """
-        Find the points defining the inlet from the cordinates of the blade points.
+        Find the points defining the inlet from the coordinates of the blade points.
         """
         self.inlet_z = []
         self.inlet_r = []
@@ -503,8 +485,6 @@ class Blade:
             self.inlet_z.append(min_z)
             self.inlet_r.append(min_r)
         self.inlet = np.stack((self.inlet_z, self.inlet_r), axis=1)
-
-
 
     def find_outlet_points(self):
         """
@@ -538,8 +518,6 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-
-
     def compute_camber_vectors(self):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
@@ -567,8 +545,6 @@ class Blade:
                 self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
                                                                            self.z_camber[i, j], self.spanline_vectors[i, j])
 
-
-
     def show_normal_vectors(self, save_filename=None, folder_name=None):
         """
         Show all the normal vectors on the camber surface.
@@ -590,8 +566,6 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-
-
     def show_streamline_vectors(self, save_filename=None, folder_name=None):
         """
         Show all the streamline vectors on the camber surface.
@@ -611,8 +585,6 @@ class Blade:
         ax.set_title('streamline vectors')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     def show_spanline_vectors(self, save_filename=None, folder_name=None):
         """
@@ -635,7 +607,7 @@ class Blade:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
     def compute_blade_thickness(self, save_filename=None, folder_name=None):
-        self.thk = self.r_ss*self.theta_ss - self.r_ps*self.theta_ps
+        self.thk = self.r_ss * self.theta_ss - self.r_ps * self.theta_ps
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_ss, self.r_ss, self.thk, cmap=color_map, levels=N_levels)
         plt.colorbar()
@@ -646,7 +618,7 @@ class Blade:
             plt.savefig(folder_name + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
 
     def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
-        self.blockage = 1-Nb*(np.abs(self.theta_ss-self.theta_ps))/2/np.pi
+        self.blockage = 1 - Nb * (np.abs(self.theta_ss - self.theta_ps)) / 2 / np.pi
         #
         # #artifically fix leading and trailing edge
         # self.blockage[0, :] = np.zeros_like(self.blockage[0, :])+1
@@ -659,8 +631,6 @@ class Blade:
         plt.title(r'$b$')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + 'blockage_factor.pdf', bbox_inches='tight')
-
-
 
     def compute_blade_camber_angles(self, convention='rotation-wise'):
         """
@@ -696,8 +666,6 @@ class Blade:
                     self.blade_lean_angle[i, j] = -np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
                 else:
                     raise ValueError('Choose a convention for the angles')
-
-
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
         """
