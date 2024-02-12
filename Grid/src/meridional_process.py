@@ -23,8 +23,6 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy import integrate
 
 
-
-
 class MeridionalProcess:
     """
     Class that contains a multiblock grid object, and the CFD data results. It performs the circumferential averaging.
@@ -222,10 +220,9 @@ class MeridionalProcess:
                 # get the indexes of the elements used for the interpolation
                 distance = ((self.data.z - self.z_cg[istream, ispan]) ** 2 + (self.data.r - self.r_cg[istream, ispan]) ** 2)
 
-
-                if istream==self.nstream-1 or ispan==self.nspan-1:
-                    ref_distance = np.sqrt((self.z_cg[istream, ispan] - self.z_cg[istream-1, ispan]) ** 2 + \
-                                           (self.r_cg[istream, ispan] - self.r_cg[istream, ispan-1]) ** 2)
+                if istream == self.nstream - 1 or ispan == self.nspan - 1:
+                    ref_distance = np.sqrt((self.z_cg[istream, ispan] - self.z_cg[istream - 1, ispan]) ** 2 + \
+                                           (self.r_cg[istream, ispan] - self.r_cg[istream, ispan - 1]) ** 2)
                 else:
                     ref_distance = np.sqrt((self.z_cg[istream + 1, ispan] - self.z_cg[istream, ispan]) ** 2 + \
                                            (self.r_cg[istream, ispan + 1] - self.r_cg[istream, ispan + 1]) ** 2)
@@ -275,8 +272,6 @@ class MeridionalProcess:
                 # self.ds_dtheta[istream, ispan] = self.mass_average(self.data.ds_dtheta, idx)
                 # self.ds_dz[istream, ispan] = self.mass_average(self.data.ds_dz, idx)
 
-
-
         # self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         # self.ut_drag = self.config.get_omega_shaft() * self.r_cg
         # self.ut_rel = self.ut - self.ut_drag
@@ -289,7 +284,6 @@ class MeridionalProcess:
         plt.figure()
         plt.contourf(self.z_cg, self.r_cg, self.rho, levels=N_levels)
         plt.colorbar()
-
 
     def compute_derived_quantities(self):
         """
@@ -635,7 +629,6 @@ class MeridionalProcess:
         diff_factor = 5
         dz = dz_min / diff_factor
         dr = dr_min / diff_factor
-
 
         z_plus = self.z_cg + dz
         z_minus = self.z_cg - dz
@@ -1792,14 +1785,12 @@ class MeridionalProcess:
             print("%s Domain" % (domain))
 
             # cosine directors of the loss force
+            if (np.abs(self.u_mag_rel) < 1e-8).any():
+                raise ValueError('Attention, division by small number')
             tr = -self.ur / self.u_mag_rel
             ttheta = -self.ut_rel / self.u_mag_rel
             tz = -self.uz / self.u_mag_rel
 
-            # cosine directors of the turning force
-            # nr = self.Fturn_r / self.Fturn
-            # ntheta = self.Fturn_t / self.Fturn
-            # nz = self.Fturn_z / self.Fturn
             nr = self.camber_normal_r.copy()
             ntheta = self.camber_normal_theta.copy()
             nz = self.camber_normal_z.copy()
@@ -1886,7 +1877,9 @@ class MeridionalProcess:
         self.Floss_t = -self.Floss * self.ut_rel / self.u_mag_rel
         self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
 
-        # self.Floss_check = self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2 - self.Floss ** 2
+        check = np.sqrt(self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2) - self.Floss
+        if (np.abs(check) > 1e-6).any():
+            raise ValueError('The direction vector is not unitary')
 
     def compute_ds_dl(self, mode):
         """
@@ -1914,7 +1907,10 @@ class MeridionalProcess:
         """
         Compute the modulus of the global theta component of the body force
         """
+        if (np.abs(self.u_meridional) < 1e-8).any():
+            raise ValueError('Attention, division by small number')
         dr_dl = self.ur / self.u_meridional
+
         dut_dl = np.zeros_like(dr_dl)
         if mode == 'local':
             # find the derivative projecting the gradients along the meridional velocity direction
@@ -1955,6 +1951,9 @@ class MeridionalProcess:
             else:
                 idx = np.where(self.Fturn_t < 0)
                 self.Fturn_t[idx] = 0
+
+        if (np.abs(self.camber_normal_theta) < 1e-8).any():
+            raise ValueError('Attention, division by small number')
         self.Fturn = self.Fturn_t / self.camber_normal_theta
         self.Fturn_r = self.Fturn * self.camber_normal_r
         self.Fturn_z = self.Fturn * self.camber_normal_z
@@ -2364,12 +2363,13 @@ class MeridionalProcess:
         for ii in range(self.nstream):
             for jj in range(self.nspan):
 
-                #mid-point rule. Center of the flux area
+                # mid-point rule. Center of the flux area
                 rp = self.block.area_elements[ii, jj].line_elements[1].r_cg
                 zp = self.block.area_elements[ii, jj].line_elements[1].z_cg
 
-                if ii<self.nstream-1:
-                    d_tot = np.sqrt((self.z_cg[ii+1, jj]-self.z_cg[ii, jj])**2 + (self.r_cg[ii+1, jj]-self.r_cg[ii, jj])**2)
+                if ii < self.nstream - 1:
+                    d_tot = np.sqrt(
+                        (self.z_cg[ii + 1, jj] - self.z_cg[ii, jj]) ** 2 + (self.r_cg[ii + 1, jj] - self.r_cg[ii, jj]) ** 2)
                     d_partial = np.sqrt((self.z_cg[ii, jj] - zp) ** 2 + (self.r_cg[ii, jj] - rp) ** 2)
                     lmbda = 1 - d_partial / d_tot
                     rho = lmbda * self.rho[ii, jj] + (1 - lmbda) * self.rho[ii + 1, jj]
@@ -2574,7 +2574,7 @@ class MeridionalProcess:
         theta_ps = self.blade.theta_ps[istream, ispan]
         theta_ss = self.blade.theta_ss[istream, ispan]
 
-        if theta_ps>theta_ss:
+        if theta_ps > theta_ss:
             arc1 = np.linspace(theta_min, theta_ss, Nbins)
             arc2 = np.linspace(theta_ps, theta_max, Nbins)
         else:
@@ -2638,8 +2638,5 @@ class MeridionalProcess:
         # plt.figure()
         # plt.plot(arc_theta, interp_values)
 
-        integ = np.trapz(interp_values, arc_theta)/(theta_max-theta_min)
+        integ = np.trapz(interp_values, arc_theta) / (theta_max - theta_min)
         return integ
-
-
-
