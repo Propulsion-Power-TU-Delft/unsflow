@@ -630,7 +630,7 @@ class Blade:
         plt.ylabel(r'$r$')
         plt.title(r'$b$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + 'blockage_factor.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + 'blockage_factor.pdf', bbox_inches='tight')
 
     def compute_blade_camber_angles(self, convention='rotation-wise'):
         """
@@ -679,7 +679,7 @@ class Blade:
         cb = fig.colorbar(cs)
         cb.set_label(r'$\varphi \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)
@@ -687,7 +687,7 @@ class Blade:
         cb = fig.colorbar(cs)
         cb.set_label(r'$\kappa \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, N_levels, cmap=color_map)
@@ -695,4 +695,4 @@ class Blade:
         cb = fig.colorbar(cs)
         cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')

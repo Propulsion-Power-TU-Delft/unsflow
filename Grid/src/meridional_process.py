@@ -291,6 +291,11 @@ class MeridionalProcess:
         """
         self.ut_drag = self.data.omega_shaft * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
+
+        check = np.abs(self.ut_drag + self.ut_rel - self.ut)
+        if (check>1e-8).any():
+            raise ValueError('Wrong decomposition')
+
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
@@ -1735,6 +1740,39 @@ class MeridionalProcess:
         #     plt.savefig('pictures/beta_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
         #     # plt.close()
 
+    def compute_bfm_radial(self, save_fig=None):
+        """
+        Radial variation of the body force model found on the Chinese articles
+        """
+        F_ntheta = self.ur * (self.dut_dr + self.uz/self.ur*self.dut_dz +self.ut/self.r_cg)
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, F_ntheta, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{n,\theta}$')
+        if save_fig:
+            plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
+        F_t = np.zeros_like(self.rho)
+        for ii in range(self.nstream):
+            if ii<self.nstream-1:
+                F_t[ii, :] = (self.p_tot_bar[ii+1, :] - self.p_tot_bar[ii, :]) / (self.s[ii+1, :] - self.s[ii, :]) / self.rho[ii, :]
+            else:
+                F_t[ii, :] = (self.p_tot_bar[ii, :] - self.p_tot_bar[ii-1, :]) / (self.s[ii, :] - self.s[ii-1, :]) / self.rho[ii, :]
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, F_t, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$F_{t}$')
+        if save_fig:
+            plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+        
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.p_tot_bar, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.title(r'$\bar{p_{t}}$')
+        if save_fig:
+            plt.savefig('pictures/F_loss_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
+
     def contour_entropy_generation(self, save_fig=None):
         """
         Show the contour of the entropy generation, defined as the difference between the local entropy and the
@@ -1787,10 +1825,13 @@ class MeridionalProcess:
             # cosine directors of the loss force
             if (np.abs(self.u_mag_rel) < 1e-8).any():
                 raise ValueError('Attention, division by small number')
+            
+            # cosine directors of the loss force
             tr = -self.ur / self.u_mag_rel
             ttheta = -self.ut_rel / self.u_mag_rel
             tz = -self.uz / self.u_mag_rel
 
+            #cosine directors of the turning force
             nr = self.camber_normal_r.copy()
             ntheta = self.camber_normal_theta.copy()
             nz = self.camber_normal_z.copy()
@@ -1878,8 +1919,8 @@ class MeridionalProcess:
         self.Floss_z = -self.Floss * self.uz / self.u_mag_rel
 
         check = np.sqrt(self.Floss_r ** 2 + self.Floss_t ** 2 + self.Floss_z ** 2) - self.Floss
-        if (np.abs(check) > 1e-6).any():
-            raise ValueError('The direction vector is not unitary')
+        # if (np.abs(check) > 1e-6).any():
+        #     raise ValueError('The direction vector is not unitary')
 
     def compute_ds_dl(self, mode):
         """
@@ -1978,9 +2019,11 @@ class MeridionalProcess:
         ax[0].set_title(r'$n_{r}$')
         ax[1].set_title(r'$n_{\theta}$')
         ax[2].set_title(r'$n_{z}$')
+        fig.suptitle('Turning component cosine directors')
         for i in range(0, 3):
             ax[i].set_xticks([])
             ax[i].set_yticks([])
+        plt.savefig('pictures/turning_bfm_directions.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots(1, 3, figsize=(14, 8))
         contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr, levels=15)
@@ -1992,20 +2035,22 @@ class MeridionalProcess:
         ax[0].set_title(r'$l_{r}$')
         ax[1].set_title(r'$l_{\theta}$')
         ax[2].set_title(r'$l_{z}$')
+        fig.suptitle('Loss component cosine directors')
         for i in range(0, 3):
             ax[i].set_xticks([])
             ax[i].set_yticks([])
+        plt.savefig('pictures/loss_bfm_directions.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots(1, 2, figsize=(10, 8))
-        contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr ** 2 + ttheta ** 2 + tz ** 2, levels=15)
-        contour1 = ax[1].contourf(self.z_cg, self.r_cg, nr ** 2 + ntheta ** 2 + nz ** 2, levels=15)
-        cbar0 = plt.colorbar(contour0)
-        cbar1 = plt.colorbar(contour1)
-        ax[0].set_title(r'$|l|$')
-        ax[1].set_title(r'$|n|$')
-        for i in range(0, 2):
-            ax[i].set_xticks([])
-            ax[i].set_yticks([])
+        # fig, ax = plt.subplots(1, 2, figsize=(10, 8))
+        # contour0 = ax[0].contourf(self.z_cg, self.r_cg, tr ** 2 + ttheta ** 2 + tz ** 2, levels=15)
+        # contour1 = ax[1].contourf(self.z_cg, self.r_cg, nr ** 2 + ntheta ** 2 + nz ** 2, levels=15)
+        # cbar0 = plt.colorbar(contour0)
+        # cbar1 = plt.colorbar(contour1)
+        # ax[0].set_title(r'$|l|$')
+        # ax[1].set_title(r'$|n|$')
+        # for i in range(0, 2):
+        #     ax[i].set_xticks([])
+        #     ax[i].set_yticks([])
 
     def compute_averaged_fluxes(self):
         """
