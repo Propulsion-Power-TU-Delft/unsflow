@@ -1224,7 +1224,7 @@ class MeridionalProcess:
             fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
-    def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False):
+    def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False, folder_name='pictures'):
         """
         Contour plot of a 2D field.
         :param field: field to plot
@@ -1281,106 +1281,73 @@ class MeridionalProcess:
         elif field == 'drho_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'drho_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{\rho} / \partial \theta$')
+            ax.contour(self.z_cg, self.r_cg, self.drho_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'drho_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.drho_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dur_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dur_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_r / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dur_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{u}_r / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dur_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dur_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_r / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dut_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dut_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dut_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dut_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dut_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dut_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dut_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dut_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'duz_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.duz_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.duz_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'duz_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.duz_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{u}_{z} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'duz_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.duz_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.duz_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dp_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dp_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dp_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{p} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dp_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dp_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{p} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'dp_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.dp_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dp_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{p} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ds_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.ds_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.ds_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{s} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'ds_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.ds_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{s} / \partial \theta$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ds_dz':
             cs = ax.contourf(self.z_cg, self.r_cg, self.ds_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.ds_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
             ax.set_title(r'$\partial \hat{s} / \partial \hat{z}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dT_dr':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dT_dr, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{T} / \partial \hat{r}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dT_dtheta':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dT_dtheta, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{T} / \partial \theta$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'dT_dz':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.dT_dz, N_levels, cmap=color_map)
-            ax.set_title(r'$\partial \hat{T} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ut_rel':
@@ -1491,8 +1458,7 @@ class MeridionalProcess:
         if quiver:
             ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def compute_stagnation_quantities(self):
         """
@@ -2685,3 +2651,18 @@ class MeridionalProcess:
 
         integ = np.trapz(interp_values, arc_theta) / (theta_max - theta_min)
         return integ
+
+    def set_gradients_to_zero(self):
+        """
+        Set the gradient fields to zero. Just for development purpose
+        """
+        self.drho_dz *= 0
+        self.drho_dr *= 0
+        self.dur_dz *= 0
+        self.dur_dr *= 0
+        self.dut_dz *= 0
+        self.dut_dr *= 0
+        self.duz_dz *= 0
+        self.duz_dr *= 0
+        self.dp_dz *= 0
+        self.dp_dr *= 0

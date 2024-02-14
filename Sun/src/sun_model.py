@@ -550,26 +550,26 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
-                if self.data.meridional_obj.domain == 'rotor' or self.data.meridional_obj.domain == 'stator':
-                    S[1, 0] = self.data.meridional_obj.S10[ii, jj]
-                    S[1, 1] = self.data.meridional_obj.S11[ii, jj]
-                    S[1, 2] = self.data.meridional_obj.S12[ii, jj]
-                    S[1, 3] = self.data.meridional_obj.S13[ii, jj]
-                    S[1, 4] = self.data.meridional_obj.S14[ii, jj]
+                # if self.data.meridional_obj.domain == 'rotor' or self.data.meridional_obj.domain == 'stator':
+                #     S[1, 0] = self.data.meridional_obj.S10[ii, jj]
+                #     S[1, 1] = self.data.meridional_obj.S11[ii, jj]
+                #     S[1, 2] = self.data.meridional_obj.S12[ii, jj]
+                #     S[1, 3] = self.data.meridional_obj.S13[ii, jj]
+                #     S[1, 4] = self.data.meridional_obj.S14[ii, jj]
 
-                    S[2, 0] = self.data.meridional_obj.S20[ii, jj]
-                    S[2, 1] = self.data.meridional_obj.S21[ii, jj]
-                    S[2, 2] = self.data.meridional_obj.S22[ii, jj]
-                    S[2, 3] = self.data.meridional_obj.S23[ii, jj]
-                    S[2, 4] = self.data.meridional_obj.S24[ii, jj]
+                #     S[2, 0] = self.data.meridional_obj.S20[ii, jj]
+                #     S[2, 1] = self.data.meridional_obj.S21[ii, jj]
+                #     S[2, 2] = self.data.meridional_obj.S22[ii, jj]
+                #     S[2, 3] = self.data.meridional_obj.S23[ii, jj]
+                #     S[2, 4] = self.data.meridional_obj.S24[ii, jj]
 
-                    S[3, 0] = self.data.meridional_obj.S30[ii, jj]
-                    S[3, 1] = self.data.meridional_obj.S31[ii, jj]
-                    S[3, 2] = self.data.meridional_obj.S32[ii, jj]
-                    S[3, 3] = self.data.meridional_obj.S33[ii, jj]
-                    S[3, 4] = self.data.meridional_obj.S34[ii, jj]
-                else:
-                    pass
+                #     S[3, 0] = self.data.meridional_obj.S30[ii, jj]
+                #     S[3, 1] = self.data.meridional_obj.S31[ii, jj]
+                #     S[3, 2] = self.data.meridional_obj.S32[ii, jj]
+                #     S[3, 3] = self.data.meridional_obj.S33[ii, jj]
+                #     S[3, 4] = self.data.meridional_obj.S34[ii, jj]
+                # else:
+                #     pass
 
                 self.data.dataSet[ii, jj].AddSMatrix(S)
 
