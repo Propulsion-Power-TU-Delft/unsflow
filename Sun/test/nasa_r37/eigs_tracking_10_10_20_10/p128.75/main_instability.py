@@ -15,21 +15,6 @@ with open(config.get_meridional_pickle_filepath(), "rb") as file:
 # STABILITY ANALYSIS
 sun_blocks = []
 for meridional_block in meridional_obj.group:
-    # meridional_block.set_gradients_to_zero()
-
-    meridional_block.contour_plot(field='rho')
-    meridional_block.contour_plot(field='drho_dr')
-    meridional_block.contour_plot(field='drho_dz')
-
-    meridional_block.contour_plot(field='uz')
-    meridional_block.contour_plot(field='duz_dr')
-    meridional_block.contour_plot(field='duz_dz')
-
-    meridional_block.contour_plot(field='s')
-    meridional_block.contour_plot(field='ds_dr')
-    meridional_block.contour_plot(field='ds_dz')
-
-
     compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
@@ -64,7 +49,7 @@ sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()
 sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', save_foldername=folder_out)
-sun_multiblock.plot_eigenfields(n=10, save_filename='eigenmode', save_foldername=folder_out)
+sun_multiblock.plot_eigenfields(n=20, save_filename='eigenmode', save_foldername=folder_out)
 sun_multiblock.write_results()
 
-plt.show()
+# plt.show()

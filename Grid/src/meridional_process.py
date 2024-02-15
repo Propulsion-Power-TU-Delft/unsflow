@@ -1756,7 +1756,6 @@ class MeridionalProcess:
         plt.title(r'$s_{GEN}$')
         if save_fig:
             plt.savefig('pictures/entropy_generation_%d_%d.pdf' % (self.nstream, self.nspan), bbox_inches='tight')
-            plt.close()
 
     def contour_local_entropy_generation(self, save_fig=None):
         """
@@ -2255,7 +2254,7 @@ class MeridionalProcess:
         """
         Linear interpolation method in order to compute the gradient of f(z,r)
         """
-        visual_check = True
+        visual_check = False
         dz_min = np.min(np.abs(self.z_cg[1, :] - self.z_cg[0, :]))
         for ii in range(1, self.nstream - 1):
             tmp = np.min(np.abs(self.z_cg[ii + 1, :] - self.z_cg[ii, :]))
@@ -2268,7 +2267,7 @@ class MeridionalProcess:
             if tmp < dr_min:
                 dr_min = tmp
 
-        diff_factor = 2
+        diff_factor = 0.5
         dz = dz_min / diff_factor
         dr = dr_min / diff_factor
 
@@ -2288,14 +2287,77 @@ class MeridionalProcess:
         if visual_check:
             plt.figure()
             plt.contourf(self.z_cg, self.r_cg, f_interp, cmap=color_map, levels=N_levels)
+            plt.title('f')
             plt.colorbar()
 
             plt.figure()
             plt.contourf(self.z_cg, self.r_cg, df_dz, cmap=color_map, levels=N_levels)
+            plt.title('dfdz')
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, df_dr, cmap=color_map, levels=N_levels)
+            plt.title('dfdr')
+            plt.colorbar()
+
+        return df_dr, df_dz
+
+    def interpolation_gradient_backup(self, f, r, z, method):
+        """
+        Linear interpolation method in order to compute the gradient of f(z,r)
+        """
+        visual_check = True
+
+
+        Zplus = np.zeros_like(self.z_cg)
+        # Zminus = np.zeros_like(self.z_cg)
+        Rplus = np.zeros_like(self.z_cg)
+        # Rminus = np.zeros_like(self.z_cg)
+
+        Zplus[1:-2, 1:-2] = self.z_cg[2:-1, 1:-2]
+        Zplus[0, :] = self.z_cg[0, :]
+        Zplus[-1, :] = self.z_cg[-1, :]
+
+        Rplus[1:-2, 1:-2] = self.r_cg[1:-2, 2:-1]
+        Rplus[0, :] = self.r_cg[0, :]
+        Rplus[-1, :] = self.r_cg[-1, :]
+
+        f_interp = griddata((z, r), f, (self.z_cg, self.r_cg), method=method)
+        f_zplus = griddata((z, r), f, (Zplus, self.r_cg), method=method)
+        # f_zminus = griddata((z, r), f, (Zminus, self.r_cg), method=method)
+        f_rplus = griddata((z, r), f, (self.z_cg, Rplus), method=method)
+        # f_rminus = griddata((z, r), f, (self.z_cg, Rminus), method=method)
+        df_dz = (f_zplus - f_interp) / (Zplus-self.z_cg)
+        df_dz[0, :] = df_dz[1, :]
+        df_dz[-1, :] = df_dz[-2, :]
+        df_dr = (f_rplus - f_interp) / (Rplus-self.r_cg)
+        df_dr[:, 0] = df_dr[:, 1]
+        df_dr[:, -1] = df_dr[:, -2]
+
+        if visual_check:
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, f_interp, cmap=color_map, levels=N_levels)
+            plt.title('f')
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, f_zplus, cmap=color_map, levels=N_levels)
+            plt.title('f_zplus')
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, f_rplus, cmap=color_map, levels=N_levels)
+            plt.title('f_rplus')
             plt.colorbar()
 
             plt.figure()
             plt.contourf(self.z_cg, self.r_cg, df_dz, cmap=color_map, levels=N_levels)
+            plt.title('dfdz')
+            plt.colorbar()
+
+            plt.figure()
+            plt.contourf(self.z_cg, self.r_cg, df_dr, cmap=color_map, levels=N_levels)
+            plt.title('dfdr')
             plt.colorbar()
 
         return df_dr, df_dz

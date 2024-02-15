@@ -3,22 +3,25 @@ import matplotlib.pyplot as plt
 import Sun
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
+from Grid.src.functions import create_folder
+
+folder_out = 'pictures'
+create_folder(folder_out)
 
 config = Config('nasa_rotor_37.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 
-compressor_grids = []
-for meridional_block in meridional_obj.group:
-    compressor_grids.append(Sun.src.sun_grid.SunGrid(meridional_block))
-
+# STABILITY ANALYSIS
 sun_blocks = []
-for compressor_grid in compressor_grids:
+for meridional_block in meridional_obj.group:
+    compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
+    sun_obj.set_overwriting_equation_euler_wall('utheta')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodesFrancesco2()
@@ -42,12 +45,11 @@ for sun_obj in sun_blocks:
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 sun_multiblock.apply_matching_conditions()
-sun_multiblock.hist_inspect_L_global_matrices()
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()
-sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies')
-sun_multiblock.plot_eigenfields(n=10, save_filename='eigenmode')
+sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', save_foldername=folder_out)
+sun_multiblock.plot_eigenfields(n=20, save_filename='eigenmode', save_foldername=folder_out)
 sun_multiblock.write_results()
 
-plt.show()
+# plt.show()

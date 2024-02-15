@@ -20,7 +20,7 @@ INLET_BLOCK = True
 BLADE_BLOCK = True
 OUTLET_BLOCK = True
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(config)
 blade.find_inlet_points()
 blade.find_outlet_points()
@@ -31,7 +31,7 @@ data.process_from_ansys_csv()
 strwise_pts = config.get_streamwise_points()
 spwise_pts = config.get_spanwise_points()
 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% INLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if INLET_BLOCK:
     print("\nINLET BLOCK PROCESSING...")
     block = Grid.src.Block(config, nstream=config.get_streamwise_points()[0], nspan=config.get_spanwise_points())
@@ -53,7 +53,6 @@ if INLET_BLOCK:
     inlet_process.compute_derived_quantities()
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
-    # inlet_process.contour_all_plots(save_filename='inlet_%i_%i' %(strwise_pts[0], spwise_pts))
     inlet_process.compute_body_force_residuals()
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,14 +88,9 @@ if BLADE_BLOCK:
     blade_process.interpolate_on_working_grid()
     blade_process.contour_plot(field='rho')
     blade_process.compute_derived_quantities()
-    blade_process.contour_entropy_generation()
-    blade_process.compute_bfm_axial(save_fig=True)
+    blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
     blade_process.compute_body_fource_S('rotor')
     blade_process.compute_averaged_fluxes()
-    # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
-    # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
-    # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
-    # blade_process.contour_all_plots()
     delattr(blade_process, 'data')
     blade_process.compute_body_force_residuals()
 
@@ -123,9 +117,6 @@ if OUTLET_BLOCK:
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')
-    # outlet_process.contour_all_plots()
-    # outlet_process.plot_spanline(field='p_tot_ratio', n=-1, save_filename='PRtot_spanline_outlet', xlim=[1.3, 2.3])
-    # outlet_process.plot_spanline(field='T_tot_ratio', n=-1, save_filename='TRtot_spanline_outlet', xlim=[1.2, 1.6])
     outlet_process.compute_body_force_residuals()
     delattr(outlet_process, 'data')
 #
@@ -144,17 +135,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
 
     obj.contour_fields(save_filename=config.picture_name_template, folder_name=folder_out)
     obj.contour_field_gradients(save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template, folder_name=folder_out)
-    obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template, folder_name=folder_out)
     obj.compute_performance()
     obj.print_performance()
     obj.store_pickle(file_name=config.get_cfd_filepath().split("/")[-1].split('.')[0]+'_%i_%i_%i_%i'
@@ -163,7 +143,7 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
 
 end_time = time.time()
 delta_time = end_time - start_time
-print('Total time: %d sec' % (delta_time))
+print('Total time: %d sec' % delta_time)
 
 
-plt.show()
+# plt.show()

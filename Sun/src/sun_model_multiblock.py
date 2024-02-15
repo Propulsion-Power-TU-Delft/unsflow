@@ -302,7 +302,7 @@ class SunModelMultiBlock():
 
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
-            fig.savefig(save_foldername + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
             # plt.close()
 
     def plot_eigenfields(self, n=None, save_filename=None, save_foldername='pictures'):
