@@ -3,6 +3,7 @@ import numpy as np
 from os import listdir
 from os.path import isdir
 import pickle
+from Utils.styles import *
 
 # READ SIMULATION RESULTS
 directory = './'
@@ -36,15 +37,15 @@ error[-1,:] = np.sum(error, axis=0)/error.shape[0]
 plot_yticks = [r"$\varepsilon_{%i}$" %(s+1) for s in range(len(eigenvalues))]
 plot_yticks.append(r'$\bar{\varepsilon}$')
 
-plt.figure(figsize=(12, 7))
+plt.figure(figsize=(15,5))
 plt.imshow(np.log10(error), cmap='jet')
 # plt.imshow(error, cmap='jet')
-plt.xticks(range(len(names)), names, rotation=45, ha="right", rotation_mode="anchor", fontsize=10)
-plt.yticks(range(len(plot_yticks)), plot_yticks, fontsize=14)
+plt.xticks(range(len(names)), names, rotation=45, ha="right", rotation_mode="anchor", fontsize=font_axes)
+plt.yticks(range(len(plot_yticks)), plot_yticks, fontsize=font_labels)
 # plt.title('Error Matrix', fontsize=14)
 for i in range(len(names)):
     for j in range(len(plot_yticks)):
-        plt.text(i, j, f'{error[j, i]*100:.1f}' + '%', ha='center', va='center', color='black', fontsize=10)
+        plt.text(i, j, f'{error[j, i]*100:.1f}' + '%', ha='center', va='center', color='black', fontsize=14)
 # plt.colorbar(shrink = 0.65)
 plt.savefig('doe_results.pdf', bbox_inches='tight')
 

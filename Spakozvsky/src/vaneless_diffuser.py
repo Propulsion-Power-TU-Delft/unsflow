@@ -1,7 +1,7 @@
 from .functions import Bvlsd_n
 from numpy import pi
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Sun.src.styles import total_chars, total_chars_mid
+from Utils.styles import total_chars, total_chars_mid
 from numpy import pi as pi
 
 

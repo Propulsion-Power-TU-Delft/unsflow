@@ -10,11 +10,12 @@ start_time = time.time()
 print('Start execution:')
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SETTINGS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 configuration_file = 'nasa_lscc.ini'
+folder_out = 'pictures'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-INLET_BLOCK = False
+INLET_BLOCK = True
 BLADE_BLOCK = True
-OUTLET_BLOCK = False
+OUTLET_BLOCK = True
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,9 +74,9 @@ if BLADE_BLOCK:
     blade.plot_camber_surface()
     blade.compute_camber_vectors()
     blade.compute_blade_camber_angles()
-    blade.compute_blade_thickness(save_filename='nasar_lscc')
-    blade.compute_blade_blockage(36, save_filename='nasa_lscc')
-    blade.show_blade_angles_contour(save_filename='nasar_lscc')
+    blade.compute_blade_thickness(save_filename='nasar_lscc', folder_name=folder_out)
+    blade.compute_blade_blockage(36, save_filename='nasa_lscc', folder_name=folder_out)
+    blade.show_blade_angles_contour(save_filename='nasar_lscc', folder_name=folder_out)
 
     blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
     blade_process.compute_camber_angles()
@@ -135,21 +136,21 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     # if config.get_shock_smoothing:
     #     obj.shock_smoothing(INLET_NZ - 1)
     obj.compute_streamline_length()
-    obj.show_grid(save_filename=config.picture_name_template)
+    obj.show_grid(save_filename=config.picture_name_template, folder_name=folder_out)
 
-    obj.contour_fields(save_filename=config.picture_name_template)
-    obj.contour_field_gradients(save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
-    obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
+    obj.contour_fields(save_filename=config.picture_name_template, folder_name=folder_out)
+    obj.contour_field_gradients(save_filename=config.picture_name_template, folder_name=folder_out)
+    # obj.plot_averaged_fluxes(field='rho', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='ur', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='ut', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='uz', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='p', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='T', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='s', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='p_tot', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='T_tot', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='M', save_filename=config.picture_name_template)
+    # obj.plot_averaged_fluxes(field='M_rel', save_filename=config.picture_name_template)
     obj.compute_performance()
     obj.print_performance()
     obj.store_pickle(file_name=config.picture_name_template+'_design')
@@ -161,4 +162,4 @@ print('Total time: %d sec' % (delta_time))
 
 
 
-# plt.show()
+plt.show()

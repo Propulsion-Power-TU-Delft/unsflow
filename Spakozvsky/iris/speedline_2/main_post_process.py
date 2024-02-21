@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
+from Utils.styles import *
+
 
 data_folder = "../data/IRIS_single_stage/design0_beta_3.450/operating_map/"
 with open(data_folder + 'mass_flow.pkl', 'rb') as f:
@@ -52,6 +54,8 @@ for file in filenames:
 n_harmonics = len(poles[0].keys())
 GFactor = np.zeros((len(poles), n_harmonics))
 Mflow = np.zeros((len(poles), n_harmonics))
+RSpeed = np.zeros((len(poles), n_harmonics))
+
 
 for i in range(len(poles)):
     pole = poles[i]
@@ -61,37 +65,44 @@ for i in range(len(poles)):
     for key in pole.keys():
         real_part = pole[key].real
         imag_part = pole[key].imag
-        growth_factor = np.max(real_part)
+        idx_max = np.where(real_part == np.max(real_part))
+        growth_factor = real_part[idx_max]
+        rot_speed = imag_part[idx_max]
         GFactor[i, j] = growth_factor
+        RSpeed[i, j] = rot_speed / key
         Mflow[i, j] = mass_flow[idx]
         j += 1
 
 
 plt.figure()
 for j in range(n_harmonics):
-    plt.plot(Mflow[:, j], GFactor[:, j], '-s', label='n:%i' %(j+1), linewidth=1, markersize=3)
+    plt.plot(Mflow[:, j], GFactor[:, j], '-s', label='n:%i' % (j + 1), linewidth=medium_line_width, markersize=3)
 boundary_x = np.linspace(np.min(Mflow), np.max(Mflow))
 boundary_y = np.zeros_like(boundary_x)
-plt.plot(boundary_x, boundary_y, '--k')
-plt.legend()
-plt.xlabel(r'$\dot{m}$ [kg/s]')
-plt.ylabel(r'GF')
-plt.title(r'$%.1f$ [krpm]' %(rpm[speedline]/1000))
+plt.plot(boundary_x, boundary_y, '--k', linewidth=medium_line_width)
+plt.legend(fontsize=font_legend)
+plt.xlabel(r'$\dot{m}$ [kg/s]', fontsize=font_labels)
+plt.ylabel(r'GF [-]', fontsize=font_labels)
+plt.xticks(fontsize=font_axes)
+plt.yticks(fontsize=font_axes)
+plt.title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000), fontsize=font_title)
 plt.grid(alpha=0.2)
 plt.savefig('pictures/iris_growth_factors_speedline_%i.pdf' %(speedline), bbox_inches='tight')
 
-idx_instability = 5
 plt.figure()
-idx = np.where(mass_flow>0)
-plt.plot(mass_flow[idx], beta_ts[idx])
-plt.plot(mass_flow[0], beta_ts[0], 'ks', label='Senoo')
-plt.plot(mass_flow[idx_instability], beta_ts[idx_instability], 'k^', label='Spakovszky')
-plt.xlabel(r'$\dot{m}$ [kg/s]')
-plt.ylabel(r'$\beta_{ts}$ [-]')
-plt.title('Compressor Curve')
+for j in range(n_harmonics):
+    plt.plot(Mflow[:, j], RSpeed[:, j], '-s', label='n:%i' % (j + 1), linewidth=medium_line_width, markersize=3)
+boundary_x = np.linspace(np.min(Mflow), np.max(Mflow))
+boundary_y = np.zeros_like(boundary_x)
+plt.plot(boundary_x, boundary_y, '--k')
+plt.legend(fontsize=font_legend)
+plt.xlabel(r'$\dot{m}$ [kg/s]', fontsize=font_labels)
+plt.ylabel(r'RS [-]', fontsize=font_labels)
+plt.xticks(fontsize=font_axes)
+plt.yticks(fontsize=font_axes)
+plt.title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000), fontsize=font_title)
 plt.grid(alpha=0.2)
-plt.legend()
-plt.savefig('pictures/iris_curve_speedline_%i.pdf' %(speedline), bbox_inches='tight')
+plt.savefig('pictures/iris_rot_speed_speedline_%i.pdf' %(speedline), bbox_inches='tight')
 
 
 
