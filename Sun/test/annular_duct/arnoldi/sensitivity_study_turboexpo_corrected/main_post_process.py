@@ -39,14 +39,19 @@ plot_yticks.append(r'$\bar{\varepsilon}$')
 
 plt.figure(figsize=(15,5))
 plt.imshow(np.log10(error), cmap='coolwarm')
+rows, cols = error.shape
+for i in range(1, rows):
+    plt.axhline(i - 0.5, color='white', linewidth=1)  # Add horizontal lines
+for j in range(1, cols):
+    plt.axvline(j - 0.5, color='white', linewidth=1)  # Add vertical lines
 # plt.imshow(error, cmap='jet')
 plt.xticks(range(len(names)), names, rotation=45, ha="right", rotation_mode="anchor", fontsize=font_axes)
 plt.yticks(range(len(plot_yticks)), plot_yticks, fontsize=font_labels)
 # plt.title('Error Matrix', fontsize=14)
 for i in range(len(names)):
     for j in range(len(plot_yticks)):
-        plt.text(i, j, f'{error[j, i]:.3e}', ha='center', va='center', color='black', fontsize=8)
-# plt.colorbar(shrink = 0.65)
+        plt.text(i, j, f'{error[j, i]:.0e}', ha='center', va='center', color='black', fontsize=14)
+# plt.colorbar()
 plt.savefig('doe_results.pdf', bbox_inches='tight')
 
 

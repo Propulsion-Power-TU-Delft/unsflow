@@ -39,8 +39,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 60
-Nr = 20
+Nz = 15
+Nr = 5
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -94,7 +94,7 @@ for sun_obj in sun_blocks:
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 
-omega_search = 51350
+omega_search = 31200
 sigma = omega_search / omega_ref
 
 A = sun_multiblock.L0
@@ -136,7 +136,7 @@ ax.set_xlim([7500, 38000])
 ax.set_ylim([-8000, 8000])
 ax.legend()
 ax.grid(alpha=0.3)
-fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
+fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -184,7 +184,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=50, cmap='bwr')
@@ -192,7 +192,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=50, cmap='bwr')
@@ -200,7 +200,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=50, cmap='bwr')
@@ -208,7 +208,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
     cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=15, cmap='bwr')
@@ -216,7 +216,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
 data_dict = {'r':r_grid, 'z':z_grid, 'p':p_eig_r}
 # Specify the file path where you want to save the data

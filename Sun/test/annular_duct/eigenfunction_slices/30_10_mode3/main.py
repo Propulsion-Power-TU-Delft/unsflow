@@ -12,6 +12,7 @@ import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 from scipy.sparse.linalg import eigs
+import pickle
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -38,8 +39,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 45
-Nr = 15
+Nz = 30
+Nr = 10
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -88,16 +89,17 @@ for sun_obj in sun_blocks:
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
     sun_obj.apply_boundary_conditions_generalized()
-    ii +=1
+    ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 
-omega_search = 21000
+omega_search = 26000
 sigma = omega_search / omega_ref
 
 A = sun_multiblock.L0
 M = -sun_multiblock.L1
+print('Converting to Linear EVP...')
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
 print('Searching Eigenvalues with ARPACK...')
@@ -177,7 +179,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     p_eig_r = scaled_eigenvector_real(p_eig)
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
@@ -185,7 +187,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
@@ -193,7 +195,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
@@ -201,7 +203,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
@@ -209,11 +211,19 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=15, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+data_dict = {'r':r_grid, 'z':z_grid, 'p':p_eig_r}
+# Specify the file path where you want to save the data
+file_path = 'eigenfunction.pickle'
+
+# Open the file in binary write mode and save the data using pickle.dump()
+with open(file_path, 'wb') as file:
+    pickle.dump(data_dict, file)
 
 plt.show()
