@@ -15,7 +15,6 @@ from scipy.sparse.linalg import eigs
 from Utils.styles import *
 import pickle
 
-
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
 r2 = 0.2487  # outer radius [m]
@@ -258,5 +257,9 @@ for ivec in range(np.shape(eigenvectors)[1]):
     cnbar.ax.tick_params(labelsize=font_axes)
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
+
+file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transformation_gradient_order())
+with open(file_path, 'wb') as file:
+    pickle.dump(eigenvalues, file)
 
 plt.show()

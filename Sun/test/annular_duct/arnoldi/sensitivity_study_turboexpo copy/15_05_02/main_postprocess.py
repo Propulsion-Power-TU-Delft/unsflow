@@ -123,7 +123,7 @@ import pickle
 import pickle
 
 # Specify the file path from which you want to load the pickled object
-file_path = "data/meta/60_20_06.pickle"
+file_path = "data/meta/30_10_06.pickle"
 
 # Open the file in binary read mode and load the pickled object using pickle.load()
 with open(file_path, 'rb') as obj:

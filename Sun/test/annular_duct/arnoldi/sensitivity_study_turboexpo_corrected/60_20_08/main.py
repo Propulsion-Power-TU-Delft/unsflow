@@ -15,7 +15,6 @@ from scipy.sparse.linalg import eigs
 from Utils.styles import *
 import pickle
 
-
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
 r2 = 0.2487  # outer radius [m]
@@ -41,8 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 60
+Nr = 20
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -139,7 +138,7 @@ plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 ax.legend(fontsize=font_legend)
 ax.grid(alpha=grid_opacity)
-fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
+fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -200,7 +199,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
     cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure()
     cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=N_levels_medium, cmap='bwr')
@@ -214,7 +213,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
     cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure()
     cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=N_levels_medium, cmap='bwr')
@@ -228,7 +227,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
     cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure()
     cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=N_levels_medium, cmap='bwr')
@@ -242,7 +241,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
     cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure()
     cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='bwr')
@@ -256,7 +255,11 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
     cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
+
+file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transformation_gradient_order())
+with open(file_path, 'wb') as file:
+    pickle.dump(eigenvalues, file)
 
 plt.show()

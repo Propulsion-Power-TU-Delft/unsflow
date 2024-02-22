@@ -12,9 +12,6 @@ import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 from scipy.sparse.linalg import eigs
-from Utils.styles import *
-import pickle
-
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -41,8 +38,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
+Nz = 45
+Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -125,20 +122,18 @@ omegar_an = [13450, 21077, 26721, 31296, 35049]
 omegai_an = [0, 0, 0, 0, 0]
 
 # PLOT RESULTS
-marker_size = 125
+marker_size = 50
 fig, ax = plt.subplots()
 ax.scatter(omegar_an, omegai_an, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
 ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
-ax.set_xlabel(r'$\omega_{R}$ [rad/s]', fontsize=font_labels)
-ax.set_ylabel(r'$\omega_{I}$ [rad/s]', fontsize=font_labels)
-ax.set_xlim([12000, 36000])
+ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
+ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
+ax.set_xlim([7500, 38000])
 ax.set_ylim([-8000, 8000])
-plt.xticks(fontsize=font_axes)
-plt.yticks(fontsize=font_axes)
-ax.legend(fontsize=font_legend)
-ax.grid(alpha=grid_opacity)
+ax.legend()
+ax.grid(alpha=0.3)
 fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
@@ -181,82 +176,44 @@ for ivec in range(np.shape(eigenvectors)[1]):
     uz_eig_r = scaled_eigenvector_real(uz_eig)
     p_eig_r = scaled_eigenvector_real(p_eig)
 
-
-
-    xtick_locations = [0, L/config.get_reference_length()]
-    xtick_labels = [r'$0$', r'$L$']
-    ytick_locations = [r1/config.get_reference_length(), r2/config.get_reference_length()]
-    ytick_labels = [r'$r_1$', r'$r_2$']
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=20, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
+    plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=20, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
+    plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=20, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
+    plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=20, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
+    plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.figure(figsize=(7, 5))
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=20, cmap='bwr')
+    plt.ylabel(r'$r$ [-]')
+    plt.xlabel(r'$z$ [-]')
+    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
+    plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
 
 plt.show()
