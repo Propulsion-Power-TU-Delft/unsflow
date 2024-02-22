@@ -60,7 +60,8 @@ time = np.array(values)
 from scipy.optimize import curve_fit
 # Define the custom function for time as a function of nodes
 def time_func(nodes, A, B):
-    return A**(B*nodes)-1
+    # return A**(B*nodes)-1
+    return A*nodes**B
 
 # Fit the custom function to the data using curve_fit
 params, covariance = curve_fit(time_func, nodes, time)
@@ -69,40 +70,40 @@ params, covariance = curve_fit(time_func, nodes, time)
 A_fit, B_fit = params
 
 # Generate the fitted curve using the fitted parameters
-nodes_test = np.linspace(1, 1250)
+nodes_test = np.linspace(1, 2750)
 fitted_time = time_func(nodes_test, A_fit, B_fit)
+
+eqn_string = r'$t = \alpha N^{\beta}$'
 
 # Plot the original data and the fitted curve
 plt.figure()
-plt.scatter(nodes, time, s=100, edgecolors='black', facecolors='C0', linewidth=2, label='data')
-plt.plot(nodes_test, fitted_time, '--r', label=r'curve fit', lw=medium_line_width)
-plt.xlabel('Nodes [-]', fontsize=font_labels)
-plt.ylabel('CPU time [s]', fontsize=font_labels)
+plt.scatter(nodes, time/60, s=100, edgecolors='black', facecolors='C0', linewidth=2, label='data')
+plt.plot(nodes_test, fitted_time/60, '--r', label=eqn_string, lw=medium_line_width)
+plt.xlabel(r'$N$ [-]', fontsize=font_labels)
+plt.ylabel(r'$t$ [min]', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.grid(alpha=grid_opacity)
-plt.xlabel('Nodes [-]')
-plt.ylabel('Time [s]')
 plt.legend(fontsize=font_legend)
+plt.title(r'$\alpha=%.2e \ \mathrm{[s]}, \quad \beta=%.2e \ \mathrm{[-]}$' %(A_fit, B_fit), fontsize=font_axes)
 plt.savefig('duct_cpu_times_nodes.pdf', bbox_inches='tight')
 
 
 
 
 
-nodes_test = np.linspace(1000, 5000)
+nodes_test = np.linspace(1000, 100000)
 fitted_time = time_func(nodes_test, A_fit, B_fit)
 
 # Plot the original data and the fitted curve
 plt.figure()
 plt.plot(nodes_test, fitted_time/3600, '--r', label=r'curve fit', lw=medium_line_width)
-plt.xlabel('Nodes [-]', fontsize=font_labels)
-plt.ylabel('CPU time [s]', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.grid(alpha=grid_opacity)
-plt.xlabel('Nodes [-]')
-plt.ylabel('Time [hrs]')
+plt.xlabel(r'$N$ [-]', fontsize=font_labels)
+plt.ylabel(r'$t$ [hrs]', fontsize=font_labels)
+plt.xscale('log')
 plt.yscale('log')
 plt.legend(fontsize=font_legend)
 plt.savefig('duct_cpu_times_extrapolation.pdf', bbox_inches='tight')
