@@ -6,7 +6,7 @@ from findiff import FinDiff
 from Utils.styles import *
 
 ALPHA_GRID = 0.2
-N = 50  # number of grid points
+N = 20  # number of grid points
 L = 1
 
 i = linspace(0, N - 1, N)
@@ -78,8 +78,8 @@ plt.plot(xi, dx_dxi_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=ligh
 plt.plot(xi, dx_dxi_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=light_line_width)
 plt.plot(xi, dx_dxi_num_findiff8, '--P', label=r'$8^{th}$ order', linewidth=light_line_width)
 plt.plot(xi, dx_dxi_num_findiff10, '--D', label=r'$10^{th}$ order', linewidth=light_line_width)
-plt.xlabel(r'$\xi$', fontsize=font_labels)
-plt.ylabel(r'$d x / d \xi$', fontsize=font_labels)
+plt.xlabel(r'$\xi$ [-]', fontsize=font_labels)
+plt.ylabel(r'$d x / d \xi$ [-]', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.ylim([-5.5, 0])
@@ -122,12 +122,12 @@ plt.plot(xi, (dx_dxi_num_findiff8-y_interpolate)/y_interpolate, '--P', label=r'$
          linewidth=medium_line_width, markersize=marker_size)
 plt.plot(xi, (dx_dxi_num_findiff10-y_interpolate)/y_interpolate, '--D', label=r'$10^{th}$ order',
          linewidth=medium_line_width, markersize=marker_size)
-plt.xlabel(r'$\xi$', fontsize=font_labels)
-plt.ylabel(r'$\varepsilon$', fontsize=font_labels)
+plt.xlabel(r'$\xi$ [-]', fontsize=font_labels)
+plt.ylabel(r'$\varepsilon$ [-]', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 # plt.ylim([-5.5, 0])
-plt.xlim([0,1.05])
+# plt.xlim([0,1.05])
 plt.legend(fontsize=font_legend)
 plt.title(r'N:%i' %(N), fontsize=font_title)
 plt.grid(alpha=ALPHA_GRID)
