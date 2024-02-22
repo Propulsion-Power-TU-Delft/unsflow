@@ -283,7 +283,7 @@ class SunModel:
         #     plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
         #     # plt.close()
 
-        plt.figure(figsize=fig_size)
+        plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
@@ -293,7 +293,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_dxi_dr.pdf', bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=fig_size)
+        plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
@@ -303,7 +303,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_dxi_dz.pdf', bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=fig_size)
+        plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
@@ -313,7 +313,7 @@ class SunModel:
             plt.savefig(folder_name + save_filename + '_deta_dr.pdf', bbox_inches='tight')
             # plt.close()
 
-        plt.figure(figsize=fig_size)
+        plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')

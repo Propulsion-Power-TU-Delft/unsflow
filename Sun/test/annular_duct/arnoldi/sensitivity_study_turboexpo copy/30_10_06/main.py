@@ -59,7 +59,8 @@ for ii in range(0, Nz):
 
 config = Config('duct.ini')
 duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, config)
+                                     density, radialVel, tangentialVel, axialVel, pressure, config,
+                                      mode='gauss-lobatto')
 duct_Obj1.normalize_data()
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
 sun_obj = Sun.src.SunModel(duct_grid1, config=config)

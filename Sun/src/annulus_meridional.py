@@ -7,7 +7,7 @@ class AnnulusMeridional():
     insert the meridional flow fields as 2D array, in order to compute the eigenfrequencies of the annulus duct.
     """
 
-    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, config, grid_refinement=1):
+    def __init__(self, zmin, zmax, rmin, rmax, Nz, Nr, rho, u, v, w, p, config, grid_refinement=1, mode='default'):
         """
         Build the 2D arrays on the meridional plane, to be compatible with meridional_process object of a compressor.
         The non-dimensionalization procedure is treated later.
@@ -31,8 +31,14 @@ class AnnulusMeridional():
         self.nstream = Nz
         self.nspan = Nr
         self.nPoints = Nz * Nr
-        self.z = np.linspace(zmin, zmax, Nz)
-        self.r = np.linspace(rmin, rmax, Nr)
+        if mode == 'default':
+            self.z = np.linspace(zmin, zmax, Nz)
+            self.r = np.linspace(rmin, rmax, Nr)
+        elif mode == 'gauss-lobatto':
+            self.z = gauss_lobatto_grid_generation(Nz, zmin, zmax)
+            self.r = gauss_lobatto_grid_generation(Nr, rmin, rmax)
+        else:
+            raise ValueError('Unrecognized mode of grid generation')
         self.z_finegrid = np.linspace(zmin, zmax, Nz*grid_refinement)  # for transformation gradient computation
         self.r_finegrid = np.linspace(rmin, rmax, Nr*grid_refinement)
         self.r_grid, self.z_grid = np.meshgrid(self.r, self.z)
@@ -89,3 +95,12 @@ class AnnulusMeridional():
         self.duz_dz /= self.u_ref/self.x_ref
         self.dp_dr /= self.p_ref/self.x_ref
         self.dp_dz /= self.p_ref/self.x_ref
+
+def gauss_lobatto_grid_generation(N, x_start, x_end):
+    """
+    return the array of points distributed following gauss-lobatto structure
+    """
+    xi = np.zeros(N)
+    for ii in range(len(xi)):
+        xi [ii] = x_start + (x_end-x_start)*(1-np.cos(np.pi*ii/(N-1)))/2
+    return xi
