@@ -16,9 +16,9 @@ create_folder(folder_out)
 configuration_file = 'nasa_rotor_37.ini'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-INLET_BLOCK = True
+INLET_BLOCK = False
 BLADE_BLOCK = True
-OUTLET_BLOCK = True
+OUTLET_BLOCK = False
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(config)
