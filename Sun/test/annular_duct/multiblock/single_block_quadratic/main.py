@@ -38,8 +38,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 60
-Nr = 20
+Nz = 30
+Nr = 10
 # Nz = 10//2
 # Nr = 5
 
@@ -60,7 +60,7 @@ if not os.path.exists(folder_path):
 #         pressure[ii, jj] = p
 
 config = Config('duct.ini')
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config)
+duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
 duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config)
 
 duct_Obj1.normalize_data()

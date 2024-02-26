@@ -1368,13 +1368,13 @@ class SunModel:
                 elif marker == 'outlet':
                     self.apply_bc_condition(row, self.outlet_bc, ii, jj)
 
-                elif (marker == 'hub'):
+                elif marker == 'hub':
                     self.apply_bc_condition(row, self.hub_bc, ii, jj)
 
-                elif (marker == 'shroud'):
+                elif marker == 'shroud':
                     self.apply_bc_condition(row, self.shroud_bc, ii, jj)
 
-                elif (marker != 'internal'):
+                elif marker != 'internal':
                     raise Exception('Boundary condition unknown. Check the grid markers!')
 
     def set_boundary_conditions(self):
@@ -1387,7 +1387,8 @@ class SunModel:
         self.shroud_bc = self.config.get_shroud_bc()
 
         # recognized boundary conditions type
-        bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet', 'zero axial']
+        bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet',
+                   'zero axial velocity', 'free']
 
         if self.inlet_bc not in bc_list:
             raise ValueError('Incorrect Inlet boundary condition type.')
@@ -1425,6 +1426,17 @@ class SunModel:
 
             self.L1[row + 4, :] = np.zeros(self.L1[row + 4, :].shape, dtype=complex)  # zero row
             self.L2[row + 4, :] = np.zeros(self.L2[row + 4, :].shape, dtype=complex)  # zero row
+
+        elif condition == 'zero axial velocity':
+            # BC for zero pressure perturbation
+            self.L0[row + 3, :] = np.zeros(self.L0[row + 4, :].shape, dtype=complex)
+            self.L0[row + 3, row + 3] = 1  # zero pressure at that node
+
+            self.L1[row + 3, :] = np.zeros(self.L1[row + 3, :].shape, dtype=complex)  # zero row
+            self.L2[row + 3, :] = np.zeros(self.L2[row + 3, :].shape, dtype=complex)  # zero row
+
+        elif condition == 'free':
+            pass
 
         elif condition == 'zero perturbation':
             # BC for zero pressure perturbation

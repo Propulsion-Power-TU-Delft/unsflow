@@ -31,6 +31,8 @@ for i in range(len(eigenvalues)):
     eigenvalue = eigenvalues[i]
     for j in range(len(data)):
         numerical_results = data[j]
+
+        # min is needed to select the closest eigenvalue to the analytical one considered.
         error[i, j] = (np.min(np.abs(numerical_results - eigenvalue))) / eigenvalue
 error[-1,:] = np.sum(error, axis=0)/(error.shape[0]-1)
 
@@ -44,10 +46,8 @@ for i in range(1, rows):
     plt.axhline(i - 0.5, color='white', linewidth=1)  # Add horizontal lines
 for j in range(1, cols):
     plt.axvline(j - 0.5, color='white', linewidth=1)  # Add vertical lines
-# plt.imshow(error, cmap='jet')
 plt.xticks(range(len(names)), names, rotation=45, ha="right", rotation_mode="anchor", fontsize=font_axes)
 plt.yticks(range(len(plot_yticks)), plot_yticks, fontsize=font_labels)
-# plt.title('Error Matrix', fontsize=14)
 for i in range(len(names)):
     for j in range(len(plot_yticks)):
         plt.text(i, j, f'{error[j, i]:.0e}', ha='center', va='center', color='black', fontsize=14)
@@ -55,12 +55,9 @@ for i in range(len(names)):
 plt.savefig('doe_results.pdf', bbox_inches='tight')
 
 
+for i in range(rows):
+    print("\nEigenvalue: %i" %(i))
+    for j in range(cols):
+        print(error[i,j])
 
-
-# plt.figure(figsize=(7,7))
-# for i in range(len(data)):
-#     plt.scatter(data[i].real, data[i].imag, label=names[i])
-# plt.legend()
-# plt.xlabel(r'$\omega_R \ \mathrm{[rad/s]}$')
-# plt.ylabel(r'$\omega_I \ \mathrm{[rad/s]}$')
 plt.show()

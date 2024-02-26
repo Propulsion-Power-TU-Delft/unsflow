@@ -12,6 +12,8 @@ import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 from scipy.sparse.linalg import eigs
+from Utils.styles import *
+import pickle
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -38,10 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
-# Nz = 10//2
-# Nr = 5
+Nz = 45
+Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -56,21 +56,16 @@ pressure = np.zeros((Nz, Nr))
 for ii in range(0, Nz):
     for jj in range(0, Nr):
         density[ii, jj] = rho
-        axialVel[ii, jj] = M * a
+        axialVel[ii, jj] = M*a
         pressure[ii, jj] = p
 
 config = Config('duct.ini')
 duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
                                      density, radialVel, tangentialVel, axialVel, pressure, config,
                                       mode='gauss-lobatto')
-duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, config)
 duct_Obj1.normalize_data()
-# duct_Obj2.normalize_data(rho_ref, u_ref, x_ref)
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
-# duct_grid2 = Sun.src.sun_grid.SunGrid(duct_Obj2)
 sun_obj = Sun.src.SunModel(duct_grid1, config=config)
-# sun_obj2 = Sun.src.SunModel(duct_grid2, config=config)
 
 sun_blocks = [sun_obj]
 ii = 0
@@ -95,45 +90,13 @@ for sun_obj in sun_blocks:
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
     sun_obj.apply_boundary_conditions_generalized()
-    ii +=1
+    ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-# sun_multiblock.apply_matching_conditions()
-# sun_multiblock.compute_P_Y_matrices()
-# sun_multiblock.solve_evp(sort_mode='real increasing', sigma=21000/config.get_reference_omega())
-# sun_multiblock.extract_eigenfields()
-# sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', normalization=False)
-# sun_multiblock.plot_eigenfields(n=5, save_filename='eigenmode')
-# sun_multiblock.write_results()
 
 omega_search = 21000
 sigma = omega_search / omega_ref
-
-
-# Y1 = np.concatenate((-sun_multiblock.L0, np.zeros_like(sun_multiblock.L0)), axis=1)
-# Y2 = np.concatenate((np.zeros_like(sun_multiblock.L0), np.eye(sun_multiblock.L0.shape[0])), axis=1)
-# Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
-# plt.figure()
-# plt.spy(Y)
-#
-# P1 = np.concatenate((sun_multiblock.L1, sun_multiblock.L2), axis=1)
-# P2 = np.concatenate((np.eye(sun_multiblock.L0.shape[0]), np.zeros_like(sun_multiblock.L0)), axis=1)
-# P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
-# plt.figure()
-# plt.spy(P)
-#
-# print('Transforming the problem...')
-# Ytilde = np.linalg.inv(Y-sigma*P) @ P
-# print('Searching Eigenvalues with ARPACK...')
-# eigenvalues, eigenvectors = eigs(Ytilde, k=config.get_research_number_omega_eigenvalues())
-
-fig, ax = plt.subplots(1, 2, figsize=(12,5))
-ax[0].spy(sun_multiblock.L0)
-ax[0].set_title(r'$L_0$')
-ax[1].spy(sun_multiblock.L1)
-ax[1].set_title(r'$L_1$')
-fig.savefig('pictures/%i_%i/L0_L1.pdf' % (Nz, Nr), bbox_inches='tight')
 
 A = sun_multiblock.L0
 M = -sun_multiblock.L1
@@ -161,19 +124,21 @@ omegar_an = [13450, 21077, 26721, 31296, 35049]
 omegai_an = [0, 0, 0, 0, 0]
 
 # PLOT RESULTS
-marker_size = 50
+marker_size = 125
 fig, ax = plt.subplots()
 ax.scatter(omegar_an, omegai_an, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
 ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
-ax.set_xlabel(r'$\omega_{R}$ [rad/s]')
-ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
-ax.set_xlim([7500, 38000])
+ax.set_xlabel(r'$\omega_{R}$ [rad/s]', fontsize=font_labels)
+ax.set_ylabel(r'$\omega_{I}$ [rad/s]', fontsize=font_labels)
+ax.set_xlim([12000, 36000])
 ax.set_ylim([-8000, 8000])
-ax.legend()
-ax.grid(alpha=0.3)
-fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
+plt.xticks(fontsize=font_axes)
+plt.yticks(fontsize=font_axes)
+ax.legend(fontsize=font_legend)
+ax.grid(alpha=grid_opacity)
+fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -215,44 +180,86 @@ for ivec in range(np.shape(eigenvectors)[1]):
     uz_eig_r = scaled_eigenvector_real(uz_eig)
     p_eig_r = scaled_eigenvector_real(p_eig)
 
-    plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=20, cmap='bwr')
-    plt.ylabel(r'$r$ [-]')
-    plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
-    plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=20, cmap='bwr')
-    plt.ylabel(r'$r$ [-]')
-    plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
-    plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=20, cmap='bwr')
-    plt.ylabel(r'$r$ [-]')
-    plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
-    plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    xtick_locations = [0, L/config.get_reference_length()]
+    xtick_labels = [r'$0$', r'$L$']
+    ytick_locations = [r1/config.get_reference_length(), r2/config.get_reference_length()]
+    ytick_labels = [r'$r_1$', r'$r_2$']
 
-    plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=20, cmap='bwr')
-    plt.ylabel(r'$r$ [-]')
-    plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
-    plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.figure()
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=N_levels, cmap='bwr')
+    for c in cnt.collections:
+        c.set_edgecolor("face")
+        c.set_linewidth(0.000000000001)
+    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1), fontsize=font_title)
+    cnbar = plt.colorbar(cnt)
+    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=20, cmap='bwr')
-    plt.ylabel(r'$r$ [-]')
-    plt.xlabel(r'$z$ [-]')
-    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
-    plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+    plt.figure()
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=N_levels, cmap='bwr')
+    for c in cnt.collections:
+        c.set_edgecolor("face")
+        c.set_linewidth(0.000000000001)
+    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1), fontsize=font_title)
+    cnbar = plt.colorbar(cnt)
+    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure()
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=N_levels, cmap='bwr')
+    for c in cnt.collections:
+        c.set_edgecolor("face")
+        c.set_linewidth(0.000000000001)
+    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
+    cnbar = plt.colorbar(cnt)
+    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure()
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=N_levels, cmap='bwr')
+    for c in cnt.collections:
+        c.set_edgecolor("face")
+        c.set_linewidth(0.000000000001)
+    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1), fontsize=font_title)
+    cnbar = plt.colorbar(cnt)
+    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+    plt.figure()
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels, cmap='bwr')
+    for c in cnt.collections:
+        c.set_edgecolor("face")
+        c.set_linewidth(0.000000000001)
+    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
+    cnbar = plt.colorbar(cnt)
+    cnbar.ax.tick_params(labelsize=font_axes)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+
+file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transformation_gradient_order())
+with open(file_path, 'wb') as file:
+    pickle.dump(eigenvalues, file)
 
 plt.show()

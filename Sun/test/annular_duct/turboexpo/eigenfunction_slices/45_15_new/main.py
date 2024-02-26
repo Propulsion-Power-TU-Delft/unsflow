@@ -12,6 +12,7 @@ import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 from scipy.sparse.linalg import eigs
+import pickle
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -38,10 +39,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 30
-Nr = 10
-# Nz = 10//2
-# Nr = 5
+Nz = 45
+Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -63,14 +62,9 @@ config = Config('duct.ini')
 duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
                                      density, radialVel, tangentialVel, axialVel, pressure, config,
                                       mode='gauss-lobatto')
-duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr,
-                                     density, radialVel, tangentialVel, axialVel, pressure, config)
 duct_Obj1.normalize_data()
-# duct_Obj2.normalize_data(rho_ref, u_ref, x_ref)
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
-# duct_grid2 = Sun.src.sun_grid.SunGrid(duct_Obj2)
 sun_obj = Sun.src.SunModel(duct_grid1, config=config)
-# sun_obj2 = Sun.src.SunModel(duct_grid2, config=config)
 
 sun_blocks = [sun_obj]
 ii = 0
@@ -95,48 +89,17 @@ for sun_obj in sun_blocks:
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
     sun_obj.apply_boundary_conditions_generalized()
-    ii +=1
+    ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-# sun_multiblock.apply_matching_conditions()
-# sun_multiblock.compute_P_Y_matrices()
-# sun_multiblock.solve_evp(sort_mode='real increasing', sigma=21000/config.get_reference_omega())
-# sun_multiblock.extract_eigenfields()
-# sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', normalization=False)
-# sun_multiblock.plot_eigenfields(n=5, save_filename='eigenmode')
-# sun_multiblock.write_results()
 
-omega_search = 21000
+omega_search = 31200
 sigma = omega_search / omega_ref
-
-
-# Y1 = np.concatenate((-sun_multiblock.L0, np.zeros_like(sun_multiblock.L0)), axis=1)
-# Y2 = np.concatenate((np.zeros_like(sun_multiblock.L0), np.eye(sun_multiblock.L0.shape[0])), axis=1)
-# Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
-# plt.figure()
-# plt.spy(Y)
-#
-# P1 = np.concatenate((sun_multiblock.L1, sun_multiblock.L2), axis=1)
-# P2 = np.concatenate((np.eye(sun_multiblock.L0.shape[0]), np.zeros_like(sun_multiblock.L0)), axis=1)
-# P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
-# plt.figure()
-# plt.spy(P)
-#
-# print('Transforming the problem...')
-# Ytilde = np.linalg.inv(Y-sigma*P) @ P
-# print('Searching Eigenvalues with ARPACK...')
-# eigenvalues, eigenvectors = eigs(Ytilde, k=config.get_research_number_omega_eigenvalues())
-
-fig, ax = plt.subplots(1, 2, figsize=(12,5))
-ax[0].spy(sun_multiblock.L0)
-ax[0].set_title(r'$L_0$')
-ax[1].spy(sun_multiblock.L1)
-ax[1].set_title(r'$L_1$')
-fig.savefig('pictures/%i_%i/L0_L1.pdf' % (Nz, Nr), bbox_inches='tight')
 
 A = sun_multiblock.L0
 M = -sun_multiblock.L1
+print('Converting to Linear EVP...')
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
 print('Searching Eigenvalues with ARPACK...')
@@ -216,7 +179,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     p_eig_r = scaled_eigenvector_real(p_eig)
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
@@ -224,7 +187,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
@@ -232,7 +195,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
@@ -240,7 +203,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=50, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
@@ -248,11 +211,19 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
     plt.figure(figsize=(7, 5))
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=20, cmap='bwr')
+    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=15, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
     plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+
+data_dict = {'r':r_grid, 'z':z_grid, 'p':p_eig_r, 'omega':eigenvalues}
+# Specify the file path where you want to save the data
+file_path = 'eigenfunction.pickle'
+
+# Open the file in binary write mode and save the data using pickle.dump()
+with open(file_path, 'wb') as file:
+    pickle.dump(data_dict, file)
 
 plt.show()

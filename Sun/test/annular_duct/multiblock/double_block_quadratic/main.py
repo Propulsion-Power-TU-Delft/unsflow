@@ -48,8 +48,8 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 config = Config('duct.ini')
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L/2, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config)
-duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config)
+duct_Obj1 = Sun.src.AnnulusMeridional(0, L/2, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
 
 duct_Obj1.normalize_data()
 duct_Obj2.normalize_data()

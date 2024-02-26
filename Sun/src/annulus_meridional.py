@@ -102,5 +102,5 @@ def gauss_lobatto_grid_generation(N, x_start, x_end):
     """
     xi = np.zeros(N)
     for ii in range(len(xi)):
-        xi [ii] = x_start + (x_end-x_start)*(1-np.cos(np.pi*ii/(N-1)))/2
+        xi[ii] = x_start + (x_end-x_start)*(1-np.cos(np.pi*ii/(N-1)))/2
     return xi
