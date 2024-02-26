@@ -50,6 +50,8 @@ if INLET_BLOCK:
     inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
     inlet_process.interpolate_on_working_grid()
+    if config.get_standard_regression():
+        inlet_process.compute_regressed_fields()
     inlet_process.compute_derived_quantities()
     inlet_process.compute_averaged_fluxes()
     inlet_process.compute_body_fource_S(config.get_blocks_type()[0])
@@ -86,7 +88,8 @@ if BLADE_BLOCK:
     blade_process.compute_streamline_length()
     blade_process.compute_spanwise_length()
     blade_process.interpolate_on_working_grid()
-    blade_process.contour_plot(field='rho')
+    if config.get_standard_regression():
+        blade_process.compute_regressed_fields()
     blade_process.compute_derived_quantities()
     blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
     blade_process.compute_body_fource_S('rotor')
@@ -114,6 +117,8 @@ if OUTLET_BLOCK:
     outlet_process.compute_streamline_length()
     outlet_process.compute_spanwise_length()
     outlet_process.interpolate_on_working_grid()
+    if config.get_standard_regression():
+        outlet_process.compute_regressed_fields()
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
     outlet_process.compute_body_fource_S('unbladed')

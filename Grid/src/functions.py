@@ -146,18 +146,15 @@ def cartesian_to_cylindrical_matrix(x, y):
     :param y: y cordinate
     """
     theta = np.arctan2(y, x)
-    M = np.array([[np.cos(theta), np.sin(theta), 0],
-                  [-np.sin(theta), np.cos(theta), 0],
-                  [0, 0, 1]])
+    M = np.array([[np.cos(theta), np.sin(theta), 0], [-np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
 
     return M
 
 
-def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching,
-                             y_stretching, X0=None, Y0=None, tol=1e-3, save_filename=None, show=True,
-                             pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1, guardian=False,
-                             method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False,
-                             border_adjustment=False):
+def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching, X0=None,
+                             Y0=None, tol=1e-3, save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5,
+                             sigmoid_coeff_y=5, it_orth=-1, guardian=False, method='intersection', fix_inlet=False,
+                             fix_outlet=False, save_animation=False, border_adjustment=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -205,10 +202,14 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     # if initial grid is not given, find it via interpolation of the borders
     X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
     Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
-    X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
-    Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
-    X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
-    Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
+                            sampling_points=nx)
+    Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
+                            sampling_points=nx)
+    X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
+                             sampling_points=ny)
+    Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
+                             sampling_points=ny)
     X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
     Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
     for istream in range(1, nx - 1):
@@ -230,6 +231,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = no_stretching_function(xi)
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
+        elif x_stretching == 'gauss-lobatto':
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_gauss_lobatto(xi)
         elif x_stretching == 'sigmoid_right':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid_right(xi, sigmoid_coeff_x)
         elif x_stretching == 'sigmoid_left':
@@ -243,6 +246,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = no_stretching_function(eta)
         elif y_stretching == 'sigmoid':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid(eta, sigmoid_coeff_y)
+        elif y_stretching == 'gauss-lobatto':
+            f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_gauss_lobatto(eta)
         elif y_stretching == 'sigmoid_down':
             f2[istream, :], f2_prime[istream, :], f2_second[istream, :] = scaled_sigmoid_left(eta, sigmoid_coeff_y)
         elif y_stretching == 'sigmoid_up':
@@ -315,8 +320,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         # terms of integration
         g11[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) ** 2 + ((Y[ip, j] - Y[im, j]) / 2 / dxi) ** 2
         g22[i, j] = ((X[i, jp] - X[i, jm]) / 2 / deta) ** 2 + ((Y[i, jp] - Y[i, jm]) / 2 / deta) ** 2
-        g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + \
-                    ((Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
+        g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + (
+                    (Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
 
         if orthogonality:
             """
@@ -444,11 +449,13 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     yb_prime = y_prime[ispan]
                     sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
                     if method == 'fzero':
-                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old,
+                                                                  guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                     elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
+                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old,
+                                                            yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[0, ispan] = xb_new
@@ -469,11 +476,13 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     yb_prime = y_prime[ispan]
                     sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
                     if method == 'fzero':
-                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old,
+                                                                  guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                     elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
+                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old,
+                                                            yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[-1, ispan] = xb_new
@@ -527,8 +536,40 @@ def scaled_sigmoid(x, alpha):
     """
     f = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     f_prime = (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
-    f_second = (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 *
-                np.exp(-2 * alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 3
+    f_second = (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 * np.exp(
+        -2 * alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 3
+
+    plt.figure()
+    plt.plot(x, f / np.max(f), '-o', label=r'$f/f_{max}$')
+    plt.plot(x, f_prime / np.max(f_prime), '-o', label=r"$f ' / f' _{max}$")
+    plt.plot(x, f_second / np.max(f_second), '-o', label=r"$f'' / f''_{max}$")
+    plt.xlabel(r'$\xi$')
+    plt.xlabel(r'$\eta$')
+    plt.grid(alpha=grid_opacity)
+    plt.legend()
+
+    return f, f_prime, f_second
+
+
+def scaled_gauss_lobatto(x):
+    """
+    Return a gauss-lobatto spacing from [0,1] to [0,1].
+    :param x: array of sigmoid argument
+    """
+    f = 0.5 * (1 - np.cos(np.pi * x))
+    f_prime = np.pi / 2 * np.sin(np.pi * x)
+    f_second = np.pi ** 2 / 2 * np.cos(np.pi * x)
+
+    # plt.figure()
+    # plt.plot(x, f / (np.max(f)-np.min(f)), label=r'$f_{scaled}$')
+    # plt.plot(x, f_prime / (np.max(f_prime)-np.min(f_prime)), label=r"$f '_{scaled}$")
+    # plt.plot(x, f_second / (np.max(f_second)-np.min(f_second)), label=r"$f''_{scaled}$")
+    # plt.xlabel(r'$\zeta$')
+    # plt.ylabel(r'$f$')
+    # plt.grid(alpha=grid_opacity)
+    # plt.legend()
+    # plt.savefig('stretching_functions.pdf', bbox_inches='tight')
+
     return f, f_prime, f_second
 
 
@@ -607,10 +648,8 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
         sol = [None, yp_new]  # same y cordinate of the interior point
     else:
         # print('Inclined point\n')
-        A_sys = np.array([[1 / yb_prime, 1],
-                          [-yb_prime, 1]])
-        B_sys = np.array([yp_new + xp_new / yb_prime,
-                          yb_old - yb_prime * xb_old])
+        A_sys = np.array([[1 / yb_prime, 1], [-yb_prime, 1]])
+        B_sys = np.array([yp_new + xp_new / yb_prime, yb_old - yb_prime * xb_old])
         sol = np.linalg.solve(A_sys, B_sys)
         sol = [sol[0], None]  # solve this case as the horizontal point case
     return sol
@@ -861,6 +900,8 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
         t_scaled = scaled_sigmoid_left(t, sample_coeff)[0]
     elif sample_method == 'sigmoid_right' or sample_method == 'sigmoid_up':
         t_scaled = scaled_sigmoid_right(t, sample_coeff)[0]
+    elif sample_method == 'gauss-lobatto':
+        t_scaled = scaled_gauss_lobatto(t)[0]
     else:
         raise ValueError("Unrecognized sample method")
     t_scaled[0] = 0
@@ -882,14 +923,10 @@ def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz
     """
 
     # cartesian tensor
-    T = np.array([[dux_dx, duy_dx, duz_dx],
-                  [dux_dy, duy_dy, duz_dy],
-                  [dux_dz, duy_dz, duz_dz]])
+    T = np.array([[dux_dx, duy_dx, duz_dx], [dux_dy, duy_dy, duz_dy], [dux_dz, duy_dz, duz_dz]])
 
     # rotation matrix
-    R = np.array([[cos(theta), +sin(theta), 0],
-                  [-sin(theta), cos(theta), 0],
-                  [0, 0, 1]])
+    R = np.array([[cos(theta), +sin(theta), 0], [-sin(theta), cos(theta), 0], [0, 0, 1]])
 
     T_prime = R @ T @ R.T
 

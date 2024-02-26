@@ -390,8 +390,8 @@ class Block:
                 self.z_grid_centers[istream, ispan] = z_mid_point
                 self.r_grid_centers[istream, ispan] = r_mid_point
 
-    def plot_full_grid(self, save_filename=None, primary_grid=False, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=True, ticks=False,
+    def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=False,
                        save_foldername=None):
         """
         Plot the obtained grid.
@@ -455,8 +455,8 @@ class Block:
         if not ticks:
             plt.xticks([])
             plt.yticks([])
-            plt.xlabel('')
-            plt.ylabel('')
+            # plt.xlabel('')
+            # plt.ylabel('')
 
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')

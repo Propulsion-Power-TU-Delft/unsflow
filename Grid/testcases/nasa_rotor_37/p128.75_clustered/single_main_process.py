@@ -16,9 +16,9 @@ create_folder(folder_out)
 configuration_file = 'nasa_rotor_37.ini'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-INLET_BLOCK = True
+INLET_BLOCK = False
 BLADE_BLOCK = True
-OUTLET_BLOCK = True
+OUTLET_BLOCK = False
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 blade = Grid.src.Blade(config)
@@ -68,31 +68,32 @@ if BLADE_BLOCK:
     bladed_block.sample_hub_shroud()
     bladed_block.sample_inlet_outlet()
     bladed_block.compute_grid_points()
-    bladed_block.compute_double_grid()
-    bladed_block.compute_total_area()
-
-    blade.find_camber_surface(bladed_block)
-    blade.find_ss_surface(bladed_block)
-    blade.find_ps_surface(bladed_block)
-    blade.plot_camber_surface()
-    blade.compute_camber_vectors()
-    blade.compute_blade_camber_angles()
-    blade.compute_blade_thickness()
-    blade.compute_blade_blockage(36, save_filename='nasar37', folder_name=folder_out)
-    blade.show_blade_angles_contour(save_filename='nasar37', folder_name=folder_out)
-
-    blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
-    blade_process.compute_camber_angles()
-    blade_process.compute_streamline_length()
-    blade_process.compute_spanwise_length()
-    blade_process.interpolate_on_working_grid()
-    blade_process.contour_plot(field='rho')
-    blade_process.compute_derived_quantities()
-    blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
-    blade_process.compute_body_fource_S('rotor')
-    blade_process.compute_averaged_fluxes()
-    delattr(blade_process, 'data')
-    blade_process.compute_body_force_residuals()
+    bladed_block.plot_full_grid(save_filename='blade_grid', save_foldername=folder_out)
+    # bladed_block.compute_double_grid()
+    # bladed_block.compute_total_area()
+    #
+    # blade.find_camber_surface(bladed_block)
+    # blade.find_ss_surface(bladed_block)
+    # blade.find_ps_surface(bladed_block)
+    # blade.plot_camber_surface()
+    # blade.compute_camber_vectors()
+    # blade.compute_blade_camber_angles()
+    # blade.compute_blade_thickness()
+    # blade.compute_blade_blockage(36, save_filename='nasar37', folder_name=folder_out)
+    # blade.show_blade_angles_contour(save_filename='nasar37', folder_name=folder_out)
+    #
+    # blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
+    # blade_process.compute_camber_angles()
+    # blade_process.compute_streamline_length()
+    # blade_process.compute_spanwise_length()
+    # blade_process.interpolate_on_working_grid()
+    # blade_process.contour_plot(field='rho')
+    # blade_process.compute_derived_quantities()
+    # blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
+    # blade_process.compute_body_fource_S('rotor')
+    # blade_process.compute_averaged_fluxes()
+    # delattr(blade_process, 'data')
+    # blade_process.compute_body_force_residuals()
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if OUTLET_BLOCK:

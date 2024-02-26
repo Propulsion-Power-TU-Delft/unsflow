@@ -16,8 +16,7 @@ from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
-from Utils import styles
-from Utils.styles import total_chars, total_chars_mid
+from Utils.styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
@@ -228,7 +227,7 @@ class SunModel:
                                                                      self.drdx[ii, jj], self.drdy[ii, jj])
                 self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
 
-    def ContourTransformation(self, save_filename=None):
+    def ContourTransformation(self, save_filename=None, folder_name=None):
         """
         Show the gradient contours.
         :param save_filename: specify the names if you want to save the figs.
@@ -289,8 +288,9 @@ class SunModel:
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
         plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
+        plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_dxi_dr.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure()
@@ -299,8 +299,9 @@ class SunModel:
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
         plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
+        plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_dxi_dz.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure()
@@ -309,8 +310,9 @@ class SunModel:
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
         plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
+        plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_deta_dr.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')
             # plt.close()
 
         plt.figure()
@@ -319,8 +321,9 @@ class SunModel:
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.colorbar()
         plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
+        plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '_deta_dz.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')
             # plt.close()
 
     # def AddAMatrixToNodes(self):

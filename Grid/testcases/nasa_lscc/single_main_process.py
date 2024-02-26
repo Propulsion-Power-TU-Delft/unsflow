@@ -13,9 +13,9 @@ configuration_file = 'nasa_lscc.ini'
 folder_out = 'pictures'
 picture_prefix_names = configuration_file.split('.')[0]
 config = Config(configuration_file)
-INLET_BLOCK = True
+INLET_BLOCK = False
 BLADE_BLOCK = True
-OUTLET_BLOCK = True
+OUTLET_BLOCK = False
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,6 +43,7 @@ if INLET_BLOCK:
     block.sample_inlet_outlet()
     block.compute_grid_points()
 
+
     inlet_process = Grid.src.MeridionalProcess(config, data, block)
     inlet_process.compute_streamline_length()
     inlet_process.interpolate_on_working_grid()
@@ -67,33 +68,34 @@ if BLADE_BLOCK:
     bladed_block.sample_hub_shroud()
     bladed_block.sample_inlet_outlet()
     bladed_block.compute_grid_points()
+    # bladed_block.plot_full_grid(save_filename='blade_grid', save_foldername=folder_out)
 
-    blade.find_camber_surface(bladed_block)
-    blade.find_ss_surface(bladed_block)
-    blade.find_ps_surface(bladed_block)
-    blade.plot_camber_surface()
-    blade.compute_camber_vectors()
-    blade.compute_blade_camber_angles()
-    blade.compute_blade_thickness(save_filename='nasar_lscc', folder_name=folder_out)
-    blade.compute_blade_blockage(36, save_filename='nasa_lscc', folder_name=folder_out)
-    blade.show_blade_angles_contour(save_filename='nasar_lscc', folder_name=folder_out)
-
-    blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
-    blade_process.compute_camber_angles()
-    blade_process.compute_streamline_length()
-    blade_process.compute_spanwise_length()
-    blade_process.interpolate_on_working_grid()
-    # blade_process.compute_regressed_fields()
-    blade_process.compute_derived_quantities()
-    blade_process.contour_entropy_generation()
-    blade_process.compute_bfm_axial(save_fig=True)
-    blade_process.compute_body_fource_S('rotor')
-    blade_process.compute_averaged_fluxes()
-    # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
-    # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
-    # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
-    blade_process.contour_all_plots(save_filename='blade_%i_%i' %(strwise_pts[1], spwise_pts))
-    delattr(blade_process, 'data')
+    # blade.find_camber_surface(bladed_block)
+    # blade.find_ss_surface(bladed_block)
+    # blade.find_ps_surface(bladed_block)
+    # blade.plot_camber_surface()
+    # blade.compute_camber_vectors()
+    # blade.compute_blade_camber_angles()
+    # blade.compute_blade_thickness(save_filename='nasar_lscc', folder_name=folder_out)
+    # blade.compute_blade_blockage(36, save_filename='nasa_lscc', folder_name=folder_out)
+    # blade.show_blade_angles_contour(save_filename='nasar_lscc', folder_name=folder_out)
+    #
+    # blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
+    # blade_process.compute_camber_angles()
+    # blade_process.compute_streamline_length()
+    # blade_process.compute_spanwise_length()
+    # blade_process.interpolate_on_working_grid()
+    # # blade_process.compute_regressed_fields()
+    # blade_process.compute_derived_quantities()
+    # blade_process.contour_entropy_generation()
+    # blade_process.compute_bfm_axial(save_fig=True)
+    # blade_process.compute_body_fource_S('rotor')
+    # blade_process.compute_averaged_fluxes()
+    # # blade_process.plot_stream_line_superposed('F_turn', [4, 20, 36], save_filename='nasar37_Fturn')
+    # # blade_process.plot_stream_line_superposed('F_loss', [4, 20, 36], save_filename='nasar37_Floss')
+    # # blade_process.plot_span_line_superposed('F_loss', [15, 25], save_filename='nasar37_Floss')
+    # blade_process.contour_all_plots(save_filename='blade_%i_%i' %(strwise_pts[1], spwise_pts))
+    # delattr(blade_process, 'data')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if OUTLET_BLOCK:
