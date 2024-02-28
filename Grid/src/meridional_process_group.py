@@ -226,7 +226,7 @@ class MeridionalProcessGroup:
         """
 
         plt.figure(figsize=self.picture_size_contour)
-        plt.contourf(self.z_cg, self.r_cg, self.rho * self.config.get_reference_density(), cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.rho * self.config.get_reference_density(), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xticks([])
         plt.yticks([])

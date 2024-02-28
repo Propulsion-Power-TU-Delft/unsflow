@@ -1,0 +1,1 @@
+Different geometrical and flow settings for the duct to capture the right trend of the results.

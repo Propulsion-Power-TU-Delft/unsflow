@@ -6,7 +6,9 @@ Created on Mon May  8 12:45:00 2023
 
 common styles used throughout the code for pictures
 """
+import matplotlib.pyplot as plt
 from matplotlib import cm
+
 
 # default size of the figures
 fig_size_single = (7, 5)
@@ -69,3 +71,17 @@ color_map = cm.viridis
 # number of chars for the banners
 total_chars = 100
 total_chars_mid = total_chars//2
+
+
+# Set font size for different elements
+# font_family = 'serif'
+# font_name = 'Computer Modern'
+# plt.rc('text', usetex=True)
+# plt.rc('font', family=font_family)
+# plt.rc('font', serif=font_name)
+plt.rc('font', size=font_text)            # controls default text sizes
+plt.rc('axes', titlesize=font_title)       # fontsize of the axes title
+plt.rc('axes', labelsize=font_labels)       # fontsize of the x and y labels
+plt.rc('xtick', labelsize=font_axes)      # fontsize of the tick labels
+plt.rc('ytick', labelsize=font_axes)      # fontsize of the tick labels
+plt.rc('legend', fontsize=font_legend)      # legend fontsize

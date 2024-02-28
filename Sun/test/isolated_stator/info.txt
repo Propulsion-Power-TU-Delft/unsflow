@@ -1,1 +1,0 @@
-Test case inspired by sec. 5.4.1 of Spakovszky thesis. Checking if Sun Model reflects the results of Spakovszky.

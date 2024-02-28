@@ -1,0 +1,3 @@
+Perform sensitivity study of the results, for the turbo expo paper. Compute spectrum for different grids and for different finite difference order.
+The names refer to <Nz points>_<Nr points>_<finite diff. order>
+CORRECTED VERSION: gauss-lobatto spacing in the physical grid.

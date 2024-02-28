@@ -604,7 +604,7 @@ class Blade:
         ax.set_zlabel(r'$z$')
         ax.set_title('spanline vectors')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def compute_blade_thickness(self, save_filename=None, folder_name=None):
         self.thk = self.r_ss * self.theta_ss - self.r_ps * self.theta_ps
@@ -615,7 +615,7 @@ class Blade:
         plt.ylabel(r'$r$')
         plt.title(r'$t$')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
 
     def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
         self.blockage = 1 - Nb * (np.abs(self.theta_ss - self.theta_ps)) / 2 / np.pi

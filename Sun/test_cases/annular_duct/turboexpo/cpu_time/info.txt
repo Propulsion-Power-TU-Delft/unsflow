@@ -1,0 +1,2 @@
+Cpu time comparison. NOTE: linear setup, quadratic eigenvalue problems
+Will take more time, but the scaling should look similar

@@ -1,0 +1,3 @@
+Different multiblock/eigenvalue approaches to validate correct implementation. 
+-One, double, triple block, 
+-Linear, Quadratic eigenvalue problem (even if body force source is zero)
