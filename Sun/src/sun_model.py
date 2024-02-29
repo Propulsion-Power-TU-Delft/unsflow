@@ -22,6 +22,7 @@ from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
 from Grid.src.functions import compute_picture_size, create_folder
 import copy
+import os
 
 
 class SunModel:
@@ -1177,71 +1178,71 @@ class SunModel:
 
         return eigenvalues
 
-    def PlotInverseConditionNumber(self, scale=None, save_filename=None, formatFig=(10, 6), ref_solution=None):
-        """
-        Plots the chi map for the problem modeled.
-        :param scale: if 'log' plots the contours with log scale, to improve visibility
-        :param save_filename: specify names of the figs to save
-        :param formatFig: figure size of the contours
-        :param ref_solution: specify analytical solution if available
-        """
-        x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
-        critical_line = np.zeros(len(x))
+    # def PlotInverseConditionNumber(self, scale=None, save_filename=None, formatFig=(10, 6), ref_solution=None):
+    #     """
+    #     Plots the chi map for the problem modeled.
+    #     :param scale: if 'log' plots the contours with log scale, to improve visibility
+    #     :param save_filename: specify names of the figs to save
+    #     :param formatFig: figure size of the contours
+    #     :param ref_solution: specify analytical solution if available
+    #     """
+    #     x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
+    #     critical_line = np.zeros(len(x))
+    #
+    #     fig, ax = plt.subplots(figsize=formatFig)
+    #     if scale == 'log':
+    #         cs = ax.contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.chi, N_levels,
+    #                          locator=ticker.LogLocator(), cmap=color_map)
+    #     else:
+    #         cs = ax.contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, np.log(self.chi), N_levels,
+    #                          cmap=color_map)
+    #         # ax.plot(self.eigs.real * self.omega_ref, self.eigs.imag * self.omega_ref, 'ko')
+    #     ax.plot(x, critical_line, '--r')
+    #     ax.set_xlabel(r'$\omega_{R} \quad [rad/s]$')
+    #     ax.set_ylabel(r'$\omega_{I} \quad [rad/s]$')
+    #     ax.set_title(r'$\log \chi$')
+    #     ax.set_xlim([np.min(self.omegaR * self.omega_ref), np.max(self.omegaR * self.omega_ref)])
+    #     fig.colorbar(cs)
+    #     if ref_solution is not None:
+    #         ax.plot(ref_solution.real, ref_solution.imag, 'ws')
+    #     if save_filename is not None:
+    #         fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+    #         plt.close()
 
-        fig, ax = plt.subplots(figsize=formatFig)
-        if scale == 'log':
-            cs = ax.contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.chi, N_levels,
-                             locator=ticker.LogLocator(), cmap=color_map)
-        else:
-            cs = ax.contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, np.log(self.chi), N_levels,
-                             cmap=color_map)
-            # ax.plot(self.eigs.real * self.omega_ref, self.eigs.imag * self.omega_ref, 'ko')
-        ax.plot(x, critical_line, '--r')
-        ax.set_xlabel(r'$\omega_{R} \quad [rad/s]$')
-        ax.set_ylabel(r'$\omega_{I} \quad [rad/s]$')
-        ax.set_title(r'$\log \chi$')
-        ax.set_xlim([np.min(self.omegaR * self.omega_ref), np.max(self.omegaR * self.omega_ref)])
-        fig.colorbar(cs)
-        if ref_solution is not None:
-            ax.plot(ref_solution.real, ref_solution.imag, 'ws')
-        if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
-
-    def PlotSingularValues(self, scale=None, save_filename=None, formatFig=(15, 6)):
-        """
-        Plots the singular values for the problem modeled. Log scale can be applied to see better the valleys.
-        :param scale: if 'log' plots the contours with log scale, to improve visibility
-        :param save_filename: specify names of the figs to save
-        :param formatFig: figure size of the contours
-        """
-        x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
-        critical_line = np.zeros(len(x))
-        fig, ax = plt.subplots(1, 2, figsize=formatFig)
-        if scale == 'log':
-            cs0 = ax[0].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_max, N_levels,
-                                 locator=ticker.LogLocator(), cmap=color_map)
-            cs1 = ax[1].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_min, N_levels,
-                                 locator=ticker.LogLocator(), cmap=color_map)
-        else:
-            cs0 = ax[0].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_max, N_levels,
-                                 cmap=color_map)
-            cs1 = ax[1].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_min, N_levels,
-                                 cmap=color_map)
-
-        ax[0].plot(x, critical_line, '--r')
-        ax[0].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
-        ax[0].set_ylabel(r'$\omega_{I} \quad [rad/s]$')
-        ax[0].set_title(r'$\sigma_{max}$')
-        fig.colorbar(cs0)
-        ax[1].plot(x, critical_line, '--r')
-        ax[1].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
-        ax[1].set_title(r'$\sigma_{min}$')
-        fig.colorbar(cs1)
-
-        if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+    # def PlotSingularValues(self, scale=None, save_filename=None, formatFig=(15, 6)):
+    #     """
+    #     Plots the singular values for the problem modeled. Log scale can be applied to see better the valleys.
+    #     :param scale: if 'log' plots the contours with log scale, to improve visibility
+    #     :param save_filename: specify names of the figs to save
+    #     :param formatFig: figure size of the contours
+    #     """
+    #     x = np.linspace(np.min(self.omegaR), np.max(self.omegaR)) * self.omega_ref
+    #     critical_line = np.zeros(len(x))
+    #     fig, ax = plt.subplots(1, 2, figsize=formatFig)
+    #     if scale == 'log':
+    #         cs0 = ax[0].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_max, N_levels,
+    #                              locator=ticker.LogLocator(), cmap=color_map)
+    #         cs1 = ax[1].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_min, N_levels,
+    #                              locator=ticker.LogLocator(), cmap=color_map)
+    #     else:
+    #         cs0 = ax[0].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_max, N_levels,
+    #                              cmap=color_map)
+    #         cs1 = ax[1].contourf(self.omegaR * self.omega_ref, self.omegaI * self.omega_ref, self.sing_value_min, N_levels,
+    #                              cmap=color_map)
+    #
+    #     ax[0].plot(x, critical_line, '--r')
+    #     ax[0].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
+    #     ax[0].set_ylabel(r'$\omega_{I} \quad [rad/s]$')
+    #     ax[0].set_title(r'$\sigma_{max}$')
+    #     fig.colorbar(cs0)
+    #     ax[1].plot(x, critical_line, '--r')
+    #     ax[1].set_xlabel(r'$\omega_{R} \quad [rad/s]$')
+    #     ax[1].set_title(r'$\sigma_{min}$')
+    #     fig.colorbar(cs1)
+    #
+    #     if save_filename is not None:
+    #         fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+    #         plt.close()
 
     def ComputeBoundaryNormals(self):
         """
@@ -1352,33 +1353,41 @@ class SunModel:
         ax[2].set_title(r'$L_2$')
         plt.savefig(os.path.join(save_foldername, save_filename + '.pdf'), bbox_inches='tight')
 
-    def apply_boundary_conditions_generalized(self):
+    def apply_boundary_conditions_generalized(self, mode='over writing'):
         """
         Apply the boundary conditions for the considered system, whose equations are:
-        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore BCs are imposed on Z (the only constant matrix), and A and S
+        (-j*omega*A + Z + S/zita)*tilde{phi}. Therefore, BCs are imposed on Z (the only constant matrix), and A and S
         (omega dependent) filled with zeros in correspondance of those BCs.
         """
-
+        self.rows_added = 0
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 marker = self.data.dataSet[ii, jj].marker
                 counter = self.data.dataSet[ii, jj].nodeCounter
                 row = counter * 5  # 5 equations per node
 
-                if marker == 'inlet':
-                    self.apply_bc_condition(row, self.inlet_bc, ii, jj)
-
-                elif marker == 'outlet':
-                    self.apply_bc_condition(row, self.outlet_bc, ii, jj)
-
-                elif marker == 'hub':
-                    self.apply_bc_condition(row, self.hub_bc, ii, jj)
-
-                elif marker == 'shroud':
-                    self.apply_bc_condition(row, self.shroud_bc, ii, jj)
-
-                elif marker != 'internal':
-                    raise Exception('Boundary condition unknown. Check the grid markers!')
+                if mode == 'over writing':
+                    if marker == 'inlet':
+                        self.apply_bc_condition(row, self.inlet_bc, ii, jj)
+                    elif marker == 'outlet':
+                        self.apply_bc_condition(row, self.outlet_bc, ii, jj)
+                    elif marker == 'hub':
+                        self.apply_bc_condition(row, self.hub_bc, ii, jj)
+                    elif marker == 'shroud':
+                        self.apply_bc_condition(row, self.shroud_bc, ii, jj)
+                    elif marker != 'internal':
+                        raise Exception('Boundary condition unknown. Check the grid markers!')
+                elif mode == 'added':
+                    if marker == 'inlet':
+                        self.add_bc_condition(row, self.inlet_bc, ii, jj)
+                    elif marker == 'outlet':
+                        self.add_bc_condition(row, self.outlet_bc, ii, jj)
+                    elif marker == 'hub':
+                        self.add_bc_condition(row, self.hub_bc, ii, jj)
+                    elif marker == 'shroud':
+                        self.add_bc_condition(row, self.shroud_bc, ii, jj)
+                    elif marker != 'internal':
+                        raise Exception('Boundary condition unknown. Check the grid markers!')
 
     def set_boundary_conditions(self):
         """
@@ -1483,6 +1492,103 @@ class SunModel:
 
             self.L1[row + loc, :] = np.zeros(self.L1[row + loc, :].shape, dtype=complex)  # zero known term
             self.L2[row + loc, :] = np.zeros(self.L2[row + loc, :].shape, dtype=complex)  # zero known term
+
+        else:
+            raise ValueError('unknown boundary condition type')
+
+    def add_bc_condition(self, row, condition, ii, jj):
+        """
+        For the considered grid node, it adds the boundary conditions at the end of the matrix, enlarging the
+        dimensions.
+        The considered system at hand is: (L0 + L1*omega + L2*omega**2)*tilde{phi}. Therefore BCs are imposed on L0, since
+        they must be respected for every possible value of omega.
+        L1 and L2 are then filled in the respective positions with zeros.
+        :param row: row index of the equation to modify
+        :param condition: type of boundary condition
+        :param ii: i-th element of the node grid
+        :param jj: j-th element of the node grid
+        """
+
+        if condition == 'zero pressure':
+            zero_col = np.zeros((self.L0.shape[0], 1))
+            zero_row = np.zeros((1, self.L0.shape[0]+1))
+            new_row = np.zeros((1, self.L0.shape[0]+1))
+            new_row[0, -1] = 1
+
+            self.L0 = np.hstack((self.L0, zero_col))
+            self.L0 = np.vstack((self.L0, new_row))
+
+            self.L1 = np.hstack((self.L1, zero_col))
+            self.L1 = np.vstack((self.L1, zero_row))
+
+            self.L2 = np.hstack((self.L2, zero_col))
+            self.L2 = np.vstack((self.L2, zero_row))
+
+            self.rows_added += 1
+
+        # elif condition == 'zero axial velocity':
+        #     # BC for zero pressure perturbation
+        #     self.L0[row + 3, :] = np.zeros(self.L0[row + 4, :].shape, dtype=complex)
+        #     self.L0[row + 3, row + 3] = 1  # zero pressure at that node
+        #
+        #     self.L1[row + 3, :] = np.zeros(self.L1[row + 3, :].shape, dtype=complex)  # zero row
+        #     self.L2[row + 3, :] = np.zeros(self.L2[row + 3, :].shape, dtype=complex)  # zero row
+        #
+        # elif condition == 'free':
+        #     pass
+        #
+        # elif condition == 'zero perturbation':
+        #     # BC for zero pressure perturbation
+        #     self.L0[row:row + 5, :] = np.zeros(self.L0[row:row + 5, :].shape, dtype=complex)
+        #     self.L0[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
+        #
+        #     self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+        #     self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
+        #
+        # elif condition == 'compressor inlet':
+        #     # BCs are zero for every variable except the pressure at inlet
+        #     self.L0[row:row + 4, :] = np.zeros(self.L0[row:row + 4, :].shape, dtype=complex)
+        #     self.L0[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
+        #
+        #     self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+        #     self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
+        #
+        # elif condition == 'compressor outlet':
+        #     # BC for zero pressure perturbation
+        #     self.L0[row + 4, :] = np.zeros(self.L0[row + 4, :].shape, dtype=complex)
+        #     self.L0[row + 4, row + 4] = 1  # zero pressure at that node
+        #
+        #     self.L1[row + 4, :] = np.zeros(self.L1[row + 4, :].shape, dtype=complex)  # zero row
+        #     self.L2[row + 4, :] = np.zeros(self.L2[row + 4, :].shape, dtype=complex)  # zero row
+
+        elif condition == 'euler wall':
+            # BC for non-penetration condition at the walls, the equation overwritten depends on configs
+            if self.substituted_equation == 'ur':
+                loc = 1
+            elif self.substituted_equation == 'utheta':
+                loc = 2
+            elif self.substituted_equation == 'uz':
+                loc = 3
+            else:
+                raise ValueError("Subsituted equation parameter not recognized.")
+
+            wall_normal = self.data.dataSet[ii, jj].n_wall
+
+            zero_cols = np.zeros((self.L0.shape[0], 3))
+            zero_rows = np.zeros((3, self.L0.shape[0] + 3))
+            new_rows = np.zeros((3, self.L0.shape[0] + 3))
+            new_rows[-1, -4:-1] = wall_normal
+
+            self.L0 = np.hstack((self.L0, zero_cols))
+            self.L0 = np.vstack((self.L0, new_rows))
+
+            self.L1 = np.hstack((self.L1, zero_cols))
+            self.L1 = np.vstack((self.L1, zero_rows))
+
+            self.L2 = np.hstack((self.L2, zero_cols))
+            self.L2 = np.vstack((self.L2, zero_rows))
+
+            self.rows_added += 3
 
         else:
             raise ValueError('unknown boundary condition type')

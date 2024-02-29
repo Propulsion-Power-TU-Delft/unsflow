@@ -89,7 +89,7 @@ for sun_obj in sun_blocks:
     sun_obj.build_Z_global_matrix()
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
-    sun_obj.apply_boundary_conditions_generalized()
+    sun_obj.apply_boundary_conditions_generalized(mode='added')
     ii +=1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
@@ -144,178 +144,178 @@ fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz, Nr), bbox_inches='ti
 z_grid = sun_obj.data.zGrid
 r_grid = sun_obj.data.rGrid
 
-for ivec in range(np.shape(eigenvectors)[1]):
-    eigenvec = eigenvectors[:, ivec]
-    rho_eig = []
-    ur_eig = []
-    ut_eig = []
-    uz_eig = []
-    p_eig = []
-
-    for i in range(len(eigenvec)):
-        if (i) % 5 == 0:
-            rho_eig.append(eigenvec[i])
-        elif (i - 1) % 5 == 0 and i != 0:
-            ur_eig.append(eigenvec[i])
-        elif (i - 2) % 5 == 0 and i != 0:
-            ut_eig.append(eigenvec[i])
-        elif (i - 3) % 5 == 0 and i != 0:
-            uz_eig.append(eigenvec[i])
-        elif (i - 4) % 5 == 0 and i != 0:
-            p_eig.append(eigenvec[i])
-        else:
-            raise ValueError("Not correct indexing for eigenvector retrieval!")
-
-
-    def scaled_eigenvector_real(eig_list):
-        array = np.array(eig_list, dtype=complex)
-        array = np.reshape(array, (Nz, Nr))
-        array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
-        return array_real_scaled
-
-
-    rho_eig_r = scaled_eigenvector_real(rho_eig)
-    ur_eig_r = scaled_eigenvector_real(ur_eig)
-    ut_eig_r = scaled_eigenvector_real(ut_eig)
-    uz_eig_r = scaled_eigenvector_real(uz_eig)
-    p_eig_r = scaled_eigenvector_real(p_eig)
-
-
-
-    xtick_locations = [0, L/config.get_reference_length()]
-    xtick_labels = [r'$0$', r'$L$']
-    ytick_locations = [r1/config.get_reference_length(), r2/config.get_reference_length()]
-    ytick_labels = [r'$r_1$', r'$r_2$']
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r*ur_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{I}_{r,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_Ir_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r * ut_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{I}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_It_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, p_eig_r * uz_eig_r, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{I}_{z,%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_Iz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-    I_mag = p_eig_r * np.sqrt(ur_eig_r**2 + ut_eig_r**2 + uz_eig_r**2)
-    plt.figure()
-    cnt = plt.contourf(z_grid, r_grid, I_mag, levels=N_levels_medium, cmap='bwr')
-    for c in cnt.collections:
-        c.set_edgecolor("face")
-        c.set_linewidth(0.000000000001)
-    plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-    plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-    plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-    plt.title(r'$\tilde{|I|}_{%i}$' % (ivec + 1), fontsize=font_title)
-    cnbar = plt.colorbar(cnt)
-    cnbar.ax.tick_params(labelsize=font_axes)
-    plt.savefig('pictures/%02i_%02i/eigenfunction_Imag_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
-
-file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transformation_gradient_order())
-with open(file_path, 'wb') as file:
-    pickle.dump(eigenvalues, file)
+# for ivec in range(np.shape(eigenvectors)[1]):
+#     eigenvec = eigenvectors[:, ivec]
+#     rho_eig = []
+#     ur_eig = []
+#     ut_eig = []
+#     uz_eig = []
+#     p_eig = []
+#
+#     for i in range(len(eigenvec)):
+#         if (i) % 5 == 0:
+#             rho_eig.append(eigenvec[i])
+#         elif (i - 1) % 5 == 0 and i != 0:
+#             ur_eig.append(eigenvec[i])
+#         elif (i - 2) % 5 == 0 and i != 0:
+#             ut_eig.append(eigenvec[i])
+#         elif (i - 3) % 5 == 0 and i != 0:
+#             uz_eig.append(eigenvec[i])
+#         elif (i - 4) % 5 == 0 and i != 0:
+#             p_eig.append(eigenvec[i])
+#         else:
+#             raise ValueError("Not correct indexing for eigenvector retrieval!")
+#
+#
+#     def scaled_eigenvector_real(eig_list):
+#         array = np.array(eig_list, dtype=complex)
+#         array = np.reshape(array, (Nz, Nr))
+#         array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
+#         return array_real_scaled
+#
+#
+#     rho_eig_r = scaled_eigenvector_real(rho_eig)
+#     ur_eig_r = scaled_eigenvector_real(ur_eig)
+#     ut_eig_r = scaled_eigenvector_real(ut_eig)
+#     uz_eig_r = scaled_eigenvector_real(uz_eig)
+#     p_eig_r = scaled_eigenvector_real(p_eig)
+#
+#
+#
+#     xtick_locations = [0, L/config.get_reference_length()]
+#     xtick_labels = [r'$0$', r'$L$']
+#     ytick_locations = [r1/config.get_reference_length(), r2/config.get_reference_length()]
+#     ytick_labels = [r'$r_1$', r'$r_2$']
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, rho_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, ur_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, ut_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, uz_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, p_eig_r*ur_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{I}_{r,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_Ir_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, p_eig_r * ut_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{I}_{\theta,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_It_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, p_eig_r * uz_eig_r, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{I}_{z,%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_Iz_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+#     I_mag = p_eig_r * np.sqrt(ur_eig_r**2 + ut_eig_r**2 + uz_eig_r**2)
+#     plt.figure()
+#     cnt = plt.contourf(z_grid, r_grid, I_mag, levels=N_levels_medium, cmap='bwr')
+#     for c in cnt.collections:
+#         c.set_edgecolor("face")
+#         c.set_linewidth(0.000000000001)
+#     plt.ylabel(r'$r$ [-]', fontsize=font_labels)
+#     plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+#     plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
+#     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
+#     plt.title(r'$\tilde{|I|}_{%i}$' % (ivec + 1), fontsize=font_title)
+#     cnbar = plt.colorbar(cnt)
+#     cnbar.ax.tick_params(labelsize=font_axes)
+#     plt.savefig('pictures/%02i_%02i/eigenfunction_Imag_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
+#
+# file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transformation_gradient_order())
+# with open(file_path, 'wb') as file:
+#     pickle.dump(eigenvalues, file)
 
 plt.show()
