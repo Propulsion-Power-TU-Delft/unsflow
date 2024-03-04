@@ -1828,9 +1828,9 @@ class MeridionalProcess:
             self.S34 = np.zeros_like(self.ur)
 
             self.S40 = np.zeros_like(self.ur)
-            self.S41 = np.zeros_like(self.ur)
-            self.S42 = np.zeros_like(self.ur)
-            self.S43 = np.zeros_like(self.ur)
+            self.S41 = self.S21*self.r_cg*self.config.get_omega_shaft()/self.config.get_reference_omega()
+            self.S42 = self.S22*self.r_cg*self.config.get_omega_shaft()/self.config.get_reference_omega()
+            self.S43 = self.S23*self.r_cg*self.config.get_omega_shaft()/self.config.get_reference_omega()
             self.S44 = np.zeros_like(self.ur)
 
         elif domain == 'unbladed':

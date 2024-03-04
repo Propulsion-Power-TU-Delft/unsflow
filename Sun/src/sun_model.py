@@ -553,23 +553,22 @@ class SunModel:
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
                 if self.data.meridional_obj.domain == 'rotor' or self.data.meridional_obj.domain == 'stator':
-                    S[1, 0] = self.data.meridional_obj.S10[ii, jj]
                     S[1, 1] = self.data.meridional_obj.S11[ii, jj]
                     S[1, 2] = self.data.meridional_obj.S12[ii, jj]
                     S[1, 3] = self.data.meridional_obj.S13[ii, jj]
-                    S[1, 4] = self.data.meridional_obj.S14[ii, jj]
 
-                    S[2, 0] = self.data.meridional_obj.S20[ii, jj]
                     S[2, 1] = self.data.meridional_obj.S21[ii, jj]
                     S[2, 2] = self.data.meridional_obj.S22[ii, jj]
                     S[2, 3] = self.data.meridional_obj.S23[ii, jj]
-                    S[2, 4] = self.data.meridional_obj.S24[ii, jj]
 
-                    S[3, 0] = self.data.meridional_obj.S30[ii, jj]
                     S[3, 1] = self.data.meridional_obj.S31[ii, jj]
                     S[3, 2] = self.data.meridional_obj.S32[ii, jj]
                     S[3, 3] = self.data.meridional_obj.S33[ii, jj]
-                    S[3, 4] = self.data.meridional_obj.S34[ii, jj]
+
+                    if self.data.meridional_obj.domain == 'rotor':
+                        S[4, 1] = self.data.meridional_obj.S41[ii, jj]
+                        S[4, 2] = self.data.meridional_obj.S42[ii, jj]
+                        S[4, 3] = self.data.meridional_obj.S43[ii, jj]
                 else:
                     pass
 
@@ -1541,14 +1540,15 @@ class SunModel:
         """
 
         if condition == 'zero pressure':
-            zero_col = np.zeros((self.L0.shape[0], 1))
-            zero_row = np.zeros((1, self.L0.shape[0] + 1))
-            new_row = np.zeros((1, self.L0.shape[0] + 1))
-            new_row[0, -1] = 1
+            zero_col = np.zeros((self.L0.shape[0], 1))  # zero col to adjust the shape
+            zero_row = np.zeros((1, self.L0.shape[0] + 1))  # zero row to adjust the shape
+            new_row = np.zeros((1, self.L0.shape[0] + 1))  # row which add the boundary condition on L0 matrix
+            new_row[0, row + 4] = 1  # zero pressure at the corresponding node
 
-            self.L0 = np.hstack((self.L0, zero_col))
-            self.L0 = np.vstack((self.L0, new_row))
+            self.L0 = np.hstack((self.L0, zero_col))  # add one zero column to the right of the matrix
+            self.L0 = np.vstack((self.L0, new_row))  # add one row below the rectangular matrix, making it square
 
+            # now simply adjust the shape of L1 and L2, making them squares, of the same dimension of L0
             self.L1 = np.hstack((self.L1, zero_col))
             self.L1 = np.vstack((self.L1, zero_row))
 
@@ -1593,33 +1593,48 @@ class SunModel:
         #     self.L2[row + 4, :] = np.zeros(self.L2[row + 4, :].shape, dtype=complex)  # zero row
 
         elif condition == 'euler wall':
-            # BC for non-penetration condition at the walls, the equation overwritten depends on configs
-            if self.substituted_equation == 'ur':
-                loc = 1
-            elif self.substituted_equation == 'utheta':
-                loc = 2
-            elif self.substituted_equation == 'uz':
-                loc = 3
-            else:
-                raise ValueError("Subsituted equation parameter not recognized.")
-
+            # # BC for non-penetration condition at the walls, the equation overwritten depends on configs
+            # if self.substituted_equation == 'ur':
+            #     loc = 1
+            # elif self.substituted_equation == 'utheta':
+            #     loc = 2
+            # elif self.substituted_equation == 'uz':
+            #     loc = 3
+            # else:
+            #     raise ValueError("Subsituted equation parameter not recognized.")
+            #
             wall_normal = self.data.dataSet[ii, jj].n_wall
+            #
+            # zero_cols = np.zeros((self.L0.shape[0], 3))
+            # zero_rows = np.zeros((3, self.L0.shape[0] + 3))
+            # new_rows = np.zeros((3, self.L0.shape[0] + 3))
+            # new_rows[-1, -4:-1] = wall_normal
+            #
+            # self.L0 = np.hstack((self.L0, zero_cols))
+            # self.L0 = np.vstack((self.L0, new_rows))
+            #
+            # self.L1 = np.hstack((self.L1, zero_cols))
+            # self.L1 = np.vstack((self.L1, zero_rows))
+            #
+            # self.L2 = np.hstack((self.L2, zero_cols))
+            # self.L2 = np.vstack((self.L2, zero_rows))
 
-            zero_cols = np.zeros((self.L0.shape[0], 3))
-            zero_rows = np.zeros((3, self.L0.shape[0] + 3))
-            new_rows = np.zeros((3, self.L0.shape[0] + 3))
-            new_rows[-1, -4:-1] = wall_normal
+            zero_col = np.zeros((self.L0.shape[0], 1))  # zero col to adjust the shape
+            zero_row = np.zeros((1, self.L0.shape[0] + 1))  # zero row to adjust the shape
+            new_row = np.zeros((1, self.L0.shape[0] + 1))  # row which add the boundary condition on L0 matrix
+            new_row[0, row + 1 : row + 4] = wall_normal  # zero pressure at the corresponding node
 
-            self.L0 = np.hstack((self.L0, zero_cols))
-            self.L0 = np.vstack((self.L0, new_rows))
+            self.L0 = np.hstack((self.L0, zero_col))  # add one zero column to the right of the matrix
+            self.L0 = np.vstack((self.L0, new_row))  # add one row below the rectangular matrix, making it square
 
-            self.L1 = np.hstack((self.L1, zero_cols))
-            self.L1 = np.vstack((self.L1, zero_rows))
+            # now simply adjust the shape of L1 and L2, making them squares, of the same dimension of L0
+            self.L1 = np.hstack((self.L1, zero_col))
+            self.L1 = np.vstack((self.L1, zero_row))
 
-            self.L2 = np.hstack((self.L2, zero_cols))
-            self.L2 = np.vstack((self.L2, zero_rows))
+            self.L2 = np.hstack((self.L2, zero_col))
+            self.L2 = np.vstack((self.L2, zero_row))
 
-            self.rows_added += 3
+            self.rows_added += 1
 
         else:
             raise ValueError('unknown boundary condition type')

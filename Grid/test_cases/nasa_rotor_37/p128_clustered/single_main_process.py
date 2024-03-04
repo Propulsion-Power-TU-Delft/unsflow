@@ -89,7 +89,7 @@ if BLADE_BLOCK:
     blade_process.contour_plot(field='rho')
     blade_process.compute_derived_quantities()
     blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
-    blade_process.compute_body_fource_S('rotor')
+    blade_process.compute_body_fource_S(config.get_blocks_type()[1])
     blade_process.compute_averaged_fluxes()
     delattr(blade_process, 'data')
     blade_process.compute_body_force_residuals()
@@ -116,7 +116,7 @@ if OUTLET_BLOCK:
     outlet_process.interpolate_on_working_grid()
     outlet_process.compute_derived_quantities()
     outlet_process.compute_averaged_fluxes()
-    outlet_process.compute_body_fource_S('unbladed')
+    outlet_process.compute_body_fource_S(config.get_blocks_type()[2])
     outlet_process.compute_body_force_residuals()
     delattr(outlet_process, 'data')
 #

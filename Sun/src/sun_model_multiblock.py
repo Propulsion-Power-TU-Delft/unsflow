@@ -235,8 +235,8 @@ class SunModelMultiBlock():
             print("parameter n must be lower than the eigenvector number. n set to max allowed")
             n = len(self.eigenfreqs)
 
-        Nz = sum([block.data.nAxialNodes for block in self.blocks])
-        Nr = self.blocks[0].data.nRadialNodes
+        Nz = self.z_grid.shape[0]
+        Nr = self.z_grid.shape[1]
 
         self.eigenfields = []
         for mode in range(n):

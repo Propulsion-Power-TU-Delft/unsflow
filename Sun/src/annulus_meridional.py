@@ -96,6 +96,23 @@ class AnnulusMeridional():
         self.dp_dr /= self.p_ref/self.x_ref
         self.dp_dz /= self.p_ref/self.x_ref
 
+    def rotate(self, angle):
+        """
+        rotate the problem by an angle, specified in degrees
+        """
+        angle *= np.pi/180
+        z_dum = self.z_grid.copy()
+        r_dum = self.r_grid.copy()
+        self.z_grid = z_dum * np.cos(angle) - r_dum * np.sin(angle)
+        self.r_grid = z_dum * np.sin(angle) + r_dum * np.cos(angle)
+        self.z_cg = self.z_grid
+        self.r_cg = self.r_grid
+
+        uz_dum = self.uz.copy()
+        ur_dum = self.ur.copy()
+        self.uz = uz_dum * np.cos(angle) - ur_dum * np.sin(angle)
+        self.ur = uz_dum * np.sin(angle) + ur_dum * np.cos(angle)
+
 def gauss_lobatto_grid_generation(N, x_start, x_end):
     """
     return the array of points distributed following gauss-lobatto structure
