@@ -13,6 +13,7 @@ from scipy.ndimage import gaussian_filter
 import pickle
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Grid.src.functions import compute_picture_size, print_object_memory_info
+from Grid.src.polynomial_ls_regression import *
 
 
 class MeridionalProcessGroup:
@@ -876,6 +877,40 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_S33_.pdf', bbox_inches='tight')
             # plt.close()
+
+    def compute_regressed_fields(self, order=4):
+        """
+        Compute the fourth order polynomial regressed fields, as described in the original papers
+        :param order: order of the regression. 4 is the values used in the literature.
+        """
+        print("Regression of the Flow Fields, order: %i" % (order))
+        if order != 4:
+            raise ValueError("Choose the regression order equal to 4!")
+        self.W = basis_function_matrix(self.z_cg, self.r_cg, order=order)
+        self.W_dz, self.W_dr = basis_function_matrix_derivatives(self.W, self.z_cg, self.r_cg)
+
+        self.rho, self.drho_dr, self.drho_dz = self.polynomial_regression_solution(self.rho)
+        self.ur, self.dur_dr, self.dur_dz = self.polynomial_regression_solution(self.ur)
+        self.ut, self.dut_dr, self.dut_dz = self.polynomial_regression_solution(self.ut)
+        self.uz, self.duz_dr, self.duz_dz = self.polynomial_regression_solution(self.uz)
+        self.p, self.dp_dr, self.dp_dz = self.polynomial_regression_solution(self.p)
+        self.T, self.dT_dr, self.dT_dz = self.polynomial_regression_solution(self.T)
+        self.s, self.ds_dr, self.ds_dz = self.polynomial_regression_solution(self.s)
+
+    def polynomial_regression_solution(self, field):
+        """
+        Given a 2D field, and the weight vector coefficients, compute the values of the regressed field and derivatives.
+        :param field: 2D array storing the values of the field to be regressed.
+        """
+        Nz = np.shape(self.z_cg)[0]
+        Nr = np.shape(self.r_cg)[1]
+        coeff_vector = least_square_regression(self.W, field)
+        W = self.W
+        W_dz, W_dr = self.W_dz, self.W_dr
+        regr_field = regression_evaluation(W, coeff_vector, Nz, Nr)
+        regr_field_dz = regression_evaluation(W_dz, coeff_vector, Nz, Nr)
+        regr_field_dr = regression_evaluation(W_dr, coeff_vector, Nz, Nr)
+        return regr_field, regr_field_dr, regr_field_dz
 
 
 

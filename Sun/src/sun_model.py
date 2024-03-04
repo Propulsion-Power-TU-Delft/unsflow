@@ -81,11 +81,15 @@ class SunModel:
         """
         print_banner_begin('NORMALIZATION')
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.2f}")
-        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.2f}")
-        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.2f}")
-        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(
+            f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.2f}")
+        print(
+            f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.2f}")
+        print(
+            f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.2f}")
         print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
-        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.2f}")
+        print(
+            f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.2f}")
         print_banner_end()
 
     def add_shaft_rpm(self, rpm):
@@ -123,8 +127,7 @@ class SunModel:
         plt.xlabel(r'$\hat{z} \quad  [-]$')
         plt.ylabel(r'$\hat{r} \quad  [-]$')
         if save_filename is not None:
-            plt.savefig(save_filename + '.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(save_filename + '.pdf', bbox_inches='tight')  # plt.close()
 
     def ShowSpectralGrid(self, save_filename=None, mode=None):
         """
@@ -137,11 +140,10 @@ class SunModel:
         plt.xlabel(r'$\xi \quad  [-]$')
         plt.ylabel(r'$\eta \quad  [-]$')
         if save_filename is not None:
-            plt.savefig(save_filename + '.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(save_filename + '.pdf', bbox_inches='tight')  # plt.close()
 
-    def ComputeJacobianPhysical(self, method='rbf', artificial_refinement=False,
-                                dx_dz=None, dx_dr=None, dy_dz=None, dy_dr=None):
+    def ComputeJacobianPhysical(self, method='rbf', artificial_refinement=False, dx_dz=None, dx_dr=None, dy_dz=None,
+                                dy_dr=None):
         """
         It computes the transformation gradients for every grid point, and stores the value at the node level.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
@@ -291,8 +293,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
         plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')  # plt.close()
 
         plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
@@ -302,8 +303,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
         plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')  # plt.close()
 
         plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
@@ -313,8 +313,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
         plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')  # plt.close()
 
         plt.figure()
         plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
@@ -324,8 +323,7 @@ class SunModel:
         plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
         plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')
-            # plt.close()
+            plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')  # plt.close()
 
     # def AddAMatrixToNodes(self):
     #     """
@@ -357,8 +355,8 @@ class SunModel:
                  u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
                 should be 1 by construction. In this case the non-dimensional equations are exactly the same
                 of the dimensional ones."""
-                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                 self.config.get_reference_time())
+                strouhal = self.config.get_reference_length() / (
+                            self.config.get_reference_velocity() * self.config.get_reference_time())
                 A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -388,8 +386,8 @@ class SunModel:
                 B = np.eye(5, dtype=complex) * self.data.meridional_obj.ur[ii, jj]
                 B[0, 1] = self.data.meridional_obj.rho[ii, jj]
                 B[1, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
-                B[4, 0] = - self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ur[ii, jj] * \
-                        self.gmma / self.data.meridional_obj.rho[ii, jj]
+                B[4, 0] = - self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ur[ii, jj] * self.gmma / \
+                          self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddBMatrix(B)
 
     # def AddCMatrixToNodes(self):
@@ -428,8 +426,8 @@ class SunModel:
                 C = np.eye(5, dtype=complex) * self.data.meridional_obj.ut[ii, jj]
                 C[0, 2] = self.data.meridional_obj.rho[ii, jj]
                 C[2, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
-                C[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ut[ii, jj] \
-                          * self.gmma /self.data.meridional_obj.rho[ii, jj]
+                C[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.ut[ii, jj] * self.gmma / \
+                          self.data.meridional_obj.rho[ii, jj]
                 C *= 1j * m / self.data.meridional_obj.r_cg[ii, jj]
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
@@ -462,8 +460,8 @@ class SunModel:
                 E = np.eye(5, dtype=complex) * self.data.meridional_obj.uz[ii, jj]
                 E[0, 3] = self.data.meridional_obj.rho[ii, jj]
                 E[3, 4] = 1 / self.data.meridional_obj.rho[ii, jj]
-                E[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.uz[ii, jj] \
-                          * self.gmma / self.data.meridional_obj.rho[ii, jj]
+                E[4, 0] = -self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.uz[ii, jj] * self.gmma / \
+                          self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddEMatrix(E)
 
     # def AddRMatrixToNodes(self):
@@ -511,8 +509,8 @@ class SunModel:
             for jj in range(0, self.data.nRadialNodes):
                 R = np.zeros((5, 5), dtype=complex)
 
-                R[0, 0] = self.data.meridional_obj.dur_dr[ii, jj] + self.data.meridional_obj.duz_dz[ii, jj] \
-                          + self.data.meridional_obj.ur[ii, jj] / self.data.meridional_obj.r_cg[ii, jj]
+                R[0, 0] = self.data.meridional_obj.dur_dr[ii, jj] + self.data.meridional_obj.duz_dz[ii, jj] + \
+                          self.data.meridional_obj.ur[ii, jj] / self.data.meridional_obj.r_cg[ii, jj]
                 R[0, 1] = self.data.meridional_obj.rho[ii, jj] / self.data.meridional_obj.r_cg[ii, jj] + \
                           self.data.meridional_obj.drho_dr[ii, jj]
                 R[0, 3] = self.data.meridional_obj.drho_dz[ii, jj]
@@ -540,9 +538,9 @@ class SunModel:
                           self.data.meridional_obj.drho_dr[ii, jj] * self.gmma / self.data.meridional_obj.rho[ii, jj]
                 R[4, 3] = self.data.meridional_obj.dp_dz[ii, jj] - self.gmma / self.data.meridional_obj.rho[ii, jj] * \
                           self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj]
-                R[4, 4] = (-self.gmma / self.data.meridional_obj.rho[ii, jj]) * (self.data.meridional_obj.ur[ii, jj] *
-                            self.data.meridional_obj.drho_dr[ii, jj] + self.data.meridional_obj.uz[ii, jj] *
-                            self.data.meridional_obj.drho_dz[ii, jj])
+                R[4, 4] = (-self.gmma / self.data.meridional_obj.rho[ii, jj]) * (
+                            self.data.meridional_obj.ur[ii, jj] * self.data.meridional_obj.drho_dr[ii, jj] +
+                            self.data.meridional_obj.uz[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])
 
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
@@ -584,10 +582,12 @@ class SunModel:
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                Bhat = (1 / self.J[ii, jj]) * (-self.data.dataSet[ii, jj].B * self.dzdy[ii, jj] +
-                                                self.data.dataSet[ii, jj].E * self.drdy[ii, jj])
-                Ehat = (1 / self.J[ii, jj]) * (self.data.dataSet[ii, jj].B * self.dzdx[ii, jj] -
-                                                self.data.dataSet[ii, jj].E * self.drdx[ii, jj])
+                Bhat = (1 / self.J[ii, jj]) * (
+                            -self.data.dataSet[ii, jj].B * self.dzdy[ii, jj] + self.data.dataSet[ii, jj].E * self.drdy[
+                        ii, jj])
+                Ehat = (1 / self.J[ii, jj]) * (
+                            self.data.dataSet[ii, jj].B * self.dzdx[ii, jj] - self.data.dataSet[ii, jj].E * self.drdx[
+                        ii, jj])
                 # # # alternative formulation, provides the same results. (Check)
                 # Bhat2 = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
                 #        self.data.dataSet[ii, jj].E * self.dxdz[ii, jj]
@@ -881,7 +881,8 @@ class SunModel:
         if condition == 'zero perturbation':
             # BC for zero perturbation vector
             self.Q_tot[row:row + 5, :] = np.zeros(self.Q_tot[row:row + 5, :].shape, dtype=complex)  # make it zero first
-            self.Q_tot[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)  # zero perturbation condition for every flow variable
+            self.Q_tot[row:row + 5, row:row + 5] = np.eye(5,
+                                                          dtype=complex)  # zero perturbation condition for every flow variable
 
         elif condition == 'zero pressure':
             # BC for zero pressure perturbation
@@ -894,7 +895,8 @@ class SunModel:
 
             if self.substituted_equation == 'rho':
                 # density equation modified
-                print('Attention, Euler wall condition overwriting continuity equation. It should be done only for testing!')
+                print(
+                    'Attention, Euler wall condition overwriting continuity equation. It should be done only for testing!')
                 self.Q_tot[row, :] = np.zeros(self.Q_tot[row + 3, :].shape,
                                               dtype=complex)  # first make zero the axial velocity equation
                 self.Q_tot[row, row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
@@ -903,26 +905,31 @@ class SunModel:
                 # radial velocity equation modified
                 self.Q_tot[row + 1, :] = np.zeros(self.Q_tot[row + 1, :].shape,
                                                   dtype=complex)  # first make zero the radial velocity equation
-                self.Q_tot[row + 1, row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
+                self.Q_tot[row + 1,
+                row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
 
             elif self.substituted_equation == 'ut':
                 # tangential velocity equation overwritten
                 self.Q_tot[row + 2, :] = np.zeros(self.Q_tot[row + 3, :].shape,
                                                   dtype=complex)  # first make zero the tangential velocity equation
-                self.Q_tot[row + 2, row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
+                self.Q_tot[row + 2,
+                row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
 
             elif self.substituted_equation == 'uz':
                 # axial velocity equation modified
                 self.Q_tot[row + 3, :] = np.zeros(self.Q_tot[row + 3, :].shape,
                                                   dtype=complex)  # first make zero the axial velocity equation
-                self.Q_tot[row + 3, row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
+                self.Q_tot[row + 3,
+                row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
 
             elif self.substituted_equation == 'p':
                 # pressure equation modified
-                print('Attention, Euler wall condition overwriting pressure equation. It should be done only for testing!')
+                print(
+                    'Attention, Euler wall condition overwriting pressure equation. It should be done only for testing!')
                 self.Q_tot[row + 4, :] = np.zeros(self.Q_tot[row + 4, :].shape,
                                                   dtype=complex)  # first make zero the axial velocity equation
-                self.Q_tot[row + 4, row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
+                self.Q_tot[row + 4,
+                row + 1:row + 4] = wall_normal  # impose non-penetration condition (u*nr + v*nt + w*nz)
             else:
                 raise ValueError('Equation to overwritten not specified!')
 
@@ -972,8 +979,8 @@ class SunModel:
                 if (ii != 0 or jj != 0):
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
-                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
-                        ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
+                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
+                                                                        remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
                 self.AddRemainingMatrices(omega)  # add the non-constant parts of the matrices
@@ -987,8 +994,8 @@ class SunModel:
         hrs = int(end_time / 3600)
         mins = int((end_time - hrs * 3600) / 60)
         sec = int(end_time - hrs * 3600 - mins * 60)
-        print('Total SVD time: \t %1.d hrs %1.d mins %1.d sec' % (hrs, mins, sec))
-        # self.eigs = np.array(self.FindLocalMinima(self.chi))
+        print('Total SVD time: \t %1.d hrs %1.d mins %1.d sec' % (
+        hrs, mins, sec))  # self.eigs = np.array(self.FindLocalMinima(self.chi))
 
     def ComputeSVD2(self, omega_domain=None, grid_omega=None):
         """
@@ -1032,8 +1039,8 @@ class SunModel:
                 if (ii != 0 or jj != 0):
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
-                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
-                        ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
+                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
+                                                                        remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
                 u, s, v = np.linalg.svd(self.Z_g - 1j * omega * self.A_g)
@@ -1048,8 +1055,8 @@ class SunModel:
         print('Total SVD time: \t %1.d hrs %1.d mins %1.d sec' % (hrs, mins, sec))
         self.eigs = self.FindLocalMinima(self.chi)
 
-    def ComputeSVDcompressor(self, RS_domain=np.array([-1, 1]), DF_domain=np.array([-1, 1]),
-                             grid=np.array([10, 10]), verbose=True):
+    def ComputeSVDcompressor(self, RS_domain=np.array([-1, 1]), DF_domain=np.array([-1, 1]), grid=np.array([10, 10]),
+                             verbose=True):
         """
         Compute the SVD for every omega in omega_domain, discretized as in grid_omega. It computes
         every time the part of Q that depends on omega (-j*omega*A), and computes the boundary conditions.
@@ -1103,8 +1110,8 @@ class SunModel:
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
                     if verbose:
-                        print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
-                            ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
+                        print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
+                                                                            remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
 
@@ -1324,12 +1331,12 @@ class SunModel:
             tau = 0
         elif block_type == 'stator':
             Omega = 0
-            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / \
-                  np.mean(self.data.meridional_obj.u_meridional[0, :])
+            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / np.mean(
+                self.data.meridional_obj.u_meridional[0, :])
         elif block_type == 'rotor':
             Omega = self.config.get_omega_shaft() / self.config.get_reference_omega()
-            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / \
-                  np.mean(self.data.meridional_obj.u_meridional[0, :])
+            tau = np.mean(self.data.meridional_obj.stream_line_length[-1, :]) / np.mean(
+                self.data.meridional_obj.u_meridional[0, :])
         else:
             raise ValueError('Unknown block type!')
 
@@ -1400,7 +1407,7 @@ class SunModel:
 
         # recognized boundary conditions type
         bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet',
-                   'zero axial velocity', 'free']
+                   'zero axial velocity', 'free', 'neumann inlet', 'neumann outlet']
 
         if self.inlet_bc not in bc_list:
             raise ValueError('Incorrect Inlet boundary condition type.')
@@ -1458,13 +1465,37 @@ class SunModel:
             self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
             self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
 
+        elif condition == 'neumann inlet':
+            # BC for zero pressure perturbation
+            self.L0[row:row + 5, :] = np.zeros(self.L0[row:row + 5, :].shape, dtype=complex)
+            node = row // 5  # number of the node
+            node_next = node + self.data.nRadialNodes  # number of the next node along the streamline
+            row_next = node_next * 5  # equivalent row index for that next node
+            self.L0[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
+            self.L0[row:row + 5, row_next:row_next + 5] = -np.eye(5, dtype=complex)
+
+            self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
+
+        elif condition == 'neumann outlet':
+            # BC for zero pressure perturbation
+            self.L0[row:row + 5, :] = np.zeros(self.L0[row:row + 5, :].shape, dtype=complex)
+            node = row // 5  # number of the node
+            node_previous = node - self.data.nRadialNodes  # number of the next node along the streamline
+            row_previous = node_previous * 5  # equivalent row index for that next node
+            self.L0[row:row + 5, row:row + 5] = np.eye(5, dtype=complex)
+            self.L0[row:row + 5, row_previous:row_previous + 5] = -np.eye(5, dtype=complex)
+
+            self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
+
         elif condition == 'compressor inlet':
             # BCs are zero for every variable except the pressure at inlet
             self.L0[row:row + 4, :] = np.zeros(self.L0[row:row + 4, :].shape, dtype=complex)
             self.L0[row:row + 4, row:row + 4] = np.eye(4, dtype=complex)
 
-            self.L1[row:row + 5, :] = np.zeros(self.L1[row:row + 5, :].shape, dtype=complex)  # zero rows
-            self.L2[row:row + 5, :] = np.zeros(self.L2[row:row + 5, :].shape, dtype=complex)  # zero rows
+            self.L1[row:row + 4, :] = np.zeros(self.L1[row:row + 4, :].shape, dtype=complex)  # zero rows
+            self.L2[row:row + 4, :] = np.zeros(self.L2[row:row + 4, :].shape, dtype=complex)  # zero rows
 
         elif condition == 'compressor outlet':
             # BC for zero pressure perturbation
@@ -1511,8 +1542,8 @@ class SunModel:
 
         if condition == 'zero pressure':
             zero_col = np.zeros((self.L0.shape[0], 1))
-            zero_row = np.zeros((1, self.L0.shape[0]+1))
-            new_row = np.zeros((1, self.L0.shape[0]+1))
+            zero_row = np.zeros((1, self.L0.shape[0] + 1))
+            new_row = np.zeros((1, self.L0.shape[0] + 1))
             new_row[0, -1] = 1
 
             self.L0 = np.hstack((self.L0, zero_col))

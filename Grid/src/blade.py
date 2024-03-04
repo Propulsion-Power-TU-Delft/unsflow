@@ -615,7 +615,7 @@ class Blade:
         plt.ylabel(r'$r$')
         plt.title(r'$t$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '/' + 'blade_thickness.pdf', bbox_inches='tight')
 
     def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
         self.blockage = 1 - Nb * (np.abs(self.theta_ss - self.theta_ps)) / 2 / np.pi
@@ -630,7 +630,7 @@ class Blade:
         plt.ylabel(r'$r$')
         plt.title(r'$b$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'blockage_factor.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_factor.pdf', bbox_inches='tight')
 
     def compute_blade_camber_angles(self, convention='rotation-wise'):
         """
