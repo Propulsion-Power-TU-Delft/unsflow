@@ -7,7 +7,7 @@ from numpy import genfromtxt
 
 sim = ['p128', 'p128.5', 'p128.75', 'p128.9']
 for case in sim:
-    resolutions = ['15_15_21_15', '21_21_25_21']
+    resolutions = ['15_15_21_15', '21_21_25_21', '25_25_31_25']
     files = ['../eigs_tracking_' + res + '/' + case + '/pictures/eigenvalues.csv' for res in resolutions]
 
     data = []
@@ -27,4 +27,4 @@ for case in sim:
     plt.ylabel('DF')
     plt.savefig('simulations_%s.pdf' %case, bbox_inches='tight')
 
-# plt.show()
+plt.show()

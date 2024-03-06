@@ -1,0 +1,2 @@
+check and implement the kronecker product rule for spectral differentiation based
+on chebyshev-gauss-lobatto collocation method in 2D
