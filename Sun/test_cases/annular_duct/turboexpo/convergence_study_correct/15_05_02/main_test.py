@@ -40,8 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 5
-Nr = 6
+Nz = 45
+Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -81,7 +81,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddRMatrixToNodesFrancesco2()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
-    sun_obj.ApplySpectralDifferentiation()
+    sun_obj.ApplySpectralDifferentiationKronecker()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()

@@ -642,6 +642,45 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
+    def ApplySpectralDifferentiationKronecker(self, verbose=False):
+        """
+        This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
+        derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
+        which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
+        The spectral differentiation formula has been taken from Spectral Methods in Matlab, Trefethen.
+        :param verbose: print additional info.
+        """
+
+        # Differential operators in 1D
+        Dx = ChebyshevDerivativeMatrixBayliss(self.dataSpectral.z)  # derivative operator in xi
+        Dy = ChebyshevDerivativeMatrixBayliss(self.dataSpectral.r)  # derivative operator in eta
+
+        # Corresponding operators extended to 2D thanks to Kronecker products.
+        Ix = np.eye(self.data.nAxialNodes)
+        Iy = np.eye(self.data.nRadialNodes)
+        Dx_2d = np.kron(Dx, Iy)
+        Dy_2d = np.kron(Ix, Dy)
+
+        # Q_const is the global matrix storing B and E elements after spectral differentiation.
+        self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
+
+        for ii in range(Dx_2d.shape[0]):
+            for jj in range(Dx_2d.shape[1]):
+                # indexes on the Q_const matrix. (Times 5 because there are 5 equations per node)
+                row = ii*5
+                col = jj*5
+
+                # indexes of the nodes in 2D. jj is here the absolute node counter, going from 0 to nx*ny
+                inode = jj // self.data.nRadialNodes
+                jnode = jj % self.data.nRadialNodes
+
+                B = self.data.dataSet[inode, jnode].Bhat.copy()
+                E = self.data.dataSet[inode, jnode].Ehat.copy()
+                tmp = B*Dx_2d[ii, jj] + E*Dy_2d[ii, jj]
+
+                self.AddToQ_const(tmp, row, col)
+
+
     def apply_finite_differences_on_physical_grid(self):
         """
        This method differentiates directly the problem on the physical grid. It saves a new global (for all the nodes) matrix
