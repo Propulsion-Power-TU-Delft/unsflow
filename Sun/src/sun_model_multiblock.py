@@ -132,8 +132,8 @@ class SunModelMultiBlock():
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
 
-            """Current block rows (where same fluid derivatives are implemented, by means of finite differences for simplicity)
-            carrying out the finite difference we end up with:
+            """Current block rows (where same fluid derivatives are implemented, by means of finite differences for 
+            simplicity). Carrying out the finite difference we end up with:
             (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])"""
             self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 

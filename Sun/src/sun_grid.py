@@ -202,6 +202,8 @@ class SunGrid():
                             plt.quiver(self.dataSet[ii, jj].z, self.dataSet[ii, jj].r,
                                        self.dataSet[ii, jj].n_wall[2], self.dataSet[ii, jj].n_wall[0], scale=30)
             plt.legend()
+            plt.gca().set_aspect('equal', adjustable='box')
+
 
         elif mode == 'lines':
             for ii in range(0, self.nAxialNodes):

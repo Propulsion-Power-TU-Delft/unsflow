@@ -27,6 +27,7 @@ gmma = 1.4  # cp/cv ratio of air
 rho = p/R/T  # density [kg/m3]
 a = np.sqrt(gmma * p / rho)  # ideal speed of sound [m/s]
 HARMONIC_ORDER = 1
+ALPHA = -45*np.pi/180  # angle of aperture of the duct [rad]
 
 # non-dimensionalization terms:
 x_ref = r1
@@ -40,7 +41,7 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 45
+Nz = 30
 Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
@@ -63,6 +64,68 @@ config = Config('duct.ini')
 duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
                                      density, radialVel, tangentialVel, axialVel, pressure, config,
                                       mode='gauss-lobatto')
+u_mag_pre = duct_Obj1.uz.copy()
+
+# overwriting the baseflow and grid
+duct_Obj1.r_cg = duct_Obj1.r_cg + duct_Obj1.z_cg*np.tan(ALPHA)
+duct_Obj1.r_grid = duct_Obj1.r_cg.copy()
+duct_Obj1.z_grid = duct_Obj1.z_cg.copy()
+duct_Obj1.uz = duct_Obj1.uz * (r2**2 - r1**2) / ((r2+duct_Obj1.z_cg*np.tan(ALPHA))**2 - (r1+duct_Obj1.z_cg*np.tan(ALPHA))**2)
+duct_Obj1.ur = duct_Obj1.uz*np.tan(ALPHA)
+u_mag_post = np.sqrt((duct_Obj1.uz**2 + duct_Obj1.ur**2))
+duct_Obj1.p = duct_Obj1.p + 0.5*rho*(u_mag_pre**2 - u_mag_post**2)
+duct_Obj1.duz_dz = -axialVel*(r2**2 - r1**2)/(((r2+duct_Obj1.z_cg*np.tan(ALPHA))**2 - (r1+duct_Obj1.z_cg*np.tan(ALPHA))**2)**2) * 2*np.tan(ALPHA)*(r2-r1)
+duct_Obj1.dur_dz = duct_Obj1.duz_dz * np.tan(ALPHA)
+duct_Obj1.dp_dz = -rho*duct_Obj1.uz*np.tan(ALPHA)*duct_Obj1.duz_dz
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.uz, levels=20)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$u_z \ \rm{[m/s]}$')
+plt.colorbar()
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.ur, levels=20)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$u_r \ \rm{[m/s]}$')
+plt.colorbar()
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.p, levels=20)
+plt.quiver(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.uz, duct_Obj1.ur)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$p \ \rm{[Pa]}$')
+plt.gca().set_aspect('equal', adjustable='box')
+plt.colorbar()
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.duz_dz, levels=20)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$\partial u_z / \partial z \ \rm{[1/s]}$')
+plt.colorbar()
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.dur_dz, levels=20)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$\partial u_r / \partial z \ \rm{[1/s]}$')
+plt.colorbar()
+
+plt.figure()
+plt.contourf(duct_Obj1.z_cg, duct_Obj1.r_cg, duct_Obj1.dp_dz, levels=20)
+plt.xlabel(r'$z$')
+plt.ylabel(r'$r$')
+plt.title(r'$\partial p / \partial z \ \rm{[Pa/m]}$')
+plt.colorbar()
+# plt.show()
+
+
+
+
 duct_Obj1.normalize_data()
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
 sun_obj = Sun.src.SunModel(duct_grid1, config=config)
@@ -71,7 +134,8 @@ sun_blocks = [sun_obj]
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('utheta')
+    sun_obj.ShowNormals()
+    sun_obj.set_overwriting_equation_euler_wall('ur')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodesFrancesco2()
@@ -95,11 +159,17 @@ for sun_obj in sun_blocks:
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 
-omega_search = 21000
+omega_search = 23000
 sigma = omega_search / omega_ref
 
 A = sun_multiblock.L0
 M = -sun_multiblock.L1
+
+plt.figure()
+plt.spy(A-sigma*M)
+plt.title(r'$L_0+L_1 \omega$')
+# plt.show()
+
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
 print('Searching Eigenvalues with ARPACK...')
@@ -152,7 +222,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     uz_eig = []
     p_eig = []
 
-    for i in range(len(eigenvec)):
+    for i in range(len(eigenvec)-sun_obj.rows_added):
         if (i) % 5 == 0:
             rho_eig.append(eigenvec[i])
         elif (i - 1) % 5 == 0 and i != 0:
@@ -245,6 +315,8 @@ for ivec in range(np.shape(eigenvectors)[1]):
 
     plt.figure()
     cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels, cmap='bwr')
+    plt.quiver(z_grid, r_grid, uz_eig_r, ur_eig_r)
+    plt.gca().set_aspect('equal', adjustable='box')
     for c in cnt.collections:
         c.set_edgecolor("face")
         c.set_linewidth(0.000000000001)
