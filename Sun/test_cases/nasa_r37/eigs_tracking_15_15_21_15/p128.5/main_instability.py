@@ -21,7 +21,7 @@ for meridional_block in meridional_obj.group:
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('ur')
+    sun_obj.set_overwriting_equation_euler_wall('uz')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodesFrancesco2()
@@ -31,7 +31,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddRMatrixToNodesFrancesco2()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
-    sun_obj.ApplySpectralDifferentiation()
+    sun_obj.ApplySpectralDifferentiationKronecker()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()

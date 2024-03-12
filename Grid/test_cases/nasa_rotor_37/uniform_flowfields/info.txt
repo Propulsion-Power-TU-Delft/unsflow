@@ -1,0 +1,1 @@
+Fake case, where the continuity and the geometry determine the velocity, the density is constant, and the pressure is determined by Bernoulli. No BFM

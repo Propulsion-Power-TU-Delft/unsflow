@@ -31,7 +31,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddRMatrixToNodesFrancesco2()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
-    sun_obj.ApplySpectralDifferentiation()
+    sun_obj.ApplySpectralDifferentiationKronecker()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()

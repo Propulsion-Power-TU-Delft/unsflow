@@ -291,7 +291,7 @@ class SunModelMultiBlock():
             ax.set_ylabel(r'DF [-]')
         else:
             for mode in self.eigenfields:
-                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='red', edgecolors='red',
+                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='none', edgecolors='red',
                            s=marker_size)
             ax.set_xlabel(r'$\omega_R \mathrm{[rad/s]}$')
             ax.set_ylabel(r'$\omega_I \mathrm{[rad/s]}$')

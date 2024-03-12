@@ -45,7 +45,7 @@ font_colorbar = 24
 font_colorbar_axes = 18
 
 # Set marker size for all line markers:
-marker_size_big = 10
+marker_size_big = 12.5
 marker_size = 7.5
 marker_size_small = 2
 scatter_point_size = 10

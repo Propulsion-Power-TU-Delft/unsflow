@@ -2728,3 +2728,45 @@ class MeridionalProcess:
         self.duz_dr *= 0
         self.dp_dz *= 0
         self.dp_dr *= 0
+
+    def override_baseflow(self):
+        """
+        Test method, which overrides the baseflow field used in the Sun Model. Tangential velocity zero, axial and
+        radial determined by continuity and streamline directions, pressure from Bernoulli
+        """
+        mdot = 1 # 1 kg/s of mass flow
+        self.rho = np.ones_like(self.rho)
+        self.ut = np.ones_like(self.ut)
+        self.uz, self.ur = self.compute_streamline_directions()
+        self.p = np.ones_like(self.ut)
+        self.set_gradients_to_zero()
+
+    def compute_streamline_directions(self):
+        """
+        Compute the cosine directors for the streamlines
+        """
+        cos_dirz = np.zeros_like(self.z_grid)
+        cos_dirr = np.zeros_like(self.r_grid)
+        for ii in range(self.nstream):
+            # if ii<self.nstream-1:
+            #     dz = self.z_grid[ii + 1, :] - self.z_grid[ii, :]
+            #     dr = self.r_grid[ii + 1, :] - self.r_grid[ii, :]
+            # else:
+            #     dz = self.z_grid[ii, :] - self.z_grid[ii - 1, :]
+            #     dr = self.r_grid[ii, :] - self.r_grid[ii - 1, :]
+            if ii==0:
+                dz = self.z_grid[ii+1, :] - self.z_grid[ii, :]
+                dr = self.r_grid[ii+1, :] - self.r_grid[ii, :]
+            elif ii==self.nstream-1:
+                dz = self.z_grid[ii, :] - self.z_grid[ii-1, :]
+                dr = self.r_grid[ii, :] - self.r_grid[ii-1, :]
+            else:
+                dz = self.z_grid[ii+1, :] - self.z_grid[ii - 1, :]
+                dr = self.r_grid[ii+1, :] - self.r_grid[ii - 1, :]
+            cos_dirz[ii, :] = dz / sqrt(dz**2+dr**2)
+            cos_dirr[ii, :] = dr / sqrt(dz ** 2 + dr ** 2)
+        return cos_dirz, cos_dirr
+
+
+
+

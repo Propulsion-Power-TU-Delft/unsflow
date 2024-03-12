@@ -40,8 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 5
-Nr = 4
+Nz = 15
+Nr = 5
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
