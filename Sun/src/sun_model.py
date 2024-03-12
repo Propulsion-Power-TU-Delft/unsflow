@@ -1568,9 +1568,9 @@ class SunModel:
     def add_bc_condition(self, row, condition, ii, jj):
         """
         For the considered grid node, it adds the boundary conditions at the end of the matrix, enlarging the
-        dimensions.
-        The considered system at hand is: (L0 + L1*omega + L2*omega**2)*tilde{phi}. Therefore BCs are imposed on L0, since
-        they must be respected for every possible value of omega.
+        dimensions, using the Lagrange Multiplier formulation.
+        The considered system at hand is: (L0 + L1*omega + L2*omega**2)*tilde{phi}.
+        Therefore BCs are imposed on L0, since they must be respected for every possible value of omega.
         L1 and L2 are then filled in the respective positions with zeros.
         :param row: row index of the equation to modify
         :param condition: type of boundary condition
@@ -1579,12 +1579,16 @@ class SunModel:
         """
 
         if condition == 'zero pressure':
-            zero_col = np.zeros((self.L0.shape[0], 1))  # zero col to adjust the shape
-            zero_row = np.zeros((1, self.L0.shape[0] + 1))  # zero row to adjust the shape
-            new_row = np.zeros((1, self.L0.shape[0] + 1))  # row which add the boundary condition on L0 matrix
+            zero_col = np.zeros((self.L0.shape[0], 1))
+            new_col = np.zeros((self.L0.shape[0], 1))  # col to add
+            zero_row = np.zeros((1, self.L0.shape[0] + 1))
+            new_row = np.zeros((1, self.L0.shape[0] + 1))  # row to add
+
+            # set the condition
+            new_col[row + 4, 0] = 1
             new_row[0, row + 4] = 1  # zero pressure at the corresponding node
 
-            self.L0 = np.hstack((self.L0, zero_col))  # add one zero column to the right of the matrix
+            self.L0 = np.hstack((self.L0, new_col))  # add one zero column to the right of the matrix
             self.L0 = np.vstack((self.L0, new_row))  # add one row below the rectangular matrix, making it square
 
             # now simply adjust the shape of L1 and L2, making them squares, of the same dimension of L0
@@ -1659,11 +1663,13 @@ class SunModel:
             # self.L2 = np.vstack((self.L2, zero_rows))
 
             zero_col = np.zeros((self.L0.shape[0], 1))  # zero col to adjust the shape
+            new_col = np.zeros((self.L0.shape[0], 1))
             zero_row = np.zeros((1, self.L0.shape[0] + 1))  # zero row to adjust the shape
             new_row = np.zeros((1, self.L0.shape[0] + 1))  # row which add the boundary condition on L0 matrix
-            new_row[0, row + 1 : row + 4] = wall_normal  # zero pressure at the corresponding node
+            new_row[0, row + 1: row + 4] = wall_normal  # zero pressure at the corresponding node
+            new_col[row + 1: row + 4, 0] = wall_normal
 
-            self.L0 = np.hstack((self.L0, zero_col))  # add one zero column to the right of the matrix
+            self.L0 = np.hstack((self.L0, new_col))  # add one zero column to the right of the matrix
             self.L0 = np.vstack((self.L0, new_row))  # add one row below the rectangular matrix, making it square
 
             # now simply adjust the shape of L1 and L2, making them squares, of the same dimension of L0
