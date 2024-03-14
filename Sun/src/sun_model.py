@@ -1445,7 +1445,7 @@ class SunModel:
 
         # recognized boundary conditions type
         bc_list = ['zero pressure', 'zero perturbation', 'euler wall', 'compressor inlet', 'compressor outlet',
-                   'zero axial velocity', 'free', 'neumann inlet', 'neumann outlet']
+                   'zero axial velocity', 'free', 'neumann inlet', 'neumann outlet', 'zero radial velocity']
 
         if self.inlet_bc not in bc_list:
             raise ValueError('Incorrect Inlet boundary condition type.')
@@ -1491,6 +1491,14 @@ class SunModel:
 
             self.L1[row + 3, :] = np.zeros(self.L1[row + 3, :].shape, dtype=complex)  # zero row
             self.L2[row + 3, :] = np.zeros(self.L2[row + 3, :].shape, dtype=complex)  # zero row
+
+        elif condition == 'zero radial velocity':
+            # BC for zero pressure perturbation
+            self.L0[row + 1, :] = np.zeros(self.L0[row + 1, :].shape, dtype=complex)
+            self.L0[row + 1, row + 1] = 1  # zero pressure at that node
+
+            self.L1[row + 1, :] = np.zeros(self.L1[row + 1, :].shape, dtype=complex)  # zero row
+            self.L2[row + 1, :] = np.zeros(self.L2[row + 1, :].shape, dtype=complex)  # zero row
 
         elif condition == 'free':
             pass
