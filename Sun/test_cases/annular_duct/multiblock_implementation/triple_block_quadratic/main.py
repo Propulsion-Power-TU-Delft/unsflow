@@ -12,6 +12,7 @@ import os
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
 from scipy.sparse.linalg import eigs
+from Utils.styles import *
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -38,29 +39,34 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 15
-Nr = 8
-# Nz = 10//2
-# Nr = 5
 
-folder_path = "pictures/%02i_%02i" %(Nz*2, Nr)  # Replace with the desired folder path
+config = Config('duct.ini')
+
+Nz = config.get_streamwise_points()[0]
+Nr = config.get_spanwise_points()
+
+folder_path = "pictures/%02i_%02i" %(Nz*3, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
-config = Config('duct.ini')
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L/2, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
-duct_Obj2 = Sun.src.AnnulusMeridional(L/2, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj1 = Sun.src.AnnulusMeridional(0, L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj2 = Sun.src.AnnulusMeridional(L/3, 2*L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj3 = Sun.src.AnnulusMeridional(2*L/3, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+
 
 duct_Obj1.normalize_data()
 duct_Obj2.normalize_data()
+duct_Obj3.normalize_data()
 
 duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
 duct_grid2 = Sun.src.sun_grid.SunGrid(duct_Obj2)
+duct_grid3 = Sun.src.sun_grid.SunGrid(duct_Obj3)
 
 sun_obj = Sun.src.SunModel(duct_grid1, config=config)
 sun_obj2 = Sun.src.SunModel(duct_grid2, config=config)
+sun_obj3 = Sun.src.SunModel(duct_grid3, config=config)
 
-sun_blocks = [sun_obj, sun_obj2]
+sun_blocks = [sun_obj, sun_obj2, sun_obj3]
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
@@ -74,7 +80,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddRMatrixToNodesFrancesco2()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
-    sun_obj.ApplySpectralDifferentiation()
+    sun_obj.ApplySpectralDifferentiationKronecker()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()
@@ -87,13 +93,7 @@ for sun_obj in sun_blocks:
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-sun_multiblock.apply_matching_conditions()
-# sun_multiblock.compute_P_Y_matrices()
-# sun_multiblock.solve_evp(sort_mode='real increasing', sigma=21000/config.get_reference_omega())
-# sun_multiblock.extract_eigenfields()
-# sun_multiblock.plot_eigenfrequencies(save_filename='eigenfrequencies', normalization=False)
-# sun_multiblock.plot_eigenfields(n=5, save_filename='eigenmode')
-# sun_multiblock.write_results()
+sun_multiblock.apply_matching_conditions(mode='collocation method')
 
 fig, ax = plt.subplots(1, 3, figsize=(16,5))
 ax[0].spy(sun_multiblock.L0)
@@ -102,9 +102,9 @@ ax[1].spy(sun_multiblock.L1)
 ax[1].set_title(r'$L_1$')
 ax[2].spy(sun_multiblock.L2)
 ax[2].set_title(r'$L_2$')
-fig.savefig('pictures/%i_%i/L0_L1_L2.pdf' % (Nz*2, Nr), bbox_inches='tight')
+fig.savefig('pictures/%02i_%02i/L0_L1_L2.pdf' % (Nz*3, Nr), bbox_inches='tight')
 
-omega_search = 21000
+omega_search = 24000
 sigma = omega_search / omega_ref
 
 Y1 = np.concatenate((-sun_multiblock.L0, np.zeros_like(sun_multiblock.L0)), axis=1)
@@ -145,7 +145,7 @@ omegar_an = [13450, 21077, 26721, 31296, 35049]
 omegai_an = [0, 0, 0, 0, 0]
 
 # PLOT RESULTS
-marker_size = 50
+marker_size = 150
 fig, ax = plt.subplots()
 ax.scatter(omegar_an, omegai_an, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
@@ -156,8 +156,8 @@ ax.set_ylabel(r'$\omega_{I}$ [rad/s]')
 ax.set_xlim([7500, 38000])
 ax.set_ylim([-8000, 8000])
 ax.legend()
-ax.grid(alpha=0.3)
-fig.savefig('pictures/%i_%i/chi_map_arnoldi.pdf' % (Nz*2, Nr), bbox_inches='tight')
+ax.grid(alpha=grid_opacity)
+fig.savefig('pictures/%02i_%02i/chi_map_arnoldi.pdf' % (Nz*3, Nr), bbox_inches='tight')
 
 # EIGENFUNCTIONS
 z_grid = sun_obj.data.zGrid
@@ -188,7 +188,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
 
     def scaled_eigenvector_real(eig_list):
         array = np.array(eig_list, dtype=complex)
-        array = np.reshape(array, (Nz*2, Nr))
+        array = np.reshape(array, (Nz*3, Nr))
         array_real_scaled = array.real / (np.max(array.real) - np.min(array.real))
         return array_real_scaled
 
@@ -199,44 +199,45 @@ for ivec in range(np.shape(eigenvectors)[1]):
     uz_eig_r = scaled_eigenvector_real(uz_eig)
     p_eig_r = scaled_eigenvector_real(p_eig)
 
-    plt.figure(figsize=(7, 5))
+    plt.figure()
     cnt = plt.contourf(sun_multiblock.z_grid, sun_multiblock.r_grid, rho_eig_r, levels=20, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{\rho}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_rho_%i.pdf' % (Nz*2, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_rho_%i.pdf' % (Nz*3, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
+    plt.figure()
     cnt = plt.contourf(sun_multiblock.z_grid, sun_multiblock.r_grid, ur_eig_r, levels=20, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{r,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ur_%i.pdf' % (Nz*2, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ur_%i.pdf' % (Nz*3, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
+    plt.figure()
     cnt = plt.contourf(sun_multiblock.z_grid, sun_multiblock.r_grid, ut_eig_r, levels=20, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{\theta,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_ut_%i.pdf' % (Nz*2, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_ut_%i.pdf' % (Nz*3, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
+    plt.figure()
     cnt = plt.contourf(sun_multiblock.z_grid, sun_multiblock.r_grid, uz_eig_r, levels=20, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{u}_{z,%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_uz_%i.pdf' % (Nz*2, Nr, ivec + 1), bbox_inches='tight')
+    plt.savefig('pictures/%02i_%02i/eigenfunction_uz_%i.pdf' % (Nz*3, Nr, ivec + 1), bbox_inches='tight')
 
-    plt.figure(figsize=(7, 5))
+    plt.figure()
     cnt = plt.contourf(sun_multiblock.z_grid, sun_multiblock.r_grid, p_eig_r, levels=20, cmap='bwr')
     plt.ylabel(r'$r$ [-]')
     plt.xlabel(r'$z$ [-]')
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1))
     plt.colorbar()
-    plt.savefig('pictures/%i_%i/eigenfunction_p_%i.pdf' % (Nz*2, Nr, ivec + 1), bbox_inches='tight')
+    plt.quiver(sun_multiblock.z_grid, sun_multiblock.r_grid, uz_eig_r, ur_eig_r)
+    plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz*3, Nr, ivec + 1), bbox_inches='tight')
 
 plt.show()

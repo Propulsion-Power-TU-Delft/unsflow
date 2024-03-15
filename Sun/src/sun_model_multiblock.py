@@ -100,30 +100,26 @@ class SunModelMultiBlock():
         if any(arg.dtype != np.complex128 for arg in (self.L0, self.L1, self.L2)):
             raise TypeError('The matrices are not complex')
 
-    def apply_matching_conditions(self):
+    def apply_matching_conditions(self, mode='collocation method'):
         """
         Apply the matching conditions for the blocks composing the multiblock. At this moment the system is composed by:
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
-        are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching conditions
-        are guaranteed no matter the value of omega.
-        """
-        # plot the matrices before the BC implementations
-        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
-        ax[0].spy(self.L0)
-        ax[1].spy(self.L1)
-        ax[2].spy(self.L2)
-        ax[0].set_title(r'$L_0$')
-        ax[1].set_title(r'$L_1$')
-        ax[2].set_title(r'$L_2$')
+        are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching
+        conditions are guaranteed no matter the value of omega.
 
+        :param mode: method used to implement the same derivatives in the streamwise direction at the matching nodes
         """
-        Starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the previous
-        block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
-        block. Since every node is written for 2 different domains, in one block we implement the same value of the flow
+        modes = ['finite difference', 'collocation method']
+        if mode not in modes:
+            raise ValueError('Uknown differentiation method.')
+        """
+        Starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the 
+        previous block. Since every node is written for 2 different domains, in one block we implement the same value 
+        of the flow variables, while in the following block we impose the same values of the derivatives.
         """
 
-        # Let's start from the block 2, and consider the block itself and the previous.
-        rows_band = self.config.get_spanwise_points() * 5
+        # Let's start from the second block (index 1), and consider the block itself and the previous.
+        rows_band = self.config.get_spanwise_points() * 5  # number of equations to modify per block
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
@@ -132,20 +128,48 @@ class SunModelMultiBlock():
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
 
-            """Current block rows (where same fluid derivatives are implemented, by means of finite differences for 
+            """following block (where same fluid derivatives are implemented, by means of finite differences for 
             simplicity). Carrying out the finite difference we end up with:
             (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])"""
-            self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
+            if mode == 'finite difference':
+                """Carrying out the finite difference we end up with:
+                (phi_up[-1,j]-phi_up[-2,j])/(xi_up[-1,j]-xi_up[-2,j]) + 
+                (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])"""
+                self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
-            dxi_up = self.blocks[iblock - 1].dataSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].dataSpectral.zGrid[-2, 0]
-            dxi_dn = self.blocks[iblock].dataSpectral.zGrid[1, 0] - self.blocks[iblock].dataSpectral.zGrid[0, 0]
+                dxi_up = self.blocks[iblock - 1].dataSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].dataSpectral.zGrid[-2, 0]
+                dxi_dn = self.blocks[iblock].dataSpectral.zGrid[1, 0] - self.blocks[iblock].dataSpectral.zGrid[0, 0]
 
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band) / dxi_dn
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band) / dxi_up
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2 * rows_band:eq_counter - rows_band] = -np.eye(
-                rows_band) / dxi_up
-            self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2 * rows_band] = -np.eye(
-                rows_band) / dxi_dn
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band) / dxi_dn
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band) / dxi_up
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter - 2 * rows_band:eq_counter - rows_band] = -np.eye(
+                    rows_band) / dxi_up
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter + rows_band:eq_counter + 2 * rows_band] = -np.eye(
+                    rows_band) / dxi_dn
+
+            elif mode == 'collocation method':
+                """
+                Derivatives now expressed through the Chebyshev collocation method.
+                """
+                self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(
+                    self.L0[eq_counter:eq_counter + rows_band, :])
+
+                # previous block
+                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock-1].dataSpectral.z)
+                Iy = np.eye(self.blocks[iblock-1].data.nRadialNodes)
+                DX = np.kron(DX, Iy)
+                DX = DX[-self.config.get_spanwise_points():, :]
+                DX = np.kron(DX, np.eye(5))
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter-DX.shape[1]:eq_counter] = DX
+
+                # next block
+                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock].dataSpectral.z)
+                Iy = np.eye(self.blocks[iblock].data.nRadialNodes)
+                DX = np.kron(DX, Iy)
+                DX = DX[0:self.config.get_spanwise_points(), :]
+                DX = np.kron(DX, np.eye(5))
+                self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + DX.shape[1]] = -DX
+
 
             # make zero all the relevant equations for the L1,L2 matrices
             self.L1[eq_counter - rows_band:eq_counter + rows_band, :] = np.zeros_like(
@@ -154,15 +178,6 @@ class SunModelMultiBlock():
                 self.L2[eq_counter - rows_band:eq_counter + rows_band, :])
 
             eq_counter += self.blocks[iblock].L0.shape[0]
-
-        # plot the matrices after the BC implementations
-        fig, ax = plt.subplots(1, 3, figsize=(16, 6))
-        ax[0].spy(self.L0)
-        ax[1].spy(self.L1)
-        ax[2].spy(self.L2)
-        ax[0].set_title(r'$L_0$')
-        ax[1].set_title(r'$L_1$')
-        ax[2].set_title(r'$L_2$')
 
     def compute_P_Y_matrices(self):
         """
