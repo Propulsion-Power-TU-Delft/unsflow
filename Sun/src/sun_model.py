@@ -27,8 +27,8 @@ import os
 
 class SunModel:
     """
-    Class used for Sun Model instability prediction based on the data contained in a Grid object containing the node grid.
-    The treated perturbation equations are: (-j*omega*A + B*ddr + j*m*C/r + E*ddz + R + S)*Phi' = 0
+    Class used for Sun Model instability prediction based on the data process from CFD.
+    The perturbation equations are: (-j*omega*A + B*ddr + j*m*C/r + E*ddz + R + S)*Phi' = 0
     
     MATRICES:
         A : coefficient matrix of temporal derivatives
@@ -41,15 +41,14 @@ class SunModel:
 
     def __init__(self, gridObject, config):
         """
-        Instantiate the sun model Object, contaning all the attributes and methods necessary for the instability analysis.
-        :param gridObject: is the object contaning all the data, physical and spectral organized in a grid of Node objects.
+        Instantiate the sun model Object, contaning all the attributes and methods necessary for the instability
+        analysis.
+        :param gridObject: is the object contaning all the data, physical and spectral.
         :param config: configuration file of the sun model
         """
         self.data = gridObject  # grid object containing also the meridional object with the data
         self.config = config
-
         self.nPoints = (gridObject.nAxialNodes) * (gridObject.nRadialNodes)
-
         self.gmma = self.config.get_fluid_gamma()
         print(f"Gamma set to Default Value: {self.gmma}")
 
@@ -58,46 +57,42 @@ class SunModel:
 
     def set_overwriting_equation_euler_wall(self, equation):
         """
-        Select an equation to overwrite with the euler wall. Avilable options: ur, utheta, uz.
+        Select which equation to overwrite with the euler wall. Avilable options: ur, utheta, uz.
         :param equation: specify which equation will be overwritten from the euler wall condition.
         """
+        choices = ['ur', 'ut', 'uz']
+        if equation not in choices:
+            raise ValueError('Unknown equation type!')
+
         if equation == 'ur':
             self.substituted_equation = 'ur'
             print("Equation to overwrite with Euler Wall condition set to: Radial Momentum!")
         elif equation == 'utheta':
-            self.substituted_equation = 'utheta'
+            self.substituted_equation = 'ut'
             print("Equation to overwrite with Euler Wall condition set to: Tangential Momentum!")
-        elif equation == 'uz':
+        else:
             self.substituted_equation = 'uz'
             print("Equation to overwrite with Euler Wall condition set to: Axial Momentum!")
-        else:
-            raise ValueError("Not recognized option")
-        print()
 
     def print_normalization_information(self):
         """
-        Print information on non-dimensionalization in the sun module. It should provide only ones if the data
-        were already normalized in the meridional process.
+        Print information on non-dimensionalization.
         """
         print_banner_begin('NORMALIZATION')
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.2f}")
-        print(
-            f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.2f}")
-        print(
-            f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.2f}")
-        print(
-            f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.2f}")
+        print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.2f}")
+        print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.config.get_reference_density():>{total_chars_mid}.2f}")
+        print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.2f}")
         print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
-        print(
-            f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.2f}")
+        print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.config.get_reference_omega():>{total_chars_mid}.2f}")
         print_banner_end()
 
     def add_shaft_rpm(self, rpm):
         """
         Add the rpm of the shaft, in order to set the reference angular rate of the analysis (omega [rad/s]).
-        If the shaft rotest in the negative z-direction, the reference omega is still positive, but omega shaft is
-        kept with algebraic sign
-        :param rpm: rpm of the shaft, with sign according to z.
+        If the shaft rotates in the negative z-direction, the reference omega is still positive, but omega shaft is
+        kept with algebraic sign.
+        :param rpm: rotations per minute of the shaft, with sign according to z convetion.
         """
         self.omega_shaft = 2 * np.pi * rpm / 60
         self.omega_ref = np.abs(self.omega_shaft)
@@ -145,7 +140,8 @@ class SunModel:
     def ComputeJacobianPhysical(self, method='rbf', artificial_refinement=False, dx_dz=None, dx_dr=None, dy_dz=None,
                                 dy_dr=None):
         """
-        It computes the transformation gradients for every grid point, and stores the value at the node level.
+        It computes the transformation gradients for every grid point, and stores the values in the Nodes. x and y replace
+        the xi and eta coordinates of the computational domain.
         It computes the derivatives on the spectral grid since it is the only one cartesian, and the inverse transformation is
         found by inversion (usgin the Jacobian).
         :param method: method used to interpolate on the operating grid the gradients calculated on the refined grid.
@@ -164,6 +160,7 @@ class SunModel:
 
         if dx_dz is None and dx_dr is None and dy_dz is None and dy_dr is None:
             if artificial_refinement:
+                print('\nWARNING: artifical refinement is active, and  has not been validated!\n')
                 Z = self.data.meridional_obj.z_cg_fine
                 R = self.data.meridional_obj.r_cg_fine
             else:
@@ -176,13 +173,15 @@ class SunModel:
             Y, X = np.meshgrid(y, x)
 
             if routine == 'numpy':
-                dzdx, dzdy, drdx, drdy = JacobianTransform2(Z, R, X, Y)
+                dzdx, dzdy, drdx, drdy = JacobianTransform_numpy(Z, R, X, Y)
             elif routine == 'hard-coded':
-                dzdx, dzdy, drdx, drdy = JacobianTransform(Z, R, X, Y)
+                print('\nWARNING: you are using hard-coded version of numerical differentiation for the Jacobian of the grid.'
+                      'Consider passing to numpy or findiff!\n')
+                dzdx, dzdy, drdx, drdy = JacobianTransform_hardcoded(Z, R, X, Y)
             elif routine == 'findiff':
-                dzdx, dzdy, drdx, drdy = JacobianTransform3(Z, R, X, Y, order=order)
+                dzdx, dzdy, drdx, drdy = JacobianTransform_findiff(Z, R, X, Y, order=order)
             else:
-                raise ValueError('select an available routine for the transformation gradient!')
+                raise ValueError('Unknown method for transformation gradient computation!')
 
             if artificial_refinement:
                 self.dzdx = self.interpolation_on_original_grid(dzdx, X, Y, method=method)
@@ -192,6 +191,8 @@ class SunModel:
             else:
                 self.dzdx, self.dzdy, self.drdx, self.drdy = dzdx, dzdy, drdx, drdy
             self.J = self.dzdx * self.drdy - self.dzdy * self.drdx
+
+            # compute also the inverse relations, for validation purposes
             self.dxdz = (1 / self.J) * (self.drdy)
             self.dxdr = (1 / self.J) * (-self.dzdy)
             self.dydz = (1 / self.J) * (-self.drdx)
@@ -230,119 +231,121 @@ class SunModel:
                                                                      self.drdx[ii, jj], self.drdy[ii, jj])
                 self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
 
-    def ContourTransformation(self, save_filename=None, folder_name=None):
+    def ContourTransformation(self, save_filename=None, folder_name=None, domain='physical'):
         """
         Show the gradient contours.
         :param save_filename: specify the names if you want to save the figs.
+        :param folder_name: folder name
+        :param domain: physical, spectral, or all. Decide which gradients to plot.
         """
-        # plt.figure(figsize=fig_size)
-        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
-        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        # plt.title(r'$J$')
-        # plt.colorbar()
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + save_filename + '_J.pdf', bbox_inches='tight')
-        #     # plt.close()
-        #
-        # plt.figure(figsize=fig_size)
-        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
-        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        # plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
-        # plt.colorbar()
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + save_filename + '_1.pdf', bbox_inches='tight')
-        #     # plt.close()
-        #
-        # plt.figure(figsize=fig_size)
-        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
-        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        # plt.colorbar()
-        # plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + save_filename + '_2.pdf', bbox_inches='tight')
-        #     # plt.close()
-        #
-        # plt.figure(figsize=fig_size)
-        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
-        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        # plt.colorbar()
-        # plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + save_filename + '_3.pdf', bbox_inches='tight')
-        #     # plt.close()
-        #
-        # plt.figure(figsize=fig_size)
-        # plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
-        # plt.xlabel(r'$\xi \ \mathrm{[-]}$')
-        # plt.ylabel(r'$\eta \ \mathrm{[-]}$')
-        # plt.colorbar()
-        # plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + save_filename + '_4.pdf', bbox_inches='tight')
-        #     # plt.close()
+        if domain not in ['physical', 'spectral', 'all']:
+            raise ValueError('Unknown domain parameter!')
 
-        plt.figure()
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
-        plt.gca().set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')  # plt.close()
+        if domain=='spectral' or domain=='all':
+            plt.figure(figsize=fig_size)
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
+            plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+            plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+            plt.title(r'$J$')
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_name + '/' + save_filename + '_J_xi_eta.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
-        plt.gca().set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')  # plt.close()
+            plt.figure(figsize=fig_size)
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
+            plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+            plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+            plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
+            plt.colorbar()
+            if save_filename is not None:
+                plt.savefig(folder_namee + '/' + save_filename + '_dz_dxi.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
-        plt.gca().set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')  # plt.close()
+            plt.figure(figsize=fig_size)
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
+            plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+            plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
+            if save_filename is not None:
+                plt.savefig(folder_namee + '/' + save_filename + '_dz_deta.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
-        plt.colorbar()
-        plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
-        plt.gca().set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')  # plt.close()
+            plt.figure(figsize=fig_size)
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
+            plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+            plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
+            if save_filename is not None:
+                plt.savefig(folder_namee + '/' + save_filename + '_dr_dxi.pdf', bbox_inches='tight')
 
-    # def AddAMatrixToNodes(self):
-    #     """
-    #     Compute and store at the node level the A matrix. Sun Formulation
-    #     """
-    #     for ii in range(0, self.data.nAxialNodes):
-    #         for jj in range(0, self.data.nRadialNodes):
-    #             A = np.eye(5, dtype=complex)
-    #
-    #             # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
-    #             # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
-    #             # should be 1 by construction. In this case the non-dimensional equations are exactly the same
-    #             # of the dimensional ones
-    #             strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-    #                                                              self.config.get_reference_time())
-    #             A *= strouhal
-    #             self.data.dataSet[ii, jj].AddAMatrix(A)
+            plt.figure(figsize=fig_size)
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
+            plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+            plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
+            if save_filename is not None:
+                plt.savefig(folder_namee + '/' + save_filename + '_dr_deta.pdf', bbox_inches='tight')
 
-    def AddAMatrixToNodesFrancesco2(self):
+        if domain=='physical' or domain=='all':
+            plt.figure()
+            plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
+            plt.xlabel(r'$z \ \mathrm{[-]}$')
+            plt.ylabel(r'$r \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \xi}{\partial \hat{r}}$')
+            plt.gca().set_aspect('equal', adjustable='box')
+            if save_filename is not None:
+                plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')  # plt.close()
+
+            plt.figure()
+            plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
+            plt.xlabel(r'$z \ \mathrm{[-]}$')
+            plt.ylabel(r'$r \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \xi}{\partial \hat{z}}$')
+            plt.gca().set_aspect('equal', adjustable='box')
+            if save_filename is not None:
+                plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')  # plt.close()
+
+            plt.figure()
+            plt.contourf(self.data.zGrid, self.data.rGrid, self.dydr, levels=N_levels, cmap=color_map)
+            plt.xlabel(r'$z \ \mathrm{[-]}$')
+            plt.ylabel(r'$r \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \eta}{\partial \hat{r}}$')
+            plt.gca().set_aspect('equal', adjustable='box')
+            if save_filename is not None:
+                plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')  # plt.close()
+
+            plt.figure()
+            plt.contourf(self.data.zGrid, self.data.rGrid, self.dydz, levels=N_levels, cmap=color_map)
+            plt.xlabel(r'$z \ \mathrm{[-]}$')
+            plt.ylabel(r'$r \ \mathrm{[-]}$')
+            plt.colorbar()
+            plt.title(r'$\frac{\partial \eta}{\partial \hat{z}}$')
+            plt.gca().set_aspect('equal', adjustable='box')
+            if save_filename is not None:
+                plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')  # plt.close()
+
+    def AddAMatrixToNodes_sun(self):
+        """
+        Compute and store at the node level the A matrix. Sun Formulation
+        """
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                A = np.eye(5, dtype=complex)
+
+                # if data was already non-dimensional, multiply only matrix A times the strouhal number. If the reference
+                # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
+                # should be 1 by construction. In this case the non-dimensional equations are exactly the same
+                # of the dimensional ones
+                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
+                                                                 self.config.get_reference_time())
+                A *= strouhal
+                self.data.dataSet[ii, jj].AddAMatrix(A)
+
+    def AddAMatrixToNodes_francesco(self):
         """
         Compute and store at the node level the A matrix. My Formulation.
         """
@@ -360,24 +363,24 @@ class SunModel:
                 A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
-    # def AddBMatrixToNodes(self):
-    #     """
-    #     Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
-    #     """
-    #     for ii in range(0, self.data.nAxialNodes):
-    #         for jj in range(0, self.data.nRadialNodes):
-    #             B = np.zeros((5, 5), dtype=complex)
-    #             B[0, 0] = self.data.dataSet[ii, jj].ur
-    #             B[1, 1] = self.data.dataSet[ii, jj].ur
-    #             B[2, 2] = self.data.dataSet[ii, jj].ur
-    #             B[3, 3] = self.data.dataSet[ii, jj].ur
-    #             B[4, 4] = self.data.dataSet[ii, jj].ur
-    #             B[0, 1] = self.data.dataSet[ii, jj].rho
-    #             B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
-    #             B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
-    #             self.data.dataSet[ii, jj].AddBMatrix(B)
+    def AddBMatrixToNodes_sun(self):
+        """
+        Compute and store at the node level the B matrix, needed to compute hat{B} later. Sun Formulation.
+        """
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                B = np.zeros((5, 5), dtype=complex)
+                B[0, 0] = self.data.dataSet[ii, jj].ur
+                B[1, 1] = self.data.dataSet[ii, jj].ur
+                B[2, 2] = self.data.dataSet[ii, jj].ur
+                B[3, 3] = self.data.dataSet[ii, jj].ur
+                B[4, 4] = self.data.dataSet[ii, jj].ur
+                B[0, 1] = self.data.dataSet[ii, jj].rho
+                B[1, 4] = 1 / self.data.dataSet[ii, jj].rho
+                B[4, 1] = self.data.dataSet[ii, jj].p * self.gmma
+                self.data.dataSet[ii, jj].AddBMatrix(B)
 
-    def AddBMatrixToNodesFrancesco2(self):
+    def AddBMatrixToNodes_francesco(self):
         """
         Compute and store at the node level the B matrix, needed to compute hat{B} later. My Formulation.
         """
@@ -390,30 +393,30 @@ class SunModel:
                           self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddBMatrix(B)
 
-    # def AddCMatrixToNodes(self):
-    #     """
-    #     Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
-    #     Sun Formulation.
-    #     """
-    #     m = self.config.get_circumferential_harmonic_order()
-    #     print(f"Circumferential Harmonic Order set to: {m}")
-    #
-    #     for ii in range(0, self.data.nAxialNodes):
-    #         for jj in range(0, self.data.nRadialNodes):
-    #             C = np.zeros((5, 5), dtype=complex)
-    #             C[0, 0] = self.data.dataSet[ii, jj].ut
-    #             C[1, 1] = self.data.dataSet[ii, jj].ut
-    #             C[2, 2] = self.data.dataSet[ii, jj].ut
-    #             C[3, 3] = self.data.dataSet[ii, jj].ut
-    #             C[4, 4] = self.data.dataSet[ii, jj].ut
-    #             C[0, 2] = self.data.dataSet[ii, jj].rho
-    #             C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
-    #             C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
-    #
-    #             C = C * 1j * m / self.data.dataSet[ii, jj].r
-    #             self.data.dataSet[ii, jj].AddCMatrix(C)
+    def AddCMatrixToNodes_sun(self):
+        """
+        Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
+        Sun Formulation.
+        """
+        m = self.config.get_circumferential_harmonic_order()
+        print(f"Circumferential Harmonic Order set to: {m}")
 
-    def AddCMatrixToNodesFrancesco2(self):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                C = np.zeros((5, 5), dtype=complex)
+                C[0, 0] = self.data.dataSet[ii, jj].ut
+                C[1, 1] = self.data.dataSet[ii, jj].ut
+                C[2, 2] = self.data.dataSet[ii, jj].ut
+                C[3, 3] = self.data.dataSet[ii, jj].ut
+                C[4, 4] = self.data.dataSet[ii, jj].ut
+                C[0, 2] = self.data.dataSet[ii, jj].rho
+                C[2, 4] = 1 / self.data.dataSet[ii, jj].rho
+                C[4, 2] = self.data.dataSet[ii, jj].p * self.gmma
+
+                C = C * 1j * m / self.data.dataSet[ii, jj].r
+                self.data.dataSet[ii, jj].AddCMatrix(C)
+
+    def AddCMatrixToNodes_francesco(self):
         """
         Compute and store at node level the C matrix, already multiplied by j*m/r. Ready to be used in the final system of eqs.
         My Formulation.
@@ -431,27 +434,27 @@ class SunModel:
                 C *= 1j * m / self.data.meridional_obj.r_cg[ii, jj]
                 self.data.dataSet[ii, jj].AddCMatrix(C)
 
-    # def AddEMatrixToNodes(self):
-    #     """
-    #     Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
-    #     """
-    #     for ii in range(0, self.data.nAxialNodes):
-    #         for jj in range(0, self.data.nRadialNodes):
-    #             E = np.zeros((5, 5), dtype=complex)
-    #
-    #             E[0, 0] = self.data.dataSet[ii, jj].uz
-    #             E[1, 1] = self.data.dataSet[ii, jj].uz
-    #             E[2, 2] = self.data.dataSet[ii, jj].uz
-    #             E[3, 3] = self.data.dataSet[ii, jj].uz
-    #             E[4, 4] = self.data.dataSet[ii, jj].uz
-    #
-    #             E[0, 3] = self.data.dataSet[ii, jj].rho
-    #             E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
-    #             E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
-    #
-    #             self.data.dataSet[ii, jj].AddEMatrix(E)
+    def AddEMatrixToNodes_sun(self):
+        """
+        Compute and store at the node level the E matrix, needed to compute hat{E}. Sun Formulation.
+        """
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                E = np.zeros((5, 5), dtype=complex)
 
-    def AddEMatrixToNodesFrancesco2(self):
+                E[0, 0] = self.data.dataSet[ii, jj].uz
+                E[1, 1] = self.data.dataSet[ii, jj].uz
+                E[2, 2] = self.data.dataSet[ii, jj].uz
+                E[3, 3] = self.data.dataSet[ii, jj].uz
+                E[4, 4] = self.data.dataSet[ii, jj].uz
+
+                E[0, 3] = self.data.dataSet[ii, jj].rho
+                E[3, 4] = 1 / self.data.dataSet[ii, jj].rho
+                E[4, 3] = self.data.dataSet[ii, jj].p * self.gmma
+
+                self.data.dataSet[ii, jj].AddEMatrix(E)
+
+    def AddEMatrixToNodes_francesco(self):
         """
         Compute and store at the node level the E matrix, needed to compute hat{E}. My Formulation.
         """
@@ -464,46 +467,46 @@ class SunModel:
                           self.data.meridional_obj.rho[ii, jj]
                 self.data.dataSet[ii, jj].AddEMatrix(E)
 
-    # def AddRMatrixToNodes(self):
-    #     """
-    #     Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
-    #     """
-    #     for ii in range(0, self.data.nAxialNodes):
-    #         for jj in range(0, self.data.nRadialNodes):
-    #             R = np.zeros((5, 5), dtype=complex)
-    #             R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
-    #                                                                                              / self.data.dataSet[ii, jj].r)
-    #             R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
-    #             R[0, 2] = 0
-    #             R[0, 3] = self.data.dataSet[ii, jj].drho_dz
-    #             R[0, 4] = 0
-    #             R[1, 0] = -self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
-    #             R[1, 1] = self.data.dataSet[ii, jj].dur_dr
-    #             R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-    #             R[1, 3] = self.data.dataSet[ii, jj].dur_dz
-    #             R[1, 4] = 0
-    #             R[2, 0] = 0
-    #             R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
-    #             R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
-    #             R[2, 3] = self.data.dataSet[ii, jj].dut_dz
-    #             R[2, 4] = 0
-    #             R[3, 0] = -self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
-    #             R[3, 1] = self.data.dataSet[ii, jj].duz_dr
-    #             R[3, 2] = 0
-    #             R[3, 3] = self.data.dataSet[ii, jj].duz_dz
-    #             R[3, 4] = 0
-    #             R[4, 0] = 0
-    #             R[4, 1] = self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].dp_dr
-    #             R[4, 2] = 0
-    #             R[4, 3] = self.data.dataSet[ii, jj].dp_dz
-    #             R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
-    #                                    self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
-    #             self.data.dataSet[ii, jj].AddRMatrix(R)
+    def AddRMatrixToNodes_sun(self):
+        """
+        Compute and store at the node level the R matrix, ready to be used in the final system of eqs. Sun Formulation.
+        """
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
+                R = np.zeros((5, 5), dtype=complex)
+                R[0, 0] = self.data.dataSet[ii, jj].dur_dr + self.data.dataSet[ii, jj].duz_dz + (self.data.dataSet[ii, jj].ur
+                                                                                                 / self.data.dataSet[ii, jj].r)
+                R[0, 1] = self.data.dataSet[ii, jj].rho / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].drho_dr
+                R[0, 2] = 0
+                R[0, 3] = self.data.dataSet[ii, jj].drho_dz
+                R[0, 4] = 0
+                R[1, 0] = -self.data.dataSet[ii, jj].dp_dr / self.data.dataSet[ii, jj].rho ** 2
+                R[1, 1] = self.data.dataSet[ii, jj].dur_dr
+                R[1, 2] = -2 * self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
+                R[1, 3] = self.data.dataSet[ii, jj].dur_dz
+                R[1, 4] = 0
+                R[2, 0] = 0
+                R[2, 1] = self.data.dataSet[ii, jj].dut_dr + self.data.dataSet[ii, jj].ut / self.data.dataSet[ii, jj].r
+                R[2, 2] = self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r
+                R[2, 3] = self.data.dataSet[ii, jj].dut_dz
+                R[2, 4] = 0
+                R[3, 0] = -self.data.dataSet[ii, jj].dp_dz / self.data.dataSet[ii, jj].rho ** 2
+                R[3, 1] = self.data.dataSet[ii, jj].duz_dr
+                R[3, 2] = 0
+                R[3, 3] = self.data.dataSet[ii, jj].duz_dz
+                R[3, 4] = 0
+                R[4, 0] = 0
+                R[4, 1] = self.data.dataSet[ii, jj].p * self.gmma / self.data.dataSet[ii, jj].r + self.data.dataSet[ii, jj].dp_dr
+                R[4, 2] = 0
+                R[4, 3] = self.data.dataSet[ii, jj].dp_dz
+                R[4, 4] = self.gmma * (self.data.dataSet[ii, jj].duz_dz + self.data.dataSet[ii, jj].dur_dr +
+                                       self.data.dataSet[ii, jj].ur / self.data.dataSet[ii, jj].r)
+                self.data.dataSet[ii, jj].AddRMatrix(R)
 
-    def AddRMatrixToNodesFrancesco2(self):
+    def AddRMatrixToNodes_francesco(self):
         """
         Compute and store at the node level the R matrix.
-        My version of the equations.
+        My formulation, last version.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -533,7 +536,7 @@ class SunModel:
                 R[4, 0] = -self.gmma / (self.data.meridional_obj.rho[ii, jj] ** 2) * (
                         self.data.meridional_obj.ur[ii, jj] * self.data.meridional_obj.p[ii, jj] *
                         self.data.meridional_obj.drho_dr[ii, jj] + self.data.meridional_obj.uz[ii, jj] *
-                        self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])  # second version
+                        self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])  # last version
                 R[4, 1] = self.data.meridional_obj.dp_dr[ii, jj] - self.data.meridional_obj.p[ii, jj] * \
                           self.data.meridional_obj.drho_dr[ii, jj] * self.gmma / self.data.meridional_obj.rho[ii, jj]
                 R[4, 3] = self.data.meridional_obj.dp_dz[ii, jj] - self.gmma / self.data.meridional_obj.rho[ii, jj] * \
@@ -584,8 +587,7 @@ class SunModel:
 
     def AddHatMatricesToNodes(self):
         """
-        Compute and store at the node level the hat{B}, hat{E} matrix, needed for following multiplication with the spectral
-        differential operators.
+        Compute and store at the node level the hat{B}, hat{E} matrix, to express the problem in the computational domain.
         """
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
@@ -607,7 +609,7 @@ class SunModel:
         This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
         derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
         which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
-        The spectral differentiation formula has been double-checked in the respective debug file.
+        The spectral differentiation formula, serial version, has been double-checked.
         :param verbose: print additional info.
         """
 
@@ -618,7 +620,7 @@ class SunModel:
         # Q_const is the global matrix storing B and E elements after spectral differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
 
-        # differentiation of a general perturbation vector (for the node (i,j)) along xi  and eta. (formula double-checked)
+        # differentiation of a general perturbation vector (for the node (i,j)) along xi  and eta.
         for ii in range(0, self.dataSpectral.nAxialNodes):
             for jj in range(0, self.dataSpectral.nRadialNodes):
                 B_ij = self.data.dataSet[ii, jj].Bhat.copy()  # Bhat matrix of the ij node
@@ -650,13 +652,13 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
-    def ApplySpectralDifferentiationKronecker(self, verbose=False):
+    def ApplySpectralDifferentiationKronecker(self):
         """
         This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
         derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
         which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
-        The spectral differentiation formula has been taken from Spectral Methods in Matlab, Trefethen.
-        :param verbose: print additional info.
+        The spectral differentiation formula use Kronecker product implementation, and has been taken from -Spectral Methods
+         in Matlab, Trefethen-.
         """
 
         # Differential operators in 1D
@@ -678,7 +680,7 @@ class SunModel:
                 row = ii*5
                 col = jj*5
 
-                # indexes of the nodes in 2D. jj is here the absolute node counter, going from 0 to nx*ny
+                # indexes of the node in the 2D grid. jj works as the absolute node counter, going from 0 to nx*ny
                 inode = jj // self.data.nRadialNodes
                 jnode = jj % self.data.nRadialNodes
 

@@ -3,7 +3,7 @@ from Utils.styles import total_chars
 from findiff import FinDiff
 
 
-def JacobianTransform(X, Y, Z, R):
+def JacobianTransform_hardcoded(X, Y, Z, R):
     """
     It computes the jacobian of the transformation between two sets of cordinates. It uses central differences in the central
     points and first order at the borders.
@@ -77,7 +77,7 @@ def JacobianTransform(X, Y, Z, R):
     return dxdz, dxdr, dydz, dydr
 
 
-def JacobianTransform2(X, Y, Z, R):
+def JacobianTransform_numpy(X, Y, Z, R):
     """
     It computes the jacobian of the transformation between two sets of cordinates, using numpy.gradient().
     :param X: x cordinates of which we want the gradients (physical grid)
@@ -93,7 +93,7 @@ def JacobianTransform2(X, Y, Z, R):
     return dxdz, dxdr, dydz, dydr
 
 
-def JacobianTransform3(X, Y, Z, R, order=2):
+def JacobianTransform_findiff(X, Y, Z, R, order=2):
     """
     It computes the jacobian of the transformation between two sets of cordinates, using findiff library.
     :param X: x cordinates of which we want the gradients
