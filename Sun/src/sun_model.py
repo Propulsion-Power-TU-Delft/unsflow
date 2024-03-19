@@ -549,6 +549,12 @@ class SunModel:
         compute and store at the node level the S matrix, ready to be used in the final system of eqs. The matrix formulation
         depends on the selected body-force model.
         """
+        bfm_disable = self.config.get_disable_body_force()
+        if bfm_disable:
+            print('Body Force Model Off')
+        else:
+            print('Body Force Model Active')
+
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 S = np.zeros((5, 5), dtype=complex)
@@ -571,7 +577,9 @@ class SunModel:
                         S[4, 3] = self.data.meridional_obj.S43[ii, jj]
                 else:
                     pass
-
+                S *= -1  # to change sign bringing the force terms on the left hand side
+                if bfm_disable:
+                    S *= 0  # disable body force
                 self.data.dataSet[ii, jj].AddSMatrix(S)
 
     def AddHatMatricesToNodes(self):

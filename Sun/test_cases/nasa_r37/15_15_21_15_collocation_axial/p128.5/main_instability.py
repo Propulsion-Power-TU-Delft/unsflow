@@ -19,7 +19,7 @@ for meridional_block in meridional_obj.group:
     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
-for sun_obj in sun_blocks[1:2]:
+for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
     sun_obj.set_overwriting_equation_euler_wall('uz')
     sun_obj.ComputeSpectralGrid()
@@ -42,9 +42,9 @@ for sun_obj in sun_blocks[1:2]:
     sun_obj.apply_boundary_conditions_generalized()
     ii += 1
 
-sun_multiblock = SunModelMultiBlock(sun_blocks[1:2], config)
+sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-sun_multiblock.apply_matching_conditions()
+sun_multiblock.apply_matching_conditions(mode='collocation method')
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()

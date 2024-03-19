@@ -729,6 +729,7 @@ class SunModel1D:
 
             self.L1[row, :] = np.zeros(self.L1[row, :].shape)  # zero row
             self.L2[row, :] = np.zeros(self.L2[row, :].shape)
+
         # elif condition == 'free':
         #     pass
         #

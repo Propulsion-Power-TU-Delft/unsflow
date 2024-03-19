@@ -165,6 +165,13 @@ class Config:
         else:
             return False
 
+    def get_disable_body_force(self):
+        res = self.config_parser.get('SUN MODEL', 'DISABLE_BODY_FORCE')
+        if res.lower() == 'true':
+            return True
+        else:
+            return False
+
     def get_mesh_generation_method(self):
         return str(self.config_parser.get('CFD PROCESSING', 'MESH_GENERATION_METHOD'))
 
