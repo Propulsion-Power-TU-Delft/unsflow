@@ -16,12 +16,12 @@ from Utils.styles import *
 import pickle
 
 # input data of the problem (SI units)
+r1 = 0.1826  # inner radius [m]
 r2 = 0.2487  # outer radius [m]
-r1 = r2/10  # inner radius [m]
 M = 0.015  # Mach number
 p = 100e3  # pressure [Pa]
 T = 288  # temperature [K]
-L = 0.25  # length [m]
+L = 0.08  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p/R/T  # density [kg/m3]
@@ -40,11 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 45
-Nr = 15
-
-with open("../analytical/analytical_eigenvalues.pickle", 'rb') as file:
-    omegar_an = pickle.load(file)
+Nz = 15
+Nr = 5
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -74,7 +71,7 @@ sun_blocks = [sun_obj]
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('uz')
+    sun_obj.set_overwriting_equation_euler_wall('ut')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodes_francesco()
@@ -84,7 +81,7 @@ for sun_obj in sun_blocks:
     sun_obj.AddRMatrixToNodes_francesco()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
-    sun_obj.ApplySpectralDifferentiationKronecker()
+    sun_obj.ApplySpectralDifferentiation()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
     sun_obj.build_R_global_matrix()
@@ -92,17 +89,23 @@ for sun_obj in sun_blocks:
     sun_obj.build_Z_global_matrix()
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
-    sun_obj.apply_boundary_conditions_generalized()
+    sun_obj.apply_boundary_conditions_generalized(mode='added')
     ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 
-omega_search = 10000
+omega_search = 23000
 sigma = omega_search / omega_ref
 
 A = sun_multiblock.L0
 M = -sun_multiblock.L1
+
+plt.figure()
+plt.spy(A-sigma*M)
+plt.title(r'$L_0+L_1 \omega$')
+# plt.show()
+
 C = np.linalg.inv(A - sigma * M)
 C = np.dot(C, M)
 print('Searching Eigenvalues with ARPACK...')
@@ -123,18 +126,20 @@ for i in range(len(sorted_indices)):
     eigenvectors[:, i] = eigenvecs[:, sorted_indices[i]]
 
 
+omegar_an = [13450, 21077, 26721, 31296, 35049]
+omegai_an = [0, 0, 0, 0, 0]
 
 # PLOT RESULTS
 marker_size = 125
 fig, ax = plt.subplots()
-ax.scatter(omegar_an, omegar_an*0, marker='x', facecolors='blue',
+ax.scatter(omegar_an, omegai_an, marker='x', facecolors='blue',
            s=marker_size, label=r'analytical')
 ax.scatter(eigenvalues.real, eigenvalues.imag, marker='o', facecolors='none', edgecolors='red',
            s=marker_size, label=r'numerical')
 ax.set_xlabel(r'$\omega_{R}$ [rad/s]', fontsize=font_labels)
 ax.set_ylabel(r'$\omega_{I}$ [rad/s]', fontsize=font_labels)
-ax.set_xlim([4500, 17500])
-ax.set_ylim([-2000, 2000])
+ax.set_xlim([12000, 36000])
+ax.set_ylim([-8000, 8000])
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 ax.legend(fontsize=font_legend)
@@ -153,7 +158,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
     uz_eig = []
     p_eig = []
 
-    for i in range(len(eigenvec)):
+    for i in range(len(eigenvec)-sun_obj.rows_added):
         if (i) % 5 == 0:
             rho_eig.append(eigenvec[i])
         elif (i - 1) % 5 == 0 and i != 0:
@@ -255,7 +260,6 @@ for ivec in range(np.shape(eigenvectors)[1]):
     plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
     plt.title(r'$\tilde{p}_{%i}$' % (ivec + 1), fontsize=font_title)
     cnbar = plt.colorbar(cnt)
-    plt.quiver(z_grid, r_grid, uz_eig_r, ur_eig_r)
     cnbar.ax.tick_params(labelsize=font_axes)
     plt.savefig('pictures/%02i_%02i/eigenfunction_p_%i.pdf' % (Nz, Nr, ivec + 1), bbox_inches='tight')
 
@@ -264,4 +268,4 @@ file_path = 'data/meta/%02i_%02i_%02i.pickle'%(Nz, Nr, config.get_grid_transform
 with open(file_path, 'wb') as file:
     pickle.dump(eigenvalues, file)
 
-# plt.show()
+plt.show()
