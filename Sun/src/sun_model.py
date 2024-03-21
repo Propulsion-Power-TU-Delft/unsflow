@@ -68,7 +68,7 @@ class SunModel:
         if equation == 'ur':
             self.substituted_equation = 'ur'
             print("Equation to overwrite with Euler Wall condition set to: Radial Momentum!")
-        elif equation == 'utheta':
+        elif equation == 'ut':
             self.substituted_equation = 'ut'
             print("Equation to overwrite with Euler Wall condition set to: Tangential Momentum!")
         else:
@@ -243,8 +243,8 @@ class SunModel:
             raise ValueError('Unknown domain parameter!')
 
         if domain=='spectral' or domain=='all':
-            plt.figure(figsize=fig_size)
-            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels_fine, cmap=color_map)
+            plt.figure()
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.title(r'$J$')
@@ -252,41 +252,41 @@ class SunModel:
             if save_filename is not None:
                 plt.savefig(folder_name + '/' + save_filename + '_J_xi_eta.pdf', bbox_inches='tight')
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels_fine, cmap=color_map)
+            plt.figure()
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdx, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_namee + '/' + save_filename + '_dz_dxi.pdf', bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_dz_dxi.pdf', bbox_inches='tight')
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels_fine, cmap=color_map)
+            plt.figure()
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.dzdy, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
             plt.title(r'$\frac{\partial \hat{z}}{\partial \eta}$')
             if save_filename is not None:
-                plt.savefig(folder_namee + '/' + save_filename + '_dz_deta.pdf', bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_dz_deta.pdf', bbox_inches='tight')
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels_fine, cmap=color_map)
+            plt.figure()
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdx, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
             plt.title(r'$\frac{\partial \hat{r}}{\partial \xi}$')
             if save_filename is not None:
-                plt.savefig(folder_namee + '/' + save_filename + '_dr_dxi.pdf', bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_dr_dxi.pdf', bbox_inches='tight')
 
-            plt.figure(figsize=fig_size)
-            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels_fine, cmap=color_map)
+            plt.figure()
+            plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.drdy, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
             plt.title(r'$\frac{\partial \hat{r}}{\partial \eta}$')
             if save_filename is not None:
-                plt.savefig(folder_namee + '/' + save_filename + '_dr_deta.pdf', bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_dr_deta.pdf', bbox_inches='tight')
 
         if domain=='physical' or domain=='all':
             plt.figure()
@@ -328,6 +328,30 @@ class SunModel:
             plt.gca().set_aspect('equal', adjustable='box')
             if save_filename is not None:
                 plt.savefig(folder_name + '/' + save_filename + '_deta_dz.pdf', bbox_inches='tight')  # plt.close()
+
+    def contour_grid_mapping(self, save_filename=None, folder_name=None):
+        """
+        Show the grid transformation law z(xi, eta), and r(xi, eta).
+        :param save_filename: specify the names if you want to save the figs.
+        :param folder_name: folder name
+        """
+        plt.figure()
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.data.zGrid, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        plt.title(r'$z(\xi, \eta)$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_z_xi_eta.pdf', bbox_inches='tight')
+
+        plt.figure()
+        plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.data.rGrid, levels=N_levels, cmap=color_map)
+        plt.xlabel(r'$\xi \ \mathrm{[-]}$')
+        plt.ylabel(r'$\eta \ \mathrm{[-]}$')
+        plt.title(r'$r(\xi, \eta)$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_r_xi_eta.pdf', bbox_inches='tight')
 
     def AddAMatrixToNodes_sun(self):
         """
@@ -566,11 +590,9 @@ class SunModel:
                     S[1, 1] = self.data.meridional_obj.S11[ii, jj]
                     S[1, 2] = self.data.meridional_obj.S12[ii, jj]
                     S[1, 3] = self.data.meridional_obj.S13[ii, jj]
-
                     S[2, 1] = self.data.meridional_obj.S21[ii, jj]
                     S[2, 2] = self.data.meridional_obj.S22[ii, jj]
                     S[2, 3] = self.data.meridional_obj.S23[ii, jj]
-
                     S[3, 1] = self.data.meridional_obj.S31[ii, jj]
                     S[3, 2] = self.data.meridional_obj.S32[ii, jj]
                     S[3, 3] = self.data.meridional_obj.S33[ii, jj]
@@ -581,7 +603,7 @@ class SunModel:
                         S[4, 3] = self.data.meridional_obj.S43[ii, jj]
                 else:
                     pass
-                S *= -1  # to change sign bringing the force terms on the left hand side
+                S *= -1  # change sign, because the BFM term are brought to the left hand-side of the equation.
                 if bfm_disable:
                     S *= 0  # disable body force
                 self.data.dataSet[ii, jj].AddSMatrix(S)
@@ -608,8 +630,8 @@ class SunModel:
     def ApplySpectralDifferentiation(self, verbose=False):
         """
         This method applies Chebyshev-Gauss-Lobatto differentiation method to hat{B},hat{E}, to express the perturbation
-        derivatives as a function of the perturbation at the other nodes. It saves a new global (for all the nodes) matrix Q_const,
-        which is part of the global stability matrix. The full dimension is: (nPoints*5,nPoints*5).
+        derivatives as a function of the perturbation at the other nodes. It saves a new global matrix Q_const,
+        which is part of the global stability matrix. The full dimension is: (nPoints*5, nPoints*5).
         The spectral differentiation formula, serial version, has been double-checked.
         :param verbose: print additional info.
         """
@@ -1462,21 +1484,21 @@ class SunModel:
             plt.spy(self.P)
             plt.title(r'$\mathbf{P}$')
 
-    def solve_quadratic_evp(self):
-        """
-        Solve the EVP using implicitly restarted Arnoldi algorithm with shift and invert strategy
-        """
-        print("Transforming generalized EVP in standard one...")
-        Y_tilde = np.linalg.inv(Y - sigma * P)
-        Y_tilde = np.dot(Y_tilde, P)
-
-        print("Solving standard EVP...")
-        self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-        self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
-        self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
-        self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
-        self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
-        self.sort_eigensolution()
+    # def solve_quadratic_evp(self):
+    #     """
+    #     Solve the EVP using implicitly restarted Arnoldi algorithm with shift and invert strategy
+    #     """
+    #     print("Transforming generalized EVP in standard one...")
+    #     Y_tilde = np.linalg.inv(self.Y - sigma * P)
+    #     Y_tilde = np.dot(Y_tilde, P)
+    #
+    #     print("Solving standard EVP...")
+    #     self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
+    #     self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
+    #     self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
+    #     self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
+    #     self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
+    #     self.sort_eigensolution()
 
     def sort_eigensolution(self):
         """
@@ -1498,13 +1520,13 @@ class SunModel:
             self.eigenfreqs_rs[i] = rs[sorted_indices[i]]
             self.eigenmodes[:, i] = eigenvectors[:, sorted_indices[i]]
 
-    def plot_eigenfrequencies(self, delimit=False, save_filename=None):
+    def plot_eigenfrequencies(self, delimit=False, save_filename=None, folder_name='pictures'):
         """
         Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
         :param save_filename: if not None, save figure files
         """
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots()
         for mode in self.eigenfields:
             rs = mode.eigenfrequency.real / self.omega_ref
             df = mode.eigenfrequency.imag / self.omega_ref
@@ -1517,7 +1539,7 @@ class SunModel:
             ax.set_ylim([-1, 0.5])
         ax.grid(alpha=grid_opacity)
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def extract_eigenfields(self, n=None):
         """
@@ -1565,7 +1587,7 @@ class SunModel:
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfields(self, n=None, save_filename=None):
+    def plot_eigenfields(self, n=None, save_filename=None, folder_name = 'pictures'):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
@@ -1604,7 +1626,7 @@ class SunModel:
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
@@ -1616,7 +1638,7 @@ class SunModel:
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
@@ -1628,7 +1650,7 @@ class SunModel:
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
@@ -1640,7 +1662,7 @@ class SunModel:
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
             plt.figure(figsize=self.pic_size_contour)
@@ -1652,10 +1674,10 @@ class SunModel:
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
             if save_filename is not None:
-                plt.savefig(folder_name + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
+                plt.savefig(folder_name + '/' + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
-    def write_results(self, save_filename=None, extension='csv'):
+    def write_results(self, folder_name, save_filename=None, extension='csv'):
         """
         Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
         Possible file types are (csv, pickle).

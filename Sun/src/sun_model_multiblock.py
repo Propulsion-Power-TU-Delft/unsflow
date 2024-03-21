@@ -37,7 +37,6 @@ class SunModelMultiBlock():
         """
         self.blocks = sun_objects
         self.config = config
-
         self.number_blocks = len(self.blocks)
         self.streamwise_points = [block.data.nAxialNodes for block in self.blocks]
         self.spanwise_points = self.blocks[0].data.nRadialNodes
@@ -106,24 +105,23 @@ class SunModelMultiBlock():
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
         are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching
         conditions are guaranteed no matter the value of omega.
-
         :param mode: method used to implement the same derivatives in the streamwise direction at the matching nodes
         """
-        modes = ['finite difference', 'collocation method']
-        if mode not in modes:
-            raise ValueError('Uknown differentiation method.')
         """
         Starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the 
         previous block. Since every node is written for 2 different domains, in one block we implement the same value 
         of the flow variables, while in the following block we impose the same values of the derivatives.
         """
+        modes = ['finite difference', 'collocation method']
+        if mode not in modes:
+            raise ValueError('Uknown differentiation method.')
 
-        # Let's start from the second block (index 1), and consider the block itself and the previous.
-        rows_band = self.config.get_spanwise_points() * 5  # number of equations to modify per block
+        # Let's start from the downstream block (index 1), and consider the block itself and the previous (index 0).
+        rows_band = self.config.get_spanwise_points() * 5  # number of equations to modify per each block
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
-            """previous block rows (where same fluid conditions are implemented)"""
+            #previous block rows (where same fluid conditions are implemented)
             self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
@@ -148,11 +146,8 @@ class SunModelMultiBlock():
                     rows_band) / dxi_dn
 
             elif mode == 'collocation method':
-                """
-                Derivatives now expressed through the Chebyshev collocation method.
-                """
-                self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(
-                    self.L0[eq_counter:eq_counter + rows_band, :])
+                #Derivatives now expressed through the Chebyshev collocation method.
+                self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
                 # previous block
                 DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock-1].dataSpectral.z)
@@ -182,7 +177,7 @@ class SunModelMultiBlock():
     def compute_P_Y_matrices(self):
         """
         Once the L0,L1,L2 matrices have been modified by the boundary and matching conditions, build the Y and P matrices of the
-        equivalent linearized eigenvalue problem
+        equivalent linearized eigenvalue problem.
         """
         Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
         Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
@@ -195,7 +190,8 @@ class SunModelMultiBlock():
     def solve_evp(self, sort_mode='imaginary decreasing'):
         """
         Solve the EVP using the Arnoldi Algorithm.
-        :param sort_mode: specify the criterion on which the eigenfreqencies and modes are sorted
+        :param sort_mode: specify the criterion on which the eigenfreqencies and modes are sorted. Imaginary decreasing or
+        real increasing
         """
         sigma = self.config.get_research_center_omega_eigenvalues() / self.config.get_reference_omega()
         print("Transforming generalized EVP in standard one...")
@@ -203,9 +199,9 @@ class SunModelMultiBlock():
 
         print("Solving standard EVP...")
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0] // 2]
+        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0] // 2]  # divided by two because of the quadratic extension
 
-        self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
+        self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return from the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
         self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / \
                              self.config.get_circumferential_harmonic_order()
@@ -215,7 +211,7 @@ class SunModelMultiBlock():
 
     def sort_eigensolution(self, sort_mode='imaginary decreasing'):
         """
-        Sort the eigenvalues and eigenvectors from the most unstable (bigger imaginary part) to the least one.
+        Sort the eigenvalues and eigenvectors following the sort_mode ordering.
         """
         # make copies of the arrays to sort
         eigenfreqs = np.copy(self.eigenfreqs)
@@ -346,7 +342,6 @@ class SunModelMultiBlock():
         imode = 0
         for mode in self.eigenfields[0:n]:
             imode += 1
-            # if mode.is_physical:
             rs = mode.eigenfrequency.real / self.config.get_reference_omega()
             df = mode.eigenfrequency.imag / self.config.get_reference_omega()
 
@@ -392,6 +387,7 @@ class SunModelMultiBlock():
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
             plt.colorbar()
+            plt.quiver(z, r, mode.eigen_uz, mode.eigen_ur)
             if save_filename is not None:
                 plt.savefig(save_foldername + '/' + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
@@ -423,7 +419,7 @@ class SunModelMultiBlock():
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """
-        Plot the L matrices, to inspect their composition
+        Plot the L matrices of the full system, to inspect their composition
         """
         if save_filename is not None:
             create_folder(save_foldername)
@@ -438,6 +434,9 @@ class SunModelMultiBlock():
         plt.savefig(os.path.join(save_foldername, save_filename + '.pdf'), bbox_inches='tight')
 
     def hist_inspect_L_global_matrices(self):
+        """
+        Histogram of the values contained in the L matrices
+        """
         matrix_dict = {r'$L_0$': self.L0, r'$L_1$': self.L1, r'$L_2$': self.L2}
         for name, matrix in matrix_dict.items():
             real_values = matrix.flatten().real[matrix.flatten().real!=0]

@@ -1,0 +1,10 @@
+cd p128
+python main_instability.py
+cd ../p128.5
+python main_instability.py
+cd ../p128.75
+python main_instability.py
+cd ../p128.9
+python main_instability.py
+cd ..
+python eigenvalue_comparison.py

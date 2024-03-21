@@ -14,9 +14,11 @@ with open(config.get_meridional_pickle_filepath(), "rb") as file:
 
 # STABILITY ANALYSIS
 sun_blocks = []
-for meridional_block in meridional_obj.group:
-    compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
-    sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
+compressor_grid = Sun.src.sun_grid.SunGrid(meridional_obj)
+sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
+# for meridional_block in meridional_obj.group:
+#     compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
+#     sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
 
 ii = 0
 for sun_obj in sun_blocks:

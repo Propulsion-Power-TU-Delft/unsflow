@@ -1,5 +1,4 @@
 import pickle
-import matplotlib.pyplot as plt
 import Sun
 from Sun.src.sun_model_multiblock import SunModelMultiBlock
 from Grid.src.config import Config
@@ -12,7 +11,6 @@ config = Config('nasa_rotor_37.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 
-# STABILITY ANALYSIS
 sun_blocks = []
 for meridional_block in meridional_obj.group:
     compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
@@ -21,9 +19,12 @@ for meridional_block in meridional_obj.group:
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('ur')
+    sun_obj.ShowNormals()
+    sun_obj.set_overwriting_equation_euler_wall('uz')
     sun_obj.ComputeSpectralGrid()
+    # sun_obj.contour_grid_mapping()
     sun_obj.ComputeJacobianPhysical()
+    # sun_obj.ContourTransformation(domain='spectral')
     sun_obj.AddAMatrixToNodes_francesco()
     sun_obj.AddBMatrixToNodes_francesco()
     sun_obj.AddCMatrixToNodes_francesco()

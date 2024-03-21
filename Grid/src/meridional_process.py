@@ -945,7 +945,7 @@ class MeridionalProcess:
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
 
-    def contour_all_plots(self, save_filename=None):
+    def contour_all_plots(self, save_filename):
         """
         call all the contour plots
         """

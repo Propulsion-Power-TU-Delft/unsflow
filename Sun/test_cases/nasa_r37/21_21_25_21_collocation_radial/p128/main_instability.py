@@ -12,6 +12,9 @@ config = Config('nasa_rotor_37.ini')
 with open(config.get_meridional_pickle_filepath(), "rb") as file:
     meridional_obj = pickle.load(file)
 
+for meridional_block in meridional_obj.group:
+    meridional_block.contour_all_plots(save_filename='check')
+
 # STABILITY ANALYSIS
 sun_blocks = []
 for meridional_block in meridional_obj.group:

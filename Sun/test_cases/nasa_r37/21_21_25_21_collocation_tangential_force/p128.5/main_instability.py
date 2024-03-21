@@ -21,7 +21,7 @@ for meridional_block in meridional_obj.group:
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('ur')
+    sun_obj.set_overwriting_equation_euler_wall('ut')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodes_francesco()

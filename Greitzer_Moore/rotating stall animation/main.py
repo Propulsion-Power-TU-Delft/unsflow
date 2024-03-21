@@ -2,7 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 
+font_axes = 16
+font_labels = 24
+font_title = 24
+font_text = 16
+font_legend = 16
+font_colorbar = 24
 
+plt.rc('font', size=16)
+plt.rc('axes', titlesize=font_title)
+plt.rc('axes', labelsize=font_labels)
+plt.rc('xtick', labelsize=font_axes)
+plt.rc('ytick', labelsize=font_axes)
+plt.rc('legend', fontsize=font_legend)
 
 B = 0.5  # B parameter of the described compressor, rotating stall
 # B = 1  # B parameter of the described compressor, surge
@@ -111,14 +123,17 @@ psi_last = psi_sol[-1]
 
 
 # temporal evolution plots
-fig, axes = plt.subplots(3, 1, figsize=(10,10))
-axes[0].set_ylabel(r'$\Psi$')
-axes[0].plot(xi, psi_sol)
-axes[1].set_ylabel(r'$\Phi$')
-axes[1].plot(xi, phi_sol)
+fig, axes = plt.subplots(3, 1)
+axes[0].set_ylabel(r'$\psi$')
+axes[0].plot(xi, psi_sol, 'r')
+axes[0].set_xticks([])
+axes[1].set_ylabel(r'$\phi$')
+axes[1].plot(xi, phi_sol, 'g')
+axes[1].set_xticks([])
 axes[2].set_ylabel(r'$J$')
-axes[2].plot(xi, J_sol)
+axes[2].plot(xi, J_sol, 'b')
 axes[2].set_xlabel(r'$\xi $')
+plt.savefig('cycles.pdf', bbox_inches='tight')
 
 
 # find limits for the next plot
@@ -133,15 +148,15 @@ lim_psi = [psi_min - c * (psi_max - psi_min),
           psi_max + c * (psi_max - psi_min)]
 
 for i in range(0, time_steps):
-    plt.figure(figsize=(10, 6))
-    plt.plot(phi, psi_c, label='unstalled characteristic')
+    plt.figure()
+    plt.plot(phi[phi>phi_eq], psi_c[phi>phi_eq], label='unstalled characteristic')
     plt.plot(phi, k_valve * phi ** 2, label='throttle characteristic')
-    plt.plot(phi_sol[0:i], psi_sol[0:i], '--k', lw = 1, label='transient')
+    plt.plot(phi_sol[0:i], psi_sol[0:i], '--k', lw = 2, label='transient')
     plt.scatter(phi_sol[0], psi_sol[0], c='black', marker = 'o', s =50, label='initial point')
     # if i == time_steps-1:
     #     plt.scatter(phi_sol[-1], psi_sol[-1], c='black', marker = 's', s= 50)
-    plt.ylabel(r'$\Psi$')
-    plt.xlabel(r'$\Phi$')
+    plt.ylabel(r'$\psi$')
+    plt.xlabel(r'$\phi$')
     # plt.legend()
     plt.xlim(lim_phi)
     plt.ylim(lim_psi)

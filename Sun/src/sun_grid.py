@@ -198,9 +198,9 @@ class SunGrid():
             if vector == 'wall normals':
                 for ii in range(0, self.nAxialNodes):
                     for jj in range(0, self.nRadialNodes):
-                        if (self.dataSet[ii, jj].marker != 'internal'):
+                        if self.dataSet[ii, jj].marker == 'hub' or self.dataSet[ii, jj].marker == 'shroud':
                             plt.quiver(self.dataSet[ii, jj].z, self.dataSet[ii, jj].r,
-                                       self.dataSet[ii, jj].n_wall[2], self.dataSet[ii, jj].n_wall[0], scale=30)
+                                       self.dataSet[ii, jj].n_wall[2], self.dataSet[ii, jj].n_wall[0])
             plt.legend()
             plt.gca().set_aspect('equal', adjustable='box')
 

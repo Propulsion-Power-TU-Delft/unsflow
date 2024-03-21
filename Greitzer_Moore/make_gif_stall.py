@@ -11,7 +11,7 @@ from PIL import Image
 import os
 
 # set the path for the images
-path = "surge animation/pics"
+path = "rotating stall animation/pics"
 
 # get all image filenames in the directory
 files = os.listdir(path)
@@ -23,5 +23,5 @@ files.sort()
 images = [Image.open(os.path.join(path, f)) for f in files]
 
 # create a GIF file from the image objects
-images[0].save('pics/nice.gif', save_all=True, append_images=images[1:], duration=100, loop=0)
+images[0].save('rotating stall animation/pics/animation.gif', save_all=True, append_images=images[1:], duration=100, loop=0)
 

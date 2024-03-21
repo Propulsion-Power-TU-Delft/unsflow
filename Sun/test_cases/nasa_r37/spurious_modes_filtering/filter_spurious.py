@@ -7,8 +7,8 @@ from numpy import genfromtxt
 
 sim = ['p128', 'p128.5', 'p128.75', 'p128.9']
 for case in sim:
-    resolutions = ['15_15_21_15', '21_21_25_21', '25_25_31_25']
-    files = ['../eigs_tracking_' + res + '/' + case + '/pictures/eigenvalues.csv' for res in resolutions]
+    resolutions = ['15_15_21_15_collocation_radial_force', '21_21_25_21_collocation_radial_force', '25_25_31_25_collocation_radial_force']
+    files = [ '../' + res + '/' + case + '/pictures/eigenvalues.csv' for res in resolutions]
 
     data = []
     for file in files:
@@ -25,6 +25,6 @@ for case in sim:
     plt.legend(bbox_to_anchor=(0, 1.35), loc='upper left', ncol=2)
     plt.xlabel('RS')
     plt.ylabel('DF')
-    plt.savefig('simulations_%s.pdf' %case, bbox_inches='tight')
+    plt.savefig('pictures/simulations_%s.pdf' %case, bbox_inches='tight')
 
 plt.show()
