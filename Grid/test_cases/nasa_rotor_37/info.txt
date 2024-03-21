@@ -1,0 +1,4 @@
+p128 etc.. are related to the static pressure at outlet of the CFD.
+_clustered: means grid stretched with Gauss-Lobatto
+_regressed: means flow field polinomially regressed
+without anything: means default grid, with no processing applied to the the fields
