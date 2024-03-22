@@ -1,0 +1,4 @@
+Implementation of the boundary conditions by means of Lagrange multipliers, instead
+of overwriting the equations.
+
+Produces the same results, but the algorithm is a bit slow, and retrieves more eigenfunctions

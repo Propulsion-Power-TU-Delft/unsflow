@@ -99,7 +99,7 @@ class SunModelMultiBlock():
         if any(arg.dtype != np.complex128 for arg in (self.L0, self.L1, self.L2)):
             raise TypeError('The matrices are not complex')
 
-    def apply_matching_conditions(self, mode='collocation method'):
+    def apply_matching_conditions(self):
         """
         Apply the matching conditions for the blocks composing the multiblock. At this moment the system is composed by:
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
@@ -113,6 +113,8 @@ class SunModelMultiBlock():
         of the flow variables, while in the following block we impose the same values of the derivatives.
         """
         modes = ['finite difference', 'collocation method']
+        mode = self.config.get_boundary_interface_gradient_method()
+        print('\nNumerical derivative method at the interfaces between blocks: ', mode)
         if mode not in modes:
             raise ValueError('Uknown differentiation method.')
 
@@ -121,7 +123,7 @@ class SunModelMultiBlock():
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
-            #previous block rows (where same fluid conditions are implemented)
+            # previous block rows (where same fluid conditions are implemented)
             self.L0[eq_counter - rows_band:eq_counter, :] = np.zeros_like(self.L0[eq_counter - rows_band:eq_counter, :])
             self.L0[eq_counter - rows_band:eq_counter, eq_counter - rows_band:eq_counter] = np.eye(rows_band)
             self.L0[eq_counter - rows_band:eq_counter, eq_counter:eq_counter + rows_band] = -np.eye(rows_band)
@@ -146,7 +148,7 @@ class SunModelMultiBlock():
                     rows_band) / dxi_dn
 
             elif mode == 'collocation method':
-                #Derivatives now expressed through the Chebyshev collocation method.
+                # Derivatives now expressed through the Chebyshev collocation method.
                 self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
                 # previous block
@@ -194,6 +196,8 @@ class SunModelMultiBlock():
         real increasing
         """
         sigma = self.config.get_research_center_omega_eigenvalues() / self.config.get_reference_omega()
+        print('Eigenvalues research center: (%.1f, %.1fj) [rad/s]' %(sigma.real*self.config.get_reference_omega(),
+                                                                    sigma.imag*self.config.get_reference_omega().imag))
         print("Transforming generalized EVP in standard one...")
         Y_tilde = np.linalg.inv(self.Y - sigma * self.P) @ self.P
 
@@ -416,6 +420,10 @@ class SunModelMultiBlock():
         # save the pickle with all the eigenmodes
         with open(folder_name + '/' + 'eigenfields.pickle', 'wb') as picklefile:
             pickle.dump(self.eigenfields, picklefile)
+
+        print('Saved eigenvalues.csv and eigenfields.pickle in: %s', folder_name)
+        print_banner_begin('END OF SIMULATION')
+        print_banner_end()
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """

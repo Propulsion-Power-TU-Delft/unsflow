@@ -224,6 +224,12 @@ class Config:
     def get_shroud_bc(self):
         return str(self.config_parser.get('SUN MODEL', 'SHROUD_BC'))
 
+    def get_euler_wall_equation(self):
+        return str(self.config_parser.get('SUN MODEL', 'EULER_WALL_EQUATION'))
+
+    def get_boundary_interface_gradient_method(self):
+        return str(self.config_parser.get('SUN MODEL', 'BOUNDARY_INTERFACE_GRADIENT_METHOD'))
+
     def get_clipping_bfm(self):
         res = self.config_parser.get('CFD PROCESSING', 'CLIPPING_BFM')
         if res.lower() == 'true':
