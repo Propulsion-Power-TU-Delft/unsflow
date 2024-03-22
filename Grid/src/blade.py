@@ -71,15 +71,9 @@ class Blade:
         self.convert_to_floats()
         self.convert_to_arrays()
 
-        self.x *= self.config.get_coordinates_rescaling_factor()
-        self.x /= self.config.get_reference_length()
-
-        self.y *= self.config.get_coordinates_rescaling_factor()
-        self.y /= self.config.get_reference_length()
-
-        self.z *= self.config.get_coordinates_rescaling_factor()
-        self.z /= self.config.get_reference_length()
-
+        self.x *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
+        self.y *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
+        self.z *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
@@ -305,7 +299,7 @@ class Blade:
         ni = self.z_camber.shape[0] - 1  # last element index
         nj = self.r_camber.shape[1] - 1  # last element index
 
-        if (i == 0 and j == 0):
+        if i == 0 and j == 0:
             # vector direction along the streamline
             vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
                               self.y_camber[i + 1, j] - self.y_camber[i, j],
@@ -318,7 +312,7 @@ class Blade:
                               self.z_camber[i, j + 1] - self.z_camber[i, j]])
             vec_2 /= np.linalg.norm(vec_2)
 
-        elif (i == 0 and j == nj):
+        elif i == 0 and j == nj:
             vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
                               self.y_camber[i + 1, j] - self.y_camber[i, j],
                               self.z_camber[i + 1, j] - self.z_camber[i, j]])

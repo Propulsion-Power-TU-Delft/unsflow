@@ -759,15 +759,16 @@ class MeridionalProcess:
         field[:, 0] = field[:, 1]
         field[:, -1] = field[:, -2]
 
-    def plot_stream_line(self, field, n, save_filename=None):
+    def plot_stream_line(self, field, n, save_filename=None, folder_name='pictures'):
         """
         Plot the quantity along a streamline.
         :param field: quantitiy to plot
         :param n: streamline to consider.
         :param save_filename: if specified, saves the figure
+        :param folder_name: name of the folder
         """
         sl_max = self.stream_line_length[:, n].max()
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots()
         if field == 'rho':
             ax.plot(self.stream_line_length[:, n] / sl_max, self.rho[:, n], '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
@@ -805,17 +806,18 @@ class MeridionalProcess:
         ax.grid(alpha=0.3)
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
-    def plot_stream_line_superposed(self, field, n_array, save_filename=None):
+    def plot_stream_line_superposed(self, field, n_array, save_filename=None, folder_name='pictures'):
         """
         Plot the quantity along a streamline.
         :param field: quantitiy to plot
         :param n_array: array of the streamlines to consider.
         :param save_filename: if specified, saves the figure
+        :param folder_name: name of the folder
         """
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots()
         if field == 'F_turn':
             for n in n_array:
                 sl_max = self.stream_line_length[:, n].max()
@@ -834,7 +836,7 @@ class MeridionalProcess:
         ax.grid(alpha=0.3)
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '_streamlines.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '_streamlines.pdf', bbox_inches='tight')
             plt.close()
 
     def compute_streamline_length(self):
@@ -863,12 +865,13 @@ class MeridionalProcess:
                 tmp_len += sqrt((z[ispan] - z[ispan - 1]) ** 2 + (r[ispan] - r[ispan - 1]) ** 2)
                 self.span_wise_length[istream, ispan] = tmp_len
 
-    def plot_spanline(self, field, n, save_filename=None, xlim=None):
+    def plot_spanline(self, field, n, save_filename=None, xlim=None, folder_name='pictures'):
         """
         Plot the quantity along a spanline.
         :param field: quantitiy to plot
         :param n: streamline to consider.
         :param save_filename: if specified, saves the figure
+        :param folder_name: name of the folder
         """
 
         fig, ax = plt.subplots(figsize=self.picture_size_blank)
@@ -903,15 +906,16 @@ class MeridionalProcess:
             ax.set_xlim(xlim)
         ax.set_ylabel(r'$s \ \mathrm{[-]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
-    def plot_span_line_superposed(self, field, n_array, save_filename=None):
+    def plot_span_line_superposed(self, field, n_array, save_filename=None, folder_name='pictures'):
         """
         Plot the quantity along an array of spanlines.
         :param field: quantitiy to plot
         :param n_array: streamline to consider.
         :param save_filename: if specified, saves the figure
+        :param folder_name: folder name
         """
 
         fig, ax = plt.subplots()
@@ -928,7 +932,7 @@ class MeridionalProcess:
         ax.set_ylabel(r'$s \ \mathrm{[-]}$')
         plt.legend()
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '_spanlines.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '_spanlines.pdf', bbox_inches='tight')
             plt.close()
 
     def contour_plot(self, field, save_filename=None, unit_factor=1, quiver=False):
@@ -975,13 +979,14 @@ class MeridionalProcess:
         self.contour_plot(field='p_tot_bar', save_filename=save_filename + '_p_tot_bar')
         self.contour_plot(field='T_tot', save_filename=save_filename + '_T_tot')
 
-    def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False):
+    def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False, folder_name='pictures'):
         """
         Contour plot of a 2D field.
         :param field: field to plot
         :param save_filename: if specified, saves the figure
         :param unit_factor: factor to be used for dimensional plots
         :param quiver: if True, superposes the quiver plots of the meridional velocity
+        :param folder_name: folder name
         """
         fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
@@ -1221,7 +1226,7 @@ class MeridionalProcess:
         ax.set_xlabel(r'$z \ \mathrm{[mm]}$')
         ax.set_ylabel(r'$r \ \mathrm{[mm]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
             plt.close()
 
     def contour_plot_non_dimensional(self, field, save_filename=None, quiver=False, folder_name='pictures'):
@@ -2081,15 +2086,16 @@ class MeridionalProcess:
                               np.sum(self.rho[istream, :] * self.dA[istream, :] * normal_velocity)
         return fluxes
 
-    def plot_averaged_fluxes(self, field, save_filename=None):
+    def plot_averaged_fluxes(self, field, save_filename=None, folder_name='pictures'):
         """
         Plot the averaged fluxes.
         Contour plot of a 2D field.
         :param field: field to plot
         :param save_filename: if specified, saves the figure
+        :param folder_name: folder name
         """
         sl_max = self.stream_line_length[:, 0].max()
-        fig, ax = plt.subplots(figsize=fig_size)
+        fig, ax = plt.subplots()
         if field == 'rho':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux, '--s')
             ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')

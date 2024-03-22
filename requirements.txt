@@ -1,5 +1,10 @@
-numpy
-scikit-learn
-matplotlib
-pandas
-sympy
+numpy~=1.23.5
+scikit-learn~=1.2.1
+matplotlib~=3.7.0
+pandas~=1.5.3
+sympy~=1.11.1
+scipy~=1.10.0
+findiff~=0.10.0
+pympler~=1.0.1
+setuptools~=65.6.3
+pillow~=9.4.0

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .line_element import LineElement
 
+
 class AreaElement:
     """
     Class of Area object, storing data related to an area element.
@@ -32,9 +33,9 @@ class AreaElement:
         """
         Organize the line elements, connecting the vertices, in a 1D array, ordered 1-2, 2-3, 3-4, 4-0
         """
-        self.line_elements = np.empty((4), dtype=LineElement)
-        for i in range(len(self.line_elements)-1):
-            self.line_elements[i] = LineElement(self.z_v[i], self.r_v[i], self.z_v[i+1], self.r_v[i+1])
+        self.line_elements = np.empty(4, dtype=LineElement)
+        for i in range(len(self.line_elements) - 1):
+            self.line_elements[i] = LineElement(self.z_v[i], self.r_v[i], self.z_v[i + 1], self.r_v[i + 1])
         self.line_elements[-1] = LineElement(self.z_v[-1], self.r_v[-1], self.z_v[0], self.r_v[0])
 
     def plot_area_element(self):
@@ -44,9 +45,9 @@ class AreaElement:
         plt.figure()
         plt.scatter(self.z_cg, self.r_cg)
         for i in range(len(self.z_v)):
-            plt.scatter(self.z_v[i], self.r_v[i], label='%i' %(i+1))
-            plt.plot(self.z_v[i:i+2], self.r_v[i:i+2], 'k', linewidth=0.5)
-            if i==len(self.z_v)-1:
+            plt.scatter(self.z_v[i], self.r_v[i], label='%i' % (i + 1))
+            plt.plot(self.z_v[i:i + 2], self.r_v[i:i + 2], 'k', linewidth=0.5)
+            if i == len(self.z_v) - 1:
                 plt.plot([self.z_v[-1], self.z_v[0]], [self.r_v[-1], self.r_v[0]], 'k', linewidth=0.5)
 
         plt.legend()
@@ -60,5 +61,4 @@ class AreaElement:
         """
         A1 = np.linalg.norm(np.cross(self.line_elements[0].l_vec, self.line_elements[1].l_vec) / 2)
         A2 = np.linalg.norm(np.cross(self.line_elements[2].l_vec, self.line_elements[3].l_vec) / 2)
-        self.area = A1+A2
-
+        self.area = A1 + A2

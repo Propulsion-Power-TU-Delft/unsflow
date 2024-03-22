@@ -4,7 +4,7 @@
 Created on Thu Jun 15 16:53:11 2023
 @author: F. Neri, TU Delft
 """
-from numpy import sqrt
+import warnings
 import pandas as pd
 from .functions import *
 from Sun.src.general_functions import print_banner_begin, print_banner_end
@@ -27,7 +27,6 @@ class CfdData:
         x_ref: tip radius of the blade at leading edge [m]
         T_ref: can be standard temperature [K]
         All other non-dimensionalization quantities are obtained from these fundamental ones.
-
         :param config: configuration file
         :param config: blade object
         """
@@ -53,14 +52,15 @@ class CfdData:
             print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.config.get_reference_velocity():>{total_chars_mid}.3f}")
             print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.config.get_reference_pressure():>{total_chars_mid}.3f}")
             print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.config.get_reference_time():>{total_chars_mid}.6f}")
-            print(f"{'Reference Temperature [K]:':<{total_chars_mid}}{self.config.get_reference_temperature():>{total_chars_mid}.3f}")
+            print(f"{'Reference Temperature [K]:':<{total_chars_mid}}"
+                  f"{self.config.get_reference_temperature():>{total_chars_mid}.3f}")
             print(f"{'Reference Entropy [J/kgK]:':<{total_chars_mid}}{self.config.get_reference_entropy():>{total_chars_mid}.3f}")
             print(f"{'Dataset Normalized:':<{total_chars_mid}}{self.config.get_normalize_data():>{total_chars_mid}}")
             print_banner_end()
 
     def read_from_ansys_3D_csv(self):
         """
-        read the data from a CSV file extracted from Ansys. Check that all the quantities are stored in the file, 
+        read the data from a 3D CSV file extracted from Ansys. Check that all the quantities are stored in the file,
         as well as the correct names of the variables.
         """
         data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
@@ -100,7 +100,7 @@ class CfdData:
 
     def read_from_ansys_2D_csv(self):
         """
-        read the data from a CSV file extracted from Ansys, meridionally processed.
+        read the data from a 2D CSV file extracted from Ansys, meridionally processed.
         """
         self.data = pd.read_csv(self.config.get_cfd_filepath(), skiprows=range(5))
         self.x = self.data[' X [ m ]'].values
@@ -109,9 +109,6 @@ class CfdData:
         self.r = sqrt(self.x ** 2 + self.y ** 2)
         self.theta = np.arctan2(self.y, self.x)
         self.rho = self.data[' Density MCA on Meridional Surface [ kg m^-3 ]'].values
-        # self.ux = self.data[' Velocity in Stn Frame u MCA on Meridional Surface [ m s^-1 ]'].values
-        # self.uy = self.data[' Velocity in Stn Frame v MCA on Meridional Surface [ m s^-1 ]'].values
-        # self.uz = self.data[' Velocity in Stn Frame w MCA on Meridional Surface [ m s^-1 ]'].values
         self.ur = self.data[' Velocity Radial MCA on Meridional Surface [ m s^-1 ]'].values
         self.ut = self.data[' Velocity in Stn Frame Circumferential MCA on Meridional Surface [ m s^-1 ]'].values
         self.uz = self.data[' Velocity Axial MCA on Meridional Surface [ m s^-1 ]'].values
@@ -135,19 +132,6 @@ class CfdData:
         if self.config.get_normalize_data():
             self.normalize_data()
 
-
-    def process_from_ansys_csv(self, cut=False):
-        """
-        It computes the derived quantities from the dataset, and the original ones all converted in cylindrical frame.
-        :param cut: if True, it cuts the domain thanks to the information contained in the cut_block border (if present).
-        """
-        # if (self.config.get_cfd_filetype() == 'Ansys3D' and self.cut_block is not None and cut == 'True'):
-        #     if self.verbose:
-        #         print('cutting domain...')
-        #     self.cut_domain(self.cut_block.border)
-
-        self.compute_derived_quantities()
-
     def compute_derived_quantities(self):
         """
         Compute derived quantities, in particular the vector components in the cylindrical reference frame.
@@ -166,7 +150,7 @@ class CfdData:
 
         The model is still not validated, and could be implemented better directly working on the meridional data.
         """
-        print("WARNING: method not validated yet.")
+        warnings.warn("WARNING: BFM method not validated yet, and not ready to be used.")
         # ideal flow direction (following streamwise positions on the camber surface), in cartesian cordinates.
         # No need to save x,y component
         tau_x = np.array(self.streamline_vec)[:, 0]
@@ -286,21 +270,19 @@ class CfdData:
 
     def compute_flow_ideal_vectors(self):
         """
-        the aim is to find for every point in the dataset, the ideal flow vectors (the equivalent of the normal to the camber
+        For every point in the dataset, find the ideal flow vectors (the equivalent of the normal to the camber
         surface, the ideal streamwise direction, and the ideal spanwise directions). These vectors can be found taking
         the vectors on the camber surface point equivalent to them (same r,z position), and rotating them along z-axis
         of an angle equal to the difference between the point and its projection on the camber surface.
         To speed up the computation, only the points making part of the meridional grid can be considered if the cut method
         was previously applied.
         """
-
         # instantiate empty lists
         self.normal_vec = []
         self.streamline_vec = []
         self.spanline_vec = []
         total_elem = self.x.shape[0]
-        if self.verbose:
-            print('computing flow directions...')
+        print('computing flow directions...')
         for i in range(0, total_elem):
             normal, streamline, spanline = self.compute_flow_directions(i)
             self.normal_vec.append(normal)
@@ -313,7 +295,7 @@ class CfdData:
         point, in order to find camber normal and tangential local vectors. Method not validated.
         :param i: i-th point of the dataset
         """
-        print("Method not validated yet.")
+        warnings.warn("Method not validated yet.")
         # select the point in the dataset
         z = self.z[i]
         r = self.r[i]
@@ -346,10 +328,8 @@ class CfdData:
 
     def normalize_data(self):
         """
-        Normalize everything.
+        Normalize the dataset based on the reference quantities stores in the configuration files.
         """
-
-        # non-dimensionalize cordinates
         self.x /= self.config.get_reference_length()
         self.y /= self.config.get_reference_length()
         self.z /= self.config.get_reference_length()
@@ -365,54 +345,15 @@ class CfdData:
         self.T /= self.config.get_reference_temperature()
         self.s /= self.config.get_reference_entropy()
 
-        # # normalization of the gradients
-        # try:
-        #     self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
-        #     self.drho_dy /= (self.config.get_reference_density() / self.config.get_reference_length())
-        #     self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
-        #
-        #     self.dux_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.dux_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.dux_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #
-        #     self.duy_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.duy_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.duy_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #
-        #     self.duz_dx /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.duz_dy /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #     self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        #
-        #     self.dp_dx /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-        #     self.dp_dy /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-        #     self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-        #
-        #     self.ds_dx /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-        #     self.ds_dy /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-        #     self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-        #
-        # except:
-        #     pass
-
         self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
         self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
-
         self.dur_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
         self.dur_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-
         self.dut_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
         self.dut_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-
         self.duz_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
         self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-
         self.dp_dr /= (self.config.get_reference_pressure() / self.config.get_reference_length())
         self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-
         self.ds_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
         self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-
-        # self.dT_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-        # self.dT_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-
-

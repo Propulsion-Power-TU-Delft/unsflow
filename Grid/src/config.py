@@ -1,18 +1,22 @@
 import configparser
 import ast
 import numpy as np
+import os
 
 
 class Config:
     def __init__(self, config_file='input.ini'):
-        # Initialize a ConfigParser
         self.config_parser = configparser.ConfigParser()
-
-        # Read the configuration file
         self.config_parser.read(config_file)
 
-        self.picture_name_template = self.compute_picture_name_template(config_file)
+        cwd = os.getcwd()
+        print('Configuration file path: %s' % os.path.join(cwd, config_file))
+        sw_points = self.get_streamwise_points()
+        sp_points = self.get_spanwise_points()
+        print('Number of streamwise points: ', sw_points)
+        print('Number of spanwise points: ', sp_points)
 
+        self.picture_name_template = self.compute_picture_name_template(config_file)
 
     def compute_picture_name_template(self, config_file):
         prefix = config_file.split('.')[0]
@@ -83,19 +87,19 @@ class Config:
         return float(self.config_parser.get('CFD PROCESSING', 'RPM_REF'))
 
     def get_reference_omega(self):
-        return 2*np.pi*float(self.config_parser.get('CFD PROCESSING', 'RPM_REF'))/60
+        return 2 * np.pi * float(self.config_parser.get('CFD PROCESSING', 'RPM_REF')) / 60
 
     def get_omega_shaft(self):
-        return 2*np.pi*self.get_shaft_rpm()/60
+        return 2 * np.pi * self.get_shaft_rpm() / 60
 
     def get_reference_velocity(self):
-        return self.get_reference_omega()*self.get_reference_length()
+        return self.get_reference_omega() * self.get_reference_length()
 
     def get_reference_time(self):
-        return 1/self.get_reference_omega()
+        return 1 / self.get_reference_omega()
 
     def get_reference_pressure(self):
-        return self.get_reference_density()*self.get_reference_velocity()**2
+        return self.get_reference_density() * self.get_reference_velocity() ** 2
 
     def get_reference_entropy(self):
         return self.get_reference_velocity() ** 2 / self.get_reference_temperature()
@@ -120,7 +124,7 @@ class Config:
         elif units == 'in':
             factor = 0.0254
         else:
-            raise ('Units not supported')
+            raise ValueError('Units not supported')
         return factor
 
     def get_sigmoid_stream_coefficient(self):

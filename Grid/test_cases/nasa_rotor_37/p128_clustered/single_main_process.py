@@ -6,6 +6,7 @@ import numpy as np
 import Grid
 from Grid.src.config import Config
 from Grid.src.functions import create_folder
+import os
 
 start_time = time.time()
 print('Start execution:')
@@ -26,7 +27,7 @@ blade.find_inlet_points()
 blade.find_outlet_points()
 
 data = Grid.src.CfdData(config, blade)
-data.process_from_ansys_csv()
+data.compute_derived_quantities()
 
 strwise_pts = config.get_streamwise_points()
 spwise_pts = config.get_spanwise_points()
@@ -132,7 +133,6 @@ if INLET_BLOCK and BLADE_BLOCK and OUTLET_BLOCK:
     obj.assemble_body_force_fields()
     obj.compute_streamline_length()
     obj.show_grid(save_filename=config.picture_name_template, folder_name=folder_out)
-
     obj.contour_fields(save_filename=config.picture_name_template, folder_name=folder_out)
     obj.contour_field_gradients(save_filename=config.picture_name_template, folder_name=folder_out)
     obj.compute_performance()

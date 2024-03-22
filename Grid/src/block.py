@@ -62,13 +62,11 @@ class Block:
         """
         Make splines of the inlet and outlet border of the domain considered
         """
-        self.inlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
-                                     self.inlet[1:-1, :],
-                                     np.reshape(self.point_shroud_inlet, (1, 2))))
+        self.inlet = np.concatenate(
+            (np.reshape(self.point_hub_inlet, (1, 2)), self.inlet[1:-1, :], np.reshape(self.point_shroud_inlet, (1, 2))))
 
-        self.outlet = np.concatenate((np.reshape(self.point_hub_outlet, (1, 2)),
-                                      self.outlet[1:-1, :],
-                                      np.reshape(self.point_shroud_outlet, (1, 2))))
+        self.outlet = np.concatenate(
+            (np.reshape(self.point_hub_outlet, (1, 2)), self.outlet[1:-1, :], np.reshape(self.point_shroud_outlet, (1, 2))))
 
         self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], mode='cordinates')
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], mode='cordinates')
@@ -79,9 +77,8 @@ class Block:
         At the same time prepare the straight spline for the inlet (called leading edge). Sorry for the confusion.
         """
         # outlet border
-        self.outlet = np.concatenate((np.reshape(self.point_hub_inlet, (1, 2)),
-                                      self.inlet[1:-1, :],
-                                      np.reshape(self.point_shroud_inlet, (1, 2))))
+        self.outlet = np.concatenate(
+            (np.reshape(self.point_hub_inlet, (1, 2)), self.inlet[1:-1, :], np.reshape(self.point_shroud_inlet, (1, 2))))
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], mode='cordinates')
 
         # inlet border
@@ -89,29 +86,28 @@ class Block:
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
         self.leading_edge = Curve(z=inlet_z, r=inlet_r, mode='cordinates')
 
-    def spline_of_inlet_outlet_full_block(self):
-        """
-        Make inlet and outlet splines for the whole domain together. The inlet and outlet coincides with initial and last
-        points of hub and shroud splines. Degree 1 because they are straight lines.
-        """
-        inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
-        inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
-        self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
-                                  mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
-
-        outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
-        outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
-        self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
-                                   mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+    # def spline_of_inlet_outlet_full_block(self):
+    #     """
+    #     Make inlet and outlet splines for the whole domain together. The inlet and outlet coincides with initial and last
+    #     points of hub and shroud splines. Degree 1 because they are straight lines.
+    #     """
+    #     inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
+    #     inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
+    #     self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
+    #                               mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
+    #
+    #     outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
+    #     outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
+    #     self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
+    #                                mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
     def spline_of_inlet(self):
         """
         make splines of the inlet border for the outlet block, which coincides with self.Outlet
         At the same time prepare the outlet edge, as a straight line between the final points
         """
-        self.inlet = np.concatenate((np.reshape(self.point_hub_outlet, (1, 2)),
-                                     self.outlet[1:-1, :],
-                                     np.reshape(self.point_shroud_outlet, (1, 2))))
+        self.inlet = np.concatenate(
+            (np.reshape(self.point_hub_outlet, (1, 2)), self.outlet[1:-1, :], np.reshape(self.point_shroud_outlet, (1, 2))))
 
         self.leading_edge = Curve(z=self.inlet[:, 0], r=self.inlet[:, 1], mode='cordinates')
 
@@ -128,21 +124,21 @@ class Block:
         self.hub_trim.sample(self.nstream, sampling_mode=sampling_mode)
         self.shroud_trim.sample(self.nstream, sampling_mode=sampling_mode)
 
-    def sample_hub_shroud_full_block(self, sampling_mode='default'):
-        """
-        Sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
-        :param sampling_mode: type of sampling, default or clustered
-        """
-        self.hub_trim.sample(sampling_mode=sampling_mode)
-        self.shroud_trim.sample(sampling_mode=sampling_mode)
+    # def sample_hub_shroud_full_block(self, sampling_mode='default'):
+    #     """
+    #     Sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
+    #     :param sampling_mode: type of sampling, default or clustered
+    #     """
+    #     self.hub_trim.sample(sampling_mode=sampling_mode)
+    #     self.shroud_trim.sample(sampling_mode=sampling_mode)
 
     def sample_inlet_outlet(self, sampling_mode='default'):
         """
         Sample the inlet edge for the outlet block.
         :param sampling_mode: type of sampling, default or clustered
         """
-        self.leading_edge.sample(npoints = self.nspan, sampling_mode=sampling_mode)
-        self.trailing_edge.sample(npoints = self.nspan, sampling_mode=sampling_mode)
+        self.leading_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
+        self.trailing_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
 
     def compute_grid_points(self, inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
         """
@@ -156,8 +152,11 @@ class Block:
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
             print(f"{'Grid Stretching Mode:':<{total_chars_mid}}{self.config.get_mesh_type():>{total_chars_mid}}")
             print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
-            print(f"{'X Stretching Coefficient:':<{total_chars_mid}}{self.config.get_sigmoid_stream_coefficient():>{total_chars_mid}}")
-            print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}{self.config.get_sigmoid_span_coefficient():>{total_chars_mid}}")
+            if self.config.get_mesh_type() == 'sigmoid':
+                print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
+                      f"{self.config.get_sigmoid_stream_coefficient():>{total_chars_mid}}")
+                print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"
+                      f"{self.config.get_sigmoid_span_coefficient():>{total_chars_mid}}")
             if inlet_meridional_obj is not None:
                 print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             if outlet_meridional_obj is not None:
@@ -182,20 +181,17 @@ class Block:
             hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
             shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
-                                                          self.config.get_grid_orthogonality(),
-                                                          self.config.get_mesh_type(),
-                                                          self.config.get_mesh_type(),
-                                                          sigmoid_coeff_x=self.config.get_sigmoid_stream_coefficient(),
-                                                          sigmoid_coeff_y=self.config.get_sigmoid_span_coefficient(),
-                                                          fix_inlet = fix_inlet, fix_outlet = fix_outlet,
-                                                          save_animation=save_animation)
+                                                                              self.config.get_grid_orthogonality(),
+                                                                              self.config.get_mesh_type(),
+                                                                              self.config.get_mesh_type(),
+                                                                              sigmoid_coeff_x=self.config.get_sigmoid_stream_coefficient(),
+                                                                              sigmoid_coeff_y=self.config.get_sigmoid_span_coefficient(),
+                                                                              fix_inlet=fix_inlet, fix_outlet=fix_outlet,
+                                                                              save_animation=save_animation)
         else:
             raise ValueError('Grid method not recognized!')
 
         self.compute_grid_centers()
-
-
-
 
     def compute_grid_centers(self):
         """
@@ -332,18 +328,19 @@ class Block:
         """
         compute a secondary grid, using the points that lie in the baricenter of 4 primary grid points
         """
-        print("WARNING: deprecated method")
         self.z_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
         self.r_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
 
         # internal points
         for istream in range(1, self.nstream):
             for ispan in range(1, self.nspan):
-                z_mid_point = 0.25 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan] +
-                                      self.z_grid_points[istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
+                z_mid_point = 0.25 * (
+                            self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan] + self.z_grid_points[
+                        istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
 
-                r_mid_point = 0.25 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan] +
-                                      self.r_grid_points[istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
+                r_mid_point = 0.25 * (
+                            self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan] + self.r_grid_points[
+                        istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
 
                 self.z_grid_centers[istream, ispan] = z_mid_point
                 self.r_grid_centers[istream, ispan] = r_mid_point
@@ -404,6 +401,7 @@ class Block:
         :param outline: if True plots the highlighted outline of the domain
         :param grid_centers: if True plots the grid centers
         :param ticks: if True allows ticks to be shown
+        :param save_foldername: folder name to save pictures in
         """
 
         self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
@@ -429,8 +427,8 @@ class Block:
 
         # primary grid points
         if primary_grid_points:
-            plt.scatter(self.z_grid_points.flatten(), self.r_grid_points.flatten(),
-                        c='black', s=scatter_point_size, label='primary grid nodes')
+            plt.scatter(self.z_grid_points.flatten(), self.r_grid_points.flatten(), c='black', s=scatter_point_size,
+                        label='primary grid nodes')
 
         # secondary grid
         if secondary_grid:
@@ -454,9 +452,7 @@ class Block:
 
         if not ticks:
             plt.xticks([])
-            plt.yticks([])
-            # plt.xlabel('')
-            # plt.ylabel('')
+            plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
 
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
@@ -510,9 +506,9 @@ class Block:
             for jj in range(self.nspan):
                 self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj],
                                                          self.z_grid_centers[ii, jj], self.r_grid_centers[ii, jj],
-                                                         self.z_grid_centers[ii+1, jj], self.r_grid_centers[ii+1, jj],
-                                                         self.z_grid_centers[ii+1, jj+1], self.r_grid_centers[ii+1, jj+1],
-                                                         self.z_grid_centers[ii, jj+1], self.r_grid_centers[ii, jj+1])
+                                                         self.z_grid_centers[ii + 1, jj], self.r_grid_centers[ii + 1, jj],
+                                                         self.z_grid_centers[ii + 1, jj + 1], self.r_grid_centers[ii + 1, jj + 1],
+                                                         self.z_grid_centers[ii, jj + 1], self.r_grid_centers[ii, jj + 1])
 
     def compute_areas(self):
         """
@@ -535,7 +531,6 @@ class Block:
             for jj in range(self.nspan):
                 self.area_total += self.area_elements[ii, jj].area
 
-
     def plot_areas_distribution(self):
         """
         Given the information in the areas element, plot the areas scatter distribution
@@ -547,14 +542,9 @@ class Block:
 
         plt.figure()
         plt.scatter(self.z_grid_cg, self.r_grid_cg, c=areas)
-        for ii in range(self.nstream+1):
+        for ii in range(self.nstream + 1):
             plt.plot(self.z_grid_centers[ii, :], self.r_grid_centers[ii, :], 'k', linewidth=0.5)
-        for jj in range(self.nspan+1):
+        for jj in range(self.nspan + 1):
             plt.plot(self.z_grid_centers[:, jj], self.r_grid_centers[:, jj], 'k', linewidth=0.5)
         # plt.gca().set_aspect('equal', adjustable='box')
-        plt.colorbar()
-        # plt.savefig('prova.pdf', bbox_inches='tight')
-
-
-
-
+        plt.colorbar()  # plt.savefig('prova.pdf', bbox_inches='tight')

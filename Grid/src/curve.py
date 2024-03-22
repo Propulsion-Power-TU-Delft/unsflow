@@ -16,7 +16,7 @@ class Curve:
     class that replicates a B-spline curve passing through points
     """
 
-    def __init__(self, config=None, curve_filepath=None, z=None, r=None, units='m', mode='filedata', degree_spline=1):
+    def __init__(self, config=None, curve_filepath=None, z=None, r=None, mode='filedata', degree_spline=1):
         """
         overloaded constructor. You can give both the z and r cordinates (mode=cordinates), or you can provide 
         the filepath of the .curve files obtained from BladeGen (mode=filedata).
@@ -133,5 +133,5 @@ class Curve:
         plt.plot(self.z, self.r, 'o', label='cordinates')
         plt.plot(self.z_spline, self.r_spline, label='B-spline')
         plt.legend()
-        plt.xlabel(r'$z \ \mathrm{[%s]}$' % (self.units))
-        plt.ylabel(r'$r \ \mathrm{[%s]}$' % (self.units))
+        plt.xlabel(r'$z \ \mathrm{[%s]}$' % (self.config.get_coordinates_file_units()))
+        plt.ylabel(r'$r \ \mathrm{[%s]}$' % (self.config.get_coordinates_file_units()))
