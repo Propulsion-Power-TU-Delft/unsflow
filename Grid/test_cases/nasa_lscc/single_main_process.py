@@ -24,7 +24,7 @@ blade.find_inlet_points()
 blade.find_outlet_points()
 
 data = Grid.src.CfdData(config, blade)
-data.process_from_ansys_csv()
+data.compute_derived_quantities()
 
 strwise_pts = config.get_streamwise_points()
 spwise_pts = config.get_spanwise_points()
