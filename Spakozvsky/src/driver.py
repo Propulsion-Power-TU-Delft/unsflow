@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from Spakozvsky.src.functions import Trad_n
+from Utils.styles import total_chars, total_chars_mid
+from Sun.src.general_functions import print_banner_end, print_banner_begin
 
 
 class Driver:
@@ -47,6 +49,8 @@ class Driver:
         """
         Generate the IC matrix.
         """
+        print_banner_begin('BOUNDARY CONDITIONS')
+        print(f"{'Inlet Boundary Conditions:':<{total_chars_mid}}{'Standard':>{total_chars_mid}}")
         self.IC = np.array([[0, 1, 0],
                             [0, 0, 1]])
 
@@ -57,20 +61,20 @@ class Driver:
         :param exit_conditions: tuple storing the information of the outlet.
         """
         self.exit_bc_type = bc_type
-        if bc_type == 'finite duct length':
+        print(f"{'Outlet Boundary Conditions:':<{total_chars_mid}}{self.exit_bc_type:>{total_chars_mid}}")
+        if bc_type.lower() == 'finite duct length':
             print('Exit Boundary Condition Type: finite duct length')
             self.exit_uz = exit_conditions[0][0]
             self.exit_ut = exit_conditions[0][1]
             self.exit_z = exit_conditions[0][2]
-        elif bc_type == 'radial plenum discharge':
+        elif bc_type.lower() == 'radial plenum discharge':
             print('Exit Boundary Condition Type: radial plenum discharge')
             self.exit_r = exit_conditions[0][0]
             self.exit_ur = exit_conditions[0][1]
             self.exit_ut = exit_conditions[0][2]
             self.exit_Q = 2 * np.pi * self.exit_r * self.exit_ur
             self.exit_GAMMA = 2 * np.pi * self.exit_r * self.exit_ut
-        elif bc_type == 'infinite duct length':
-            print('Exit Boundary Condition Type: infinite duct length')
+        elif bc_type.lower() == 'infinite duct length':
             pass
         else:
             raise ValueError("Boundary condition not recognized")

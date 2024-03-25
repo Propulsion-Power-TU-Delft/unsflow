@@ -36,24 +36,22 @@ R_Ref = R2  # Reference parameters for non-dimensionalization
 
 # STA locations non dimensionalized
 x1 = 0  # impeller inlet
-x2 = Lax / R_Ref  # impeller outlet/diffuser inlet
-x3 = x2
-x4 = x2  # diffuser outlet
-r1 = R1 / R_Ref
-r2 = R2 / R_Ref
-r3 = R3 / R_Ref
-r4 = R4 / R_Ref
+x2 = Lax / R_Ref  # impeller outlet
+x3 = x2  # diffuser outlet
+r1 = R1 / R_Ref  # mid-impeller inlet
+r2 = R2 / R_Ref  # impeller outlet
+r3 = R3 / R_Ref  # diffuser outlet
 
 #  Cross sections (dimensional)
-A1 = np.pi * (R1s ** 2 - R1h ** 2)  # cross section [m2]
-A2 = 2 * np.pi * R2 * H2  # cross section [m2]
-A4 = 2 * np.pi * R4 * H4  # cross section [m2]
-A1_blade = A1 / main_blades  # cross section of one sector at impeller inlet [m2]
-A2_blade = (A2 - total_blades * H2 * Tte_mean) / (total_blades)  # cross section of one sector at impeller outlet [m2]
-s_i = np.sqrt(Lax ** 2 + (R2 - R1) ** 2) * 1.3  # approximation of the meridional path length along the impeller [m]
+A1 = np.pi * (R1s ** 2 - R1h ** 2)  # cross section [m2] impeller inlet
+A2 = 2 * np.pi * R2 * H2  # cross section [m2] impeller outlet
+A3 = 2 * np.pi * R3 * H3  # cross section [m2] diffuser outlet
+A1_blade = A1 / main_blades  # cross-section of one sector at impeller inlet [m2]
+A2_blade = (A2 - total_blades * H2 * Tte_mean) / (total_blades)  # cross-section of one sector at impeller outlet [m2]
+s_i = 2 * np.pi * 0.5 * (R1 + R2) / 4 / R_Ref  # approximation of the meridional path length along the impeller [m]
 
 # %%IMPORT DATA FROM DATA FOLDER (IRIS COMPRESSOR ANDREA)
-# note: my STA numbers are shifted (1 mine = 0 Andrea, 2 mine = 1 Andrea, 4 mine = 2 Andrea)
+# note: my STA numbers are shifted (1 mine = 0 Andrea, 2 mine = 1 Andrea, 3 mine = 2 Andrea)
 import pickle
 
 data_folder = "../data/IRIS_single_stage/design0_beta_3.450/operating_map/"  # path to folder
@@ -63,7 +61,7 @@ data_folder = "../data/IRIS_single_stage/design0_beta_3.450/operating_map/"  # p
 # every column is a different mass flow rate
 
 with open(data_folder + 'alpha2.pkl', 'rb') as f:
-    Alpha4 = pickle.load(f)
+    Alpha3 = pickle.load(f)
 with open(data_folder + 'beta0.pkl', 'rb') as f:
     Beta1 = pickle.load(f)
 with open(data_folder + 'beta1.pkl', 'rb') as f:
@@ -73,11 +71,11 @@ with open(data_folder + 'P0.pkl', 'rb') as f:
 with open(data_folder + 'P1.pkl', 'rb') as f:
     P2 = pickle.load(f)
 with open(data_folder + 'P2.pkl', 'rb') as f:
-    P4 = pickle.load(f)
+    P3 = pickle.load(f)
 with open(data_folder + 'Vm2.pkl', 'rb') as f:
-    Vm4 = pickle.load(f)
+    Vm3 = pickle.load(f)
 with open(data_folder + 'Vt2.pkl', 'rb') as f:
-    Vt4 = pickle.load(f)
+    Vt3 = pickle.load(f)
 with open(data_folder + 'Wm0.pkl', 'rb') as f:
     Wm1 = pickle.load(f)
 with open(data_folder + 'Wm1.pkl', 'rb') as f:
@@ -91,7 +89,7 @@ with open(data_folder + 'D0.pkl', 'rb') as f:
 with open(data_folder + 'D1.pkl', 'rb') as f:
     Rho2 = pickle.load(f)
 with open(data_folder + 'D2.pkl', 'rb') as f:
-    Rho4 = pickle.load(f)
+    Rho3 = pickle.load(f)
 with open(data_folder + 'eta_tt.pkl', 'rb') as f:
     eta_tt = pickle.load(f)
 with open(data_folder + 'eta_ts.pkl', 'rb') as f:
@@ -106,9 +104,8 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
     rpm = pickle.load(f)
 
 # %%PREPROCESSING OF THE DATA, IN ORDER TO HAVE INPUT DATA READY FOR THE TRANSFER FUNCTIONS
-
-speedline = 0  # choose the speedline to be used
-print("Selected speedline : %2d rpm" % (rpm[speedline]))
+speedline = 2  # choose the speedline to be used
+print("Selected speedline : %i rpm" % (rpm[speedline]))
 
 # drop out the zeros used to allocate data for chocked conditions
 index_zeros = np.where(mass_flow[speedline, :] == 0)
@@ -121,8 +118,8 @@ A_Ref = R_Ref ** 2
 p_ratio_tt = beta_tt[speedline, 0:index_max]  # across the whole characteristic
 mdot = mass_flow[speedline, 0:index_max]  # across the whole characteristic
 
-plt.figure(figsize=(10, 6))
-plt.plot(mdot, p_ratio_tt, label='%i krpm' % (rpm[speedline] / 1000))
+plt.figure()
+plt.plot(mdot, p_ratio_tt, label='%.1f krpm' % (rpm[speedline] / 1000))
 plt.ylabel(r'$\beta_{tt}$')
 plt.xlabel(r'$\dot{m}$')
 plt.legend()
@@ -130,37 +127,54 @@ plt.title('Pressure ratio')
 
 # axial velocities
 vx1 = Wm1[speedline, 0:index_max] / U_Ref
-vx2 = np.zeros(index_max)
-vx4 = np.zeros(index_max)
+vx2 = np.zeros_like(vx1)
+vx3 = np.zeros_like(vx1)
 
 # azimuthal absolute velocities
-vy1 = np.zeros_like(vx1)  # attention to the sign
+vy1 = np.zeros_like(vx1)
 vy2 = (+Wt2[speedline, 0:index_max] + Omega * R2) / U_Ref  # attention to the sign
-vy4 = Vt4[speedline, 0:index_max] / U_Ref
+vy3 = Vt3[speedline, 0:index_max] / U_Ref
 
 # radial velocities
-vr1 = np.zeros(index_max)
+vr1 = np.zeros_like(vx1)
 vr2 = Wm2[speedline, 0:index_max] / U_Ref
-vr4 = Vm4[speedline, 0:index_max] / U_Ref
+vr3 = Vm3[speedline, 0:index_max] / U_Ref
 
 alpha1 = np.arctan(vy1 / vx1)  # inlet absolute flow angle
 
-# static pressures [Pa]
-p1 = P1[speedline, 0:index_max]
-p1_t = p1 + 0.5 * Rho1[speedline, 0:index_max] * (
-        (vx1 * U_Ref) ** 2 + (vy1 * U_Ref) ** 2 + (vr1 * U_Ref) ** 2)  # incompressible approximation
-p2 = P2[speedline, 0:index_max]
-p2_t = p2 + 0.5 * Rho2[speedline, 0:index_max] * ((vx2 * U_Ref) ** 2 + (vy2 * U_Ref) ** 2 + (vr2 * U_Ref) ** 2)
-p4 = P4[speedline, 0:index_max]
-p4_t = p4 + 0.5 * Rho4[speedline, 0:index_max] * ((vx4 * U_Ref) ** 2 + (vy4 * U_Ref) ** 2 + (vr4 * U_Ref) ** 2)
 
-beta_tt_calc = p4_t / p1_t
+def compute_total_pressure(p, u, rho, GAMMA):
+    a = np.sqrt(GAMMA * p / rho)
+    M = u / a
+    pt = p * (1 + (GAMMA - 1) / 2 * M ** 2) ** (GAMMA / (GAMMA - 1))
+    return pt
+
+
+def compute_velocity_magnitude(vx, vy, vz):
+    return np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
+
+
+# static pressures [Pa]
+GAMMA_PV = 1.4  # completely guessed
+rho1 = Rho1[speedline, 0:index_max]
+p1 = P1[speedline, 0:index_max]
+u1_mag = compute_velocity_magnitude(vx1*U_Ref, vy1*U_Ref, vr1*U_Ref)
+p1_t = compute_total_pressure(p1, u1_mag, rho1, GAMMA_PV)
+
+rho2 = Rho2[speedline, 0:index_max]
+p2 = P2[speedline, 0:index_max]
+u2_mag = compute_velocity_magnitude(vx2*U_Ref, vy2*U_Ref, vr2*U_Ref)
+p2_t = compute_total_pressure(p2, u2_mag, rho2, GAMMA_PV)
+
+rho3 = Rho3[speedline, 0:index_max]
+p3 = P3[speedline, 0:index_max]
+u3_mag = compute_velocity_magnitude(vx3*U_Ref, vy3*U_Ref, vr3*U_Ref)
+p3_t = compute_total_pressure(p3, u3_mag, rho3, GAMMA_PV)
+
+beta_tt_calc = p3_t/p1_t
 beta_tt_speedline = beta_tt[speedline, 0:index_max]
 
-# static density [kg/m3]
-rho1 = Rho1[speedline, 0:index_max]
-rho2 = Rho2[speedline, 0:index_max]
-rho4 = Rho4[speedline, 0:index_max]
+# Impeller loss calculation
 rho_imp = (rho1 + rho2) / 2  # average density in the impeller
 psi_ts_real = (p2 - p1_t) / (rho_imp * U_Ref ** 2)
 psi_ts_ideal = psi_ts_real / eta_ts[speedline, 0:index_max]  # ideal is assumed proportional to total to static efficiency
@@ -169,40 +183,42 @@ phi = mdot / (rho1 * U_Ref * A1)  # inlet flow coefficient for the impeller
 dLimp_dphi = np.gradient(L_imp, phi)
 dLi_dTanb = np.gradient(L_imp, np.tan(Beta1[speedline, 0:index_max]))
 
-plt.figure(figsize=(7, 5))
-plt.plot(phi, L_imp)
+plt.figure()
+plt.plot(phi, L_imp, '-o')
 plt.ylabel(r'$L_{imp}$')
 plt.xlabel(r'$\phi$')
-plt.title('impeller loss')
-plt.figure(figsize=(7, 5))
-plt.plot(phi, dLimp_dphi)
+plt.title('Impeller Loss')
+plt.grid(alpha=0.2)
+
+plt.figure()
+plt.plot(phi, dLimp_dphi, '-o')
 plt.ylabel(r'$dL_{imp} / d \phi$')
 plt.xlabel(r'$\phi$')
-plt.title('impeller loss derivative')
-plt.figure(figsize=(7, 5))
-plt.plot(np.tan(Beta1[speedline, 0:index_max]), dLi_dTanb)
+plt.title('Impeller Loss Derivative')
+plt.grid(alpha=0.2)
+
+plt.figure()
+plt.plot(np.tan(Beta1[speedline, 0:index_max]), dLi_dTanb, '-o')
 plt.ylabel(r'$dL_{imp} / d \tan{\beta_1}$')
 plt.xlabel(r'$\beta_1$')
-plt.title('impeller loss derivative')
+plt.title('Impeller Loss derivative')
+plt.grid(alpha=0.2)
 
 # %% construct dynamic transfer function of the system
-Q = 2 * np.pi * r2 * vr2  # non dimensional source term at station 2
-GAMMA = 2 * np.pi * r2 * vy2  # non dimensional circulation term at station 2
 beta1 = Beta1[speedline, 0:index_max]
 beta2 = Beta2[speedline, 0:index_max]
-alpha4 = Alpha4[speedline, 0:index_max]
+alpha3 = Alpha3[speedline, 0:index_max]
 
-working_points = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+working_points = [0, 2, 4]
 harmonics = [1, 2, 3, 4]
 poles_global = {}  # dictionary for the whole set of poles
 for wpoint in working_points:
     print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
-    inlet = AxialDuct(vy1[0], vx1[0], x1)
+    inlet = AxialDuct(vy1[wpoint], vx1[wpoint], x1)
     impeller = RadialImpeller(r1, r2, rho1[wpoint], rho2[wpoint], A1_blade/A_Ref, A2_blade/A_Ref, vy1[wpoint], vx1[wpoint],
-                              vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint],
-                              1)
-    vaneless_diffuser = VanelessDiffuser(r2, r4, vr2[wpoint], vy2[wpoint])
-    outlet = SwirlingFlow(r4, vr4[wpoint], vy4[wpoint], r4)
+                              vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint], 0)
+    vaneless_diffuser = VanelessDiffuser(r2, r3, vr2[wpoint], vy2[wpoint])
+    outlet = SwirlingFlow(r3, vr3[wpoint], vy3[wpoint], r3)
     driver = Driver('Centrifugal with vaneless diffuser')
     driver.add_component(inlet)
     driver.add_component(impeller)

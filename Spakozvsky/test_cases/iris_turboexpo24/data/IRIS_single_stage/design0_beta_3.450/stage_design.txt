@@ -1,0 +1,106 @@
+********************************************************************************************
+********************* TurboSim - Integrated Turbomachinery Design Suite ********************
+********************************************************************************************
+
+************************************ GENERAL INFORMATION ***********************************
+Turbomachinery Type: Centrifugal Compressor
+Fluid                :    R1233zd(E)
+gas constant         :     63.714    molecular complexity:      28.77
+omega           [rpm]:      88660
+mass flow rate [kg/s]:     0.1140    choking point [kg/s]:     0.1292
+V flow rate 0  [m3/s]:      0.056    V flow rate 1 [m3/s]:      0.023    V flow rate 2 [m3/s]   :      0.017
+Tr                   :      0.650    Pr                  :      0.013
+flow coeff           :      0.106    work coeff          :      0.793
+flow coeff - final   :      0.096    work coeff - final  :      0.612    reaction degree - final:      0.693
+Ns                   :      1.248    Ds                  :      1.856
+Beta ts              :      3.323    Beta tt             :      3.373
+Alpha ts             :      3.027    Alpha tt            :      3.070
+Eta ts         [pct.]:      78.52    Eta tt        [pct.]:      79.53    Eta tt average [pct.]  :      77.97    Eta tt internal [pct.]:      81.68
+Specific work  [J/kg]:   27880.66
+
+****************************** LOSS BREAKDOWN AT DESIGN POINT ******************************
+Delta eta incidence      [pct.]:       0.09
+Delta eta shock waves    [pct.]:       0.08
+Delta eta loading        [pct.]:       1.86
+Delta eta friction       [pct.]:       2.90
+Delta eta clearance      [pct.]:       3.31
+Delta eta mixing         [pct.]:       2.97
+Delta eta diffuser       [pct.]:       4.32
+Delta eta volute         [pct.]:       2.54
+Delta eta exit cone      [pct.]:       0.24
+Delta eta disk friction  [pct.]:       0.69
+Delta eta recirculation  [pct.]:       0.33
+Delta eta leakage        [pct.]:       1.66
+
+************************************** STAGE GEOMETRY **************************************
+N blades               :      7
+N splitter blades      :      7
+impeller shape factor  :      0.950
+diffuser radius ratio  :      1.540
+diffuser pinch R ratio :      1.270    diffuser pinch H ratio:      0.830
+volute aspect ratio    :      0.627
+R0 [m]    :     0.0094    R1 [m]       :     0.0229    R2 [m]     :     0.0353    R3 [m]          :     0.0533
+H0 [m]    :     0.0119    H1 [m]       :     0.0022    H2 [m]     :     0.0018    D vol outlet [m]:     0.0180    D cone outlet [m]:     0.0275
+R0 hub [m]:     0.0034    R0 shroud [m]:     0.0153    R shaft [m]:     0.0031    R0 shroud / R1  :      0.668    H1 / R1          :     0.0963
+Lax / R1  :       0.70    tip gap / H1 :      0.068    peak-to-valley roughness [m]:    0.00001
+LE thickness hub [m]   :    0.00060    LE thickness shroud [m]:    0.00030
+TE thickness hub [m]   :    0.00060    TE thickness shroud [m]:    0.00030
+blade angle 0 hub [deg]:     -16.65    blade angle 0 mid [deg]:     -43.78    blade angle 0 shroud [deg]:     -58.92
+blade angle 1     [deg]:     -29.24
+
+******************************** FLOW PROPERTIES AT MIDSPAN ********************************
+P0 [Pa]     :   41031.86    P1 [Pa]     :   97860.13    P2 [Pa]     :  134246.00    P3 [Pa]     :  143504.95    P4 [Pa]     :  156558.64
+Pt0 [Pa]    :   47108.10    Pt1 [Pa]    :  173863.58    Pt2 [Pa]    :  165308.77    Pt3 [Pa]    :  159426.20    Pt4 [Pa]    :  158885.20
+h0 [J/kg]   :  410987.90    h1 [J/kg]   :  430011.37    h2 [J/kg]   :  437020.06    h3 [J/kg]   :  439014.72    h4 [J/kg]   :  440780.57
+ht0 [J/kg]  :  413436.97    ht1 [J/kg]  :  441069.29    ht2 [J/kg]  :  441069.29    ht3 [J/kg]  :  441069.29    ht4 [J/kg]  :  441069.29
+s0 [J/kg.K] :    1781.89    s1 [J/kg.K] :    1792.44    s2 [J/kg.K] :    1795.49    s3 [J/kg.K] :    1797.69    s4 [J/kg.K] :    1797.89
+T0 [K]      :     282.39    T1 [K]      :     307.89    T2 [K]      :     317.27    T3 [K]      :     319.86    T4 [K]      :     322.27
+Tt0 [K]     :     285.74    Tt1 [K]     :     323.07    Tt2 [K]     :     322.84    Tt3 [K]     :     322.68    Tt4 [K]     :     322.67
+D0 [kg/m3]  :       2.33    D1 [kg/m3]  :       5.17    D2 [kg/m3]  :       6.94    D3 [kg/m3]  :       7.37    D4 [kg/m3]  :       8.00
+Cp0 [J/kg.K]:    781.761    Cp1 [J/kg.K]:    831.787    Cp2 [J/kg.K]:     851.46    Cp3 [J/kg.K]:     856.48    Cp4 [J/kg.K]:     861.99
+gamma0      :      1.098    gamma1      :      1.100    gamma2      :       1.10    gamma3      :       1.10    gamma4      :       1.10
+gamma Pv0   :      1.077    gamma Pv1   :      1.061    gamma Pv2   :       1.05    gamma Pv3   :       1.05    gamma Pv4   :       1.05
+Z0          :      0.981    Z1          :      0.966    Z2          :       0.96    Z3          :       0.96    Z4          :       0.95
+Gamma0      :      1.031    Gamma1      :      1.019    Gamma2      :       1.01    Gamma3      :       1.01    Gamma4      :       1.01
+
+Velocity triangles
+V0 [m/s]    :      69.99    V1 [m/s]    :     148.71    V2 [m/s]    :      89.42    V3 [m/s]    :      64.10    V4 [m/s]    :      24.03
+W0 [m/s]    :     111.68    W1 [m/s]    :     110.28    W2 [m/s]    :       0.00    W3 [m/s]    :       0.00    W4 [m/s]    :       0.00
+U0 [m/s]    :      87.03    U1 [m/s]    :     212.86    U2 [m/s]    :       0.00    U3 [m/s]    :       0.00    U4 [m/s]    :       0.00
+alpha0 [deg]:       0.00    alpha1 [deg]:      60.80    alpha2 [deg]:      61.48    alpha3 [deg]:       0.00    alpha4 [deg]:       0.00
+beta0 [deg] :     -51.19    beta1 [deg] :     -48.86    beta2 [deg] :       0.00    beta3 [deg] :       0.00    beta4 [deg] :       0.00
+
+Mach numbers
+M U1        :       1.54
+M0          :       0.51    M1          :       1.05    M2          :       0.63    M3          :       0.45    M4          :       0.17
+Mr0         :       0.81    Mr1         :       0.78    Mr2         :       0.00    Mr3         :       0.00    Mr4         :       0.00
+Mm0         :       0.51    Mm1         :       0.51    Mm2         :       0.30    Mm3         :       0.45    Mm4         :       0.17
+M0 hub      :       0.51    M0 mid      :       0.51    M0 shroud   :       0.51
+Mr0 hub     :       0.56    Mr0 mid     :       0.81    Mr0 shroud  :       1.15
+
+*********************************** ANCILLARY QUANTITIES ***********************************
+incidence hub [deg]    :       7.79    incidence mid [deg]:       7.42    incidence shroud [deg]:       4.89
+slip angle  [deg]      :      25.85
+wake fraction          :      0.412
+Cp diffuser            :      0.479
+Cp volute              :      0.298
+Cp exit cone           :      0.820
+Hydraulic diameter [m] :     0.0045
+Hydraulic length [m]   :     0.0297
+Reynolds impeller      :    2447620
+Reynolds diffuser      :    2964148
+Reynolds exit cone     :     451960
+Cf impeller            :     0.0058
+Cf diffuser            :     0.0057
+Cf exit cone           :     0.0038
+
+************************************* OPERATING RANGE **************************************
+alpha 1 critical [deg]:      75.00    OR:      0.390   at       70928 rpm
+alpha 1 critical [deg]:      73.72    OR:      0.419   at       88660 rpm
+alpha 1 critical [deg]:      73.05    OR:      0.205   at       97526 rpm
+
+*********************************** MECHANICAL ANALYSIS ************************************
+max(Power) [W]:     1378.4    max(Torque) [Nm]:      0.187    max(Axial thrust) [N]:       32.6    max(Centrifugal stress) [MPa]:       19.1   at       70928 rpm
+max(Power) [W]:     3375.1    max(Torque) [Nm]:      0.367    max(Axial thrust) [N]:       55.3    max(Centrifugal stress) [MPa]:       29.8   at       88660 rpm
+max(Power) [W]:     4708.5    max(Torque) [Nm]:      0.466    max(Axial thrust) [N]:       69.3    max(Centrifugal stress) [MPa]:       36.1   at       97526 rpm
+Weight compressor assembly [kg]   :     0.3898    Weight electric motor [kg]   :     0.9033
