@@ -1152,8 +1152,8 @@ class SunModel:
 
         print_banner_begin('BLOCK TYPE')
         print(f"{'Block type:':<{total_chars_mid}}{block_type:>{total_chars_mid}}")
-        print(f"{'Block Omega Sun:':<{total_chars_mid}}{Omega:>{total_chars_mid}}")
-        print(f"{'Block Tau Sun:':<{total_chars_mid}}{tau:>{total_chars_mid}}")
+        print(f"{'Block Omega Sun [-]:':<{total_chars_mid}}{Omega:>{total_chars_mid}}")
+        print(f"{'Block Tau Sun: [-]':<{total_chars_mid}}{tau:>{total_chars_mid}}")
         print_banner_end()
 
         self.L0 = self.Z_g * (1 + 1j * m * Omega * tau) + self.S_g
@@ -1182,7 +1182,7 @@ class SunModel:
         (L2*omega^2 + L1*omega + L0)*tilde{phi}. Therefore, BCs are imposed on L0 (the only constant matrix), and L1,L2
         (omega dependent) filled with zeros in correspondance of those BCs.
         """
-        print('Boundary Condition implementaion type: ', mode)
+        print('Boundary Condition implementation type: ', mode)
         self.rows_added = 0
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
