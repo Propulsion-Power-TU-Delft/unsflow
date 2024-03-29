@@ -291,22 +291,22 @@ class Blade:
     def compute_camber_vector(self, i, j, check=False):
         """
         For a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
-        of the vectors connecting streamwise and spanwise points.
-        :param i: i index of the point
-        :param j: j index of the point
+        of the vectors connecting streamwise and spanwise points. Preserve the directions to have consistent vectors
+        :param i: i index of the point on the blade grid
+        :param j: j index of the point on the blade grid
         :param check: if True plots the result
         """
         ni = self.z_camber.shape[0] - 1  # last element index
         nj = self.r_camber.shape[1] - 1  # last element index
 
         if i == 0 and j == 0:
-            # vector direction along the streamline
+            # vector along the streamline
             vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
                               self.y_camber[i + 1, j] - self.y_camber[i, j],
                               self.z_camber[i + 1, j] - self.z_camber[i, j]])
             vec_1 /= np.linalg.norm(vec_1)
 
-            # vector direction along the spanline
+            # vector along the spanline
             vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
                               self.y_camber[i, j + 1] - self.y_camber[i, j],
                               self.z_camber[i, j + 1] - self.z_camber[i, j]])
