@@ -299,109 +299,39 @@ class Blade:
         ni = self.z_camber.shape[0] - 1  # last element index
         nj = self.r_camber.shape[1] - 1  # last element index
 
-        if i == 0 and j == 0:
-            # vector along the streamline
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i, j]])
-            vec_1 /= np.linalg.norm(vec_1)
+        # # Plot the surface
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, cmap='viridis')
+        # # Customize labels
+        # ax.set_xlabel('X')
+        # ax.set_ylabel('Y')
+        # ax.set_zlabel('Z')
 
-            # vector along the spanline
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif i == 0 and j == nj:
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (i == ni and j == 0):
-            vec_1 = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (i == ni and j == nj):
-            vec_1 = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (i == 0):
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (i == ni):
-            vec_1 = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (j == 0):
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j]])
-            vec_2 /= np.linalg.norm(vec_2)
-
-        elif (j == nj):
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
-
-            vec_2 = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
-
+        # vector along the streamline
+        if i == ni:
+            stream_v = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j],
+                                self.y_camber[i, j] - self.y_camber[i - 1, j],
+                                self.z_camber[i, j] - self.z_camber[i - 1, j]])
         else:
-            vec_1 = np.array([self.x_camber[i + 1, j] - self.x_camber[i - 1, j],
-                              self.y_camber[i + 1, j] - self.y_camber[i - 1, j],
-                              self.z_camber[i + 1, j] - self.z_camber[i - 1, j]])
-            vec_1 /= np.linalg.norm(vec_1)
+            stream_v = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
+                                self.y_camber[i + 1, j] - self.y_camber[i, j],
+                                self.z_camber[i + 1, j] - self.z_camber[i, j]])
+        stream_v /= np.linalg.norm(stream_v)
 
-            vec_2 = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j - 1],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j - 1],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j - 1]])
-            vec_2 /= np.linalg.norm(vec_2)
+        # vector along the spanline
+        if j == nj:
+            span_v = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1],
+                               self.y_camber[i, j] - self.y_camber[i, j - 1],
+                               self.z_camber[i, j] - self.z_camber[i, j - 1]])
+        else:
+            span_v = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
+                              self.y_camber[i, j + 1] - self.y_camber[i, j],
+                              self.z_camber[i, j + 1] - self.z_camber[i, j]])
+        span_v /= np.linalg.norm(span_v)
 
         # the normal is the vectorial product of the two
-        normal = np.cross(vec_1, vec_2)
+        normal = np.cross(stream_v, span_v)
         normal /= np.linalg.norm(normal)
         if normal[2] < 0:  # if the axial component of the normal is negative, invert the direction
             normal *= -1
@@ -418,7 +348,7 @@ class Blade:
                       vec_2[0], vec_2[1], vec_2[2], length=0.004)
             ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                       normal[0], normal[1], normal[2], length=0.004)
-        return normal, vec_1, vec_2
+        return normal, stream_v, span_v
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
         """
@@ -543,16 +473,22 @@ class Blade:
         """
         Show all the normal vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
+        :param folder_name: folder name of the pictures
         """
-        self.scale = (np.max(self.z_camber) - np.min(self.z_camber)) / 20
-        fig = plt.figure(figsize=self.picture_size_blank)
+        self.scale = (np.max(self.z_camber) - np.min(self.z_camber)) / 15
+        fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
+        surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.normal_vectors[i, j][0], self.normal_vectors[i, j][1], self.normal_vectors[i, j][2],
                           length=self.scale, color='red')
+        ax.set_box_aspect([1, 1, 1])
+        ax.grid(False)
+        surf.set_edgecolor('none')  # Remove edges
+        surf.set_linewidth(0.1)  # Set linewidth
+        surf.set_antialiased(True)  # Enable antialiasing for smoother edges
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -564,18 +500,25 @@ class Blade:
         """
         Show all the streamline vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
+        :param folder_name: folder name of the pictures
         """
         fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
+        surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.streamline_vectors[i, j][0], self.streamline_vectors[i, j][1], self.streamline_vectors[i, j][2],
                           length=self.scale, color='green')
+        ax.set_box_aspect([1, 1, 1])
+        ax.grid(False)
+        surf.set_edgecolor('none')  # Remove edges
+        surf.set_linewidth(0.1)  # Set linewidth
+        surf.set_antialiased(True)  # Enable antialiasing for smoother edges
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
+        ax.set_box_aspect([1, 1, 1])
         ax.set_title('streamline vectors')
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
@@ -584,18 +527,25 @@ class Blade:
         """
         Show all the spanline vectors on the camber surface.
         :param save_filename: if specified, saves the plots with the given name
+        :param folder_name: folder name of the pictures
         """
         fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.2)
+        surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
                 ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
                           self.spanline_vectors[i, j][0], self.spanline_vectors[i, j][1],
                           self.spanline_vectors[i, j][2], length=self.scale, color='purple')
+        ax.set_box_aspect([1, 1, 1])
+        ax.grid(False)
+        surf.set_edgecolor('none')  # Remove edges
+        surf.set_linewidth(0.1)  # Set linewidth
+        surf.set_antialiased(True)  # Enable antialiasing for smoother edges
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
+        ax.set_box_aspect([1, 1, 1])
         ax.set_title('spanline vectors')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
