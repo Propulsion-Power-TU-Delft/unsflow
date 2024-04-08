@@ -21,6 +21,7 @@ from Grid.src.weighted_least_squares import *
 import matplotlib.lines as mlines
 from scipy.interpolate import LinearNDInterpolator
 from scipy import integrate
+import warnings
 
 
 class MeridionalProcess:
@@ -71,10 +72,12 @@ class MeridionalProcess:
         self.camber_normal_r = np.zeros((self.nstream, self.nspan))
         self.camber_normal_theta = np.zeros((self.nstream, self.nspan))
         self.camber_normal_z = np.zeros((self.nstream, self.nspan))
+        warnings.warn('ATTENTION: radial and theta component of the camber normal vectors have been artificially made'
+                      'positive to avoid problems. Check if it is correct for your case.')
         for istream in range(self.nstream):
             for ispan in range(self.nspan):
-                self.camber_normal_r[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][0]
-                self.camber_normal_theta[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][1]
+                self.camber_normal_r[istream, ispan] = np.abs(self.blade.normal_vectors_cyl[istream, ispan][0])
+                self.camber_normal_theta[istream, ispan] = np.abs(self.blade.normal_vectors_cyl[istream, ispan][1])
                 self.camber_normal_z[istream, ispan] = self.blade.normal_vectors_cyl[istream, ispan][2]
 
     def get_data_from_meridional_dataset(self):

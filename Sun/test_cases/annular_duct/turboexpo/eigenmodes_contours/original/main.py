@@ -40,7 +40,7 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 45
+Nz = 30
 Nr = 15
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
@@ -71,14 +71,13 @@ sun_blocks = [sun_obj]
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    sun_obj.set_overwriting_equation_euler_wall('utheta')
     sun_obj.ComputeSpectralGrid()
     sun_obj.ComputeJacobianPhysical()
-    sun_obj.AddAMatrixToNodesFrancesco2()
-    sun_obj.AddBMatrixToNodesFrancesco2()
-    sun_obj.AddCMatrixToNodesFrancesco2()
-    sun_obj.AddEMatrixToNodesFrancesco2()
-    sun_obj.AddRMatrixToNodesFrancesco2()
+    sun_obj.AddAMatrixToNodes_francesco()
+    sun_obj.AddBMatrixToNodes_francesco()
+    sun_obj.AddCMatrixToNodes_francesco()
+    sun_obj.AddEMatrixToNodes_francesco()
+    sun_obj.AddRMatrixToNodes_francesco()
     sun_obj.AddSMatrixToNodes()
     sun_obj.AddHatMatricesToNodes()
     sun_obj.ApplySpectralDifferentiation()
@@ -176,6 +175,8 @@ for ivec in range(np.shape(eigenvectors)[1]):
         return array_real_scaled
 
     p_eig_r = scaled_eigenvector_real(p_eig)
+    uz_eig_r = scaled_eigenvector_real(uz_eig)
+    ur_eig_r = scaled_eigenvector_real(ur_eig)
     xtick_locations = [0, L/config.get_reference_length()]
     xtick_labels = [r'$0$', r'$L$']
     ytick_locations = [r1/config.get_reference_length(), r2/config.get_reference_length()]
@@ -183,6 +184,7 @@ for ivec in range(np.shape(eigenvectors)[1]):
 
 
     contour = ax[ivec].contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='bwr')
+    ax[ivec].quiver(z_grid, r_grid, uz_eig_r, ur_eig_r, scale=10)
     if ivec==0:
         ax[ivec].set_ylabel(r'$r$ [-]', fontsize=font_labels)
     ax[ivec].set_xlabel(r'$z$ [-]', fontsize=font_labels)
