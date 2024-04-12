@@ -2,6 +2,7 @@
 POLYNOMIAL 2D REGRESSION FUNCTIONS. TAKEN FROM SLIDE 5, LECTURE 10-11, DDFM COURSE VKI
 """
 import numpy as np
+from numpy.polynomial.chebyshev import chebvander2d
 
 
 def basis_function_matrix(X, Y, order=4):
@@ -143,3 +144,51 @@ def regression_evaluation(W, coeff_vector, nx, ny):
     z = np.dot(W, coeff_vector)
     Z = np.reshape(z, (nx, ny))
     return Z
+
+def chebyshev_polynomial(k, x):
+    """
+    Definition by recursion.
+    :param k: order of the polynomial
+    :param x: evaluation points
+    """
+    if k == 0:
+        return np.ones_like(x)
+    elif k == 1:
+        return x
+    else:
+        return 2 * x * chebyshev_polynomial(k - 1, x) - chebyshev_polynomial(k - 2, x)
+
+
+def chebyshev_derivative_recursive(k, x):
+    """
+    Definition by recursion.
+    :param k: order of the polynomial
+    :param x: evaluation points
+    """
+    if k == 0:
+        return np.zeros_like(x)
+    elif k == 1:
+        return np.ones_like(x)
+    else:
+        return 2 * chebyshev_polynomial(k - 1, x) + 2 * x * chebyshev_derivative_recursive(k - 1,
+                                                                                           x) - chebyshev_derivative_recursive(
+            k - 2, x)
+
+
+def compute_derivative_matrices_chebyshev(degrees, x, y):
+    """
+    Build the Van Der Monde matrices of the x and y derivatives.
+    :param degrees: (x,y) degrees
+    :param x: evaluation points
+    :param y: evaluation points
+    """
+    n_samples = len(x)
+    DX = np.zeros((n_samples, (degrees[0] + 1) * (degrees[1] + 1)))
+    DY = np.zeros((n_samples, (degrees[0] + 1) * (degrees[1] + 1)))
+    for i in range(degrees[0] + 1):
+        for j in range(degrees[1] + 1):
+            k = j + i * (degrees[0] + 1)
+            DX[:, k] = chebyshev_derivative_recursive(i, x) * chebyshev_polynomial(j, y)
+            DY[:, k] = chebyshev_polynomial(i, x) * chebyshev_derivative_recursive(j, y)
+    return DX, DY
+

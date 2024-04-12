@@ -21,6 +21,7 @@ from Grid.src.weighted_least_squares import *
 import matplotlib.lines as mlines
 from scipy.interpolate import LinearNDInterpolator
 from scipy import integrate
+from numpy.polynomial.chebyshev import chebvander2d
 import warnings
 
 
@@ -564,6 +565,30 @@ class MeridionalProcess:
         self.T, self.dT_dr, self.dT_dz = self.polynomial_regression_solution(self.T)
         self.s, self.ds_dr, self.ds_dz = self.polynomial_regression_solution(self.s)
 
+    def compute_regressed_fields_chebyshev(self,):
+        """
+        Compute the fourth order polynomial regressed fields, as described in the original papers
+        :param order: order of the regression. 4 is the values used in the literature.
+        """
+        print("Chebyshev Regression of the Flow Fields, orders: [4, 4]")
+        self.W = chebvander2d(self.z_cg.flatten(), self.r_cg.flatten(), [8, 8])
+        self.W_dz, self.W_dr = compute_derivative_matrices_chebyshev([8, 8], self.z_cg.flatten(), self.r_cg.flatten())
+
+        def compute_solutions(field):
+            coeffs, _, _, _ = np.linalg.lstsq(self.W, field.flatten(), rcond=None)
+            f = np.dot(self.W, coeffs).reshape(self.z_cg.shape)
+            df_dz = np.dot(self.W_dz, coeffs).reshape(self.z_cg.shape)
+            df_dr = np.dot(self.W_dr, coeffs).reshape(self.z_cg.shape)
+            return f, df_dr, df_dz
+
+        self.rho, self.drho_dr, self.drho_dz = compute_solutions(self.rho)
+        self.ur, self.dur_dr, self.dur_dz = compute_solutions(self.ur)
+        self.ut, self.dut_dr, self.dut_dz = compute_solutions(self.ut)
+        self.uz, self.duz_dr, self.duz_dz = compute_solutions(self.uz)
+        self.p, self.dp_dr, self.dp_dz = compute_solutions(self.p)
+        self.T, self.dT_dr, self.dT_dz = compute_solutions(self.T)
+        self.s, self.ds_dr, self.ds_dz = compute_solutions(self.s)
+
     def polynomial_regression_solution(self, field):
         """
         Given a 2D field, and the weight vector coefficients, compute the values of the regressed field and derivatives.
@@ -572,11 +597,9 @@ class MeridionalProcess:
         Nz = np.shape(self.z_cg)[0]
         Nr = np.shape(self.r_cg)[1]
         coeff_vector = least_square_regression(self.W, field)
-        W = self.W
-        W_dz, W_dr = self.W_dz, self.W_dr
-        regr_field = regression_evaluation(W, coeff_vector, Nz, Nr)
-        regr_field_dz = regression_evaluation(W_dz, coeff_vector, Nz, Nr)
-        regr_field_dr = regression_evaluation(W_dr, coeff_vector, Nz, Nr)
+        regr_field = regression_evaluation(self.W, coeff_vector, Nz, Nr)
+        regr_field_dz = regression_evaluation(self.W_dz, coeff_vector, Nz, Nr)
+        regr_field_dr = regression_evaluation(self.W_dr, coeff_vector, Nz, Nr)
         return regr_field, regr_field_dr, regr_field_dz
 
     def compute_rbf_gradients(self):
