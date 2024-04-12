@@ -5,7 +5,7 @@ X_MIN = 0.1
 X_MAX = 2
 N_SAMPLES = 10
 SIGMA_ERROR = 1e-2
-DEGREE = 8
+DEGREE = 7
 
 
 
@@ -41,6 +41,8 @@ plt.ylabel('y')
 plt.title('Chebyshev Regression')
 plt.legend()
 plt.grid(alpha=0.2)
+plt.savefig('y.pdf', bbox_inches='tight')
+
 
 
 
@@ -82,4 +84,5 @@ plt.ylabel('dy/dx')
 plt.legend()
 plt.title('Regression based derivative')
 plt.grid(alpha=0.2)
+plt.savefig('dydx.pdf', bbox_inches='tight')
 plt.show()

@@ -151,10 +151,11 @@ def cartesian_to_cylindrical_matrix(x, y):
     return M
 
 
-def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching, X0=None,
-                             Y0=None, tol=1e-3, save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5,
+def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching,
+                             tol=1e-3, save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5,
                              sigmoid_coeff_y=5, it_orth=-1, guardian=False, method='intersection', fix_inlet=False,
-                             fix_outlet=False, save_animation=False, border_adjustment=False):
+                             fix_outlet=False, save_animation=False, border_adjustment=False,
+                             inlet_block=False, outlet_block=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -165,8 +166,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     :param orthogonality: if True, enables orthogonality corrections, as well as border nodes update.
     :param x_stretching: stretching type of the grid in the streamwise direction.
     :param y_stretching: stretching type of the grid in the spanwise direction.
-    :param X0: if set, is the initial condition  of the x PDE.
-    :param Y0: if set, is the initial condition  of the y PDE.
     :param tol: threshold to stop iteration.
     :param save_filename: if set, saves the figure.
     :param show: if True shows the animation
@@ -193,25 +192,25 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
 
     X = np.zeros((nx, ny))
     Y = np.zeros((nx, ny))
-    # if X0 is not None and Y0 is not None:
-    #     # inital grid attempt given in the args
-    #     X = X0
-    #     Y = Y0
-    # else:
 
     # if initial grid is not given, find it via interpolation of the borders
-    X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
-    Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
+                            sampling_points=ny)
+    Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
+                            sampling_points=ny)
     X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                            sampling_points=nx)
+                            sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
     Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                            sampling_points=nx)
+                            sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
     X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
                              sampling_points=ny)
     Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
                              sampling_points=ny)
-    X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
-    Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx)
+    X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
+                             sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
+    Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
+                             sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
+
     for istream in range(1, nx - 1):
         for ispan in range(1, ny - 1):
             X[istream, ispan] = X[istream, 0] + (X[istream, -1] - X[istream, 0]) * ispan / (ny - 1)
@@ -232,7 +231,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
         elif x_stretching == 'gauss-lobatto':
-            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_gauss_lobatto(xi)
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_gauss_lobatto(xi, inlet_block=inlet_block, outlet_block=outlet_block)
         elif x_stretching == 'sigmoid_right':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid_right(xi, sigmoid_coeff_x)
         elif x_stretching == 'sigmoid_left':
@@ -551,7 +550,7 @@ def scaled_sigmoid(x, alpha):
     return f, f_prime, f_second
 
 
-def scaled_gauss_lobatto(x):
+def scaled_gauss_lobatto(x, inlet_block=False, outlet_block=False):
     """
     Return a gauss-lobatto spacing from [0,1] to [0,1].
     :param x: array of sigmoid argument
@@ -559,6 +558,15 @@ def scaled_gauss_lobatto(x):
     f = 0.5 * (1 - np.cos(np.pi * x))
     f_prime = np.pi / 2 * np.sin(np.pi * x)
     f_second = np.pi ** 2 / 2 * np.cos(np.pi * x)
+
+    if inlet_block:
+        f[0:len(f)//2] = np.linspace(0, 0.5, len(f)//2)
+        f_prime[0:len(f)//2] = np.ones(len(f)//2)
+        f_second[0:len(f) // 2] = np.zeros(len(f) // 2)
+    if outlet_block:
+        f[len(f)//2:] = np.linspace(0.5, 1, len(f)//2)
+        f_prime[len(f) // 2:] = np.ones(len(f) // 2)
+        f_second[len(f) // 2:] = np.zeros(len(f) // 2)
 
     # plt.figure()
     # plt.plot(x, f / (np.max(f)-np.min(f)), label=r'$f_{scaled}$')
@@ -881,7 +889,7 @@ def compute_picture_size(x, y):
     return pic_size_blank, pic_size_contour
 
 
-def sample_spline(x, sample_method, sample_coeff, sampling_points):
+def sample_spline(x, sample_method, sample_coeff, sampling_points, inlet_block=False, outlet_block=False):
     """
     Sample the curve denoted by a generic x-cordinate, parametrized as cubic spline, in a certain method.
     :param x:cordinates
@@ -901,7 +909,7 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points):
     elif sample_method == 'sigmoid_right' or sample_method == 'sigmoid_up':
         t_scaled = scaled_sigmoid_right(t, sample_coeff)[0]
     elif sample_method == 'gauss-lobatto':
-        t_scaled = scaled_gauss_lobatto(t)[0]
+        t_scaled = scaled_gauss_lobatto(t, inlet_block, outlet_block)[0]
     else:
         raise ValueError("Unrecognized sample method")
     t_scaled[0] = 0

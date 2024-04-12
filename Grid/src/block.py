@@ -140,9 +140,12 @@ class Block:
         self.leading_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
         self.trailing_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, inlet_meridional_obj=None, outlet_meridional_obj=None, save_animation=False):
+    def compute_grid_points(self, inlet_block=False, outlet_block=False, inlet_meridional_obj=None, outlet_meridional_obj=None,
+                            save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
+        :param inlet_block: if True, disables the grid stretching at inlet
+        :param outlet_block: if False disables the grid stretching at outlet
         :param inlet_meridional_obj: provide inlet meridional object if you wish to mantain consistency of the shared nodes
         :param outlet_meridional_obj: provide outlet meridional object if you wish to mantain consistency of the shared nodes
         :param save_animation: if True store the Matrix necessary for the animation of the elliptic grid generation.
@@ -184,9 +187,7 @@ class Block:
                                                                               self.config.get_grid_orthogonality(),
                                                                               self.config.get_mesh_type(),
                                                                               self.config.get_mesh_type(),
-                                                                              sigmoid_coeff_x=self.config.get_sigmoid_stream_coefficient(),
-                                                                              sigmoid_coeff_y=self.config.get_sigmoid_span_coefficient(),
-                                                                              fix_inlet=fix_inlet, fix_outlet=fix_outlet,
+                                                                              inlet_block=inlet_block, outlet_block=outlet_block,
                                                                               save_animation=save_animation)
         else:
             raise ValueError('Grid method not recognized!')
