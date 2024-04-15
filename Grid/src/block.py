@@ -12,6 +12,7 @@ from .functions import cluster_sample_u, elliptic_grid_generation, compute_pictu
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
+import pickle
 
 
 class Block:
@@ -549,3 +550,35 @@ class Block:
             plt.plot(self.z_grid_centers[:, jj], self.r_grid_centers[:, jj], 'k', linewidth=0.5)
         # plt.gca().set_aspect('equal', adjustable='box')
         plt.colorbar()  # plt.savefig('prova.pdf', bbox_inches='tight')
+
+    def compute_three_dimensional_mesh(self, N_THETA):
+        """
+        Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured
+        """
+        theta = np.linspace(0, 2*np.pi, N_THETA)
+        self.X_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
+        self.Y_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
+        self.Z_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
+
+        for i in range(self.nstream):
+            for j in range(self.nspan):
+                for k in range(N_THETA):
+                    self.X_mesh[i,j,k] = self.r_grid_cg[i,j] * np.cos(theta[k])
+                    self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
+                    self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+
+    def save_mesh_pickle(self, filepath=None):
+        """
+        Save the mesh cordinates in a pickle
+        """
+
+        mesh = {'x':self.X_mesh,
+                'y':self.Y_mesh,
+                'z':self.Z_mesh}
+
+        if filepath==None:
+            filepath = 'mesh_%02i_%02i_%2i.pickle' %(self.nstream, self.nspan, self.X_mesh.shape[2])
+        with open(filepath, 'wb') as f:
+            pickle.dump(mesh, f)
+
+        print(f"Data saved to '{filepath}'")
