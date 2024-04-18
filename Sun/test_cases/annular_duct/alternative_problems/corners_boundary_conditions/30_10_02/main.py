@@ -88,7 +88,7 @@ for sun_obj in sun_blocks:
     sun_obj.build_Z_global_matrix()
     sun_obj.compute_L_matrices(ii)
     sun_obj.set_boundary_conditions()
-    sun_obj.apply_boundary_conditions_generalized()
+    sun_obj.apply_boundary_conditions_generalized('added')
     ii += 1
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)

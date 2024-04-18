@@ -1204,8 +1204,14 @@ class SunModel:
                 elif mode == 'added':
                     if marker == 'inlet':
                         self.add_bc_condition(row, self.inlet_bc, ii, jj)
+                        if jj == 0 or jj == self.data.nRadialNodes-1:
+                            print('Corner fix applied')
+                            self.apply_bc_condition(row, self.hub_bc, ii, jj)
                     elif marker == 'outlet':
                         self.add_bc_condition(row, self.outlet_bc, ii, jj)
+                        if jj == 0 or jj == self.data.nRadialNodes-1:
+                            print('Corner fix applied')
+                            self.apply_bc_condition(row, self.hub_bc, ii, jj)
                     elif marker == 'hub':
                         self.add_bc_condition(row, self.hub_bc, ii, jj)
                     elif marker == 'shroud':
