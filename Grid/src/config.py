@@ -68,6 +68,10 @@ class Config:
         value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TYPE')
         return ast.literal_eval(value)
 
+    def get_blocks_topology(self):
+        value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TOPOLOGY')
+        return ast.literal_eval(value)
+
     def get_spanwise_points(self):
         return int(self.config_parser.get('CFD PROCESSING', 'SPANWISE_POINTS'))
 

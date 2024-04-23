@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size
+from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size, transfinite_grid_generation
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
@@ -141,7 +141,7 @@ class Block:
         self.leading_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
         self.trailing_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, inlet_block=False, outlet_block=False, inlet_meridional_obj=None, outlet_meridional_obj=None,
+    def compute_grid_points(self, block_counter, inlet_block=False, outlet_block=False, inlet_meridional_obj=None, outlet_meridional_obj=None,
                             save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
@@ -167,31 +167,35 @@ class Block:
                 print(f"{'Outlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             print_banner_end()
 
-        if self.config.get_mesh_generation_method() == 'elliptic':
-            # handle the case in which some grid cordinates must be copied from adjacent blocks
-            if inlet_meridional_obj is not None:
-                inlet = np.vstack((inlet_meridional_obj.z_grid[-1, :], inlet_meridional_obj.r_grid[-1, :]))
-                fix_inlet = True
-            else:
-                inlet = np.vstack((self.leading_edge.z_sample, self.leading_edge.r_sample))
-                fix_inlet = False
-            if outlet_meridional_obj is not None:
-                outlet = np.vstack((outlet_meridional_obj.z_grid[0, :], outlet_meridional_obj.r_grid[0, :]))
-                fix_outlet = True
-            else:
-                outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
-                fix_outlet = False
 
-            hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
-            shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
+        # handle the case in which some grid cordinates must be copied from adjacent blocks
+        if inlet_meridional_obj is not None:
+            inlet = np.vstack((inlet_meridional_obj.z_grid[-1, :], inlet_meridional_obj.r_grid[-1, :]))
+            fix_inlet = True
+        else:
+            inlet = np.vstack((self.leading_edge.z_sample, self.leading_edge.r_sample))
+            fix_inlet = False
+        if outlet_meridional_obj is not None:
+            outlet = np.vstack((outlet_meridional_obj.z_grid[0, :], outlet_meridional_obj.r_grid[0, :]))
+            fix_outlet = True
+        else:
+            outlet = np.vstack((self.trailing_edge.z_sample, self.trailing_edge.r_sample))
+            fix_outlet = False
+        hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
+        shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
+
+        if self.config.get_mesh_generation_method() == 'elliptic':
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.config.get_grid_orthogonality(),
                                                                               self.config.get_mesh_type(),
                                                                               self.config.get_mesh_type(),
                                                                               inlet_block=inlet_block, outlet_block=outlet_block,
                                                                               save_animation=save_animation)
-        else:
-            raise ValueError('Grid method not recognized!')
+        elif self.config.get_mesh_generation_method().upper() == 'TFI':
+            self.z_grid_points, self.r_grid_points = transfinite_grid_generation(inlet, hub, outlet, shroud,
+                                                                                self.config.get_blocks_topology()[block_counter],
+                                                                                 self.config.get_sigmoid_stream_coefficient(),
+                                                                                 self.config.get_sigmoid_span_coefficient())
 
         self.compute_grid_centers()
 

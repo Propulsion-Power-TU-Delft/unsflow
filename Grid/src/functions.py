@@ -151,11 +151,10 @@ def cartesian_to_cylindrical_matrix(x, y):
     return M
 
 
-def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching,
-                             tol=1e-3, save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5,
-                             sigmoid_coeff_y=5, it_orth=-1, guardian=False, method='intersection', fix_inlet=False,
-                             fix_outlet=False, save_animation=False, border_adjustment=False,
-                             inlet_block=False, outlet_block=False):
+def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching, tol=1e-3,
+                             save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1,
+                             guardian=False, method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False,
+                             border_adjustment=False, inlet_block=False, outlet_block=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -194,22 +193,18 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     Y = np.zeros((nx, ny))
 
     # if initial grid is not given, find it via interpolation of the borders
-    X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
-                            sampling_points=ny)
-    Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
-                            sampling_points=ny)
-    X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                            sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
-    Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                            sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
-    X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
-                             sampling_points=ny)
-    Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y,
-                             sampling_points=ny)
-    X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                             sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
-    Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x,
-                             sampling_points=nx, inlet_block=inlet_block, outlet_block=outlet_block)
+    X[0, :] = sample_spline(c_left[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    Y[0, :] = sample_spline(c_left[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[:, 0] = sample_spline(c_bottom[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx,
+                            inlet_block=inlet_block, outlet_block=outlet_block)
+    Y[:, 0] = sample_spline(c_bottom[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx,
+                            inlet_block=inlet_block, outlet_block=outlet_block)
+    X[-1, :] = sample_spline(c_right[0, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    Y[-1, :] = sample_spline(c_right[1, :], sample_method=y_stretching, sample_coeff=sigmoid_coeff_y, sampling_points=ny)
+    X[:, -1] = sample_spline(c_top[0, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx,
+                             inlet_block=inlet_block, outlet_block=outlet_block)
+    Y[:, -1] = sample_spline(c_top[1, :], sample_method=x_stretching, sample_coeff=sigmoid_coeff_x, sampling_points=nx,
+                             inlet_block=inlet_block, outlet_block=outlet_block)
 
     for istream in range(1, nx - 1):
         for ispan in range(1, ny - 1):
@@ -231,7 +226,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         elif x_stretching == 'sigmoid':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid(xi, sigmoid_coeff_x)
         elif x_stretching == 'gauss-lobatto':
-            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_gauss_lobatto(xi, inlet_block=inlet_block, outlet_block=outlet_block)
+            f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_gauss_lobatto(xi, inlet_block=inlet_block,
+                                                                                         outlet_block=outlet_block)
         elif x_stretching == 'sigmoid_right':
             f1[:, ispan], f1_prime[:, ispan], f1_second[:, ispan] = scaled_sigmoid_right(xi, sigmoid_coeff_x)
         elif x_stretching == 'sigmoid_left':
@@ -319,8 +315,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
         # terms of integration
         g11[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) ** 2 + ((Y[ip, j] - Y[im, j]) / 2 / dxi) ** 2
         g22[i, j] = ((X[i, jp] - X[i, jm]) / 2 / deta) ** 2 + ((Y[i, jp] - Y[i, jm]) / 2 / deta) ** 2
-        g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + (
-                    (Y[ip, j] - Y[im, j]) / 2 / dxi) * ((Y[i, jp] - Y[i, jm]) / 2 / deta)
+        g12[i, j] = ((X[ip, j] - X[im, j]) / 2 / dxi) * ((X[i, jp] - X[i, jm]) / 2 / deta) + ((Y[ip, j] - Y[im, j]) / 2 / dxi) * (
+                (Y[i, jp] - Y[i, jm]) / 2 / deta)
 
         if orthogonality:
             """
@@ -448,13 +444,11 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     yb_prime = y_prime[ispan]
                     sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
                     if method == 'fzero':
-                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old,
-                                                                  guardian=guardian)
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                     elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old,
-                                                            yb_prime)
+                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[0, ispan] = xb_new
@@ -475,13 +469,11 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                     yb_prime = y_prime[ispan]
                     sol = solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old)
                     if method == 'fzero':
-                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old,
-                                                                  guardian=guardian)
+                        xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
                     elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old,
-                                                            yb_prime)
+                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[-1, ispan] = xb_new
@@ -527,6 +519,135 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     return X, Y
 
 
+def transfinite_grid_generation(c_left, c_bottom, c_right, c_top,
+                                block_topology, streamwise_coeff, spanwise_coeff,
+                                nx=None, ny=None):
+    """
+    Method used to generate the grid with transfinite grid interpolation method.
+    :param c_left: left border points (x, y)
+    :param c_bottom: bottom border points (x, y)
+    :param c_right: right border points (x, y)
+    :param c_top: top border points (x, y)
+    :param block_topology: inlet, internal, or outlet to impose the right stretching functions
+    :param streamwise_coeff: coefficient of stretching function along streamwise direction
+    :param spanwise_coeff: coefficient of stretching function along spanwise direction
+    :param nx: number of points in streamwise direction (if None, default is used)
+    :param ny: number of points in spanwise direction (if None, default is used)
+    """
+    if nx is None:
+        nx = c_bottom.shape[1]
+    if ny is None:
+        ny = c_left.shape[1]
+
+    t_streamwise = np.linspace(0, 1, nx)
+    t_spanwise = np.linspace(0, 1, ny)
+
+    splinex_bottom = CubicSpline(t_streamwise, c_bottom[0, :])
+    spliney_bottom = CubicSpline(t_streamwise, c_bottom[1, :])
+
+    splinex_top = CubicSpline(t_streamwise, c_top[0, :])
+    spliney_top = CubicSpline(t_streamwise, c_top[1, :])
+
+    splinex_left = CubicSpline(t_spanwise, c_left[0, :])
+    spliney_left = CubicSpline(t_spanwise, c_left[1, :])
+
+    splinex_right = CubicSpline(t_spanwise, c_right[0, :])
+    spliney_right = CubicSpline(t_spanwise, c_right[1, :])
+
+    plt.figure()
+    plt.plot(splinex_bottom(t_streamwise), spliney_bottom(t_streamwise), 'o')
+    plt.plot(splinex_top(t_streamwise), spliney_top(t_streamwise), 'o')
+    plt.plot(splinex_left(t_spanwise), spliney_left(t_spanwise), 'o')
+    plt.plot(splinex_right(t_spanwise), spliney_right(t_spanwise), 'o')
+
+    xi = np.linspace(0, 1, nx)
+    eta = np.linspace(0, 1, ny)
+
+    # stretching functions applied to the computational cordinates
+    if block_topology.lower() == 'inlet':
+        xi = eriksson_stretching_function_final(xi, streamwise_coeff)
+        eta = eriksson_stretching_function_both(eta, spanwise_coeff)
+    elif block_topology.lower() == 'internal':
+        xi = eriksson_stretching_function_both(xi, streamwise_coeff)
+        eta = eriksson_stretching_function_both(eta, spanwise_coeff)
+    elif block_topology.lower() == 'outlet':
+        xi = eriksson_stretching_function_initial(xi, streamwise_coeff)
+        eta = eriksson_stretching_function_both(eta, spanwise_coeff)
+    else:
+        raise ValueError('Unrecognized block topology!')
+
+    XI, ETA = np.meshgrid(xi, eta, indexing='ij')
+    X, Y = XI * 0, ETA * 0
+
+    # TRANSFINITE INTERPOLATION
+    for i in range(nx):
+        for j in range(ny):
+            X[i, j] = (1 - XI[i, j]) * splinex_left(ETA[i, j]) + XI[i, j] * splinex_right(ETA[i, j]) + (
+                    1 - ETA[i, j]) * splinex_bottom(XI[i, j]) + ETA[i, j] * splinex_top(XI[i, j]) - (1 - XI[i, j]) * (
+                              1 - ETA[i, j]) * splinex_left(0) - (1 - XI[i, j]) * ETA[i, j] * splinex_left(1) - (1 - ETA[i, j]) * \
+                      XI[i, j] * splinex_right(0) - XI[i, j] * ETA[i, j] * splinex_right(1)
+
+            Y[i, j] = (1 - XI[i, j]) * spliney_left(ETA[i, j]) + XI[i, j] * spliney_right(ETA[i, j]) + (
+                    1 - ETA[i, j]) * spliney_bottom(XI[i, j]) + ETA[i, j] * spliney_top(XI[i, j]) - (1 - XI[i, j]) * (
+                              1 - ETA[i, j]) * spliney_left(0) - (1 - XI[i, j]) * ETA[i, j] * spliney_left(1) - (1 - ETA[i, j]) * \
+                      XI[i, j] * spliney_right(0) - XI[i, j] * ETA[i, j] * spliney_right(1)
+
+    plt.figure()
+    for i in range(nx):
+        plt.plot(X[i, :], Y[i, :], 'k', lw=0.5)
+    for j in range(ny):
+        plt.plot(X[:, j], Y[:, j], 'k', lw=0.5)
+
+    return X, Y
+
+
+def eriksson_stretching_function_initial(x, alpha):
+    """
+    equation 4.93 Farrashkhalvat Book. Gives clustering at the initial part of the computational domain
+    """
+    f = (np.exp(alpha * x) - 1) / (np.exp(alpha) - 1)
+    plt.figure()
+    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    plt.xlabel(r'$x$')
+    plt.xlabel(r'$f$')
+    plt.grid(alpha=grid_opacity)
+    return f
+
+
+def eriksson_stretching_function_final(x, alpha):
+    """
+    equation 4.95 Farrashkhalvat Book. Gives clustering at the final part of the computational domain
+    """
+    f = (np.exp(alpha) - np.exp(alpha * (1 - x))) / (np.exp(alpha) - 1)
+    plt.figure()
+    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    plt.xlabel(r'$x$')
+    plt.xlabel(r'$f$')
+    plt.grid(alpha=grid_opacity)
+    return f
+
+
+def eriksson_stretching_function_both(x, alpha):
+    """
+    equation 4.97 Farrashkhalvat Book. Gives clustering at the initial and final part of the computational domain
+    """
+    x_midpoint = 0.5
+    f = np.zeros_like(x)
+
+    for i in range(len(x)):
+        if x[i]<=x_midpoint:
+            f[i] = x_midpoint*(np.exp(alpha*x[i]/x_midpoint)-1)/(np.exp(alpha)-1)
+        else:
+            f[i] = 1 - (1-x_midpoint)*(np.exp(alpha*(1-x[i])/(1-x_midpoint))-1)/(np.exp(alpha)-1)
+
+    plt.figure()
+    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    plt.xlabel(r'$x$')
+    plt.xlabel(r'$f$')
+    plt.grid(alpha=grid_opacity)
+    return f
+
+
 def scaled_sigmoid(x, alpha):
     """
     Return sigmoid scaled function, first derivative, and second derivative over an array x.
@@ -539,9 +660,9 @@ def scaled_sigmoid(x, alpha):
         -2 * alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 3
 
     plt.figure()
-    plt.plot(x, f / np.max(f), '-o', label=r'$f/f_{max}$')
-    plt.plot(x, f_prime / np.max(f_prime), '-o', label=r"$f ' / f' _{max}$")
-    plt.plot(x, f_second / np.max(f_second), '-o', label=r"$f'' / f''_{max}$")
+    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    # plt.plot(x, f_prime / np.max(f_prime), '-o', label=r"$f ' / f' _{max}$")
+    # plt.plot(x, f_second / np.max(f_second), '-o', label=r"$f'' / f''_{max}$")
     plt.xlabel(r'$\xi$')
     plt.xlabel(r'$\eta$')
     plt.grid(alpha=grid_opacity)
@@ -560,11 +681,11 @@ def scaled_gauss_lobatto(x, inlet_block=False, outlet_block=False):
     f_second = np.pi ** 2 / 2 * np.cos(np.pi * x)
 
     if inlet_block:
-        f[0:len(f)//2] = np.linspace(0, 0.5, len(f)//2)
-        f_prime[0:len(f)//2] = np.ones(len(f)//2)
+        f[0:len(f) // 2] = np.linspace(0, 0.5, len(f) // 2)
+        f_prime[0:len(f) // 2] = np.ones(len(f) // 2)
         f_second[0:len(f) // 2] = np.zeros(len(f) // 2)
     if outlet_block:
-        f[len(f)//2:] = np.linspace(0.5, 1, len(f)//2)
+        f[len(f) // 2:] = np.linspace(0.5, 1, len(f) // 2)
         f_prime[len(f) // 2:] = np.ones(len(f) // 2)
         f_second[len(f) // 2:] = np.zeros(len(f) // 2)
 
