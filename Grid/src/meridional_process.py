@@ -307,6 +307,33 @@ class MeridionalProcess:
         self.M_rel = self.u_mag_rel / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
         self.compute_stagnation_quantities()
 
+    def compute_green_gauss_gradients(self):
+        """
+        Based on the dataset, compute the gradients on the physical grid nodes, based on the divergence theorem.
+        Formula taken from Ferziger-Peritch book, eq. 9.51
+        """
+
+        self.drho_dz = np.zeros_like(self.z_cg)
+        self.drho_dr = np.zeros_like(self.z_cg)
+        for i in range(self.nstream):
+            for j in range(self.nspan):
+                area_element = self.block.area_elements[i,j]
+                line_elements = self.block.area_elements[i,j].line_elements
+                flux = 0
+                for k,line in enumerate(line_elements):
+                    z_mid = line.z_cg
+                    r_mid = line.r_cg
+                    f_mid = griddata((self.data.z, self.data.r), self.data.rho,
+                                     (z_mid, r_mid), 'nearest')
+                    flux += f_mid*line.l_orth
+                flux /= area_element.area
+                self.drho_dz[i,j] = flux[0]
+                self.drho_dr[i, j] = flux[1]
+
+
+
+
+
     def instantiate_2d_fields(self):
         """
         Instantiate the 2D fields that will be averaged from the CFD data

@@ -330,68 +330,68 @@ class Block:
         else:
             raise ValueError("Unknown trimming method.")
 
-    def compute_double_grid(self):
+    def compute_dual_grid(self):
         """
-        compute a secondary grid, using the points that lie in the baricenter of 4 primary grid points
+        compute the secondary dual grid, using the 4 points that lie in the baricenter of 4 primary grid points
         """
-        self.z_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
-        self.r_grid_centers = np.zeros((self.nstream + 1, self.nspan + 1))
+        self.z_grid_dual = np.zeros((self.nstream + 1, self.nspan + 1))
+        self.r_grid_dual = np.zeros((self.nstream + 1, self.nspan + 1))
 
         # internal points
         for istream in range(1, self.nstream):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.25 * (
-                            self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan] + self.z_grid_points[
-                        istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
+                            self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[
+                        istream, ispan - 1] + self.z_grid_cg[istream - 1, ispan - 1])
 
                 r_mid_point = 0.25 * (
-                            self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan] + self.r_grid_points[
-                        istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
+                            self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[
+                        istream, ispan - 1] + self.r_grid_cg[istream - 1, ispan - 1])
 
-                self.z_grid_centers[istream, ispan] = z_mid_point
-                self.r_grid_centers[istream, ispan] = r_mid_point
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
 
-        # vertices
-        self.z_grid_centers[0, 0] = self.z_grid_points[0, 0]
-        self.r_grid_centers[0, 0] = self.r_grid_points[0, 0]
-        self.z_grid_centers[0, -1] = self.z_grid_points[0, -1]
-        self.r_grid_centers[0, -1] = self.r_grid_points[0, -1]
-        self.z_grid_centers[-1, -1] = self.z_grid_points[-1, -1]
-        self.r_grid_centers[-1, -1] = self.r_grid_points[-1, -1]
-        self.z_grid_centers[-1, 0] = self.z_grid_points[-1, 0]
-        self.r_grid_centers[-1, 0] = self.r_grid_points[-1, 0]
+        # fix the vertices
+        self.z_grid_dual[0, 0] = self.z_grid_cg[0, 0]
+        self.r_grid_dual[0, 0] = self.r_grid_cg[0, 0]
+        self.z_grid_dual[0, -1] = self.z_grid_cg[0, -1]
+        self.r_grid_dual[0, -1] = self.r_grid_cg[0, -1]
+        self.z_grid_dual[-1, -1] = self.z_grid_cg[-1, -1]
+        self.r_grid_dual[-1, -1] = self.r_grid_cg[-1, -1]
+        self.z_grid_dual[-1, 0] = self.z_grid_cg[-1, 0]
+        self.r_grid_dual[-1, 0] = self.r_grid_cg[-1, 0]
 
         # istream = 0 border
         for istream in range(0, 1):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream, ispan - 1])
                 r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream, ispan - 1])
-                self.z_grid_centers[istream, ispan] = z_mid_point
-                self.r_grid_centers[istream, ispan] = r_mid_point
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
 
         # istream = -1 border
         for istream in range(self.nstream, self.nstream + 1):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.5 * (self.z_grid_points[istream - 1, ispan] + self.z_grid_points[istream - 1, ispan - 1])
                 r_mid_point = 0.5 * (self.r_grid_points[istream - 1, ispan] + self.r_grid_points[istream - 1, ispan - 1])
-                self.z_grid_centers[istream, ispan] = z_mid_point
-                self.r_grid_centers[istream, ispan] = r_mid_point
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = 0 border
         for istream in range(1, self.nstream):
             for ispan in range(0, 1):
                 z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan])
                 r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan])
-                self.z_grid_centers[istream, ispan] = z_mid_point
-                self.r_grid_centers[istream, ispan] = r_mid_point
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = -1 border
         for istream in range(1, self.nstream):
             for ispan in range(self.nspan, self.nspan + 1):
                 z_mid_point = 0.5 * (self.z_grid_points[istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
                 r_mid_point = 0.5 * (self.r_grid_points[istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
-                self.z_grid_centers[istream, ispan] = z_mid_point
-                self.r_grid_centers[istream, ispan] = r_mid_point
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
                        secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=False,
@@ -439,15 +439,15 @@ class Block:
         # secondary grid
         if secondary_grid:
             for istream in range(0, self.nstream + 1):
-                plt.plot(self.z_grid_centers[istream, :], self.r_grid_centers[istream, :], '--b', lw=light_line_width)
+                plt.plot(self.z_grid_dual[istream, :], self.r_grid_dual[istream, :], '--r', lw=light_line_width)
             for ispan in range(0, self.nspan + 1):
-                plt.plot(self.z_grid_centers[:, ispan], self.r_grid_centers[:, ispan], '--b', lw=light_line_width)
+                plt.plot(self.z_grid_dual[:, ispan], self.r_grid_dual[:, ispan], '--r', lw=light_line_width)
 
         if grid_centers:
-            plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='red')
+            plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='black')
 
         if secondary_grid_points:
-            plt.scatter(self.z_grid_centers.flatten(), self.r_grid_centers.flatten(), c='blue', s=scatter_point_size,
+            plt.scatter(self.z_grid_dual.flatten(), self.r_grid_dual.flatten(), c='red', s=scatter_point_size,
                         label='secondary grid nodes')
 
         if primary_grid_points or secondary_grid_points or outline:
@@ -511,10 +511,10 @@ class Block:
         for ii in range(self.nstream):
             for jj in range(self.nspan):
                 self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj],
-                                                         self.z_grid_centers[ii, jj], self.r_grid_centers[ii, jj],
-                                                         self.z_grid_centers[ii + 1, jj], self.r_grid_centers[ii + 1, jj],
-                                                         self.z_grid_centers[ii + 1, jj + 1], self.r_grid_centers[ii + 1, jj + 1],
-                                                         self.z_grid_centers[ii, jj + 1], self.r_grid_centers[ii, jj + 1])
+                                                         self.z_grid_dual[ii, jj], self.r_grid_dual[ii, jj],
+                                                         self.z_grid_dual[ii + 1, jj], self.r_grid_dual[ii + 1, jj],
+                                                         self.z_grid_dual[ii + 1, jj + 1], self.r_grid_dual[ii + 1, jj + 1],
+                                                         self.z_grid_dual[ii, jj + 1], self.r_grid_dual[ii, jj + 1])
 
     def compute_areas(self):
         """
@@ -536,6 +536,26 @@ class Block:
         for ii in range(self.nstream):
             for jj in range(self.nspan):
                 self.area_total += self.area_elements[ii, jj].area
+
+    def plot_check_areas(self):
+        plt.figure()
+        for i in range(self.nstream):
+            for j in range(self.nspan):
+                plt.title(r'Element [%i,%i]' %(i,j))
+                plt.scatter(self.z_grid_cg[i,j], self.r_grid_cg[i,j], c='black', marker='x')
+                plt.scatter(self.z_grid_dual[i, j], self.r_grid_dual[i, j], c='red')
+                plt.scatter(self.z_grid_dual[i+1, j], self.r_grid_dual[i+1, j], c='red')
+                plt.scatter(self.z_grid_dual[i+1, j+1], self.r_grid_dual[i+1, j+1], c='red')
+                plt.scatter(self.z_grid_dual[i, j+1], self.r_grid_dual[i, j+1], c='red')
+                line_elements = self.area_elements[i,j].line_elements
+                for k,line in enumerate(line_elements):
+                    plt.plot(line.z, line.r, label='line %i' %k)
+                    plt.quiver(line.z_cg, line.r_cg, line.l_orth[0], line.l_orth[1])
+                    plt.text(line.z_cg, line.r_cg, r'$[%.1e, %.1e] \cdot %.1e} $' %(line.l_orth_dir[0], line.l_orth_dir[1],
+                                                                                    line.l_norm), fontsize=8, color='black')
+                plt.legend()
+                plt.cla()
+
 
     def plot_areas_distribution(self):
         """
