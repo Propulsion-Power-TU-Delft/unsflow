@@ -116,13 +116,15 @@ class MultiBlock:
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_three_dimensional_mesh(self, theta_max, nodes_number):
+    def compute_three_dimensional_mesh(self, theta_max, nodes_number, config, dimensional=True):
         """
         Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured.
         :param theta_max: [deg] angle of the mesh sector.
         :param nodes_number: number of nodes from zero to theta_max
+        :param config: config object needed to pass reference dimensions
+        :param dimensional: if True, reconverts the coordinates to original dimensions in [m]
         """
-        theta = np.linspace(0, theta_max*np.pi/180, nodes_number)
+        theta = np.linspace(0, theta_max * np.pi / 180, nodes_number)
         self.X_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
         self.Y_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
         self.Z_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
@@ -133,6 +135,11 @@ class MultiBlock:
                     self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
                     self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
                     self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+
+        if dimensional:
+            self.X_mesh *= config.get_reference_length()
+            self.Y_mesh *= config.get_reference_length()
+            self.Z_mesh *= config.get_reference_length()
 
     def save_mesh_pickle(self, filepath=None):
         """
