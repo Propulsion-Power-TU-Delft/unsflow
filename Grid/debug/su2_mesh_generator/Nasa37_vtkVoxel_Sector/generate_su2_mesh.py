@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 from Grid.src.su2_mesh_generator import generate_SU2mesh
 
-pickle_mesh = 'mesh_68_25_10.pickle'
+pickle_mesh = 'mesh_68_30_15.pickle'
 with open(pickle_mesh, 'rb') as f:
     data = pickle.load(f)
 su2_meshName = pickle_mesh.split('.')[0] + '.su2'

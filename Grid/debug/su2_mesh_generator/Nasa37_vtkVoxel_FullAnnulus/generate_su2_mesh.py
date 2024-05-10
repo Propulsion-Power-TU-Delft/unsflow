@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Grid.src.su2_mesh_generator import generate_SU2mesh
 
-pickle_mesh = 'mesh_68_25_60.pickle'
+pickle_mesh = 'mesh_68_30_100.pickle'
 with open(pickle_mesh, 'rb') as f:
     data = pickle.load(f)
 su2_meshName = pickle_mesh.split('.')[0] + '.su2'

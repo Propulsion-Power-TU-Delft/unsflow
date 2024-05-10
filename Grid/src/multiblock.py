@@ -149,7 +149,7 @@ class MultiBlock:
         mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
 
         if filepath == None:
-            filepath = 'mesh_%02i_%02i_%2i.pickle' % (self.nstream, self.nspan, self.X_mesh.shape[2])
+            filepath = 'mesh_%02i_%02i_%02i.pickle' % (self.X_mesh.shape[0], self.X_mesh.shape[1], self.X_mesh.shape[2])
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
 
