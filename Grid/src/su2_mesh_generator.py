@@ -322,7 +322,7 @@ def generate_3Dmesh_sector(X, Y, Z, filename):
     Mesh_File.write("%\n")
     Mesh_File.write("% Boundary elements\n")
     Mesh_File.write("%\n")
-    Mesh_File.write("NMARK= 4\n")
+    Mesh_File.write("NMARK= 6\n")
 
     # Write the boundary information for each marker
     Mesh_File.write("MARKER_TAG= HUB\n")
