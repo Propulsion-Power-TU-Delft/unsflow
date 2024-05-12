@@ -57,6 +57,9 @@ Thumbs.db
 *pickle*
 *pickle
 *.su2
+*.cfg
+*.pvsm
+*.drg
 *.vtu
 *.dat
 

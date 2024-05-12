@@ -4,6 +4,8 @@
 Created on Wed Jul 12 11:41:53 2023
 @author: F. Neri, TU Delft
 """
+import warnings
+
 import matplotlib.pyplot as plt
 from numpy import array
 import numpy as np
@@ -118,8 +120,8 @@ class Blade:
             ss_idxs = slice(i * number_points_per_profile, i * number_points_per_profile + number_points_per_profile // 2)
             ps_idxs = slice(i * number_points_per_profile + number_points_per_profile // 2,
                             i * number_points_per_profile + number_points_per_profile)
-            profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs],
-                                    self.x_main[ps_idxs], self.y_main[ps_idxs], self.z_main[ps_idxs]))
+            profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs], self.x_main[ps_idxs],
+                                    self.y_main[ps_idxs], self.z_main[ps_idxs]))
             # profiles[i].plot_profile()
             zss.append(profiles[i].zss)
             rss.append(profiles[i].rss)
@@ -288,6 +290,126 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
+    def plot_camber_meridional_grid(self, save_filename=None, folder_name=None):
+        """
+        plot the main camber meridional grid
+        """
+        plt.figure()
+        plt.scatter(self.z_camber, self.r_camber)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        # plt.axis('equal')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        if save_filename is not None:
+            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+    def plot_camber_normal_contour(self, save_filename=None, folder_name=None):
+        """
+        plot the camber normal vector contours
+        """
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.n_camber_r, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_r$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_r.pdf', bbox_inches='tight')
+
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.n_camber_t, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_{\theta}$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_theta.pdf', bbox_inches='tight')
+
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.n_camber_z, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_z$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_z.pdf', bbox_inches='tight')
+
+    def write_bfm_input_file(self, filename=None):
+
+        # before writing the cordinates, rescale them to meters
+        self.z_camber *= self.config.get_reference_length()
+        self.r_camber *= self.config.get_reference_length()
+
+        if filename is None:
+            filename = 'BFM_Input.drg'
+            with open(filename, 'w') as file:
+                file.write('<header>\n')
+                file.write('\n')
+
+                file.write('[version inputfile]\n')
+                file.write('1.0.0\n')
+                file.write('\n')
+
+                file.write('[number of blade rows]\n')
+                file.write('1\n')
+                file.write('\n')
+
+                file.write('[row blade count]\n')
+                file.write('%i\n' % self.config.get_blades_number())
+                file.write('\n')
+
+                file.write('[rotation factor]\n')
+                file.write('1\n')
+                file.write('\n')
+
+                file.write('[number of tangential locations]\n')
+                file.write('1\n')
+                file.write('\n')
+
+                file.write('[number of data entries in chordwise direction]\n')
+                file.write('%i\n' % self.z_camber.shape[0])
+                file.write('\n')
+
+                file.write('[number of data entries in spanwise direction]\n')
+                file.write('%i\n' % self.z_camber.shape[1])
+                file.write('\n')
+
+                file.write('[variable names]\n')
+                file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:x_LE '
+                           '8:axial_chord\n')
+                file.write('\n')
+
+                file.write('</header>\n')
+                file.write('\n')
+
+                file.write('<data>\n')
+                file.write('<blade row>\n')
+                file.write('<tang section>\n')
+
+                for j in range(self.z_camber.shape[1]):
+                    file.write('<radial section>\n')
+                    for i in range(self.z_camber.shape[0]):
+                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n'
+                                   % (self.z_camber[i, j],
+                                      self.r_camber[i, j],
+                                      self.n_camber_z[i, j],
+                                      self.n_camber_t[i, j],
+                                      self.n_camber_r[i, j],
+                                      self.blockage[i, j],
+                                      self.z_camber[0, j],
+                                      self.z_camber[-1, j]-self.z_camber[0, j]))
+                    file.write('</radial section>\n')
+                file.write('</tang section>\n')
+                file.write('</blade section>\n')
+                file.write('</data>')
+
     def compute_camber_vector(self, i, j, check=False):
         """
         For a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
@@ -310,24 +432,20 @@ class Blade:
 
         # vector along the streamline
         if i == ni:
-            stream_v = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j],
-                                self.y_camber[i, j] - self.y_camber[i - 1, j],
-                                self.z_camber[i, j] - self.z_camber[i - 1, j]])
+            stream_v = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j], self.y_camber[i, j] - self.y_camber[i - 1, j],
+                                 self.z_camber[i, j] - self.z_camber[i - 1, j]])
         else:
-            stream_v = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j],
-                                self.y_camber[i + 1, j] - self.y_camber[i, j],
-                                self.z_camber[i + 1, j] - self.z_camber[i, j]])
+            stream_v = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j], self.y_camber[i + 1, j] - self.y_camber[i, j],
+                                 self.z_camber[i + 1, j] - self.z_camber[i, j]])
         stream_v /= np.linalg.norm(stream_v)
 
         # vector along the spanline
         if j == nj:
-            span_v = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1],
-                               self.y_camber[i, j] - self.y_camber[i, j - 1],
+            span_v = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1], self.y_camber[i, j] - self.y_camber[i, j - 1],
                                self.z_camber[i, j] - self.z_camber[i, j - 1]])
         else:
-            span_v = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j],
-                              self.y_camber[i, j + 1] - self.y_camber[i, j],
-                              self.z_camber[i, j + 1] - self.z_camber[i, j]])
+            span_v = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j], self.y_camber[i, j + 1] - self.y_camber[i, j],
+                               self.z_camber[i, j + 1] - self.z_camber[i, j]])
         span_v /= np.linalg.norm(span_v)
 
         # the normal is the vectorial product of the two
@@ -342,12 +460,10 @@ class Blade:
             ax.set_xlabel(r'$x$')
             ax.set_ylabel(r'$y$')
             ax.set_zlabel(r'$z$')
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                      vec_1[0], vec_1[1], vec_1[2], length=0.004)
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                      vec_2[0], vec_2[1], vec_2[2], length=0.004)
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                      normal[0], normal[1], normal[2], length=0.004)
+            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], vec_1[0], vec_1[1], vec_1[2], length=0.004)
+            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], vec_2[0], vec_2[1], vec_2[2], length=0.004)
+            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], normal[0], normal[1], normal[2],
+                      length=0.004)
         return normal, stream_v, span_v
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
@@ -362,14 +478,12 @@ class Blade:
         ax = fig.add_subplot(111, projection='3d')
         for i in range(0, n_blades):
             ax.scatter(self.r_main * np.cos(self.theta_main + i * 2 * np.pi / n_blades),
-                       self.r_main * np.sin(self.theta_main + i * 2 * np.pi / n_blades),
-                       self.z_main,
+                       self.r_main * np.sin(self.theta_main + i * 2 * np.pi / n_blades), self.z_main,
                        label='blade %1.d' % (i + 1))
 
             if (self.splitter and render_splitter):
                 ax.scatter(self.r_splitter * np.cos(self.theta_splitter + i * 2 * np.pi / n_blades),
-                           self.r_splitter * np.sin(self.theta_splitter + i * 2 * np.pi / n_blades),
-                           self.z_splitter)
+                           self.r_splitter * np.sin(self.theta_splitter + i * 2 * np.pi / n_blades), self.z_splitter)
 
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
         ax.set_xlabel(r'$x$')
@@ -442,11 +556,14 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-    def compute_camber_vectors(self):
+    def compute_camber_vectors(self, fix='plus'):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
+        :param fix: parameter needed to artificially fix the sign of the normal vector
         """
+
+
         # Create 2D NumPy array of empty arrays
         self.normal_vectors = np.empty(self.z_camber.shape, dtype=object)
         self.streamline_vectors = np.empty(self.z_camber.shape, dtype=object)
@@ -459,8 +576,8 @@ class Blade:
 
         for i in range(0, self.z_camber.shape[0]):
             for j in range(0, self.z_camber.shape[1]):
-                self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[i, j] = \
-                    self.compute_camber_vector(i, j)
+                self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
+                    i, j] = self.compute_camber_vector(i, j)
 
                 self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
                                                                          self.z_camber[i, j], self.normal_vectors[i, j])
@@ -468,6 +585,29 @@ class Blade:
                                                                              self.z_camber[i, j], self.streamline_vectors[i, j])
                 self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
                                                                            self.z_camber[i, j], self.spanline_vectors[i, j])
+
+        # reorder the vectors in 2d arrays
+        self.n_camber_r = np.zeros_like(self.z_camber)
+        self.n_camber_t = np.zeros_like(self.z_camber)
+        self.n_camber_z = np.zeros_like(self.z_camber)
+        for i in range(0, self.z_camber.shape[0]):
+            for j in range(0, self.z_camber.shape[1]):
+                self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
+                self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
+                self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
+
+        if fix == 'plus':
+            warnings.warn('Attention, camber normal vector artificially corrected to positive on all the domain')
+            self.n_camber_r = np.abs(self.n_camber_r)
+            self.n_camber_t = np.abs(self.n_camber_t)
+            self.n_camber_z = np.abs(self.n_camber_z)
+        elif fix == 'minus':
+            warnings.warn('Attention, camber normal vector artificially corrected to negative on all the domain')
+            self.n_camber_r = -np.abs(self.n_camber_r)
+            self.n_camber_t = -np.abs(self.n_camber_t)
+            self.n_camber_z = -np.abs(self.n_camber_z)
+        else:
+            warnings.warn('Attention, camber normal vector not modified')
 
     def show_normal_vectors(self, save_filename=None, folder_name=None):
         """
@@ -481,9 +621,8 @@ class Blade:
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                          self.normal_vectors[i, j][0], self.normal_vectors[i, j][1], self.normal_vectors[i, j][2],
-                          length=self.scale, color='red')
+                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], self.normal_vectors[i, j][0],
+                          self.normal_vectors[i, j][1], self.normal_vectors[i, j][2], length=self.scale, color='red')
         ax.set_box_aspect([1, 1, 1])
         ax.grid(False)
         surf.set_edgecolor('none')  # Remove edges
@@ -507,9 +646,8 @@ class Blade:
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                          self.streamline_vectors[i, j][0], self.streamline_vectors[i, j][1], self.streamline_vectors[i, j][2],
-                          length=self.scale, color='green')
+                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], self.streamline_vectors[i, j][0],
+                          self.streamline_vectors[i, j][1], self.streamline_vectors[i, j][2], length=self.scale, color='green')
         ax.set_box_aspect([1, 1, 1])
         ax.grid(False)
         surf.set_edgecolor('none')  # Remove edges
@@ -534,9 +672,8 @@ class Blade:
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j],
-                          self.spanline_vectors[i, j][0], self.spanline_vectors[i, j][1],
-                          self.spanline_vectors[i, j][2], length=self.scale, color='purple')
+                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], self.spanline_vectors[i, j][0],
+                          self.spanline_vectors[i, j][1], self.spanline_vectors[i, j][2], length=self.scale, color='purple')
         ax.set_box_aspect([1, 1, 1])
         ax.grid(False)
         surf.set_edgecolor('none')  # Remove edges
@@ -593,8 +730,7 @@ class Blade:
 
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                self.gas_path_angle[i, j] = np.arctan(self.streamline_vectors_cyl[i, j][0] /
-                                                      self.streamline_vectors_cyl[i, j][2])
+                self.gas_path_angle[i, j] = np.arctan(self.streamline_vectors_cyl[i, j][0] / self.streamline_vectors_cyl[i, j][2])
 
                 meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
                 meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)

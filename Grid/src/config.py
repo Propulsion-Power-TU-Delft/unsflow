@@ -244,3 +244,6 @@ class Config:
             return True
         else:
             return False
+
+    def get_blades_number(self):
+        return int(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))

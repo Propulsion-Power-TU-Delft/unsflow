@@ -68,11 +68,13 @@ class MeridionalProcess:
 
     def compute_camber_angles(self):
         """
-        Starting from the angles in the blade object (if defined), store the normal camber angle.
+        Starting from the angles in the blade object (if defined), store the normal camber vector, and modify if something
+        is wrong about it.
         """
         self.camber_normal_r = np.zeros((self.nstream, self.nspan))
         self.camber_normal_theta = np.zeros((self.nstream, self.nspan))
         self.camber_normal_z = np.zeros((self.nstream, self.nspan))
+
         warnings.warn('ATTENTION: radial and theta component of the camber normal vectors have been artificially made'
                       'positive to avoid problems. Check if it is correct for your case.')
         for istream in range(self.nstream):
