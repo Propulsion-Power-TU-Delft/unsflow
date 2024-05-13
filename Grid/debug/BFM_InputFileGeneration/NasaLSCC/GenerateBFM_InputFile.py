@@ -43,7 +43,7 @@ blade.plot_camber_normal_contour(folder_name=folder_out, save_filename='normal')
 blade.compute_blade_thickness()
 blade.compute_blade_blockage(config.get_blades_number(), save_filename='nasar37', folder_name=folder_out)
 blade.plot_bladetoblade_profile(span='all', folder_name=folder_out, save_filename='blade_profile')
-# blade.write_bfm_input_file()
+blade.write_bfm_input_file()
 
 
-plt.show()
+# plt.show()
