@@ -34,13 +34,16 @@ bladed_block.plot_full_grid(save_filename='blade_grid', save_foldername=folder_o
 blade.find_camber_surface(bladed_block)
 blade.find_ss_surface(bladed_block)
 blade.find_ps_surface(bladed_block)
+blade.compute_streamline_length()
+blade.plot_streamline_length_contour(folder_name=folder_out, save_filename='streamline_length')
 blade.plot_camber_surface()
 blade.plot_camber_meridional_grid()
 blade.compute_camber_vectors(fix='plus')
 blade.plot_camber_normal_contour(folder_name=folder_out, save_filename='normal')
 blade.compute_blade_thickness()
 blade.compute_blade_blockage(config.get_blades_number(), save_filename='nasar37', folder_name=folder_out)
-blade.write_bfm_input_file()
+blade.plot_bladetoblade_profile(span='all', folder_name=folder_out, save_filename='blade_profile')
+# blade.write_bfm_input_file()
 
 
 plt.show()

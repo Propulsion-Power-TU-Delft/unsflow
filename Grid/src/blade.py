@@ -219,6 +219,60 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
+    def compute_streamline_length(self, projection=True):
+        """
+        Compute the streamline length (meridional projection) of the streamlines going from leading edge to trailing edge.
+        The leading edge is the starting point.
+        :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
+        """
+        self.streamline_length = np.zeros_like(self.z_camber)
+        self.streamline_length_ps = np.zeros_like(self.z_camber)
+        self.streamline_length_ss = np.zeros_like(self.z_camber)
+        for ii in range(1, self.z_camber.shape[0]):
+            if not projection:
+                ds = np.sqrt((self.x_camber[ii,:]-self.x_camber[ii-1,:])**2 +
+                             (self.y_camber[ii,:]-self.y_camber[ii-1,:])**2 +
+                             (self.z_camber[ii,:]-self.z_camber[ii-1,:])**2)
+            else:
+                ds = np.sqrt((self.r_camber[ii, :] - self.r_camber[ii - 1, :]) ** 2 +
+                             (self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
+            self.streamline_length[ii, :] = self.streamline_length[ii-1, :] + ds
+
+            if not projection:
+                ds = np.sqrt((self.x_ps[ii, :] - self.x_ps[ii - 1, :]) ** 2 +
+                             (self.y_ps[ii, :] - self.y_ps[ii - 1, :]) ** 2 +
+                             (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
+            else:
+                ds = np.sqrt((self.r_ps[ii, :] - self.r_ps[ii - 1, :]) ** 2 +
+                             (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
+            self.streamline_length_ps[ii, :] = self.streamline_length_ps[ii - 1, :] + ds
+
+            if not projection:
+                ds = np.sqrt((self.x_ss[ii, :] - self.x_ss[ii - 1, :]) ** 2 +
+                             (self.y_ss[ii, :] - self.y_ss[ii - 1, :]) ** 2 +
+                             (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
+            else:
+                ds = np.sqrt((self.r_ss[ii, :] - self.r_ss[ii - 1, :]) ** 2 +
+                             (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
+            self.streamline_length_ss[ii, :] = self.streamline_length_ss[ii - 1, :] + ds
+
+    def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
+        """
+        plot the streamline length contour
+        """
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.streamline_length, levels=N_levels)
+        plt.xlabel(r'$z \ \rm{[-]}$')
+        plt.ylabel(r'$r \ \rm{[-]}$')
+        plt.colorbar()
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$s \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+
+
+
     def find_ss_surface(self, blade_block, degree=4):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
@@ -556,7 +610,7 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-    def compute_camber_vectors(self, fix='plus'):
+    def compute_camber_vectors(self, fix=None):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
@@ -712,6 +766,56 @@ class Blade:
         plt.title(r'$b$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_factor.pdf', bbox_inches='tight')
+
+    def plot_bladetoblade_section(self, span_idx, save_filename=None, folder_name=None):
+        """
+        View of the blade section in the blade to blade plane, to check the camber angles.
+        :param span: percentage of the span you want to visualize the profile
+        """
+        span_percent = (span_idx)/(self.z_camber.shape[1]-1)*100
+
+        xs = self.streamline_length_ss[:, span_idx]
+        ys = self.r_ss[:, span_idx]*self.theta_ss[:, span_idx]
+
+        xp = self.streamline_length_ps[:, span_idx]
+        yp = self.r_ps[:, span_idx] * self.theta_ps[:, span_idx]
+
+        xc = self.streamline_length[:, span_idx]
+        yc = self.r_camber[:, span_idx] * self.theta_camber[:, span_idx]
+
+        plt.figure()
+        plt.plot(xs, ys, '-o', label='suction side')
+        plt.plot(xp, yp, '-s', label='pressure side')
+        plt.plot(xc, yc, '-^', label='camber line')
+        plt.legend()
+        plt.xlabel(r'$s \ \rm{[-]}$')
+        plt.ylabel(r'$r \theta \ \rm{[-]}$')
+        # plt.xticks([xc.min(), xc.max()])
+        # plt.yticks([yc.min(), yc.max()])
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(alpha=0.3)
+        ax = plt.gca()
+        # ax.set_aspect('equal', adjustable='box')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_%.1f'%span_percent + '%_span.pdf', bbox_inches='tight')
+
+    def plot_bladetoblade_profile(self, span=50, save_filename=None, folder_name=None):
+        """
+        View of the blade section in the blade to blade plane, to check the camber angles.
+        :param span: percentage of the span you want to visualize the profile. If all, plot all of them
+        """
+        n_spans = self.z_camber.shape[1]
+
+        if span=='all':
+            for i in range(n_spans):
+                self.plot_bladetoblade_section(i, save_filename, folder_name)
+        elif span>=0 and span<=100:
+            span_idx = int(n_spans*span/100)
+            self.plot_bladetoblade_section(span_idx, save_filename, folder_name)
+        else:
+            raise ValueError('Span value not recognized')
+
 
     def compute_blade_camber_angles(self, convention='rotation-wise'):
         """

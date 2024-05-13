@@ -43,6 +43,8 @@ bladed_block.compute_total_area()
 blade.find_camber_surface(bladed_block)
 blade.find_ss_surface(bladed_block)
 blade.find_ps_surface(bladed_block)
+blade.compute_streamline_length()
+blade.plot_streamline_length_contour(folder_name=folder_out, save_filename='streamline_length')
 blade.plot_camber_surface()
 blade.plot_camber_meridional_grid()
 blade.compute_camber_vectors()
@@ -51,27 +53,7 @@ blade.plot_camber_normal_contour(folder_name=folder_out, save_filename='normal')
 blade.compute_blade_thickness()
 blade.compute_blade_blockage(config.get_blades_number(), save_filename='nasar37', folder_name=folder_out)
 blade.write_bfm_input_file()
-
-
-
-
-
-# blade.show_blade_angles_contour(save_filename='nasar37', folder_name=folder_out)
-
-#
-# blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
-# blade_process.compute_camber_angles()
-#
-# blade_process.compute_streamline_length()
-# blade_process.compute_spanwise_length()
-# blade_process.interpolate_on_working_grid()
-# blade_process.compute_derived_quantities()
-# blade_process.compute_bfm_axial(save_fig=True, mode='averaged')
-# blade_process.compute_body_fource_S('rotor')
-# blade_process.compute_averaged_fluxes()
-# delattr(blade_process, 'data')
-# blade_process.compute_body_force_residuals()
-
+blade.plot_bladetoblade_profile(span='all', folder_name=folder_out, save_filename='blade_profile')
 
 
 # plt.show()
