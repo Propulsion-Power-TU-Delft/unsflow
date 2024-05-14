@@ -75,21 +75,9 @@ if BLADE_BLOCK:
     bladed_block.compute_dual_grid()
     bladed_block.plot_full_grid(save_filename='blade_grid', save_foldername=folder_out, secondary_grid=True)
 
-    # NOT NEEDED FOR CIRCUMFERENTIAL AVERAGES
-    # blade.find_camber_surface(bladed_block)
-    # blade.find_ss_surface(bladed_block)
-    # blade.find_ps_surface(bladed_block)
-    # blade.plot_camber_surface()
-    # blade.compute_camber_vectors()
-    # blade.compute_blade_camber_angles()
-    # blade.compute_blade_thickness(save_filename='nasa_lscc', folder_name=folder_out)
-    # blade.compute_blade_blockage(36, save_filename='nasa_lscc', folder_name=folder_out)
-    # blade.show_blade_angles_contour(save_filename='nasa_lscc', folder_name=folder_out)
-
     blade_process = Grid.src.MeridionalProcess(config, data, bladed_block, blade=blade)
-    # blade_process.compute_camber_angles()
-    # blade_process.compute_streamline_length()
-    # blade_process.compute_spanwise_length()
+    blade_process.compute_streamline_length()
+    blade_process.compute_spanwise_length()
     blade_process.circumferential_average(mode='cell centered', threshold=50)
     blade_process.contour_all_plots('circ_avg')
 
@@ -100,7 +88,13 @@ if BLADE_BLOCK:
     # blade_process.contour_entropy_generation()
     # blade_process.compute_bfm_axial(save_fig=True)
     # blade_process.compute_body_fource_S('rotor')
-    # blade_process.compute_averaged_fluxes()
+    blade_process.compute_averaged_fluxes()
+    blade_process.plot_averaged_fluxes('rho', save_filename='flux_rho')
+    blade_process.plot_averaged_fluxes('ur', save_filename='flux_ur')
+    blade_process.plot_averaged_fluxes('ut', save_filename='flux_ut')
+    blade_process.plot_averaged_fluxes('uz', save_filename='flux_uz')
+    blade_process.plot_averaged_fluxes('p_tot', save_filename='flux_pt')
+    blade_process.plot_averaged_fluxes('T_tot', save_filename='flux_Tt')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OUTLET BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 block_counter+=1

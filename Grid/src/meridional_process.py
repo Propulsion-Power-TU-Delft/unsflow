@@ -2155,17 +2155,17 @@ class MeridionalProcess:
         sl_max = self.stream_line_length[:, 0].max()
         fig, ax = plt.subplots()
         if field == 'rho':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux, '--s')
-            ax.set_ylabel(r'$\rho \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.rho_flux*self.config.get_reference_density(), '--s')
+            ax.set_ylabel(r'$\rho \ \mathrm{[kg/m^3]}$')
         elif field == 'ur':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux * self.u_ref, '--s')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ur_flux * self.config.get_reference_velocity(), '--s')
             ax.set_ylabel(r'$u_r \ \mathrm{[m/s]}$')
         elif field == 'ut':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ut_flux, '--s')
-            ax.set_ylabel(r'$u_t \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.ut_flux * self.config.get_reference_velocity(), '--s')
+            ax.set_ylabel(r'$u_t \ \mathrm{[m/s]}$')
         elif field == 'uz':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.uz_flux, '--s')
-            ax.set_ylabel(r'$u_z \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.uz_flux * self.config.get_reference_velocity(), '--s')
+            ax.set_ylabel(r'$u_z \ \mathrm{[m/s]}$')
         elif field == 'M':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.M_flux, '--s')
             ax.set_ylabel(r'$M \ \mathrm{[-]}$')
@@ -2173,28 +2173,27 @@ class MeridionalProcess:
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.M_rel_flux, '--s')
             ax.set_ylabel(r'$M_{rel} \ \mathrm{[-]}$')
         elif field == 'p':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_flux, '--s')
-            ax.set_ylabel(r'$p \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_flux*self.config.get_reference_pressure(), '--s')
+            ax.set_ylabel(r'$p \ \mathrm{[Pa]}$')
         elif field == 'T':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_flux, '--s')
-            ax.set_ylabel(r'$T \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_flux*self.config.get_reference_temperature(), '--s')
+            ax.set_ylabel(r'$T \ \mathrm{[K]}$')
         elif field == 's':
             ax.plot(self.stream_line_length[:, 0] / sl_max, self.s_flux, '--s')
             ax.set_ylabel(r'$s \ \mathrm{[-]}$')
         elif field == 'p_tot':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_tot_flux, '--s')
-            ax.set_ylabel(r'$p_{t} \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.p_tot_flux*self.config.get_reference_pressure(), '--s')
+            ax.set_ylabel(r'$p_{t} \ \mathrm{[Pa]}$')
         elif field == 'T_tot':
-            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_tot_flux, '--s')
-            ax.set_ylabel(r'$T_{t} \ \mathrm{[-]}$')
+            ax.plot(self.stream_line_length[:, 0] / sl_max, self.T_tot_flux*self.config.get_reference_temperature(), '--s')
+            ax.set_ylabel(r'$T_{t} \ \mathrm{[K]}$')
         else:
             raise ValueError("Field name unknown!")
 
         ax.grid(alpha=0.3)
         ax.set_xlabel(r'$l \ \mathrm{[-]}$')
         if save_filename is not None:
-            fig.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def interpolate_on_working_grid(self):
         """
