@@ -100,7 +100,7 @@ class MeridionalProcess:
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.data.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.data.s)
 
-    def circumferential_average(self, mode, fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
+    def circumferential_average(self, mode='circular', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
         """
         Perform circumferential averages of the CFD dataset on the Block grid.
         :param mode: type of algorithm selected.
@@ -164,7 +164,7 @@ class MeridionalProcess:
                 self.uz[istream, ispan] = self.mass_average(self.data.uz, idx, istream, ispan)
                 self.p[istream, ispan] = self.mass_average(self.data.p, idx, istream, ispan)
                 self.T[istream, ispan] = self.mass_average(self.data.T, idx, istream, ispan)
-                self.s[istream, ispan] = self.mass_average(self.data.s, idx, istream, ispan)
+                # self.s[istream, ispan] = self.mass_average(self.data.s, idx, istream, ispan)
                 # self.u_mag[istream, ispan] = self.mass_average(self.data.u_mag, idx, istream, ispan)
                 # self.u_mag_rel[istream, ispan] = self.mass_average(self.data.u_mag_rel, idx, istream, ispan)
 
@@ -201,8 +201,8 @@ class MeridionalProcess:
         self.ut_rel = self.ut - self.ut_drag
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
-        self.M = self.u_mag / sqrt(self.GAMMA * self.p / self.rho)
-        self.M_rel = self.u_mag_rel / sqrt(self.GAMMA * self.p / self.rho)
+        self.M = self.u_mag / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
         self.compute_stagnation_quantities()
         if bfm == 'radial':
             print("WARNING: deprecated method, check the code")
@@ -372,15 +372,15 @@ class MeridionalProcess:
         z_cg = self.z_cg[istream, ispan]
         r_cg = self.r_cg[istream, ispan]
 
-        # bounding vertices, enlarged wit the number of attempts already performed
-        z1 = self.z_grid[istream, ispan]  # bottom left corner
-        z2 = self.z_grid[istream + 1, ispan]  # bottom right corner
-        z3 = self.z_grid[istream + 1, ispan + 1]  # top right corner
-        z4 = self.z_grid[istream, ispan + 1]  # top left corner
-        r1 = self.r_grid[istream, ispan]
-        r2 = self.r_grid[istream + 1, ispan]
-        r3 = self.r_grid[istream + 1, ispan + 1]
-        r4 = self.r_grid[istream, ispan + 1]
+        # bounding vertices, enlarged with the number of attempts already performed
+        z1 = self.block.z_grid_dual[istream, ispan]  # bottom left corner
+        z2 = self.block.z_grid_dual[istream + 1, ispan]  # bottom right corner
+        z3 = self.block.z_grid_dual[istream + 1, ispan + 1]  # top right corner
+        z4 = self.block.z_grid_dual[istream, ispan + 1]  # top left corner
+        r1 = self.block.r_grid_dual[istream, ispan]
+        r2 = self.block.r_grid_dual[istream + 1, ispan]
+        r3 = self.block.r_grid_dual[istream + 1, ispan + 1]
+        r4 = self.block.r_grid_dual[istream, ispan + 1]
 
         # vertices of the bounding box
         scaling_factor = 0.2  # factor needed to expand the original figure when no points are found
@@ -1515,6 +1515,8 @@ class MeridionalProcess:
         # cb = fig.colorbar(cs)
         ax.set_xlabel(r'$\hat{z} \ \mathrm{[-]}$')
         ax.set_ylabel(r'$\hat{r} \ \mathrm{[-]}$')
+        axx = fig.gca()
+        axx.set_aspect('equal')
         if quiver:
             ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
         if save_filename is not None:
@@ -1529,7 +1531,7 @@ class MeridionalProcess:
         self.T_tot = self.T * (1 + (GAMMA - 1) / 2 * self.M ** 2)
 
         # rotary total pressure, as defined by Sun et al. (centrifugal compressor analysis 2016)
-        self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.data.omega_shaft * self.ut
+        self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.config.get_omega_shaft() * self.ut
 
     def compute_mu(self):
         """

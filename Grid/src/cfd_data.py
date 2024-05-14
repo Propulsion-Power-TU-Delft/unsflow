@@ -38,6 +38,8 @@ class CfdData:
             self.read_from_ansys_3D_csv()
         elif self.config.get_cfd_filetype() == 'Ansys2D':
             self.read_from_ansys_2D_csv()
+        elif self.config.get_cfd_filetype() == 'ParaviewCSV':
+            self.read_from_paraview_csv()
         else:
             raise ValueError("File type not recognized.")
 
@@ -98,6 +100,37 @@ class CfdData:
         else:
             print('CFD data NOT normalized')
 
+    def read_from_paraview_csv(self):
+        """
+        read the data from a 3D CSV file extracted from Paraview. Check that all the quantities are stored in the file,
+        as well as the correct names of the variables.
+        """
+        df = pd.read_csv(self.config.get_cfd_filepath())
+        data = df.to_dict(orient='list')
+        for key, value in data.items():
+            data[key] = np.array(value, dtype=float)
+            print('%s in dataset' % key)
+
+        self.x = data['Centers_0']
+        self.y = data['Centers_1']
+        self.z = data['Centers_2']
+        self.r = sqrt(self.x ** 2 + self.y ** 2)
+        self.theta = np.arctan2(self.y, self.x)
+        self.rho = data['Density']
+        self.ux = data['Velocity_0']
+        self.uy = data['Velocity_1']
+        self.uz = data['Velocity_2']
+        self.p = data['Pressure']
+        self.T = data['Temperature']
+        # self.s = data[' Static Entropy [ J kg^-1 K^-1 ]'].values
+        self.volume = data['Volume']
+
+        # if self.config.get_normalize_data():
+        #     self.normalize_data()
+        #     print('CFD data normalized')
+        # else:
+        #     print('CFD data NOT normalized')
+
     def read_from_ansys_2D_csv(self):
         """
         read the data from a 2D CSV file extracted from Ansys, meridionally processed.
@@ -131,6 +164,13 @@ class CfdData:
 
         if self.config.get_normalize_data():
             self.normalize_data()
+
+    def compute_cylindrical_velocities(self):
+        """
+        Compute velocity in cylindrical cordinates.
+        """
+        self.ur = self.ux * np.cos(self.theta) + self.uy * np.sin(self.theta)
+        self.ut = self.ux * np.cos(self.theta) + self.uy * np.sin(self.theta)
 
     def compute_derived_quantities(self):
         """
