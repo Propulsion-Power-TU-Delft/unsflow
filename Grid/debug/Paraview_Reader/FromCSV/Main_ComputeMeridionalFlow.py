@@ -90,7 +90,7 @@ if BLADE_BLOCK:
     # blade_process.compute_camber_angles()
     # blade_process.compute_streamline_length()
     # blade_process.compute_spanwise_length()
-    blade_process.circumferential_average(mode='cell centered', threshold=20)
+    blade_process.circumferential_average(mode='cell centered', threshold=50)
     blade_process.contour_all_plots('circ_avg')
 
     # NOT NEEDED FOR CIRCUMFERENTIAL AVERAGES

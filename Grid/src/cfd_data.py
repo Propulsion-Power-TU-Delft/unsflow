@@ -125,11 +125,11 @@ class CfdData:
         # self.s = data[' Static Entropy [ J kg^-1 K^-1 ]'].values
         self.volume = data['Volume']
 
-        # if self.config.get_normalize_data():
-        #     self.normalize_data()
-        #     print('CFD data normalized')
-        # else:
-        #     print('CFD data NOT normalized')
+        if self.config.get_normalize_data():
+            self.normalize_data()
+            print('CFD data normalized')
+        else:
+            print('CFD data NOT normalized')
 
     def read_from_ansys_2D_csv(self):
         """
@@ -177,7 +177,7 @@ class CfdData:
         Compute derived quantities, in particular the vector components in the cylindrical reference frame.
         """
         self.u_mag = sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
-        self.ut_drag = self.r * self.config.get_omega_shaft()  # drag velocity
+        self.ut_drag = self.r * self.config.get_omega_shaft()/self.config.get_reference_omega()  # drag velocity
         self.ut_rel = self.ut - self.ut_drag  # relative velocity
         self.u_mag_rel = sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
 
@@ -378,22 +378,22 @@ class CfdData:
 
         # normalization of the fields
         self.rho /= self.config.get_reference_density()
-        self.ur /= self.config.get_reference_velocity()
-        self.ut /= self.config.get_reference_velocity()
+        self.ux /= self.config.get_reference_velocity()
+        self.uy /= self.config.get_reference_velocity()
         self.uz /= self.config.get_reference_velocity()
         self.p /= self.config.get_reference_pressure()
         self.T /= self.config.get_reference_temperature()
-        self.s /= self.config.get_reference_entropy()
-
-        self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
-        self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
-        self.dur_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.dur_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.dut_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.dut_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.duz_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
-        self.dp_dr /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-        self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
-        self.ds_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
-        self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        # self.s /= self.config.get_reference_entropy()
+        #
+        # self.drho_dr /= (self.config.get_reference_density() / self.config.get_reference_length())
+        # self.drho_dz /= (self.config.get_reference_density() / self.config.get_reference_length())
+        # self.dur_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.dur_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.dut_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.dut_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.duz_dr /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.duz_dz /= (self.config.get_reference_velocity() / self.config.get_reference_length())
+        # self.dp_dr /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        # self.dp_dz /= (self.config.get_reference_pressure() / self.config.get_reference_length())
+        # self.ds_dr /= (self.config.get_reference_entropy() / self.config.get_reference_length())
+        # self.ds_dz /= (self.config.get_reference_entropy() / self.config.get_reference_length())

@@ -197,7 +197,7 @@ class MeridionalProcess:
             self.gauss_filtering()
 
         self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
-        self.ut_drag = self.config.get_omega_shaft() * self.r_cg
+        self.ut_drag = self.config.get_omega_shaft()/self.config.get_reference_omega() * self.r_cg
         self.ut_rel = self.ut - self.ut_drag
         self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
         self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
@@ -1531,7 +1531,8 @@ class MeridionalProcess:
         self.T_tot = self.T * (1 + (GAMMA - 1) / 2 * self.M ** 2)
 
         # rotary total pressure, as defined by Sun et al. (centrifugal compressor analysis 2016)
-        self.p_tot_bar = self.p_tot - self.rho * self.r_cg * self.config.get_omega_shaft() * self.ut
+        self.p_tot_bar = (self.p_tot - self.rho * self.r_cg * self.config.get_omega_shaft()/
+                          self.config.get_reference_omega() * self.ut)
 
     def compute_mu(self):
         """
