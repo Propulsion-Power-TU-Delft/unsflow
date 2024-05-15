@@ -395,11 +395,12 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_z.pdf', bbox_inches='tight')
 
-    def write_bfm_input_file(self, filename=None):
+    def write_bfm_input_file(self, filename=None, rescale=True):
 
         # before writing the cordinates, rescale them to meters
-        self.z_camber *= self.config.get_reference_length()
-        self.r_camber *= self.config.get_reference_length()
+        if rescale:
+            self.z_camber *= self.config.get_reference_length()
+            self.r_camber *= self.config.get_reference_length()
 
         if filename is None:
             filename = 'BFM_Input.drg'
@@ -474,15 +475,6 @@ class Blade:
         """
         ni = self.z_camber.shape[0] - 1  # last element index
         nj = self.r_camber.shape[1] - 1  # last element index
-
-        # # Plot the surface
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, cmap='viridis')
-        # # Customize labels
-        # ax.set_xlabel('X')
-        # ax.set_ylabel('Y')
-        # ax.set_zlabel('Z')
 
         # vector along the streamline
         if i == ni:
