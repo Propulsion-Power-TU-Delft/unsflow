@@ -250,10 +250,10 @@ class Block:
         inlet_curve = np.stack((self.inlet_curve.z_spline_ext, self.inlet_curve.r_spline_ext), axis=1)
         outlet_curve = np.stack((self.outlet_curve.z_spline_ext, self.outlet_curve.r_spline_ext), axis=1)
 
-        self.point_hub_inlet = self.point_intersection(inlet_curve, hub_curve, tol=1)
-        self.point_hub_outlet = self.point_intersection(outlet_curve, hub_curve, tol=1)
-        self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol=1)
-        self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol=1)
+        self.point_hub_inlet = self.point_intersection(inlet_curve, hub_curve, tol=1e-2)
+        self.point_hub_outlet = self.point_intersection(outlet_curve, hub_curve, tol=1e-2)
+        self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol=1e-2)
+        self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol=1e-2)
 
         if visual_check:
             plt.figure()
