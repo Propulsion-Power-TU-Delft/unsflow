@@ -100,7 +100,7 @@ class MeridionalProcess:
         self.T, self.dT_dr, self.dT_dtheta, self.dT_dz = self.polynomial_regression_solution(self.data.T)
         self.s, self.ds_dr, self.ds_dtheta, self.ds_dz = self.polynomial_regression_solution(self.data.s)
 
-    def circumferential_average(self, mode='circular', fix_borders=False, bfm=None, gauss_filter=False, threshold=50):
+    def circumferential_average(self, mode='cell centered', fix_borders=False, bfm=None, gauss_filter=False, threshold=25):
         """
         Perform circumferential averages of the CFD dataset on the Block grid.
         :param mode: type of algorithm selected.
@@ -1004,7 +1004,7 @@ class MeridionalProcess:
         else:
             self.contour_plot_dimensional(field, save_filename, unit_factor, quiver)
 
-    def contour_all_plots(self, save_filename):
+    def contour_all_plots(self, save_filename, additional_field=False):
         """
         call all the contour plots
         """
@@ -1017,22 +1017,25 @@ class MeridionalProcess:
         self.contour_plot(field='p', save_filename=save_filename + '_p')
         self.contour_plot(field='s', save_filename=save_filename + '_s')
         self.contour_plot(field='T', save_filename=save_filename + '_T')
-        self.contour_plot(field='drho_dr', save_filename=save_filename + '_drho_dr')
-        self.contour_plot(field='drho_dz', save_filename=save_filename + '_drho_dz')
-        self.contour_plot(field='dur_dr', save_filename=save_filename + '_dur_dr')
-        self.contour_plot(field='dur_dz', save_filename=save_filename + '_dur_dz')
-        self.contour_plot(field='dut_dr', save_filename=save_filename + '_dut_dr')
-        self.contour_plot(field='dut_dz', save_filename=save_filename + '_dut_dz')
-        self.contour_plot(field='duz_dr', save_filename=save_filename + '_duz_dr')
-        self.contour_plot(field='duz_dz', save_filename=save_filename + '_duz_dz')
-        self.contour_plot(field='dp_dr', save_filename=save_filename + '_dp_dr')
-        self.contour_plot(field='dp_dz', save_filename=save_filename + '_dp_dz')
-        self.contour_plot(field='ds_dr', save_filename=save_filename + '_ds_dr')
-        self.contour_plot(field='ds_dz', save_filename=save_filename + '_ds_dz')
-        self.contour_plot(field='M', save_filename=save_filename + '_M')
         self.contour_plot(field='p_tot', save_filename=save_filename + '_p_tot')
-        self.contour_plot(field='p_tot_bar', save_filename=save_filename + '_p_tot_bar')
         self.contour_plot(field='T_tot', save_filename=save_filename + '_T_tot')
+        self.contour_plot(field='M', save_filename=save_filename + '_M')
+
+        if additional_field:
+            self.contour_plot(field='drho_dr', save_filename=save_filename + '_drho_dr')
+            self.contour_plot(field='drho_dz', save_filename=save_filename + '_drho_dz')
+            self.contour_plot(field='dur_dr', save_filename=save_filename + '_dur_dr')
+            self.contour_plot(field='dur_dz', save_filename=save_filename + '_dur_dz')
+            self.contour_plot(field='dut_dr', save_filename=save_filename + '_dut_dr')
+            self.contour_plot(field='dut_dz', save_filename=save_filename + '_dut_dz')
+            self.contour_plot(field='duz_dr', save_filename=save_filename + '_duz_dr')
+            self.contour_plot(field='duz_dz', save_filename=save_filename + '_duz_dz')
+            self.contour_plot(field='dp_dr', save_filename=save_filename + '_dp_dr')
+            self.contour_plot(field='dp_dz', save_filename=save_filename + '_dp_dz')
+            self.contour_plot(field='ds_dr', save_filename=save_filename + '_ds_dr')
+            self.contour_plot(field='ds_dz', save_filename=save_filename + '_ds_dz')
+            self.contour_plot(field='p_tot_bar', save_filename=save_filename + '_p_tot_bar')
+
 
     def contour_plot_dimensional(self, field, save_filename=None, unit_factor=1, quiver=False, folder_name='pictures'):
         """

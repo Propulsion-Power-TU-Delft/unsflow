@@ -108,12 +108,15 @@ class CfdData:
         df = pd.read_csv(self.config.get_cfd_filepath())
         data = df.to_dict(orient='list')
         for key, value in data.items():
-            data[key] = np.array(value, dtype=float)
-            print('%s in dataset' % key)
+            try:
+                data[key] = np.array(value, dtype=float)
+                print('%s in dataset' % key)
+            except:
+                pass
 
-        self.x = data['Centers_0']
-        self.y = data['Centers_1']
-        self.z = data['Centers_2']
+        self.x = data['Coords_0']
+        self.y = data['Coords_1']
+        self.z = data['Coords_2']
         self.r = sqrt(self.x ** 2 + self.y ** 2)
         self.theta = np.arctan2(self.y, self.x)
         self.rho = data['Density']
