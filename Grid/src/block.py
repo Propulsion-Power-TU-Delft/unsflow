@@ -141,8 +141,8 @@ class Block:
         self.leading_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
         self.trailing_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, block_counter, inlet_block=False, outlet_block=False, inlet_meridional_obj=None, outlet_meridional_obj=None,
-                            save_animation=False):
+    def compute_grid_points(self, block_counter, inlet_block=False, outlet_block=False, inlet_meridional_obj=None,
+                            outlet_meridional_obj=None, save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
         :param inlet_block: if True, disables the grid stretching at inlet
@@ -166,7 +166,6 @@ class Block:
             if outlet_meridional_obj is not None:
                 print(f"{'Outlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             print_banner_end()
-
 
         # handle the case in which some grid cordinates must be copied from adjacent blocks
         if inlet_meridional_obj is not None:
@@ -193,7 +192,7 @@ class Block:
                                                                               save_animation=save_animation)
         elif self.config.get_mesh_generation_method().upper() == 'TFI':
             self.z_grid_points, self.r_grid_points = transfinite_grid_generation(inlet, hub, outlet, shroud,
-                                                                                self.config.get_blocks_topology()[block_counter],
+                                                                                 self.config.get_blocks_topology()[block_counter],
                                                                                  self.config.get_sigmoid_stream_coefficient(),
                                                                                  self.config.get_sigmoid_span_coefficient())
 
@@ -250,10 +249,10 @@ class Block:
         inlet_curve = np.stack((self.inlet_curve.z_spline_ext, self.inlet_curve.r_spline_ext), axis=1)
         outlet_curve = np.stack((self.outlet_curve.z_spline_ext, self.outlet_curve.r_spline_ext), axis=1)
 
-        self.point_hub_inlet = self.point_intersection(inlet_curve, hub_curve, tol=1e-2)
-        self.point_hub_outlet = self.point_intersection(outlet_curve, hub_curve, tol=1e-2)
-        self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol=1e-2)
-        self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol=1e-2)
+        self.point_hub_inlet = self.point_intersection(inlet_curve, hub_curve, tol=tol)
+        self.point_hub_outlet = self.point_intersection(outlet_curve, hub_curve, tol=tol)
+        self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol=tol)
+        self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol=tol)
 
         if visual_check:
             plt.figure()
@@ -267,7 +266,7 @@ class Block:
             plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1])
 
     @staticmethod
-    def point_intersection(curve1, curve2, tol=1e-2):
+    def point_intersection(curve1, curve2, tol):
         """
         find and return the intersection between 2 curves. static method because it is bound to the class, not to an instance
         of the class. It could also avoid to specify the self, since it is not used.
@@ -277,8 +276,13 @@ class Block:
         are already non-dimensional
         """
         tree = KDTree(curve1)
-        distances, indices = tree.query(curve2)
-        intersection_points = curve1[indices[distances < tol]]
+        intersection_points = []
+
+        # while loop to make sure the intersection algorithm finds a point
+        while len(intersection_points) == 0:
+            distances, indices = tree.query(curve2)
+            intersection_points = curve1[indices[distances < tol]]
+            tol *= 10
         point = np.mean(intersection_points, axis=0)
         return point
 
@@ -341,12 +345,12 @@ class Block:
         for istream in range(1, self.nstream):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.25 * (
-                            self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[
-                        istream, ispan - 1] + self.z_grid_cg[istream - 1, ispan - 1])
+                        self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[istream, ispan - 1] +
+                        self.z_grid_cg[istream - 1, ispan - 1])
 
                 r_mid_point = 0.25 * (
-                            self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[
-                        istream, ispan - 1] + self.r_grid_cg[istream - 1, ispan - 1])
+                        self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[istream, ispan - 1] +
+                        self.r_grid_cg[istream - 1, ispan - 1])
 
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
@@ -510,11 +514,11 @@ class Block:
         self.area_elements = np.empty((self.nstream, self.nspan), dtype=AreaElement)
         for ii in range(self.nstream):
             for jj in range(self.nspan):
-                self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj],
-                                                         self.z_grid_dual[ii, jj], self.r_grid_dual[ii, jj],
-                                                         self.z_grid_dual[ii + 1, jj], self.r_grid_dual[ii + 1, jj],
-                                                         self.z_grid_dual[ii + 1, jj + 1], self.r_grid_dual[ii + 1, jj + 1],
-                                                         self.z_grid_dual[ii, jj + 1], self.r_grid_dual[ii, jj + 1])
+                self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj], self.z_grid_dual[ii, jj],
+                                                         self.r_grid_dual[ii, jj], self.z_grid_dual[ii + 1, jj],
+                                                         self.r_grid_dual[ii + 1, jj], self.z_grid_dual[ii + 1, jj + 1],
+                                                         self.r_grid_dual[ii + 1, jj + 1], self.z_grid_dual[ii, jj + 1],
+                                                         self.r_grid_dual[ii, jj + 1])
 
     def compute_areas(self):
         """
@@ -541,21 +545,21 @@ class Block:
         plt.figure()
         for i in range(self.nstream):
             for j in range(self.nspan):
-                plt.title(r'Element [%i,%i]' %(i,j))
-                plt.scatter(self.z_grid_cg[i,j], self.r_grid_cg[i,j], c='black', marker='x')
+                plt.title(r'Element [%i,%i]' % (i, j))
+                plt.scatter(self.z_grid_cg[i, j], self.r_grid_cg[i, j], c='black', marker='x')
                 plt.scatter(self.z_grid_dual[i, j], self.r_grid_dual[i, j], c='red')
-                plt.scatter(self.z_grid_dual[i+1, j], self.r_grid_dual[i+1, j], c='red')
-                plt.scatter(self.z_grid_dual[i+1, j+1], self.r_grid_dual[i+1, j+1], c='red')
-                plt.scatter(self.z_grid_dual[i, j+1], self.r_grid_dual[i, j+1], c='red')
-                line_elements = self.area_elements[i,j].line_elements
-                for k,line in enumerate(line_elements):
-                    plt.plot(line.z, line.r, label='line %i' %k)
+                plt.scatter(self.z_grid_dual[i + 1, j], self.r_grid_dual[i + 1, j], c='red')
+                plt.scatter(self.z_grid_dual[i + 1, j + 1], self.r_grid_dual[i + 1, j + 1], c='red')
+                plt.scatter(self.z_grid_dual[i, j + 1], self.r_grid_dual[i, j + 1], c='red')
+                line_elements = self.area_elements[i, j].line_elements
+                for k, line in enumerate(line_elements):
+                    plt.plot(line.z, line.r, label='line %i' % k)
                     plt.quiver(line.z_cg, line.r_cg, line.l_orth[0], line.l_orth[1])
-                    plt.text(line.z_cg, line.r_cg, r'$[%.1e, %.1e] \cdot %.1e} $' %(line.l_orth_dir[0], line.l_orth_dir[1],
-                                                                                    line.l_norm), fontsize=8, color='black')
+                    plt.text(line.z_cg, line.r_cg,
+                             r'$[%.1e, %.1e] \cdot %.1e} $' % (line.l_orth_dir[0], line.l_orth_dir[1], line.l_norm), fontsize=8,
+                             color='black')
                 plt.legend()
                 plt.cla()
-
 
     def plot_areas_distribution(self):
         """
@@ -579,7 +583,7 @@ class Block:
         """
         Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured
         """
-        theta = np.linspace(0, 2*np.pi, N_THETA)
+        theta = np.linspace(0, 2 * np.pi, N_THETA)
         self.X_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
         self.Y_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
         self.Z_mesh = np.zeros((self.nstream, self.nspan, N_THETA))
@@ -587,7 +591,7 @@ class Block:
         for i in range(self.nstream):
             for j in range(self.nspan):
                 for k in range(N_THETA):
-                    self.X_mesh[i,j,k] = self.r_grid_cg[i,j] * np.cos(theta[k])
+                    self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
                     self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
                     self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
 
@@ -596,12 +600,10 @@ class Block:
         Save the mesh cordinates in a pickle
         """
 
-        mesh = {'x':self.X_mesh,
-                'y':self.Y_mesh,
-                'z':self.Z_mesh}
+        mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
 
-        if filepath==None:
-            filepath = 'mesh_%02i_%02i_%2i.pickle' %(self.nstream, self.nspan, self.X_mesh.shape[2])
+        if filepath == None:
+            filepath = 'mesh_%02i_%02i_%2i.pickle' % (self.nstream, self.nspan, self.X_mesh.shape[2])
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
 
