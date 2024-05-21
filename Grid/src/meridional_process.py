@@ -1296,6 +1296,7 @@ class MeridionalProcess:
         """
         fig, ax = plt.subplots(figsize=self.picture_size_contour)
 
+        # PRIMARY FIELDS
         if field == 'rho':
             cs = ax.contourf(self.z_cg, self.r_cg, self.rho, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{\rho}$')
@@ -1336,11 +1337,8 @@ class MeridionalProcess:
             ax.set_title(r'$M$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'um':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.u_meridional, N_levels, cmap=color_map)
-            ax.set_title(r'$u_m$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
+
+        # GRADIENTS
         elif field == 'drho_dr':
             cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dr, N_levels, cmap=color_map)
             ax.set_title(r'$\partial \hat{\rho} / \partial \hat{r}$')
@@ -1413,6 +1411,13 @@ class MeridionalProcess:
             ax.set_title(r'$\partial \hat{s} / \partial \hat{z}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
+
+        # AUXILLIARY FIELDS
+        elif field == 'um':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.u_meridional, N_levels, cmap=color_map)
+            ax.set_title(r'$u_m$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'ut_rel':
             cs = ax.contourf(self.z_cg, self.r_cg, self.ut_rel, N_levels, cmap=color_map)
             ax.set_title(r'$\hat{w}_{\theta}$')
@@ -1423,6 +1428,36 @@ class MeridionalProcess:
             ax.set_title(r'$\hat{v}_{\theta}$')
             cb = fig.colorbar(cs)
             cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'streamwise length':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.stream_line_length,
+                             levels=N_levels, cmap=color_map)
+            ax.set_title(r'$s_{stwl}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'spanwise length':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.span_wise_length,
+                             levels=N_levels, cmap=color_map)
+            ax.set_title(r'$s_{spwl}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'p_tot':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{p}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'T_tot':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.T_tot, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{T}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'p_tot_bar':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot_bar, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{\bar{p}}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+
+
+        # BODY FORCE FIELDS
         elif field == 'k':
             if self.bfm == 'radial':
                 cs = ax.contourf(self.z_cg, self.r_cg, self.k, N_levels, cmap=color_map)
@@ -1465,12 +1500,6 @@ class MeridionalProcess:
                 ax.set_title(r'$\hat{a}_3$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'streamline length':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.stream_line_length,
-                             levels=N_levels, cmap=color_map)
-            ax.set_title(r'streamline length')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
         elif field == 'mu':
             if self.bfm == 'radial':
                 cs = ax.contourf(self.z_cg, self.r_cg, self.mu,
@@ -1498,21 +1527,6 @@ class MeridionalProcess:
                 ax.set_title(r'$\hat{F}_n$')
                 cb = fig.colorbar(cs)
                 cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'p_tot':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot, N_levels, cmap=color_map)
-            ax.set_title(r'$\hat{p}_{t}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'T_tot':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.T_tot, N_levels, cmap=color_map)
-            ax.set_title(r'$\hat{T}_{t}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
-        elif field == 'p_tot_bar':
-            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot_bar, N_levels, cmap=color_map)
-            ax.set_title(r'$\hat{\bar{p}}_{t}$')
-            cb = fig.colorbar(cs)
-            cb.set_label(r'$\mathrm{[-]}$')
         else:
             raise Exception('Choose a valid contour plot data!')
         # cb = fig.colorbar(cs)

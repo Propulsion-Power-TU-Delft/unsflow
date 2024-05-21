@@ -32,12 +32,14 @@ class MeridionalProcessGroup:
         self.nspan = 0
         self.items_number = 0
 
-    def add_to_group(self, meridional_obj):
+    def add_to_group(self, meridional_obj, delete_cfd_data=True):
         """
         add component to the group, following streamwise order.
         :param meridional_obj: meridional object to add
+        :param delete_cfd_data: delete the cfd dataset to free up memory in the final pickle object
         """
-        del meridional_obj.data
+        if delete_cfd_data:
+            del meridional_obj.data
         self.group.append(meridional_obj)
 
         if len(self.group) == 0:
@@ -84,8 +86,10 @@ class MeridionalProcessGroup:
         self.T = self.group[0].T
         self.s = self.group[0].s
         self.M = self.group[0].M
+        self.stwl = self.group[0].stream_line_length
+        self.spwl = self.group[0].span_wise_length
 
-        for obj in self.group[1:]:
+        for kk , obj in enumerate(self.group[1:]):
             self.z_cg = np.concatenate((self.z_cg[1:, :], obj.z_cg[1:, :]), axis=0)
             self.r_cg = np.concatenate((self.r_cg[1:, :], obj.r_cg[1:, :]), axis=0)
             self.z_grid = np.concatenate((self.z_grid[1:, :], obj.z_grid[1:, :]), axis=0)
@@ -98,6 +102,12 @@ class MeridionalProcessGroup:
             self.T = np.concatenate((self.T[1:, :], obj.T[1:, :]), axis=0)
             self.s = np.concatenate((self.s[1:, :], obj.s[1:, :]), axis=0)
             self.M = np.concatenate((self.M[1:, :], obj.M[1:, :]), axis=0)
+
+            for ii in range(obj.z_cg.shape[0]):
+                obj.stream_line_length[ii, :] = obj.stream_line_length[ii, :] + self.stwl[-1, :]
+
+            self.stwl = np.concatenate((self.stwl[1:, :], obj.stream_line_length[1:, :]), axis=0)
+            self.spwl = np.concatenate((self.spwl[1:, :], obj.span_wise_length[1:, :]), axis=0)
 
     def assemble_body_force_fields(self):
         """
@@ -303,6 +313,24 @@ class MeridionalProcessGroup:
         plt.title(r'$M \ \mathrm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_M.pdf', bbox_inches='tight')  # plt.close()
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.stwl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$s_{stwl} \ \mathrm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.spwl, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$s_{spwl} \ \mathrm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_spwl.pdf', bbox_inches='tight')
 
     def show_grid(self, save_filename=None, grid_centers=False, folder_name=None):
         """
