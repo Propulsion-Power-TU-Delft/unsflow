@@ -37,6 +37,7 @@ class MeridionalProcessGroup:
         add component to the group, following streamwise order.
         :param meridional_obj: meridional object to add
         """
+        del meridional_obj.data
         self.group.append(meridional_obj)
 
         if len(self.group) == 0:
@@ -284,15 +285,15 @@ class MeridionalProcessGroup:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_T.pdf', bbox_inches='tight')  # plt.close()
 
-        # plt.figure(figsize=self.picture_size_contour)
-        # plt.contourf(self.z_cg, self.r_cg, self.s * self.config.get_reference_entropy(), cmap=color_map, levels=N_levels)
-        # plt.colorbar()
-        # plt.xticks([])
-        # plt.yticks([])
-        # plt.title(r'$s \ \mathrm{[J/kgK]}$')
-        # if save_filename is not None:
-        #     plt.savefig(folder_name + '/' + save_filename + '_s.pdf', bbox_inches='tight')
-        #     # plt.close()
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_cg, self.r_cg, self.s * self.config.get_reference_entropy(), cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(r'$s \ \mathrm{[J/kgK]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_s.pdf', bbox_inches='tight')
+            # plt.close()
 
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_cg, self.r_cg, self.M, cmap=color_map, levels=N_levels)
@@ -487,11 +488,12 @@ class MeridionalProcessGroup:
         :param file_name: name to store. if None, default one is selected
         :param folder_name: location to store. if None, default one is selected
         """
+
         if folder_name is None:
-            folder_name = 'data/pickle'
+            folder_name = 'pickle'
 
         if file_name is None:
-            file_name = 'meridional_process_%d_%d.pickle' % (self.nstream, self.nspan)
+            file_name = 'meridional_field_%d_%d' % (self.nstream, self.nspan)
 
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
@@ -622,6 +624,244 @@ class MeridionalProcessGroup:
             ax.set_xlabel(r'$l \ \mathrm{[-]}$')
             if save_filename is not None:
                 fig.savefig(folder_name + '/' + save_filename + '_flux_' + field + '.pdf', bbox_inches='tight')  # plt.close()
+
+    def contour_plot(self, field, save_filename=None, quiver=False, folder_name='pictures'):
+        """
+        Contour plot of a 2D field.
+        :param field: field to plot
+        :param save_filename: if specified, saves the figure
+        :param quiver: if True, superposes the quiver plots of the meridional velocity
+        """
+        fig, ax = plt.subplots(figsize=self.picture_size_contour)
+
+        if field == 'rho':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.rho, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{\rho}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ur':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ur, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{u}_r$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ut':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ut, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{u}_{\theta}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'uz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.uz, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{u}_z$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'p':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.p, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{p}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 's':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.s, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{s}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'T':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.T, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{T}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'M':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.M, N_levels, cmap=color_map)
+            ax.set_title(r'$M$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'um':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.u_meridional, N_levels, cmap=color_map)
+            ax.set_title(r'$u_m$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'drho_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dr, N_levels, cmap=color_map)
+            ax.set_title(r'$\partial \hat{\rho} / \partial \hat{r}$')
+            ax.contour(self.z_cg, self.r_cg, self.drho_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'drho_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.drho_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.drho_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{\rho} / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dur_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dur_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_r / \partial \hat{r}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dur_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dur_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dur_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_r / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dut_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dut_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dut_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{r}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dut_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dut_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dut_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_{\theta} / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'duz_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.duz_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.duz_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{r}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'duz_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.duz_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.duz_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{u}_{z} / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dp_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dp_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dp_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{p} / \partial \hat{r}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'dp_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.dp_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.dp_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{p} / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ds_dr':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ds_dr, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.ds_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{s} / \partial \hat{r}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ds_dz':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ds_dz, N_levels, cmap=color_map)
+            ax.contour(self.z_cg, self.r_cg, self.ds_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+            ax.set_title(r'$\partial \hat{s} / \partial \hat{z}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ut_rel':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ut_rel, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{w}_{\theta}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'ut_drag':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.ut_drag, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{v}_{\theta}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'k':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.k, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{k}$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_ntheta':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.F_ntheta, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{F}_{n \theta}$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_nr':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.F_nr, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{F}_{n r}$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_nz':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.F_nz, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{F}_{n z}$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'a1':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.a1, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{a}_1$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'a2':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.a2, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{a}_2$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'a3':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.a3, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{a}_3$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'streamline length':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.stream_line_length,
+                             levels=N_levels, cmap=color_map)
+            ax.set_title(r'streamline length')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'mu':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.mu,
+                                 levels=N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{\mu}$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_t':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.F_t, N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{F}_t$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_t quiver':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, self.F_t, N_levels, cmap=color_map)
+                ax.quiver(self.z_cg, self.r_grid, -self.uz, -self.ur)
+                ax.set_title(r'$\hat{F}_t$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'F_n':
+            if self.bfm == 'radial':
+                cs = ax.contourf(self.z_cg, self.r_cg, np.sqrt(self.F_nr ** 2 + self.F_ntheta ** 2 +
+                                                               self.F_nz ** 2), N_levels, cmap=color_map)
+                ax.set_title(r'$\hat{F}_n$')
+                cb = fig.colorbar(cs)
+                cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'p_tot':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{p}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'T_tot':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.T_tot, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{T}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        elif field == 'p_tot_bar':
+            cs = ax.contourf(self.z_cg, self.r_cg, self.p_tot_bar, N_levels, cmap=color_map)
+            ax.set_title(r'$\hat{\bar{p}}_{t}$')
+            cb = fig.colorbar(cs)
+            cb.set_label(r'$\mathrm{[-]}$')
+        else:
+            raise Exception('Choose a valid contour plot data!')
+        # cb = fig.colorbar(cs)
+        ax.set_xlabel(r'$\hat{z} \ \mathrm{[-]}$')
+        ax.set_ylabel(r'$\hat{r} \ \mathrm{[-]}$')
+        axx = fig.gca()
+        axx.set_aspect('equal')
+        if quiver:
+            ax.quiver(self.z_cg, self.r_cg, self.uz, self.ur)
+        if save_filename is not None:
+            fig.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def compute_performance(self):
         """

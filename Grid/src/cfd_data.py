@@ -125,7 +125,7 @@ class CfdData:
         self.uz = data['Velocity_2']
         self.p = data['Pressure']
         self.T = data['Temperature']
-        # self.s = data[' Static Entropy [ J kg^-1 K^-1 ]'].values
+        # self.s = data['Entropy']
         self.volume = data['Volume']
 
         if self.config.get_normalize_data():
@@ -173,7 +173,7 @@ class CfdData:
         Compute velocity in cylindrical cordinates.
         """
         self.ur = self.ux * np.cos(self.theta) + self.uy * np.sin(self.theta)
-        self.ut = self.ux * np.cos(self.theta) + self.uy * np.sin(self.theta)
+        self.ut = -self.ux * np.sin(self.theta) + self.uy * np.cos(self.theta)
 
     def compute_derived_quantities(self):
         """
