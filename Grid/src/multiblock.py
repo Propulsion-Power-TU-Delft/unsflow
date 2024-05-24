@@ -12,6 +12,8 @@ from .functions import cluster_sample_u, elliptic_grid_generation, compute_pictu
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
+from scipy.interpolate import CubicSpline
+from Grid.src.functions import create_folder
 import pickle
 
 
@@ -154,3 +156,47 @@ class MultiBlock:
             pickle.dump(mesh, f)
 
         print(f"Data saved to '{filepath}'")
+
+    def export_meridional_spline(self, span, folder=None, filename=None, format_file=None):
+        """
+        export the meridional spline needed by Paraview to perform the blade to blade contour
+        """
+        if folder is None:
+            folder = 'spline'
+        create_folder(folder)
+
+        if filename is None:
+            filename = 'spline'
+
+        if format_file is None:
+            format_file = 'csv'
+
+
+        n_span = self.z_grid_points.shape[1]
+        ispan = int(span*n_span)
+        y = self.r_grid_cg[:,ispan]
+        z = self.z_grid_points[:,ispan]
+        x = np.zeros_like(y)
+
+        # t = np.linspace(0, 1, len(z))
+        # splinez = CubicSpline(z, t)
+        # spliney = CubicSpline(y, t)
+        #
+        # t = np.linspace(0, 1, 200)
+        # znew = splinez(t)
+        # ynew = spliney(t)
+        # xnew = np.zeros_like(znew)
+
+
+
+
+        filepath = folder + '/' + filename + '.' + format_file
+        with open(filepath, 'w') as file:
+            if format_file == 'csv':
+                for ii in range(len(x)):
+                    file.write('%.6f,%.6f,%.6f\n' %(x[ii], y[ii], z[ii]))
+            else:
+                raise ValueError('Format not supported.')
+
+
+

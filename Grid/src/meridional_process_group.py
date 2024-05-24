@@ -529,24 +529,43 @@ class MeridionalProcessGroup:
         with open(os.path.join(folder_name, file_name) + '.pickle', "wb") as file:
             pickle.dump(self, file)
 
-    def compute_streamline_length(self):
-        """
-        Compute the length along each streamline. The dimensions are the same of the ones in the single meridional blocks.
-        """
-        self.nstream = self.z_grid.shape[0]
-        self.nspan = self.z_grid.shape[1]
-        self.stream_line_length = np.zeros_like(self.z_grid)
-        for ispan in range(0, self.nspan):
-            z = self.z_cg[:, ispan]
-            r = self.r_cg[:, ispan]
-            tmp_len = 0
-            for istream in range(1, self.nstream):
-                tmp_len += np.sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
-                self.stream_line_length[istream, ispan] = tmp_len
+    # def compute_streamline_length(self):
+    #     """
+    #     Compute the length along each streamline. The dimensions are the same of the ones in the single meridional blocks.
+    #     """
+    #     self.nstream = self.z_grid.shape[0]
+    #     self.nspan = self.z_grid.shape[1]
+    #     self.stream_line_length = np.zeros_like(self.z_grid)
+    #     for ispan in range(0, self.nspan):
+    #         z = self.z_cg[:, ispan]
+    #         r = self.r_cg[:, ispan]
+    #         tmp_len = 0
+    #         for istream in range(1, self.nstream):
+    #             tmp_len += np.sqrt((z[istream] - z[istream - 1]) ** 2 + (r[istream] - r[istream - 1]) ** 2)
+    #             self.stream_line_length[istream, ispan] = tmp_len
+    #
+    #     # reports to zero the first length of the bladed zone
+    #     self.middle_line_length = self.stream_line_length[:, self.nspan // 2]
+    #     self.middle_line_length /= self.group[1].stream_line_length[-1, self.group[1].nspan // 2]
 
-        # reports to zero the first length of the bladed zone
-        self.middle_line_length = self.stream_line_length[:, self.nspan // 2]
-        self.middle_line_length /= self.group[1].stream_line_length[-1, self.group[1].nspan // 2]
+    def compute_streamwise_normalized_length(self):
+        """
+        from the stwl data, compute the normalized length, from
+        """
+        self.nspan = self.z_cg.shape[1]
+        self.stwl_norm = np.zeros_like(self.stwl)
+        for jj in range(self.nspan):
+            self.stwl_norm[:, jj] = self.stwl[:, jj]/self.stwl[:, jj].max()
+
+    def compute_spanwise_normalized_length(self):
+        """
+        from the spwl data, compute the normalized length, from
+        """
+        self.nstream = self.z_cg.shape[0]
+        self.spwl_norm = np.zeros_like(self.spwl)
+        for ii in range(self.nstream):
+            self.spwl_norm[ii, :] = self.spwl[ii, :]/self.spwl[ii, :].max()
+
 
     def plot_stream_line(self, field, n, save_filename=None, folder_name=None):
         """
