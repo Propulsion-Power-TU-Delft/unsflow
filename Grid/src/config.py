@@ -144,13 +144,28 @@ class Config:
         return str(self.config_parser.get('CFD PROCESSING', 'SHROUD_COORDINATES_FILEPATH'))
 
     def get_blade_curve_filepath(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
+        if len(value.split())>1:
+            filepath = [i for i in value.split()]
+        else:
+            filepath = value
+        return filepath
 
     def get_blade_inlet_type(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
+        if len(value.split()) > 1:
+            value = [i for i in value.split()]
+        else:
+            pass
+        return value
 
     def get_blade_outlet_type(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'BLADE_OUTLET_TYPE'))
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_OUTLET_TYPE'))
+        if len(value.split()) > 1:
+            value = [i for i in value.split()]
+        else:
+            pass
+        return value
 
     def get_verbosity(self):
         res = self.config_parser.get('CFD PROCESSING', 'VERBOSITY')

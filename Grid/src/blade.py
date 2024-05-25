@@ -24,9 +24,11 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, iblade=0):
         """
         reads the info from the blade file .curve, which is created during blade generation, e.g. with BladeGen.
+        :param config : configuration object
+        :param iblade : bladerow number
         """
         self.config = config
         self.x = []
@@ -36,15 +38,20 @@ class Blade:
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
 
-        self.read_from_curve_file()
+        self.read_from_curve_file(iblade)
         self.print_blade_info()
 
-    def read_from_curve_file(self):
+    def read_from_curve_file(self, iblade):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
+        :param iblade: number of the blade row
         """
         blade_type = 'MAIN'
-        with open(self.config.get_blade_curve_filepath()) as f:
+        filepath = self.config.get_blade_curve_filepath()
+        if len(filepath) > 1:
+            filepath = filepath[iblade]
+
+        with open(filepath) as f:
             lines = f.readlines()
 
         for line in lines:
@@ -103,10 +110,6 @@ class Blade:
         # ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
-        if len(self.x_main) % number_main_profiles != 0:
-            raise ValueError('Something is wrong with the blade profiles cordinates')
-        else:
-            number_points_per_profile = len(self.x_main) // number_main_profiles
 
         # create a list of profiles, which store information of the pressure and suction side
         profiles = []
@@ -117,9 +120,10 @@ class Blade:
         rps = []
         thetaps = []
         for i in range(number_main_profiles):
-            ss_idxs = slice(i * number_points_per_profile, i * number_points_per_profile + number_points_per_profile // 2)
-            ps_idxs = slice(i * number_points_per_profile + number_points_per_profile // 2,
-                            i * number_points_per_profile + number_points_per_profile)
+            idx = np.where(self.profile == self.profile[i])
+            n_per_side = len(idx[0]) // 2
+            ss_idxs = slice(idx[0][0], idx[0][0] + n_per_side)
+            ps_idxs = slice(idx[0][0] + n_per_side, idx[0][0] + 2 * n_per_side)
             profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs], self.x_main[ps_idxs],
                                     self.y_main[ps_idxs], self.z_main[ps_idxs]))
             # profiles[i].plot_profile()
@@ -130,6 +134,7 @@ class Blade:
             zps.append(profiles[i].zps)
             rps.append(profiles[i].rps)
             thetaps.append(profiles[i].thetaps)
+
         self.zss_points = np.concatenate(zss)
         self.rss_points = np.concatenate(rss)
         self.thetass_points = np.concatenate(thetass)
@@ -230,30 +235,26 @@ class Blade:
         self.streamline_length_ss = np.zeros_like(self.z_camber)
         for ii in range(1, self.z_camber.shape[0]):
             if not projection:
-                ds = np.sqrt((self.x_camber[ii,:]-self.x_camber[ii-1,:])**2 +
-                             (self.y_camber[ii,:]-self.y_camber[ii-1,:])**2 +
-                             (self.z_camber[ii,:]-self.z_camber[ii-1,:])**2)
+                ds = np.sqrt((self.x_camber[ii, :] - self.x_camber[ii - 1, :]) ** 2 + (
+                            self.y_camber[ii, :] - self.y_camber[ii - 1, :]) ** 2 + (
+                                         self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
             else:
-                ds = np.sqrt((self.r_camber[ii, :] - self.r_camber[ii - 1, :]) ** 2 +
-                             (self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
-            self.streamline_length[ii, :] = self.streamline_length[ii-1, :] + ds
+                ds = np.sqrt((self.r_camber[ii, :] - self.r_camber[ii - 1, :]) ** 2 + (
+                            self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
+            self.streamline_length[ii, :] = self.streamline_length[ii - 1, :] + ds
 
             if not projection:
-                ds = np.sqrt((self.x_ps[ii, :] - self.x_ps[ii - 1, :]) ** 2 +
-                             (self.y_ps[ii, :] - self.y_ps[ii - 1, :]) ** 2 +
-                             (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
+                ds = np.sqrt((self.x_ps[ii, :] - self.x_ps[ii - 1, :]) ** 2 + (self.y_ps[ii, :] - self.y_ps[ii - 1, :]) ** 2 + (
+                            self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
             else:
-                ds = np.sqrt((self.r_ps[ii, :] - self.r_ps[ii - 1, :]) ** 2 +
-                             (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
+                ds = np.sqrt((self.r_ps[ii, :] - self.r_ps[ii - 1, :]) ** 2 + (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
             self.streamline_length_ps[ii, :] = self.streamline_length_ps[ii - 1, :] + ds
 
             if not projection:
-                ds = np.sqrt((self.x_ss[ii, :] - self.x_ss[ii - 1, :]) ** 2 +
-                             (self.y_ss[ii, :] - self.y_ss[ii - 1, :]) ** 2 +
-                             (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
+                ds = np.sqrt((self.x_ss[ii, :] - self.x_ss[ii - 1, :]) ** 2 + (self.y_ss[ii, :] - self.y_ss[ii - 1, :]) ** 2 + (
+                            self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
             else:
-                ds = np.sqrt((self.r_ss[ii, :] - self.r_ss[ii - 1, :]) ** 2 +
-                             (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
+                ds = np.sqrt((self.r_ss[ii, :] - self.r_ss[ii - 1, :]) ** 2 + (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
             self.streamline_length_ss[ii, :] = self.streamline_length_ss[ii - 1, :] + ds
 
     def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
@@ -270,8 +271,6 @@ class Blade:
         plt.title(r'$s \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     def find_ss_surface(self, blade_block, degree=4):
         """
@@ -451,15 +450,10 @@ class Blade:
                 for j in range(self.z_camber.shape[1]):
                     file.write('<radial section>\n')
                     for i in range(self.z_camber.shape[0]):
-                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n'
-                                   % (self.z_camber[i, j],
-                                      self.r_camber[i, j],
-                                      self.n_camber_z[i, j],
-                                      self.n_camber_t[i, j],
-                                      self.n_camber_r[i, j],
-                                      self.blockage[i, j],
-                                      self.z_camber[0, j],
-                                      self.z_camber[-1, j]-self.z_camber[0, j]))
+                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
+                        self.z_camber[i, j], self.r_camber[i, j], self.n_camber_z[i, j], self.n_camber_t[i, j],
+                        self.n_camber_r[i, j], self.blockage[i, j], self.z_camber[0, j],
+                        self.z_camber[-1, j] - self.z_camber[0, j]))
                     file.write('</radial section>\n')
                 file.write('</tang section>\n')
                 file.write('</blade section>\n')
@@ -539,7 +533,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_inlet_points(self):
+    def find_inlet_points(self, iblade=0):
         """
         Find the points defining the inlet from the coordinates of the blade points.
         """
@@ -554,12 +548,18 @@ class Blade:
             z = self.z_main[idx]
             r = self.r_main[idx]
 
-            if self.config.get_blade_inlet_type() == 'axial':
+            blade_inlet_type = self.config.get_blade_inlet_type()
+            if len(blade_inlet_type) > 1:
+                blade_inlet_type = blade_inlet_type[iblade]
+            else:
+                pass
+
+            if blade_inlet_type == 'axial':
                 # leading edge point
                 min_z = np.min(z)  # minimum axial cordinate
                 min_r_id = np.argmin(z)  # corresponding index for the r cordinate
                 min_r = r[min_r_id]
-            elif self.config.get_blade_inlet_type() == 'radial':
+            elif blade_inlet_type == 'radial':
                 min_r = np.min(r)
                 min_z_id = np.argmin(r)
                 min_z = z[min_z_id]
@@ -570,7 +570,7 @@ class Blade:
             self.inlet_r.append(min_r)
         self.inlet = np.stack((self.inlet_z, self.inlet_r), axis=1)
 
-    def find_outlet_points(self):
+    def find_outlet_points(self, iblade):
         """
         find the points defining the inlet are taken as
         the points with minimum z cordinates for each profile of the blade.
@@ -585,12 +585,18 @@ class Blade:
             z = self.z_main[idx]
             r = self.r_main[idx]
 
-            if self.config.get_blade_outlet_type() == 'radial':
+            blade_outlet_type = self.config.get_blade_outlet_type()
+            if len(blade_outlet_type) > 1:
+                blade_outlet_type = blade_outlet_type[iblade]
+            else:
+                pass
+
+            if blade_outlet_type == 'radial':
                 # trailing edge points
                 max_r = np.max(r)
                 max_z_id = np.argmax(r)
                 max_z = z[max_z_id]
-            elif self.config.get_blade_outlet_type() == 'axial':
+            elif blade_outlet_type == 'axial':
                 # trailing edge points
                 max_z = np.max(z)
                 max_r_id = np.argmax(z)
@@ -608,7 +614,6 @@ class Blade:
         spanline vector, all in cartesian and cylindrical reference systems.
         :param fix: parameter needed to artificially fix the sign of the normal vector
         """
-
 
         # Create 2D NumPy array of empty arrays
         self.normal_vectors = np.empty(self.z_camber.shape, dtype=object)
@@ -764,10 +769,10 @@ class Blade:
         View of the blade section in the blade to blade plane, to check the camber angles.
         :param span: percentage of the span you want to visualize the profile
         """
-        span_percent = (span_idx)/(self.z_camber.shape[1]-1)*100
+        span_percent = (span_idx) / (self.z_camber.shape[1] - 1) * 100
 
         xs = self.streamline_length_ss[:, span_idx]
-        ys = self.r_ss[:, span_idx]*self.theta_ss[:, span_idx]
+        ys = self.r_ss[:, span_idx] * self.theta_ss[:, span_idx]
 
         xp = self.streamline_length_ps[:, span_idx]
         yp = self.r_ps[:, span_idx] * self.theta_ps[:, span_idx]
@@ -790,7 +795,7 @@ class Blade:
         ax = plt.gca()
         # ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_%.1f'%span_percent + '%_span.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_%.1f' % span_percent + '%_span.pdf', bbox_inches='tight')
 
     def plot_bladetoblade_profile(self, span=50, save_filename=None, folder_name=None):
         """
@@ -799,15 +804,14 @@ class Blade:
         """
         n_spans = self.z_camber.shape[1]
 
-        if span=='all':
+        if span == 'all':
             for i in range(n_spans):
                 self.plot_bladetoblade_section(i, save_filename, folder_name)
-        elif span>=0 and span<=100:
-            span_idx = int(n_spans*span/100)
+        elif span >= 0 and span <= 100:
+            span_idx = int(n_spans * span / 100)
             self.plot_bladetoblade_section(span_idx, save_filename, folder_name)
         else:
             raise ValueError('Span value not recognized')
-
 
     def compute_blade_camber_angles(self, convention='rotation-wise'):
         """
