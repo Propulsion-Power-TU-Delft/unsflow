@@ -17,6 +17,7 @@ from Utils.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size
 from Grid.src.profile import Profile
 from Utils.styles import *
+import math
 
 
 class Blade:
@@ -48,8 +49,10 @@ class Blade:
         """
         blade_type = 'MAIN'
         filepath = self.config.get_blade_curve_filepath()
-        if len(filepath) > 1:
+        if isinstance(filepath, list):
             filepath = filepath[iblade]
+        else:
+            pass
 
         with open(filepath) as f:
             lines = f.readlines()
@@ -102,12 +105,12 @@ class Blade:
         self.theta_main = self.theta[self.idx_main]
 
         # inspect points
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
-        # ax.set_xlabel('X Axis')
-        # ax.set_ylabel('Y Axis')
-        # ax.set_zlabel('Z Axis')
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
+        ax.set_xlabel('X Axis')
+        ax.set_ylabel('Y Axis')
+        ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
 
@@ -119,14 +122,16 @@ class Blade:
         zps = []
         rps = []
         thetaps = []
-        for i in range(number_main_profiles):
+        for i in range(number_main_profiles-1):
             idx = np.where(self.profile == self.profile[i])
-            n_per_side = len(idx[0]) // 2
-            ss_idxs = slice(idx[0][0], idx[0][0] + n_per_side)
-            ps_idxs = slice(idx[0][0] + n_per_side, idx[0][0] + 2 * n_per_side)
-            profiles.append(Profile(self.x_main[ss_idxs], self.y_main[ss_idxs], self.z_main[ss_idxs], self.x_main[ps_idxs],
-                                    self.y_main[ps_idxs], self.z_main[ps_idxs]))
-            # profiles[i].plot_profile()
+            n_per_side = math.ceil(len(idx[0]) / 2)
+            profiles.append(Profile(self.x_main[idx][0:n_per_side],
+                                    self.y_main[idx][0:n_per_side],
+                                    self.z_main[idx][0:n_per_side],
+                                    self.x_main[idx][n_per_side-1:],
+                                    self.y_main[idx][n_per_side-1:],
+                                    self.z_main[idx][n_per_side-1:]))
+            profiles[i].plot_profile()
             zss.append(profiles[i].zss)
             rss.append(profiles[i].rss)
             thetass.append(profiles[i].thetass)
@@ -533,7 +538,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_inlet_points(self, iblade=0):
+    def find_inlet_points(self, iblade):
         """
         Find the points defining the inlet from the coordinates of the blade points.
         """
@@ -549,7 +554,7 @@ class Blade:
             r = self.r_main[idx]
 
             blade_inlet_type = self.config.get_blade_inlet_type()
-            if len(blade_inlet_type) > 1:
+            if isinstance(blade_inlet_type, list):
                 blade_inlet_type = blade_inlet_type[iblade]
             else:
                 pass
@@ -586,7 +591,7 @@ class Blade:
             r = self.r_main[idx]
 
             blade_outlet_type = self.config.get_blade_outlet_type()
-            if len(blade_outlet_type) > 1:
+            if isinstance(blade_outlet_type, list):
                 blade_outlet_type = blade_outlet_type[iblade]
             else:
                 pass
