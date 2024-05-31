@@ -268,4 +268,12 @@ class Config:
             blades = int(value)
         return blades
 
+    def get_rotation_factors(self):
+        value = str(self.config_parser.get('BFM DATA', 'ROTATION_FACTORS'))
+        if len(value.split()) > 1:
+            factors = [int(i) for i in value.split()]
+        else:
+            factors = int(value)
+        return factors
+
 
