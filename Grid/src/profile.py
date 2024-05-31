@@ -42,8 +42,8 @@ class Profile:
 
     def plot_profile(self):
         plt.figure()
-        plt.plot(self.zss, self.rss*self.thetass, '--ro', label='ss')
-        plt.plot(self.zps, self.rps*self.thetaps, '--bo', label='ps')
+        plt.plot(self.zss, self.rss*self.thetass, 'ro', label='ss')
+        plt.plot(self.zps, self.rps*self.thetaps, 'bo', label='ps')
         plt.legend()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r \theta$')

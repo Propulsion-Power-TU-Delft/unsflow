@@ -113,6 +113,7 @@ class Blade:
         ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
+        main_profiles = np.unique(self.profile)
 
         # create a list of profiles, which store information of the pressure and suction side
         profiles = []
@@ -122,23 +123,69 @@ class Blade:
         zps = []
         rps = []
         thetaps = []
+        zcamb = []
+        rcamb = []
+        thetacamb = []
         for i in range(number_main_profiles-1):
-            idx = np.where(self.profile == self.profile[i])
-            n_per_side = math.ceil(len(idx[0]) / 2)
-            profiles.append(Profile(self.x_main[idx][0:n_per_side],
-                                    self.y_main[idx][0:n_per_side],
-                                    self.z_main[idx][0:n_per_side],
-                                    self.x_main[idx][n_per_side-1:],
-                                    self.y_main[idx][n_per_side-1:],
-                                    self.z_main[idx][n_per_side-1:]))
-            profiles[i].plot_profile()
-            zss.append(profiles[i].zss)
-            rss.append(profiles[i].rss)
-            thetass.append(profiles[i].thetass)
+            idx = np.where(self.profile == main_profiles[i])
+            z = self.z_main[idx]
+            r = self.r_main[idx]
+            theta = self.theta_main[idx]
 
-            zps.append(profiles[i].zps)
-            rps.append(profiles[i].rps)
-            thetaps.append(profiles[i].thetaps)
+            plt.figure()
+            plt.plot(z, theta, '-k.')
+
+            le_idx = np.where(z == z.min())
+            te_idx = np.where(z == z.max())
+            plt.scatter(z[le_idx], theta[le_idx], label='LE', s=40, c='red')
+            plt.scatter(z[te_idx], theta[te_idx], label='TE', s=40, c='red')
+
+            z_pol = np.linspace(z[le_idx], z[te_idx], 100)
+            coefficients = np.polyfit(z, theta, 3)
+            theta_pol = np.polyval(coefficients, z_pol)
+            plt.plot(z_pol, theta_pol, '--b', label='camber')
+
+            ps = []
+            ss = []
+            for ipoint in range(len(z)):
+                if theta[ipoint]>np.polyval(coefficients, z[ipoint]):
+                    if self.config.get_shaft_rpm()>=0:
+                        ps.append(ipoint)
+                    else:
+                        ss.append(ipoint)
+                else:
+                    if self.config.get_shaft_rpm() >= 0:
+                        ss.append(ipoint)
+                    else:
+                        ps.append(ipoint)
+            plt.scatter(z[ps], theta[ps], s=100, label='PS')
+            plt.scatter(z[ss], theta[ss], s=100, label='SS')
+            plt.legend()
+
+            z_camber = z[ps].copy()
+            r_camber = r[ps].copy()
+            theta_camber = np.polyval(coefficients, z_camber)
+
+
+            # n_per_side = math.ceil(len(idx[0]) / 2)
+            profiles.append(Profile(self.x_main[idx][ss],
+                                    self.y_main[idx][ss],
+                                    self.z_main[idx][ss],
+                                    self.x_main[idx][ps],
+                                    self.y_main[idx][ps],
+                                    self.z_main[idx][ps]))
+            profiles[i].plot_profile()
+            zss.append(z[ss])
+            rss.append(r[ss])
+            thetass.append(theta[ss])
+
+            zps.append(z[ps])
+            rps.append(r[ps])
+            thetaps.append(theta[ps])
+
+            zcamb.append(z_camber)
+            rcamb.append(r_camber)
+            thetacamb.append(theta_camber)
 
         self.zss_points = np.concatenate(zss)
         self.rss_points = np.concatenate(rss)
@@ -146,8 +193,12 @@ class Blade:
         self.zps_points = np.concatenate(zps)
         self.rps_points = np.concatenate(rps)
         self.thetaps_points = np.concatenate(thetaps)
+        self.zc_points = np.concatenate(zcamb)
+        self.rc_points = np.concatenate(rcamb)
+        self.thetac_points = np.concatenate(thetacamb)
 
         if self.splitter:
+            raise ValueError('Splitter blade not implemented yet')
             self.idx_splitter = np.where(self.blade == 'SPLITTER')
             self.x_splitter = self.x[self.idx_splitter]
             self.y_splitter = self.y[self.idx_splitter]
@@ -212,9 +263,9 @@ class Blade:
 
         self.camber_degree = degree  # mixed polynomial order
         self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(np.column_stack((self.z_main, self.r_main)))  # dataset in right format
+        X = self.camber_poly_features.fit_transform(np.column_stack((self.zc_points, self.rc_points)))  # dataset in right format
         self.camber_model = LinearRegression()  # object for linear regression (least square fit)
-        self.camber_model.fit(X, self.theta_main)  # least square fit of the regression coefficient
+        self.camber_model.fit(X, self.thetac_points)  # least square fit of the regression coefficient
         self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
         self.camber_intercept = self.camber_model.intercept_  # constant term
 
@@ -303,6 +354,8 @@ class Blade:
         self.theta_ss = camber_surface_values.reshape(self.z_camber.shape)
         self.x_ss = self.r_ss * np.cos(self.theta_ss)
         self.y_ss = self.r_ss * np.sin(self.theta_ss)
+
+
 
     def find_ps_surface(self, blade_block, degree=4):
         """
@@ -665,7 +718,7 @@ class Blade:
             self.n_camber_t = -np.abs(self.n_camber_t)
             self.n_camber_z = -np.abs(self.n_camber_z)
         else:
-            warnings.warn('Attention, camber normal vector not modified')
+            pass
 
     def show_normal_vectors(self, save_filename=None, folder_name=None):
         """
