@@ -59,10 +59,39 @@ class Block:
         self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, mode='cordinates')
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, mode='cordinates')
 
-    def spline_of_leading_trailing_edge(self):
+    def spline_of_leading_trailing_edge(self, iblade):
         """
         Make splines of the inlet and outlet border of the domain considered
         """
+
+        def remove_excess_points(topology, point_hub, point_shroud, curve):
+            # plt.figure()
+            # plt.scatter(point_hub[0], point_hub[1])
+            # plt.scatter(point_shroud[0], point_shroud[1])
+            # plt.plot(curve[:, 0], curve[:, 1], '-o')
+            if topology == 'axial':
+                condition1 = point_hub[1] < curve[:, 1]
+                condition2 = curve[:, 1] < point_shroud[1]
+                res = condition1 & condition2
+            elif topology == 'radial':
+                condition1 = point_hub[0] < curve[:, 0]
+                condition2 = curve[:, 0] < point_shroud[0]
+                res = condition1 & condition2
+            else:
+                raise ValueError("Not recognized topology")
+            curve = curve[res, :]
+            # plt.figure()
+            # plt.scatter(point_hub[0], point_hub[1])
+            # plt.scatter(point_shroud[0], point_shroud[1])
+            # plt.plot(curve[:, 0], curve[:, 1], '-o')
+            return curve
+
+        inlet_type = self.config.get_blade_inlet_type()[iblade]
+        outlet_type = self.config.get_blade_outlet_type()[iblade]
+
+        self.inlet = remove_excess_points(inlet_type, self.point_hub_inlet, self.point_shroud_inlet, self.inlet)
+        self.outlet = remove_excess_points(outlet_type, self.point_hub_outlet, self.point_shroud_outlet, self.outlet)
+
         self.inlet = np.concatenate(
             (np.reshape(self.point_hub_inlet, (1, 2)), self.inlet[1:-1, :], np.reshape(self.point_shroud_inlet, (1, 2))))
 

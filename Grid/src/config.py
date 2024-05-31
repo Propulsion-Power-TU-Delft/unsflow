@@ -261,4 +261,11 @@ class Config:
             return False
 
     def get_blades_number(self):
-        return int(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
+        value = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
+        if len(value.split()) > 1:
+            blades = [int(i) for i in value.split()]
+        else:
+            blades = int(value)
+        return blades
+
+

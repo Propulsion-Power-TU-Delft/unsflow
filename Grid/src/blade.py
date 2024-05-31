@@ -331,16 +331,18 @@ class Blade:
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-    def plot_camber_surface(self, save_filename=None, folder_name=None):
+    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True):
         """
         plot the main blade points and the camber surface
         """
         fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
-        # ax.scatter(self.x_main, self.y_main, self.z_main, s=scatter_point_size, label='main blade points')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='green', label='camber')
-        ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.5, color='red', label='ss')
-        ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.5, color='blue', label='ps')
+        if points:
+            ax.scatter(self.x_main, self.y_main, self.z_main)
+        if sides:
+            ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.5, color='red', label='ss')
+            ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.5, color='blue', label='ps')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
