@@ -86,8 +86,22 @@ class Block:
             # plt.plot(curve[:, 0], curve[:, 1], '-o')
             return curve
 
-        inlet_type = self.config.get_blade_inlet_type()[iblade]
-        outlet_type = self.config.get_blade_outlet_type()[iblade]
+        inlet_type = self.config.get_blade_inlet_type()
+        outlet_type = self.config.get_blade_outlet_type()
+        if isinstance(inlet_type, list):
+            inlet_type = inlet_type[iblade]
+        elif isinstance(inlet_type, str):
+            pass
+        else:
+            raise ValueError('Unkown error of inlet type')
+
+        if isinstance(outlet_type, list):
+            outlet_type = outlet_type[iblade]
+        elif isinstance(outlet_type, str):
+            pass
+        else:
+            raise ValueError('Unkown error of inlet type')
+
 
         self.inlet = remove_excess_points(inlet_type, self.point_hub_inlet, self.point_shroud_inlet, self.inlet)
         self.outlet = remove_excess_points(outlet_type, self.point_hub_outlet, self.point_shroud_outlet, self.outlet)

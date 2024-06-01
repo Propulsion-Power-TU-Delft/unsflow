@@ -42,7 +42,7 @@ class Blade:
         self.read_from_curve_file(iblade)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade):
+    def read_from_curve_file(self, iblade, poly_degree = 12):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -133,7 +133,8 @@ class Blade:
             theta = self.theta_main[idx]
 
             plt.figure()
-            plt.plot(z, theta, '-k.')
+            plt.plot(z, theta, '-k')
+            plt.plot(z**2+r**2, r*theta, '-k.')
 
             le_idx = np.where(z == z.min())
             te_idx = np.where(z == z.max())
@@ -141,7 +142,7 @@ class Blade:
             plt.scatter(z[te_idx], theta[te_idx], label='TE', s=40, c='red')
 
             z_pol = np.linspace(z[le_idx], z[te_idx], 100)
-            coefficients = np.polyfit(z, theta, 3)
+            coefficients = np.polyfit(z, theta, poly_degree)
             theta_pol = np.polyval(coefficients, z_pol)
             plt.plot(z_pol, theta_pol, '--b', label='camber')
 
