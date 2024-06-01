@@ -25,7 +25,7 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, config, iblade=0):
+    def __init__(self, config, iblade=0, poly_degree=3):
         """
         reads the info from the blade file .curve, which is created during blade generation, e.g. with BladeGen.
         :param config : configuration object
@@ -39,10 +39,10 @@ class Blade:
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
 
-        self.read_from_curve_file(iblade)
+        self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree = 12):
+    def read_from_curve_file(self, iblade, poly_degree):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -126,25 +126,56 @@ class Blade:
         zcamb = []
         rcamb = []
         thetacamb = []
+
+        def compute_unstructured_streamline_length(r, theta, z, le_idx, te_idx):
+            """
+            function to compute the stremaline length of an nustructured dataset, starting from the leading edge point
+            """
+            x = r*np.cos(theta)
+            y = r*np.sin(theta)
+            swl = np.zeros_like(x)
+            z_stream = np.linspace(z[le_idx], z[te_idx], 100)
+            for istream in range(len(z_stream)-1):
+                z_min = z_stream[istream]
+                z_max = z_stream[istream+1]
+                mask1 = z < z_max
+                mask2 = z > z_min
+                combined_mask = mask1 & mask2
+                idx = np.where(combined_mask)
+
+                plt.figure()
+                plt.scatter(z, r*theta, c='black')
+                plt.scatter(z[le_idx], r[le_idx]*theta[le_idx], c='red')
+                plt.plot(np.zeros(10)+z_min, np.linspace(-2,2,10),'--r')
+                plt.plot(np.zeros(10) + z_max, np.linspace(-2, 2, 10),'--r')
+
+                warnings.warn('Beta feature. Not ready yet')
+
+
         for i in range(number_main_profiles-1):
             idx = np.where(self.profile == main_profiles[i])
             z = self.z_main[idx]
             r = self.r_main[idx]
             theta = self.theta_main[idx]
+            var1 = z
+            var2 = theta
+            le_idx = np.where(var1 == var1.min())
+            te_idx = np.where(var1 == var1.max())
+            if len(le_idx[0])>1:
+                le_idx = le_idx[0][0]
+            if len(te_idx[0])>1:
+                te_idx = te_idx[0][0]
+            #
+            # swl = compute_unstructured_streamline_length(r, theta, z, le_idx, te_idx)
 
             plt.figure()
-            plt.plot(z, theta, '-k')
-            plt.plot(z**2+r**2, r*theta, '-k.')
-
-            le_idx = np.where(z == z.min())
-            te_idx = np.where(z == z.max())
-            plt.scatter(z[le_idx], theta[le_idx], label='LE', s=40, c='red')
-            plt.scatter(z[te_idx], theta[te_idx], label='TE', s=40, c='red')
-
-            z_pol = np.linspace(z[le_idx], z[te_idx], 100)
-            coefficients = np.polyfit(z, theta, poly_degree)
-            theta_pol = np.polyval(coefficients, z_pol)
-            plt.plot(z_pol, theta_pol, '--b', label='camber')
+            plt.plot(var1, var2, '-k.')
+            plt.scatter(var1[le_idx], var2[le_idx], label='LE', s=40, c='red')
+            plt.scatter(var1[te_idx], var2[te_idx], label='TE', s=40, c='red')
+            var1_pol = np.linspace(var1[le_idx], var1[te_idx], 100)
+            coefficients = np.polyfit(var1, var2, poly_degree)
+            var2_pol = np.polyval(coefficients, var1_pol)
+            plt.plot(var1_pol, var2_pol, '--b', label='camber')
 
             ps = []
             ss = []
@@ -281,6 +312,17 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
+    def find_camber_surface2(self, blade_block, degree=4):
+        """
+        Find the camber surface as the surface sitting in between the pressure and the suction side
+        """
+
+        self.z_camber = blade_block.z_grid_points
+        self.r_camber = blade_block.r_grid_points
+        self.theta_camber = (self.theta_ss+self.theta_ps)/2
+        self.x_camber = self.r_camber * np.cos(self.theta_camber)
+        self.y_camber = self.r_camber * np.sin(self.theta_camber)
+
     def compute_streamline_length(self, projection=True):
         """
         Compute the streamline length (meridional projection) of the streamlines going from leading edge to trailing edge.
@@ -352,7 +394,7 @@ class Blade:
         r_eval = self.r_ss.flatten()
         X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
         camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_ss = camber_surface_values.reshape(self.z_camber.shape)
+        self.theta_ss = camber_surface_values.reshape(blade_block.z_grid_points.shape)
         self.x_ss = self.r_ss * np.cos(self.theta_ss)
         self.y_ss = self.r_ss * np.sin(self.theta_ss)
 
@@ -381,7 +423,7 @@ class Blade:
         r_eval = self.r_ps.flatten()
         X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
         camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_ps = camber_surface_values.reshape(self.z_camber.shape)
+        self.theta_ps = camber_surface_values.reshape(blade_block.z_grid_points.shape)
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
