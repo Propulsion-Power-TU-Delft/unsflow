@@ -118,18 +118,56 @@ class MultiBlock:
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_three_dimensional_mesh(self, theta_max, nodes_number, config, dimensional=True):
+    def compute_average_dtheta(self):
+        """
+        Loop over all the cells on the meridional plane, finds the average length, and obtain dtheta as R_mean*dtheta=Avg_length
+        in order to preserve the AR of the mesh when extruded in 3D
+        """
+        avg_length = 0
+        for i in range(self.nstream - 1):
+            for j in range(self.nspan - 1):
+                avg_length += np.sqrt(np.abs(self.z_grid_points[i + 1, j] - self.z_grid_points[i, j]) * np.abs(
+                    self.r_grid_points[i, j + 1] - self.r_grid_points[i, j]))
+        avg_length /= (self.nstream - 1) * (self.nspan - 1)
+        r_mean = (self.r_grid_points[0, self.nspan // 2] + self.r_grid_points[-1, self.nspan // 2]) / 2
+        return avg_length / r_mean
+
+    def compute_min_dtheta(self):
+        """
+        Loop over all the cells on the meridional plane, finds the average length, and obtain dtheta as R_mean*dtheta=Avg_length
+        in order to preserve the AR of the mesh when extruded in 3D
+        """
+        min_length = 1e9
+        for i in range(self.nstream - 1):
+            for j in range(self.nspan - 1):
+                tmp = np.sqrt(np.abs(self.z_grid_points[i + 1, j] - self.z_grid_points[i, j]) * np.abs(
+                    self.r_grid_points[i, j + 1] - self.r_grid_points[i, j]))
+                if tmp < min_length:
+                    min_length = tmp
+        r_mean = (self.r_grid_points[0, self.nspan // 2] + self.r_grid_points[-1, self.nspan // 2]) / 2
+        return min_length / r_mean
+
+    def compute_three_dimensional_mesh(self, config, conserve_AR=True, theta_max=1, nodes_number=2, dimensional=True):
         """
         Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured.
+        :param config: config object needed to pass reference dimensions
+        :param conserve_AR: if True, tries to conserve the AR choosing the correct delta-theta between each tang. node
         :param theta_max: [deg] angle of the mesh sector.
         :param nodes_number: number of nodes from zero to theta_max
-        :param config: config object needed to pass reference dimensions
         :param dimensional: if True, reconverts the coordinates to original dimensions in [m]
         """
-        theta = np.linspace(0, theta_max * np.pi / 180, nodes_number)
+        if conserve_AR:
+            dtheta = self.compute_average_dtheta()
+            theta_max = dtheta * (nodes_number - 1)
+            theta = np.linspace(0, theta_max, nodes_number)
+        else:
+            theta = np.linspace(0, theta_max * np.pi / 180, nodes_number)
+
         self.X_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
         self.Y_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
         self.Z_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
+
+        self.deltatheta_periodic = theta[-1]*180/np.pi
 
         for i in range(self.nstream):
             for j in range(self.nspan):
@@ -150,8 +188,9 @@ class MultiBlock:
 
         mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
 
-        if filepath == None:
-            filepath = 'mesh_%02i_%02i_%02i.pickle' % (self.X_mesh.shape[0], self.X_mesh.shape[1], self.X_mesh.shape[2])
+        if filepath is None:
+            filepath = 'mesh_%02i_%02i_%02i_%.3f-deg.pickle' % (
+                self.X_mesh.shape[0], self.X_mesh.shape[1], self.X_mesh.shape[2], self.deltatheta_periodic)
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
 
@@ -171,11 +210,10 @@ class MultiBlock:
         if format_file is None:
             format_file = 'csv'
 
-
         n_span = self.z_grid_points.shape[1]
-        ispan = int(span*n_span)
-        y = self.r_grid_cg[:,ispan]
-        z = self.z_grid_points[:,ispan]
+        ispan = int(span * n_span)
+        y = self.r_grid_cg[:, ispan]
+        z = self.z_grid_points[:, ispan]
         x = np.zeros_like(y)
 
         # t = np.linspace(0, 1, len(z))
@@ -187,16 +225,10 @@ class MultiBlock:
         # ynew = spliney(t)
         # xnew = np.zeros_like(znew)
 
-
-
-
         filepath = folder + '/' + filename + '.' + format_file
         with open(filepath, 'w') as file:
             if format_file == 'csv':
                 for ii in range(len(x)):
-                    file.write('%.6f,%.6f,%.6f\n' %(x[ii], y[ii], z[ii]))
+                    file.write('%.6f,%.6f,%.6f\n' % (x[ii], y[ii], z[ii]))
             else:
                 raise ValueError('Format not supported.')
-
-
-

@@ -132,10 +132,15 @@ class Config:
         return factor
 
     def get_sigmoid_stream_coefficient(self):
-        return int(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENT'))
+        value = str(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENT'))
+        if len(value.split()) > 1:
+            factors = [float(i) for i in value.split()]
+        else:
+            factors = float(value)
+        return factors
 
     def get_sigmoid_span_coefficient(self):
-        return int(self.config_parser.get('CFD PROCESSING', 'SIGMOID_SPAN_COEFFICIENT'))
+        return float(self.config_parser.get('CFD PROCESSING', 'SIGMOID_SPAN_COEFFICIENT'))
 
     def get_hub_curve_filepath(self):
         return str(self.config_parser.get('CFD PROCESSING', 'HUB_COORDINATES_FILEPATH'))

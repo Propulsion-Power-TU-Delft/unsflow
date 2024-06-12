@@ -194,16 +194,24 @@ class Block:
         :param outlet_meridional_obj: provide outlet meridional object if you wish to mantain consistency of the shared nodes
         :param save_animation: if True store the Matrix necessary for the animation of the elliptic grid generation.
         """
+        stream_coeff = self.config.get_sigmoid_stream_coefficient()
+        if isinstance(stream_coeff, list):
+            stream_coeff = stream_coeff[block_counter]
+        else:
+            print('Using the same streamwise stretching coefficients for all blocks')
+        span_coeff = self.config.get_sigmoid_span_coefficient()
+
         if self.config.get_verbosity():
             print_banner_begin('GRID GENERATION SETTINGS')
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
             print(f"{'Grid Stretching Mode:':<{total_chars_mid}}{self.config.get_mesh_type():>{total_chars_mid}}")
             print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
             if self.config.get_mesh_type() == 'sigmoid':
+
                 print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
-                      f"{self.config.get_sigmoid_stream_coefficient():>{total_chars_mid}}")
+                      f"{stream_coeff:>{total_chars_mid}}")
                 print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"
-                      f"{self.config.get_sigmoid_span_coefficient():>{total_chars_mid}}")
+                      f"{span_coeff:>{total_chars_mid}}")
             if inlet_meridional_obj is not None:
                 print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             if outlet_meridional_obj is not None:
@@ -226,6 +234,8 @@ class Block:
         hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
         shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
 
+
+
         if self.config.get_mesh_generation_method() == 'elliptic':
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.config.get_grid_orthogonality(),
@@ -236,8 +246,7 @@ class Block:
         elif self.config.get_mesh_generation_method().upper() == 'TFI':
             self.z_grid_points, self.r_grid_points = transfinite_grid_generation(inlet, hub, outlet, shroud,
                                                                                  self.config.get_blocks_topology()[block_counter],
-                                                                                 self.config.get_sigmoid_stream_coefficient(),
-                                                                                 self.config.get_sigmoid_span_coefficient())
+                                                                                 stream_coeff, span_coeff)
 
         self.compute_grid_centers()
 
