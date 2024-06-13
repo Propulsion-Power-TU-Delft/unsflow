@@ -23,6 +23,7 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy import integrate
 from numpy.polynomial.chebyshev import chebvander2d
 import warnings
+from scipy.interpolate import RegularGridInterpolator
 
 
 class MeridionalProcess:
@@ -209,6 +210,132 @@ class MeridionalProcess:
             self.mu = self.compute_mu()
             self.F_t = self.mu * self.u_mag_rel ** 2
 
+    def circumferential_average_3d(self, mode='cell centered', threshold=25, bladed=False):
+        """
+        Perform circumferential averages of the CFD dataset on the Block grid.
+        :param mode: type of algorithm selected.
+                rectangular: take all the points in the rectangle identified by the secondary grid.
+                circular: take all the points inside a circle
+                cell centered: associate to every grid element cg, the average of what lies in its domain
+        :param threshold: minimum amount of points found in one element projection, in order to accept the average
+        """
+        print_banner_begin("3D CIRCUMFERENTIAL AVG. METHOD")
+        print(f"{'Averaging Method:':<{total_chars_mid}}{mode:>{total_chars_mid}}")
+        print(f"{'Threshold Number Set At:':<{total_chars_mid}}{threshold:>{total_chars_mid}}")
+        print_banner_end()
+
+        self.instantiate_2d_fields()
+        print('performing circumferential averages...')
+
+        # loop over all the elements in the meridional grid
+        for istream in range(0, self.nstream):
+            for ispan in range(0, self.nspan):
+                idx = None
+                if mode == 'rectangular':  # default mode of indexing
+                    # use the secondary grid to identifying the scattered points in the meridional plane
+                    n_elem = 0  # number of elements found in the rectangle. initialization
+                    i = 0  # cycle counter
+                    while n_elem < threshold:  # minumum amount of points to make an average
+                        quadrilateral_path = self.find_rectangle(istream, ispan, i)
+                        idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
+                        n_elem = len(idx[0])  # update n_elem
+                        i += 1  # update cycle number
+                elif mode == 'circular':
+                    # use a circle to identifying the scattered points in the meridional plane
+                    n_elem = 0  # number of elements found in the rectangle. initialization
+                    i = 0  # cycle counter
+                    while n_elem < threshold:
+                        idx = self.find_points_inside_circle(istream, ispan, i)
+                        n_elem = len(idx[0])  # update n_elem
+                        i += 1  # update cycle number
+                elif mode == 'cell centered':
+                    n_elem = 0  # number of elements found in the rectangle. initialization
+                    i = 0  # cycle counter
+                    while n_elem < threshold:  # limit for accepting the average
+                        quadrilateral_path = self.find_rectangle(istream, ispan, i)
+                        idx = np.where(quadrilateral_path.contains_points(np.column_stack((self.data.z, self.data.r))))
+                        n_elem = len(idx[0])  # update n_elem
+                        i += 1  # update cycle number
+                else:
+                    raise ValueError('Unknown type of circumferential averaging procedure!')
+
+                # main quantities
+                points_r = self.data.r[idx]
+                points_theta = self.data.theta[idx]
+                points_z = self.data.z[idx]
+                points_dV = self.data.volume[idx]
+                self.p[istream, ispan] = self.three_dimensional_bladed_interpolation(points_r, points_theta, points_z, self.data.p[idx], points_dV, istream, ispan, bladed)
+                self.rho[istream, ispan] = self.three_dimensional_bladed_interpolation(points_r, points_theta, points_z, self.data.rho[idx], points_dV, istream, ispan, bladed)
+                self.ur[istream, ispan] = self.three_dimensional_bladed_interpolation(points_r, points_theta, points_z, self.data.ur[idx], points_dV, istream, ispan, bladed)
+                self.ut[istream, ispan] = self.three_dimensional_bladed_interpolation(points_r, points_theta, points_z, self.data.ut[idx], points_dV, istream, ispan, bladed)
+                self.uz[istream, ispan] = self.three_dimensional_bladed_interpolation(points_r, points_theta, points_z, self.data.uz[idx], points_dV, istream, ispan, bladed)
+
+        self.u_mag = np.sqrt(self.ur ** 2 + self.ut ** 2 + self.uz ** 2)
+        self.ut_drag = self.config.get_omega_shaft() / self.config.get_reference_omega() * self.r_cg
+        self.ut_rel = self.ut - self.ut_drag
+        self.u_mag_rel = np.sqrt(self.ur ** 2 + self.ut_rel ** 2 + self.uz ** 2)
+        self.u_meridional = np.sqrt(self.ur ** 2 + self.uz ** 2)
+        self.M = self.u_mag / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
+        self.M_rel = self.u_mag_rel / sqrt(self.config.get_fluid_gamma() * self.p / self.rho)
+        self.compute_stagnation_quantities()
+
+    def three_dimensional_bladed_interpolation(self, r, theta, z, f, dV, istream, ispan, bladed, visualize=False):
+        alpha_min = np.min(theta)
+        alpha_max = np.max(theta)
+        if bladed:
+            alpha_blade1 = self.blade.theta_ss[istream, ispan]
+            alpha_blade2 = self.blade.theta_ps[istream, ispan]
+            if alpha_blade2<alpha_blade1:
+                alpha_blade1, alpha_blade2 = alpha_blade2, alpha_blade1
+        else:
+            alpha_blade1 = alpha_max
+        alpha_interp1 = np.linspace(alpha_min, alpha_blade1, 100)
+        if bladed:
+            alpha_interp2 = np.linspace(alpha_blade2, alpha_max, 100)
+        r_interp = np.zeros_like(alpha_interp1) + self.r_grid[istream, ispan]
+        z_interp = np.zeros_like(alpha_interp1) + self.z_grid[istream, ispan]
+
+        f_interp1 = griddata((r, theta, z), f, (r_interp, alpha_interp1, z_interp), method='nearest')
+        if bladed:
+            f_interp2 = griddata((r, theta, z), f, (r_interp, alpha_interp2, z_interp), method='nearest')
+        f_interp1_dwa = self.distance_weighted_average(r, theta, z, f, dV, r_interp, alpha_interp1, z_interp)
+        if bladed:
+            f_interp2_dwa = self.distance_weighted_average(r, theta, z, f, dV, r_interp, alpha_interp2, z_interp)
+
+        if visualize:
+            plt.figure()
+            plt.plot(theta, f, 'ko')
+            plt.plot(alpha_interp1, f_interp1)
+            plt.plot(alpha_interp1, f_interp1_dwa)
+            if bladed:
+                plt.plot(alpha_interp2, f_interp2)
+                plt.plot(alpha_interp2, f_interp2_dwa)
+
+        avg1 = np.trapz(f_interp1_dwa, alpha_interp1)/(alpha_interp1[-1]-alpha_interp1[0])
+        if bladed:
+            avg2 = np.trapz(f_interp2_dwa, alpha_interp2)/(alpha_interp2[-1]-alpha_interp2[0])
+        if visualize:
+            plt.plot(alpha_interp1, np.zeros_like(alpha_interp1)+avg1, '--r')
+            if bladed:
+                plt.plot(alpha_interp2, np.zeros_like(alpha_interp2) + avg2, '--r')
+        if bladed:
+            avg = (avg1*(alpha_interp1[-1]-alpha_interp1[0]) + avg2*(alpha_interp2[-1]-alpha_interp2[0])) / (
+                (alpha_interp2[-1] - alpha_interp2[0]) + (alpha_interp1[-1]-alpha_interp1[0]))
+        else:
+            avg = avg1
+
+        return avg
+
+    def distance_weighted_average(self, r, theta, z, f, dV, r_intp, theta_intp, z_intp):
+        f_intp = np.zeros_like(theta_intp)
+        for ipoint in range(len(theta_intp)):
+            d = np.sqrt((r*np.cos(theta) - r_intp[ipoint]*np.cos(theta_intp[ipoint]))**2 +
+                        (r*np.sin(theta) - r_intp[ipoint]*np.sin(theta_intp[ipoint]))**2 +
+                        (z - z_intp[ipoint])**2)**4
+            f_intp[ipoint] = np.sum(f*(1/d)*dV) / np.sum((1/d)*dV)
+        return f_intp
+
+
     def circumferential_average_interpolation(self):
         """
         Perform circumferential averages of the CFD dataset on the Block grid, based on 3d interpolation.
@@ -383,7 +510,7 @@ class MeridionalProcess:
         r4 = self.block.r_grid_dual[istream, ispan + 1]
 
         # vertices of the bounding box
-        scaling_factor = 0.2  # factor needed to expand the original figure when no points are found
+        scaling_factor = 0.1  # factor needed to expand the original figure when no points are found
         z_vertices = [z_cg + (z1 - z_cg) * (1 + A * scaling_factor),
                       z_cg + (z2 - z_cg) * (1 + A * scaling_factor),
                       z_cg + (z3 - z_cg) * (1 + A * scaling_factor),
