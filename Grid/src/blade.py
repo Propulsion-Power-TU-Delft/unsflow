@@ -17,6 +17,7 @@ from Utils.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size
 from Grid.src.profile import Profile
 from Utils.styles import *
+from scipy.interpolate import griddata
 import math
 
 
@@ -104,10 +105,15 @@ class Blade:
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
 
-        # inspect points
+        # inspect points, for three blades
+        N_Blades = self.config.get_blades_number()
+        theta_machine = np.linspace(0, np.pi, N_Blades//2)
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.x_main, self.y_main, self.z_main, c='b', marker='o')
+        for theta_position in theta_machine:
+            ax.scatter(self.r_main*np.cos(self.theta_main+theta_position),
+                       self.r_main*np.sin(self.theta_main+theta_position),
+                       self.z_main)
         ax.set_xlabel('X Axis')
         ax.set_ylabel('Y Axis')
         ax.set_zlabel('Z Axis')
@@ -312,6 +318,66 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
+    def update_camber_surface(self, blade_block, degree=3):
+        """
+        Update the camber surface via regression of the function theta = f(stream, span), using only the main blade points.
+        Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
+        :param degree: degree of the regression
+        """
+        points = np.column_stack((self.z_camber.flatten(), self.r_camber.flatten()))
+        stw_values = self.streamline_length.flatten()
+        spw_values = self.spanline_length.flatten()
+        stw_points = griddata(points, stw_values, (self.z_main, self.r_main), method='nearest')
+        spw_points = griddata(points, spw_values, (self.z_main, self.r_main), method='nearest')
+
+        plt.figure()
+        plt.scatter(self.z_main, self.r_main, c=stw_points)
+        plt.colorbar()
+
+        plt.figure()
+        plt.scatter(self.z_main, self.r_main, c=spw_points)
+        plt.colorbar()
+
+        x_param = self.z_main
+        y_param = self.r_main
+        self.camber_degree = degree  # mixed polynomial order
+        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
+        X = self.camber_poly_features.fit_transform(np.column_stack((x_param, y_param)))  # dataset in right format
+        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
+        self.camber_model.fit(X, self.theta_main)  # least square fit of the regression coefficient
+
+        plt.figure()
+        plt.scatter(self.z_main, self.r_main, c=self.theta_main, s=50)
+        plt.xlabel('z')
+        plt.ylabel('r')
+        plt.title('theta camber')
+        # plt.show()
+
+        plt.figure()
+        plt.scatter(stw_points.flatten(), spw_points.flatten(), c=self.theta_main,s=50)
+        plt.xlabel('streamwise position')
+        plt.ylabel('spanwise position')
+        plt.title('theta camber')
+        # plt.show()
+
+
+
+        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
+        self.camber_intercept = self.camber_model.intercept_  # constant term
+        self.z_camber = blade_block.z_grid_points
+        self.r_camber = blade_block.r_grid_points
+        z_eval = self.z_camber.flatten()
+        r_eval = self.r_camber.flatten()
+        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
+        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
+        self.theta_camber = camber_surface_values.reshape(self.z_camber.shape)
+        self.x_camber = self.r_camber * np.cos(self.theta_camber)
+        self.y_camber = self.r_camber * np.sin(self.theta_camber)
+
+
+
+
+
     def find_camber_surface2(self, blade_block, degree=4):
         """
         Find the camber surface as the surface sitting in between the pressure and the suction side
@@ -323,11 +389,12 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
-    def compute_streamline_length(self, projection=True):
+    def compute_streamline_length(self, projection=True, normalize=True):
         """
         Compute the streamline length (meridional projection) of the streamlines going from leading edge to trailing edge.
         The leading edge is the starting point.
         :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
+        :param normalize: if True, normalize every streamline from 0 to 1
         """
         self.streamline_length = np.zeros_like(self.z_camber)
         self.streamline_length_ps = np.zeros_like(self.z_camber)
@@ -356,6 +423,27 @@ class Blade:
                 ds = np.sqrt((self.r_ss[ii, :] - self.r_ss[ii - 1, :]) ** 2 + (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
             self.streamline_length_ss[ii, :] = self.streamline_length_ss[ii - 1, :] + ds
 
+        if normalize:
+            for jj in range(0, self.z_camber.shape[1]):
+                self.streamline_length[:, jj] /= self.streamline_length[-1, jj]
+
+    def compute_spanline_length(self, normalize=True):
+        """
+        Compute the spanline length (meridional projection) of the streamlines going from leading edge to trailing edge.
+        The leading edge is the starting point.
+        :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
+        :param normalize: if True, normalize every streamline from 0 to 1
+        """
+        self.spanline_length = np.zeros_like(self.z_camber)
+        for jj in range(1, self.z_camber.shape[1]):
+            ds = np.sqrt((self.r_camber[:, jj] - self.r_camber[:, jj -1]) ** 2 +
+                         (self.z_camber[:, jj] - self.z_camber[:, jj -1]) ** 2)
+            self.spanline_length[:, jj] = self.spanline_length[:, jj -1] + ds
+
+        if normalize:
+            for ii in range(0, self.z_camber.shape[0]):
+                self.spanline_length[ii, :] /= self.spanline_length[ii, -1]
+
     def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
         """
         plot the streamline length contour
@@ -364,10 +452,29 @@ class Blade:
         plt.contourf(self.z_camber, self.r_camber, self.streamline_length, levels=N_levels)
         plt.xlabel(r'$z \ \rm{[-]}$')
         plt.ylabel(r'$r \ \rm{[-]}$')
-        plt.colorbar()
+        bar_ticks = np.linspace(0, 1, 5)
+        cbar = plt.colorbar()
+        cbar.set_ticks(bar_ticks)  # Optional: set specific ticks
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$s \ \rm{[-]}$')
+        plt.title(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+
+    def plot_spanline_length_contour(self, save_filename=None, folder_name=None):
+        """
+        plot the spanline length contour
+        """
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.spanline_length, levels=N_levels)
+        plt.xlabel(r'$z \ \rm{[-]}$')
+        plt.ylabel(r'$r \ \rm{[-]}$')
+        bar_ticks = np.linspace(0, 1, 5)
+        cbar = plt.colorbar()
+        cbar.set_ticks(bar_ticks)  # Optional: set specific ticks
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
