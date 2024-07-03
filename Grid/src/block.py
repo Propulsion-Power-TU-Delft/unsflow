@@ -188,6 +188,7 @@ class Block:
                             outlet_meridional_obj=None, save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
+        :param block_counter: int, needed to select the correct information for every block
         :param inlet_block: if True, disables the grid stretching at inlet
         :param outlet_block: if False disables the grid stretching at outlet
         :param inlet_meridional_obj: provide inlet meridional object if you wish to mantain consistency of the shared nodes
