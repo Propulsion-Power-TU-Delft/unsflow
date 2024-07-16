@@ -637,13 +637,51 @@ class SunModel:
                 for n in range(0, self.dataSpectral.nRadialNodes):
                     tmp = Dy[jj, n] * E_ij
                     row = node_counter * 5
-                    column = (self.data.dataSet[ii, n].nodeCounter) * 5  # it selects the correct block along j of Q
+                    column = self.data.dataSet[ii, n].nodeCounter * 5  # it selects the correct block along j of Q
                     if verbose:
                         print('Node [i,j] = (%.1d,%.1d)' % (ii, jj))
                         print('Element along j [i,n] = (%.1d,%.1d)' % (jj, n))
                         print('Derivative element [jj,n] = (%.1d,%.1d)' % (jj, n))
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
+
+    def ApplyPhysicalDifferentiation(self, diff_mode, verbose=False):
+        """
+        Differentiate on the physical grid the perturbation equations in the axial and radial direction.
+        :param diff_mode: differentiation mode used
+        :param verbose: verbosity
+        """
+        raise ValueError('Not implemented yet')
+
+        # Q_const is the global matrix storing B and E elements after spectral differentiation.
+        self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
+
+        # differentiation of a general perturbation vector (for the node (i,j)) along z  and r.
+        for ii in range(0, self.dataSpectral.nAxialNodes):
+            for jj in range(0, self.dataSpectral.nRadialNodes):
+                B_ij = self.data.dataSet[ii, jj].B.copy()  # Bhat matrix of the ij node
+                E_ij = self.data.dataSet[ii, jj].E.copy()  # Ehat matrix of the ij node
+                node_counter = self.data.dataSet[ii, jj].nodeCounter
+
+                if diff_mode == '2nd_central':
+                    tmp = 0
+                    print('Implement axial 2nd_central finite difference for axial direction')
+                elif diff_mode == '1st_upwind':
+                    raise ValueError('Not implemented yet')
+                else:
+                    raise ValueError('Not implemented yet')
+
+                self.AddToQ_const(tmp, row, column)
+
+                if diff_mode == '2nd_central':
+                    tmp = 0
+                    print('Implement radial 2nd_central finite difference for axial direction')
+                elif diff_mode == '1st_upwind':
+                    raise ValueError('Not implemented yet')
+                else:
+                    raise ValueError('Not implemented yet')
+
+                self.AddToQ_const(tmp, row, column)
 
     def ApplySpectralDifferentiationKronecker(self):
         """
