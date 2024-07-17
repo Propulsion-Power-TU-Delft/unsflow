@@ -195,8 +195,8 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 # add the inverse gradients information to every node
-                self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj],
-                                                                     self.drdx[ii, jj], self.drdy[ii, jj])
+                self.data.dataSet[ii, jj].AddTransformationGradients(self.dzdx[ii, jj], self.dzdy[ii, jj], self.drdx[ii, jj],
+                                                                     self.drdy[ii, jj])
                 self.data.dataSet[ii, jj].AddJacobian(self.J[ii, jj])
 
     def ContourTransformation(self, save_filename=None, folder_name=None, domain='physical'):
@@ -209,7 +209,7 @@ class SunModel:
         if domain not in ['physical', 'spectral', 'all']:
             raise ValueError('Unknown domain parameter!')
 
-        if domain=='spectral' or domain=='all':
+        if domain == 'spectral' or domain == 'all':
             plt.figure()
             plt.contourf(self.dataSpectral.zGrid, self.dataSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
@@ -255,7 +255,7 @@ class SunModel:
             if save_filename is not None:
                 plt.savefig(folder_name + '/' + save_filename + '_dr_deta.pdf', bbox_inches='tight')
 
-        if domain=='physical' or domain=='all':
+        if domain == 'physical' or domain == 'all':
             plt.figure()
             plt.contourf(self.data.zGrid, self.data.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
             plt.xlabel(r'$z \ \mathrm{[-]}$')
@@ -332,8 +332,8 @@ class SunModel:
                 # velocity was found as u_ref = omega_ref * x_ref and t_ref = 1 / omega_ref, automatically the strouhal
                 # should be 1 by construction. In this case the non-dimensional equations are exactly the same
                 # of the dimensional ones
-                strouhal = self.config.get_reference_length() / (self.config.get_reference_velocity() *
-                                                                 self.config.get_reference_time())
+                strouhal = self.config.get_reference_length() / (
+                            self.config.get_reference_velocity() * self.config.get_reference_time())
                 A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -351,7 +351,7 @@ class SunModel:
                 should be 1 by construction. In this case the non-dimensional equations are exactly the same
                 of the dimensional ones."""
                 strouhal = self.config.get_reference_length() / (
-                            self.config.get_reference_velocity() * self.config.get_reference_time())
+                        self.config.get_reference_velocity() * self.config.get_reference_time())
                 A *= strouhal
                 self.data.dataSet[ii, jj].AddAMatrix(A)
 
@@ -537,8 +537,8 @@ class SunModel:
                 R[4, 3] = self.data.meridional_obj.dp_dz[ii, jj] - self.gmma / self.data.meridional_obj.rho[ii, jj] * \
                           self.data.meridional_obj.p[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj]
                 R[4, 4] = (-self.gmma / self.data.meridional_obj.rho[ii, jj]) * (
-                            self.data.meridional_obj.ur[ii, jj] * self.data.meridional_obj.drho_dr[ii, jj] +
-                            self.data.meridional_obj.uz[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])
+                        self.data.meridional_obj.ur[ii, jj] * self.data.meridional_obj.drho_dr[ii, jj] +
+                        self.data.meridional_obj.uz[ii, jj] * self.data.meridional_obj.drho_dz[ii, jj])
 
                 self.data.dataSet[ii, jj].AddRMatrix(R)
 
@@ -585,11 +585,9 @@ class SunModel:
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
                 Bhat = (1 / self.J[ii, jj]) * (
-                            -self.data.dataSet[ii, jj].B * self.dzdy[ii, jj] + self.data.dataSet[ii, jj].E * self.drdy[
-                        ii, jj])
+                        -self.data.dataSet[ii, jj].B * self.dzdy[ii, jj] + self.data.dataSet[ii, jj].E * self.drdy[ii, jj])
                 Ehat = (1 / self.J[ii, jj]) * (
-                            self.data.dataSet[ii, jj].B * self.dzdx[ii, jj] - self.data.dataSet[ii, jj].E * self.drdx[
-                        ii, jj])
+                        self.data.dataSet[ii, jj].B * self.dzdx[ii, jj] - self.data.dataSet[ii, jj].E * self.drdx[ii, jj])
                 # # # alternative formulation, provides the same results. (Check)
                 # Bhat2 = self.data.dataSet[ii, jj].B * self.dxdr[ii, jj] + \
                 #        self.data.dataSet[ii, jj].E * self.dxdz[ii, jj]
@@ -645,43 +643,58 @@ class SunModel:
                         print('[row,col] = (%.1d,%.1d)' % (row, column))
                     self.AddToQ_const(tmp, row, column)
 
-    def ApplyPhysicalDifferentiation(self, diff_mode, verbose=False):
+    def ApplyPhysicalDifferentiation(self, diff_mode='2nd_central', verbose=False):
         """
         Differentiate on the physical grid the perturbation equations in the axial and radial direction.
         :param diff_mode: differentiation mode used
         :param verbose: verbosity
         """
-        raise ValueError('Not implemented yet')
-
         # Q_const is the global matrix storing B and E elements after spectral differentiation.
         self.Q_const = np.zeros((self.nPoints * 5, self.nPoints * 5), dtype=complex)
 
         # differentiation of a general perturbation vector (for the node (i,j)) along z  and r.
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
                 B_ij = self.data.dataSet[ii, jj].B.copy()  # Bhat matrix of the ij node
                 E_ij = self.data.dataSet[ii, jj].E.copy()  # Ehat matrix of the ij node
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
 
                 if diff_mode == '2nd_central':
-                    tmp = 0
-                    print('Implement axial 2nd_central finite difference for axial direction')
+                    if ii == 0:
+                        uw = 0
+                        dw = 1
+                    elif ii == self.data.nAxialNodes - 1:
+                        uw = -1
+                        dw = 0
+                    else:
+                        uw = 1
+                        dw = -1
+                    tmp = B_ij / (self.data.zGrid[ii+dw, jj] - self.data.zGrid[ii+uw, jj])
+                    self.AddToQ_const(tmp, node_counter*5, (ii+uw) * self.data.nRadialNodes * 5)
+                    self.AddToQ_const(tmp, node_counter * 5, (ii + dw) * self.data.nRadialNodes * 5)
                 elif diff_mode == '1st_upwind':
                     raise ValueError('Not implemented yet')
                 else:
                     raise ValueError('Not implemented yet')
-
-                self.AddToQ_const(tmp, row, column)
 
                 if diff_mode == '2nd_central':
-                    tmp = 0
-                    print('Implement radial 2nd_central finite difference for axial direction')
+                    if jj == 0:
+                        uw = 0
+                        dw = 1
+                    elif jj == self.data.nRadialNodes - 1:
+                        uw = -1
+                        dw = 0
+                    else:
+                        uw = 1
+                        dw = -1
+                    tmp = E_ij / (self.data.rGrid[ii, jj+uw] - self.data.rGrid[ii, jj+dw])
+                    self.AddToQ_const(tmp, node_counter * 5, (jj * self.data.nRadialNodes + uw) * 5)
+                    self.AddToQ_const(tmp, node_counter * 5, (jj * self.data.nRadialNodes + dw) * 5)
                 elif diff_mode == '1st_upwind':
                     raise ValueError('Not implemented yet')
                 else:
                     raise ValueError('Not implemented yet')
 
-                self.AddToQ_const(tmp, row, column)
 
     def ApplySpectralDifferentiationKronecker(self):
         """
@@ -708,8 +721,8 @@ class SunModel:
         for ii in range(Dx_2d.shape[0]):
             for jj in range(Dx_2d.shape[1]):
                 # indexes on the Q_const matrix. (Times 5 because there are 5 equations per node)
-                row = ii*5
-                col = jj*5
+                row = ii * 5
+                col = jj * 5
 
                 # indexes of the node in the 2D grid. jj works as the absolute node counter, going from 0 to nx*ny
                 inode = jj // self.data.nRadialNodes
@@ -717,10 +730,9 @@ class SunModel:
 
                 B = self.data.dataSet[inode, jnode].Bhat.copy()
                 E = self.data.dataSet[inode, jnode].Ehat.copy()
-                tmp = B*Dx_2d[ii, jj] + E*Dy_2d[ii, jj]
+                tmp = B * Dx_2d[ii, jj] + E * Dy_2d[ii, jj]
 
                 self.AddToQ_const(tmp, row, col)
-
 
     def apply_finite_differences_on_physical_grid(self):
         """
@@ -924,8 +936,8 @@ class SunModel:
                 if (ii != 0 or jj != 0):
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
-                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
-                                                                        remaining_minutes + 1))  # keep track of the progress
+                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
+                    ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
                 self.AddRemainingMatrices(omega)  # add the non-constant parts of the matrices
@@ -983,8 +995,8 @@ class SunModel:
                 if (ii != 0 or jj != 0):
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
-                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
-                                                                        remaining_minutes + 1))  # keep track of the progress
+                    print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
+                    ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
                 u, s, v = np.linalg.svd(self.Z_g - 1j * omega * self.A_g)
@@ -1054,8 +1066,8 @@ class SunModel:
                     remaining_minutes = (total_time - current_time) / 60
                     total_minutes = total_time / 60
                     if verbose:
-                        print('SVD %.1d of %1.d \t (%.1d min remaining)' % (ii * len(omI) + 1 + jj, len(omR) * len(omI),
-                                                                            remaining_minutes + 1))  # keep track of the progress
+                        print('SVD %.1d of %1.d \t (%.1d min remaining)' % (
+                        ii * len(omI) + 1 + jj, len(omR) * len(omI), remaining_minutes + 1))  # keep track of the progress
 
                 omega = omR[ii] + 1j * omI[jj]
 
@@ -1082,6 +1094,7 @@ class SunModel:
         :param field: 2D array
         """
         warnings.warn("WARNING: deprecated method, don't use it.")
+
         def find_local_minima(array):
             # Apply minimum filter to find the local minima
             neighborhood = np.ones((5, 5))  # 3x3 neighborhood
@@ -1116,8 +1129,8 @@ class SunModel:
         Build the A global matrix, stacking together the A matrices of all the nodes.
         """
         self.A_g = np.zeros(self.Q_const.shape, dtype=complex)
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
@@ -1128,8 +1141,8 @@ class SunModel:
         Build the C*j*m/r global matrix, stacking together the C*j*m/r matrices of all the nodes.
         """
         self.C_g = np.zeros(self.Q_const.shape, dtype=complex)
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
@@ -1140,8 +1153,8 @@ class SunModel:
         Build the R global matrix.
         """
         self.R_g = np.zeros(self.Q_const.shape, dtype=complex)
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
@@ -1152,8 +1165,8 @@ class SunModel:
         Build the S global matrix.
         """
         self.S_g = np.zeros(self.Q_const.shape, dtype=complex)
-        for ii in range(0, self.dataSpectral.nAxialNodes):
-            for jj in range(0, self.dataSpectral.nRadialNodes):
+        for ii in range(0, self.data.nAxialNodes):
+            for jj in range(0, self.data.nRadialNodes):
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
                 row = node_counter * 5
                 column = node_counter * 5  # diagonal block
@@ -1242,12 +1255,12 @@ class SunModel:
                 elif mode == 'added':
                     if marker == 'inlet':
                         self.add_bc_condition(row, self.inlet_bc, ii, jj)
-                        if jj == 0 or jj == self.data.nRadialNodes-1:
+                        if jj == 0 or jj == self.data.nRadialNodes - 1:
                             print('Corner fix applied')
                             self.apply_bc_condition(row, self.hub_bc, ii, jj)
                     elif marker == 'outlet':
                         self.add_bc_condition(row, self.outlet_bc, ii, jj)
-                        if jj == 0 or jj == self.data.nRadialNodes-1:
+                        if jj == 0 or jj == self.data.nRadialNodes - 1:
                             print('Corner fix applied')
                             self.apply_bc_condition(row, self.hub_bc, ii, jj)
                     elif marker == 'hub':
@@ -1551,8 +1564,7 @@ class SunModel:
         for mode in self.eigenfields:
             rs = mode.eigenfrequency.real / self.omega_ref
             df = mode.eigenfrequency.imag / self.omega_ref
-            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red',
-                       s=marker_size)
+            ax.scatter(rs, df, marker='o', facecolors='red', edgecolors='red', s=marker_size)
         ax.set_xlabel(r'RS [-]')
         ax.set_ylabel(r'DF [-]')
         if delimit:
@@ -1608,7 +1620,7 @@ class SunModel:
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfields(self, n=None, save_filename=None, folder_name = 'pictures'):
+    def plot_eigenfields(self, n=None, save_filename=None, folder_name='pictures'):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
