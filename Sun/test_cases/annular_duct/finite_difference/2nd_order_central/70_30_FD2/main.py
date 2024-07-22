@@ -40,8 +40,8 @@ p_ref = rho_ref * u_ref ** 2
 
 # %%%%%%%%%%%%%%%%%%%%%%% COMPUTATIONAL PART %%%%%%%%%%%%%%%%%%%%%%%
 # number of grid nodes in the computational domain
-Nz = 60
-Nr = 20
+Nz = 70
+Nr = 30
 
 folder_path = "pictures/%02i_%02i" %(Nz, Nr)  # Replace with the desired folder path
 if not os.path.exists(folder_path):
@@ -71,15 +71,15 @@ sun_blocks = [sun_obj]
 ii = 0
 for sun_obj in sun_blocks:
     sun_obj.ComputeBoundaryNormals()
-    # sun_obj.ComputeSpectralGrid()
-    # sun_obj.ComputeJacobianPhysical()
+    sun_obj.ComputeSpectralGrid()
+    sun_obj.ComputeJacobianPhysical()
     sun_obj.AddAMatrixToNodes_francesco()
     sun_obj.AddBMatrixToNodes_francesco()
     sun_obj.AddCMatrixToNodes_francesco()
     sun_obj.AddEMatrixToNodes_francesco()
     sun_obj.AddRMatrixToNodes_francesco()
     sun_obj.AddSMatrixToNodes()
-    # sun_obj.AddHatMatricesToNodes()
+    sun_obj.AddHatMatricesToNodes()
     sun_obj.ApplyPhysicalDifferentiation()
     sun_obj.build_A_global_matrix()
     sun_obj.build_C_global_matrix()
@@ -94,7 +94,7 @@ for sun_obj in sun_blocks:
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
 
-omega_search = 21000
+omega_search = 31000
 sigma = omega_search / omega_ref
 
 A = sun_multiblock.L0
