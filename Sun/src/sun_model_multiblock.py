@@ -105,7 +105,6 @@ class SunModelMultiBlock():
         (L0 + L1*omega + L2*omega^2)*x = 0. Since the matching conditions must be guaranteed for any possible omega, they
         are applied on the matrix L0, while the corresponding rows of L1 and L2 are set to 0. In this way the matching
         conditions are guaranteed no matter the value of omega.
-        :param mode: method used to implement the same derivatives in the streamwise direction at the matching nodes
         """
         """
         Starting from the second block, the first 5*nspan equations are matched with the last 5*nspan equations of the 

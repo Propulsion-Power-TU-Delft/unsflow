@@ -43,7 +43,7 @@ for sun_obj in sun_blocks:
 
 sun_multiblock = SunModelMultiBlock(sun_blocks, config)
 sun_multiblock.construct_L_global_matrices()
-sun_multiblock.apply_matching_conditions(mode='collocation method')
+sun_multiblock.apply_matching_conditions()
 sun_multiblock.compute_P_Y_matrices()
 sun_multiblock.solve_evp()
 sun_multiblock.extract_eigenfields()
