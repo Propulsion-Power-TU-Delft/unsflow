@@ -655,8 +655,8 @@ class SunModel:
         # differentiation of a general perturbation vector (for the node (i,j)) along z  and r.
         for ii in range(0, self.data.nAxialNodes):
             for jj in range(0, self.data.nRadialNodes):
-                B_ij = self.data.dataSet[ii, jj].B.copy()  # Bhat matrix of the ij node
-                E_ij = self.data.dataSet[ii, jj].E.copy()  # Ehat matrix of the ij node
+                B_ij = self.data.dataSet[ii, jj].Bhat.copy()  # Bhat matrix of the ij node
+                E_ij = self.data.dataSet[ii, jj].Ehat.copy()  # Ehat matrix of the ij node
                 node_counter = self.data.dataSet[ii, jj].nodeCounter
 
                 if diff_mode == '2nd_central':
@@ -669,13 +669,13 @@ class SunModel:
                     else:
                         uw = 1
                         dw = -1
-                    tmp = B_ij / (self.data.zGrid[ii+dw, jj] - self.data.zGrid[ii+uw, jj])
-                    self.AddToQ_const(tmp, node_counter*5, (ii+uw) * self.data.nRadialNodes * 5)
-                    self.AddToQ_const(tmp, node_counter * 5, (ii + dw) * self.data.nRadialNodes * 5)
                 elif diff_mode == '1st_upwind':
                     raise ValueError('Not implemented yet')
                 else:
                     raise ValueError('Not implemented yet')
+                tmp = B_ij / (self.dataSpectral.zGrid[ii + dw, jj] - self.dataSpectral.zGrid[ii + uw, jj])
+                self.AddToQ_const(-tmp, node_counter * 5, ((ii + uw) * self.data.nRadialNodes + jj) * 5)
+                self.AddToQ_const(+tmp, node_counter * 5, ((ii + dw) * self.data.nRadialNodes + jj) * 5)
 
                 if diff_mode == '2nd_central':
                     if jj == 0:
@@ -687,13 +687,13 @@ class SunModel:
                     else:
                         uw = 1
                         dw = -1
-                    tmp = E_ij / (self.data.rGrid[ii, jj+uw] - self.data.rGrid[ii, jj+dw])
-                    self.AddToQ_const(tmp, node_counter * 5, (jj * self.data.nRadialNodes + uw) * 5)
-                    self.AddToQ_const(tmp, node_counter * 5, (jj * self.data.nRadialNodes + dw) * 5)
                 elif diff_mode == '1st_upwind':
                     raise ValueError('Not implemented yet')
                 else:
                     raise ValueError('Not implemented yet')
+                tmp = E_ij / (self.dataSpectral.rGrid[ii, jj + dw] - self.dataSpectral.rGrid[ii, jj + uw])
+                self.AddToQ_const(-tmp, node_counter * 5, (ii * self.data.nRadialNodes + (jj + uw)) * 5)
+                self.AddToQ_const(+tmp, node_counter * 5, (ii * self.data.nRadialNodes + (jj + dw)) * 5)
 
 
     def ApplySpectralDifferentiationKronecker(self):
