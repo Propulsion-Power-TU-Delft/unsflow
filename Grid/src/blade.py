@@ -107,6 +107,8 @@ class Blade:
 
         # inspect points, for three blades
         N_Blades = self.config.get_blades_number()
+        if isinstance(N_Blades, list):
+            N_Blades = N_Blades[iblade]
         theta_machine = np.linspace(0, np.pi, N_Blades//2)
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')

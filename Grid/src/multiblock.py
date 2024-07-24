@@ -15,6 +15,7 @@ from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
 from Grid.src.functions import create_folder
 import pickle
+import os
 
 
 class MultiBlock:
@@ -232,3 +233,83 @@ class MultiBlock:
                     file.write('%.6f,%.6f,%.6f\n' % (x[ii], y[ii], z[ii]))
             else:
                 raise ValueError('Format not supported.')
+
+    def compute_dual_grid(self):
+        """
+        compute secondary grid that can be useful for paraview processing
+        """
+        self.z_grid_dual = np.zeros((self.nstream + 1, self.nspan + 1))
+        self.r_grid_dual = np.zeros((self.nstream + 1, self.nspan + 1))
+
+        # internal points
+        for istream in range(1, self.nstream):
+            for ispan in range(1, self.nspan):
+                z_mid_point = 0.25 * (
+                        self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[istream, ispan - 1] +
+                        self.z_grid_cg[istream - 1, ispan - 1])
+
+                r_mid_point = 0.25 * (
+                        self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[istream, ispan - 1] +
+                        self.r_grid_cg[istream - 1, ispan - 1])
+
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
+
+        # fix the vertices
+        self.z_grid_dual[0, 0] = self.z_grid_cg[0, 0]
+        self.r_grid_dual[0, 0] = self.r_grid_cg[0, 0]
+        self.z_grid_dual[0, -1] = self.z_grid_cg[0, -1]
+        self.r_grid_dual[0, -1] = self.r_grid_cg[0, -1]
+        self.z_grid_dual[-1, -1] = self.z_grid_cg[-1, -1]
+        self.r_grid_dual[-1, -1] = self.r_grid_cg[-1, -1]
+        self.z_grid_dual[-1, 0] = self.z_grid_cg[-1, 0]
+        self.r_grid_dual[-1, 0] = self.r_grid_cg[-1, 0]
+
+        # istream = 0 border
+        for istream in range(0, 1):
+            for ispan in range(1, self.nspan):
+                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream, ispan - 1])
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
+
+        # istream = -1 border
+        for istream in range(self.nstream, self.nstream + 1):
+            for ispan in range(1, self.nspan):
+                z_mid_point = 0.5 * (self.z_grid_points[istream - 1, ispan] + self.z_grid_points[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid_points[istream - 1, ispan] + self.r_grid_points[istream - 1, ispan - 1])
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
+
+        # ispan = 0 border
+        for istream in range(1, self.nstream):
+            for ispan in range(0, 1):
+                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan])
+                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan])
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
+
+        # ispan = -1 border
+        for istream in range(1, self.nstream):
+            for ispan in range(self.nspan, self.nspan + 1):
+                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
+                self.z_grid_dual[istream, ispan] = z_mid_point
+                self.r_grid_dual[istream, ispan] = r_mid_point
+
+    def write_paraview_grid_file(self, filename='paraview_grid.csv', foldername='output'):
+        """
+        write the file requireed by Paraview to run the circumferential avg.
+        The format of the file generated is:
+        istream, ispan, x, y, z
+        """
+        x = self.r_grid_dual
+        y = np.zeros_like(self.r_grid_dual)
+        z = self.z_grid_dual
+        os.makedirs(foldername, exist_ok=True)
+        with open(foldername + '/' + filename, 'w') as file:
+            for istream in range(1, self.z_grid_dual.shape[0]-1):
+                for ispan in range(1, self.z_grid_dual.shape[1]-1):
+                    file.write('%i,%i,%.6f,%.6f,%.6f\n'
+                               %(istream, ispan,
+                                 x[istream, ispan], y[istream, ispan], z[istream, ispan]))
