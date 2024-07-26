@@ -27,6 +27,7 @@ class BFM_Writer:
     def __init__(self, blades, config):
         """
         :param blades: the blades objects retaining the information
+        :param config: config file object
         """
         self.blades = blades
         self.config = config
