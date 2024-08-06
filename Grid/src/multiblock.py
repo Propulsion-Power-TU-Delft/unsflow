@@ -49,6 +49,22 @@ class MultiBlock:
         self.nstream = self.z_grid_points.shape[0]
         self.nspan = self.z_grid_points.shape[1]
 
+    def remove_inlet_grid_points(self, Ntrim):
+        """
+        Remove the first Ntrim streamwise stations from the dual grids before writing the grid file
+        """
+        self.z_grid_dual = self.z_grid_dual[Ntrim:, :]
+        self.r_grid_dual = self.r_grid_dual[Ntrim:, :]
+
+    def remove_outlet_grid_points(self, Ntrim):
+        """
+        Remove the first Ntrim streamwise stations from the dual grids before writing the grid file
+        """
+        max_id = self.z_grid_dual.shape[0]-Ntrim
+        self.z_grid_dual = self.z_grid_dual[0:max_id, :]
+        self.r_grid_dual = self.r_grid_dual[0:max_id, :]
+
+
     def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
                        secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=False,
                        save_foldername=None):
@@ -94,9 +110,9 @@ class MultiBlock:
 
         # secondary grid
         if secondary_grid:
-            for istream in range(0, self.nstream + 1):
+            for istream in range(0, self.z_grid_dual.shape[0]):
                 plt.plot(self.z_grid_dual[istream, :], self.r_grid_dual[istream, :], '--r', lw=light_line_width)
-            for ispan in range(0, self.nspan + 1):
+            for ispan in range(0, self.z_grid_dual.shape[1]):
                 plt.plot(self.z_grid_dual[:, ispan], self.r_grid_dual[:, ispan], '--r', lw=light_line_width)
 
         if grid_centers:
@@ -297,7 +313,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='paraview_grid.csv', foldername='output'):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='output'):
         """
         write the file requireed by Paraview to run the circumferential avg.
         The format of the file generated is:

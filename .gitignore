@@ -23,7 +23,6 @@ unsflow.egg-info/
 
 # Maven
 target/
-dist/
 
 # JetBrains IDE
 .idea/

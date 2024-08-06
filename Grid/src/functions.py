@@ -565,18 +565,18 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top,
 
     # stretching functions applied to the computational cordinates. if the coefficients are equal to 1 and 1, no stretching
     # (this is needed because eriksson with a value of 1 is different from no stretching)
-    if streamwise_coeff != 1 and spanwise_coeff != 1:
+    if streamwise_coeff != 1:
         if block_topology.lower() == 'inlet':
             xi = eriksson_stretching_function_final(xi, streamwise_coeff)
-            eta = eriksson_stretching_function_both(eta, spanwise_coeff)
         elif block_topology.lower() == 'internal':
             xi = eriksson_stretching_function_both(xi, streamwise_coeff)
-            eta = eriksson_stretching_function_both(eta, spanwise_coeff)
         elif block_topology.lower() == 'outlet':
             xi = eriksson_stretching_function_initial(xi, streamwise_coeff)
-            eta = eriksson_stretching_function_both(eta, spanwise_coeff)
         else:
-            raise ValueError('Unrecognized block topology!')
+            raise ValueError('Unrecognized block topology')
+
+    if spanwise_coeff != 1:
+        eta = eriksson_stretching_function_both(eta, spanwise_coeff)
 
     XI, ETA = np.meshgrid(xi, eta, indexing='ij')
     X, Y = XI * 0, ETA * 0
