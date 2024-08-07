@@ -11,7 +11,7 @@ from numpy import array
 import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
-from .functions import cartesian_to_cylindrical
+from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
 from Grid.src.functions import compute_picture_size
@@ -975,6 +975,39 @@ class Blade:
         plt.title(r'$b$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_factor.pdf', bbox_inches='tight')
+
+    def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
+        self.db_dz, self.db_dr = compute_2d_curvilinear_gradient(self.z_camber, self.r_camber, self.blockage)
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_camber, self.r_camber, self.db_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$dbdz$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_camber, self.r_camber, self.db_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$dbdr$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr.pdf', bbox_inches='tight')
+
+        plt.figure(figsize=self.picture_size_contour)
+        plt.contourf(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$| \nabla b|$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'bgrad_magnitude.pdf', bbox_inches='tight')
 
     def plot_bladetoblade_section(self, span_idx, save_filename=None, folder_name=None):
         """

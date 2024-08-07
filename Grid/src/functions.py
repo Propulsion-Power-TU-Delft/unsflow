@@ -519,9 +519,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     return X, Y
 
 
-def transfinite_grid_generation(c_left, c_bottom, c_right, c_top,
-                                block_topology, streamwise_coeff, spanwise_coeff,
-                                nx=None, ny=None):
+def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology, streamwise_coeff, spanwise_coeff, nx=None,
+                                ny=None):
     """
     Method used to generate the grid with transfinite grid interpolation method.
     :param c_left: left border points (x, y)
@@ -637,10 +636,10 @@ def eriksson_stretching_function_both(x, alpha):
     f = np.zeros_like(x)
 
     for i in range(len(x)):
-        if x[i]<=x_midpoint:
-            f[i] = x_midpoint*(np.exp(alpha*x[i]/x_midpoint)-1)/(np.exp(alpha)-1)
+        if x[i] <= x_midpoint:
+            f[i] = x_midpoint * (np.exp(alpha * x[i] / x_midpoint) - 1) / (np.exp(alpha) - 1)
         else:
-            f[i] = 1 - (1-x_midpoint)*(np.exp(alpha*(1-x[i])/(1-x_midpoint))-1)/(np.exp(alpha)-1)
+            f[i] = 1 - (1 - x_midpoint) * (np.exp(alpha * (1 - x[i]) / (1 - x_midpoint)) - 1) / (np.exp(alpha) - 1)
 
     # plt.figure()
     # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
@@ -1112,3 +1111,84 @@ def create_folder(foldername):
     """
     if not os.path.exists(foldername):
         os.makedirs(foldername)
+
+
+def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
+    """
+    Compute a gradient of the field f, defined on z,r (2d arrays), where the coordinate lines may be curvilinear
+    """
+    nstream = z.shape[0]
+    nspan = z.shape[1]
+    dfdz = np.zeros_like(f)
+    dfdr = np.zeros_like(f)
+    for ii in range(0, nstream):
+        for jj in range(0, nspan):
+
+            # selection of proper stencil
+            if ii == 0 and jj == 0:
+                ip = 2
+                im = 0
+                jp = 2
+                jm = 0
+            elif ii == 0 and jj == nspan - 1:
+                ip = 2
+                im = 0
+                jp = 0
+                jm = -2
+            elif ii == nstream-1 and jj==0:
+                ip = 0
+                im = -2
+                jp = 2
+                jm = 0
+            elif ii==nstream-1 and jj==nspan-1:
+                ip = 0
+                im = -2
+                jp = 0
+                jm = -2
+            elif ii == 0:
+                ip = 2
+                im = 0
+                jp = 1
+                jm = -1
+            elif ii == nstream-1:
+                ip = 0
+                im = -2
+                jp = 1
+                jm = -1
+            elif jj==0:
+                ip = 1
+                im = -1
+                jp = 2
+                jm = 0
+            elif jj == nspan-1:
+                ip = 1
+                im = -1
+                jp = 0
+                jm = -2
+            else:
+                ip = 1
+                im = -1
+                jp = 1
+                jm = -1
+
+            dstream = np.array([z[ii + ip, jj] - z[ii + im, jj], r[ii + ip, jj] - r[ii + im, jj]])
+            dspan = np.array([z[ii, jj + jp] - z[ii, jj + jm], r[ii, jj + jp] - r[ii, jj + jm]])
+
+            dstream_mag = np.linalg.norm(dstream)
+            dspan_mag = np.linalg.norm(dspan)
+
+            dfdstream = (f[ii + ip, jj] - f[ii + im, jj]) / dstream_mag
+            dfdspan = (f[ii, jj + jp] - f[ii, jj + jm]) / dspan_mag
+
+            dfdz[ii, jj] = dfdstream * dstream[0] + dfdspan * dspan[0]
+            dfdr[ii, jj] = dfdstream * dstream[1] + dfdspan * dspan[1]
+
+    # if fix_borders:
+    #     dfdz[0,:] = dfdz[1,:]
+    #     dfdz[-1, :] = dfdz[-2, :]
+    #
+    #     dfdr[:,0] = dfdr[:,1]
+    #     dfdr[:,-1] = dfdr[:,-2]
+
+
+    return dfdz, dfdr
