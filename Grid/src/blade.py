@@ -979,6 +979,7 @@ class Blade:
     def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
         self.db_dz, self.db_dr = compute_2d_curvilinear_gradient(self.z_camber, self.r_camber, self.blockage)
 
+        # levels = np.linspace(-8, 8, N_levels)
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
@@ -989,6 +990,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz.pdf', bbox_inches='tight')
 
+        # levels = np.linspace(0, 0.4, N_levels)
         plt.figure(figsize=self.picture_size_contour)
         plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()

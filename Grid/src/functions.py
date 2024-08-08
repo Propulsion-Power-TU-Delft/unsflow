@@ -1180,8 +1180,8 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
             dfdstream = (f[ii + ip, jj] - f[ii + im, jj]) / dstream_mag
             dfdspan = (f[ii, jj + jp] - f[ii, jj + jm]) / dspan_mag
 
-            dfdz[ii, jj] = dfdstream * dstream[0] + dfdspan * dspan[0]
-            dfdr[ii, jj] = dfdstream * dstream[1] + dfdspan * dspan[1]
+            dfdz[ii, jj] = dfdstream * dstream[0]/dstream_mag + dfdspan * dspan[0]/dspan_mag
+            dfdr[ii, jj] = dfdstream * dstream[1]/dstream_mag + dfdspan * dspan[1]/dspan_mag
 
     # if fix_borders:
     #     dfdz[0,:] = dfdz[1,:]
