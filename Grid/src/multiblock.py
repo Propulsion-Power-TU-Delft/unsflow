@@ -164,7 +164,7 @@ class MultiBlock:
         r_mean = (self.r_grid_points[0, self.nspan // 2] + self.r_grid_points[-1, self.nspan // 2]) / 2
         return min_length / r_mean
 
-    def compute_three_dimensional_mesh(self, config, conserve_AR=True, theta_max=1, nodes_number=2, dimensional=True):
+    def compute_three_dimensional_mesh(self, config, mode, conserve_AR=True, theta_max=1, nodes_number=2, dimensional=True):
         """
         Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured.
         :param config: config object needed to pass reference dimensions
@@ -172,6 +172,7 @@ class MultiBlock:
         :param theta_max: [deg] angle of the mesh sector.
         :param nodes_number: number of nodes from zero to theta_max
         :param dimensional: if True, reconverts the coordinates to original dimensions in [m]
+        :param mode: singlezone or multizone mesh pickles.
         """
         if conserve_AR:
             dtheta = self.compute_average_dtheta()
@@ -179,39 +180,58 @@ class MultiBlock:
             theta = np.linspace(0, theta_max, nodes_number)
         else:
             theta = np.linspace(0, theta_max * np.pi / 180, nodes_number)
-
-        self.X_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
-        self.Y_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
-        self.Z_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
-
         self.deltatheta_periodic = theta[-1]*180/np.pi
 
-        for i in range(self.nstream):
-            for j in range(self.nspan):
-                for k in range(nodes_number):
-                    self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
-                    self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
-                    self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+        if mode.lower()=='singlezone':
+            self.X_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
+            self.Y_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
+            self.Z_mesh = np.zeros((self.nstream, self.nspan, nodes_number))
+            for i in range(self.nstream):
+                for j in range(self.nspan):
+                    for k in range(nodes_number):
+                        self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
+                        self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
+                        self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+            if dimensional:
+                self.X_mesh *= config.get_reference_length()
+                self.Y_mesh *= config.get_reference_length()
+                self.Z_mesh *= config.get_reference_length()
 
-        if dimensional:
-            self.X_mesh *= config.get_reference_length()
-            self.Y_mesh *= config.get_reference_length()
-            self.Z_mesh *= config.get_reference_length()
+        elif mode.lower()=='multizone':
+            for block in self.blocks:
+                block.X_mesh = np.zeros((block.nstream, block.nspan, nodes_number))
+                block.Y_mesh = np.zeros_like(block.X_mesh)
+                block.Z_mesh = np.zeros_like(block.X_mesh)
+                for i in range(block.nstream):
+                    for j in range(block.nspan):
+                        for k in range(nodes_number):
+                            block.X_mesh[i, j, k] = block.r_grid_cg[i, j] * np.cos(theta[k])
+                            block.Y_mesh[i, j, k] = block.r_grid_cg[i, j] * np.sin(theta[k])
+                            block.Z_mesh[i, j, k] = block.z_grid_cg[i, j]
 
-    def save_mesh_pickle(self, filepath=None):
+
+    def save_mesh_pickle(self, mode):
         """
-        Save the mesh cordinates in a pickle
+        Save the mesh cordinates in a pickle.
+        :param mode: if single or multizone output
+        :param filepath: path of the file output
         """
-
-        mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
-
-        if filepath is None:
+        if mode.lower() == 'singlezone':
+            mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
             filepath = 'mesh_%02i_%02i_%02i_%.3f-deg.pickle' % (
                 self.X_mesh.shape[0], self.X_mesh.shape[1], self.X_mesh.shape[2], self.deltatheta_periodic)
-        with open(filepath, 'wb') as f:
-            pickle.dump(mesh, f)
+            with open(filepath, 'wb') as f:
+                pickle.dump(mesh, f)
+            print(f"Single Zone Data pickle saved to '{filepath}'")
 
-        print(f"Data saved to '{filepath}'")
+        elif mode.lower() == 'multizone':
+            for kk, block in enumerate(self.blocks):
+                mesh = {'x': block.X_mesh, 'y': block.Y_mesh, 'z': block.Z_mesh}
+                filepath = 'mesh_zone_%02i_%02i_%02i_%02i_%.3f-deg.pickle' % ( kk,
+                    block.X_mesh.shape[0], block.X_mesh.shape[1], block.X_mesh.shape[2], self.deltatheta_periodic)
+                with open(filepath, 'wb') as f:
+                    pickle.dump(mesh, f)
+                print(f"Multi Zone Data pickle saved to '{filepath}'")
 
     def export_meridional_spline(self, span, folder=None, filename=None, format_file=None):
         """

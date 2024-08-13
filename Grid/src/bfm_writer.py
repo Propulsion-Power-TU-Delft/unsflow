@@ -110,8 +110,8 @@ class BFM_Writer:
             file.write('\n')
 
             file.write('[variable names]\n')
-            file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:stw_LE '
-                       '8:stw\n')
+            file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:dblockage_daxial '
+                       '8:dblockage_dradial 9:stw_LE 10:stw\n')
             file.write('\n')
 
             file.write('</header>\n')
@@ -126,10 +126,10 @@ class BFM_Writer:
                 for j in range(blade.z_camber.shape[1]):
                     file.write('<radial section>\n')
                     for i in range(blade.z_camber.shape[0]):
-                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
+                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
                         blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
-                        blade.n_camber_r[i, j], blade.blockage[i, j], blade.streamline_length[0, j],
-                        blade.streamline_length[i, j]))
+                        blade.n_camber_r[i, j], blade.blockage[i, j], blade.db_dz[i, j], blade.db_dr[i, j],
+                        blade.streamline_length[0, j], blade.streamline_length[i, j]))
                     file.write('</radial section>\n')
                 file.write('</tang section>\n')
                 file.write('</blade row>\n')
