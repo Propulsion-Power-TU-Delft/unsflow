@@ -1011,6 +1011,85 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'bgrad_magnitude.pdf', bbox_inches='tight')
 
+    def plot_blockage_and_grad_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
+        """
+        plot slices of the blockage and its gradient along streamwise direction from leading to trailing edge
+        :param jump: jump between streamlines from hub to shroud
+        """
+        stations = np.arange(0, self.blockage.shape[1], jump)
+        if self.blockage.shape[1]-1 not in stations:
+            stations = np.concatenate((stations, np.array([self.blockage.shape[1]-1])))
+
+        plt.figure()
+        for ispan in stations:
+            plt.plot(self.streamline_length[:, ispan], self.blockage[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.ylabel(r'$b \ \rm{[-]}$')
+        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_slices.pdf', bbox_inches='tight')
+
+        plt.figure()
+        for ispan in stations:
+            plt.plot(self.streamline_length[:, ispan], self.db_dz[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.ylabel(r'$db/dz \ \rm{[1/m]}$')
+        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz_slices.pdf', bbox_inches='tight')
+
+        plt.figure()
+        for ispan in stations:
+            plt.plot(self.streamline_length[:, ispan], self.db_dr[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.ylabel(r'$db/dr \ \rm{[1/m]}$')
+        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr_slices.pdf', bbox_inches='tight')
+
+    def plot_blockage_and_grad_hub_to_shroud(self, jump=10, save_filename=None, folder_name=None):
+        """
+        plot slices of the blockage and its gradient along spanwise direction from hub to shroud
+        :param jump: jump between streamlines from hub to shroud
+        """
+        stations = np.arange(0, self.blockage.shape[0], jump)
+        if self.blockage.shape[0]-1 not in stations:
+            stations = np.concatenate((stations, np.array([self.blockage.shape[0] - 1])))
+
+        plt.figure()
+        for istream in stations:
+            plt.plot(self.blockage[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.xlabel(r'$b \ \rm{[-]}$')
+        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_slices_hub_to_shroud.pdf', bbox_inches='tight')
+
+        plt.figure()
+        for istream in stations:
+            plt.plot(self.db_dz[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.xlabel(r'$db/dz \ \rm{[1/m]}$')
+        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz_hub_to_shroud.pdf', bbox_inches='tight')
+
+        plt.figure()
+        for istream in stations:
+            plt.plot(self.db_dr[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.xlabel(r'$db/dr \ \rm{[1/m]}$')
+        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr_hub_to_shroud.pdf', bbox_inches='tight')
+
+
     def plot_bladetoblade_section(self, span_idx, save_filename=None, folder_name=None):
         """
         View of the blade section in the blade to blade plane, to check the camber angles.
