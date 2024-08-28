@@ -1126,45 +1126,45 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
 
             # selection of proper stencil
             if ii == 0 and jj == 0:
-                ip = 2
+                ip = 1
                 im = 0
-                jp = 2
+                jp = 1
                 jm = 0
             elif ii == 0 and jj == nspan - 1:
-                ip = 2
+                ip = 1
                 im = 0
                 jp = 0
-                jm = -2
+                jm = -1
             elif ii == nstream-1 and jj==0:
                 ip = 0
-                im = -2
-                jp = 2
+                im = -1
+                jp = 1
                 jm = 0
             elif ii==nstream-1 and jj==nspan-1:
                 ip = 0
-                im = -2
+                im = -1
                 jp = 0
-                jm = -2
+                jm = -1
             elif ii == 0:
-                ip = 2
+                ip = 1
                 im = 0
                 jp = 1
                 jm = -1
             elif ii == nstream-1:
                 ip = 0
-                im = -2
+                im = -1
                 jp = 1
                 jm = -1
             elif jj==0:
                 ip = 1
                 im = -1
-                jp = 2
+                jp = 1
                 jm = 0
             elif jj == nspan-1:
                 ip = 1
                 im = -1
                 jp = 0
-                jm = -2
+                jm = -1
             else:
                 ip = 1
                 im = -1
