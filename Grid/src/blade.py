@@ -461,7 +461,7 @@ class Blade:
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
 
     def plot_spanline_length_contour(self, save_filename=None, folder_name=None):
         """
@@ -478,7 +478,7 @@ class Blade:
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 
     def find_ss_surface(self, blade_block, degree=4):
         """
