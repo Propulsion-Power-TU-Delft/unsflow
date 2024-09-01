@@ -333,19 +333,20 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='output'):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid'):
         """
         write the file requireed by Paraview to run the circumferential avg.
         The format of the file generated is:
         istream, ispan, x, y, z
         """
-        x = self.r_grid_cg
-        y = np.zeros_like(self.r_grid_cg)
-        z = self.z_grid_cg
+        x = self.r_grid_dual
+        y = np.zeros_like(self.r_grid_dual)
+        z = self.z_grid_dual
+
         os.makedirs(foldername, exist_ok=True)
         with open(foldername + '/' + filename, 'w') as file:
-            for istream in range(0, self.z_grid_dual.shape[0]-1):
-                for ispan in range(0, self.z_grid_dual.shape[1]-1):
+            for istream in range(1, self.z_grid_dual.shape[0]-1):
+                for ispan in range(1, self.z_grid_dual.shape[1]-1):
                     file.write('%i,%i,%.6f,%.6f,%.6f\n'
                                %(istream, ispan,
                                  x[istream, ispan], y[istream, ispan], z[istream, ispan]))
