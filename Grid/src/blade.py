@@ -19,6 +19,8 @@ from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy.interpolate import griddata
 import math
+import os
+import pandas as pd
 
 
 class Blade:
@@ -1202,3 +1204,122 @@ class Blade:
         cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
+
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid'):
+        """
+        write the file requireed by Paraview to run the circumferential avg.
+        The format of the file generated is:
+        istream, ispan, x, y, z
+        """
+        x = self.r_camber
+        y = np.zeros_like(self.r_camber)
+        z = self.z_camber
+
+        os.makedirs(foldername, exist_ok=True)
+        with open(foldername + '/' + filename, 'w') as file:
+            for istream in range(0, x.shape[0]):
+                for ispan in range(0, x.shape[1]):
+                    file.write(
+                        '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, x[istream, ispan], y[istream, ispan], z[istream, ispan]))
+
+    def read_paraview_processed_dataset(self, folder_path):
+       """
+       Read the processed dataset stored in folder_path location obtained by the Paraview Macro
+       """
+
+       def extract_grid_location(file_name):
+           print('Elaborating Filename: ' + file_name)
+           file_name = file_name.strip('spline_data_')
+           file_name = file_name.strip('.csv')
+           file_name = file_name.split('_')
+           nz = int(file_name[0])
+           nr = int(file_name[1])
+           return nz, nr
+
+       available_avg_types = ['raw', 'density', 'axialMomentum']
+       self.avg_type = 'raw'
+
+       if self.avg_type not in available_avg_types:
+           raise ValueError('Not valid average type')
+       print('Weighted average type: %s' % self.avg_type)
+
+       data_dir = folder_path
+       files = [f for f in os.listdir(data_dir) if '.csv' in f]
+       files = sorted(files)
+       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Velocity_2']
+       nz, nr = extract_grid_location(files[-1])
+       field_grids = {}
+       for field in fields:
+           field_grids[field] = np.zeros((nz+1, nr+1))
+       z_grid = np.zeros((nz+1, nr+1))
+       r_grid = np.zeros((nz+1, nr+1))
+
+       output_folder = 'Contours'
+       os.makedirs(output_folder, exist_ok=True)
+
+       for file in files:
+           df = pd.read_csv(data_dir + file)
+           data_dict = df.to_dict('list')
+           data_dict = {key: np.array(value) for key, value in data_dict.items()}
+
+           x = data_dict['Points_0']
+           y = data_dict['Points_1']
+           z = data_dict['Points_2']
+           r = np.sqrt(x ** 2 + y ** 2)
+           theta = np.arctan2(y, x)
+           stream_id, span_id = extract_grid_location(file)
+           z_grid[stream_id, span_id] = np.sum(z) / len(z)
+           r_grid[stream_id, span_id] = np.sum(r) / len(r)
+
+           for field in fields:
+               f = data_dict[field]
+
+               if self.avg_type == 'raw':
+                   field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
+               elif self.avg_type == 'density':
+                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(
+                       data_dict['Density'])
+               elif self.avg_type == 'axialMomentum':
+                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(
+                       data_dict['Momentum_2'])
+
+       self.meridional_fields = field_grids
+       print()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
