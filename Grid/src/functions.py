@@ -1192,3 +1192,7 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
 
 
     return dfdz, dfdr
+
+def clip_negative_values(f):
+    return np.sqrt(f**2)
+

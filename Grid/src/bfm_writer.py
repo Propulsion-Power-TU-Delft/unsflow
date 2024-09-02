@@ -33,15 +33,16 @@ class BFM_Writer:
         self.config = config
 
 
-    def write_bfm_input_file(self, filename=None, bGrad=True):
+    def write_bfm_input_file(self, filename='BFM_input.drg', model='frozen_forces'):
         """
         Write the BFM configuration file according to SU2 structure.
         :param filename: filename of the bfm input file
-        :param bGrad: if True writes also the values of the blockage gradient.
+        :param model: bGrad adds the blockage gradients to the file. 'frozen forces' it adds the turning and loss component
+        of the forces
         """
         if filename is None:
             filename = 'BFM_Input.drg'
-        with open(filename, 'w') as file:
+        with (open(filename, 'w') as file):
             file.write('<header>\n')
             file.write('\n')
 
@@ -113,9 +114,12 @@ class BFM_Writer:
 
             file.write('[variable names]\n')
 
-            if bGrad:
+            if model=='bGrad':
                 file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:dblockage_daxial '
                            '8:dblockage_dradial 9:stw_LE 10:stw\n')
+            elif model=='frozen_forces':
+                file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:dblockage_daxial '
+                           '8:dblockage_dradial 9:stw_LE 10:stw 11:force_turning 12:force_loss\n')
             else:
                 file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:stw_LE 8:stw\n')
             file.write('\n')
@@ -132,11 +136,17 @@ class BFM_Writer:
                 for j in range(blade.z_camber.shape[1]):
                     file.write('<radial section>\n')
                     for i in range(blade.z_camber.shape[0]):
-                        if bGrad:
+                        if model=='bGrad':
                             file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
                             blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
                             blade.n_camber_r[i, j], blade.blockage[i, j], blade.db_dz[i, j], blade.db_dr[i, j],
                             blade.streamline_length[0, j], blade.streamline_length[i, j]))
+                        elif model=='frozen_forces':
+                            file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
+                            blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
+                            blade.n_camber_r[i, j], blade.blockage[i, j], blade.db_dz[i, j], blade.db_dr[i, j],
+                            blade.streamline_length[0, j], blade.streamline_length[i, j],
+                            blade.meridional_fields['Force_Turning'][i,j], blade.meridional_fields['Force_Loss'][i,j]))
                         else:
                             file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
                                 blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],

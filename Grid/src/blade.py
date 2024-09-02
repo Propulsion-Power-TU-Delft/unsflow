@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size
+from Grid.src.functions import compute_picture_size, clip_negative_values
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy.interpolate import griddata
@@ -1205,26 +1205,45 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
 
+    def compute_paraview_grid_points(self, coeff, debug_visual=False):
+        """
+        compute the grid points on the meridional plane that will be used in the paraview macro. The borders are treated
+        in order to avoid the spline to not cross the volume of the .vtu file. This is needed to avoid nans.
+        :param coeff: interpolation coefficient for the borders treatment
+        """
+        self.x_paraview = self.r_camber.copy()
+        self.y_paraview = np.zeros_like(self.x_paraview)
+        self.z_paraview = self.z_camber.copy()
+
+        # treat the borders
+        self.z_paraview[0, :] = self.z_paraview[0, :] + coeff*(self.z_paraview[1, :]-self.z_paraview[0, :])
+        self.z_paraview[-1, :] = self.z_paraview[-1, :] + coeff * (self.z_paraview[-2, :] - self.z_paraview[-1, :])
+        self.x_paraview[:, 0] = self.x_paraview[:, 0] + coeff * (self.x_paraview[:, 1] - self.x_paraview[:, 0])
+        self.x_paraview[:, -1] = self.x_paraview[:, -1] + coeff * (self.x_paraview[:, -2] - self.x_paraview[:, -1])
+
+        if debug_visual:
+            plt.figure()
+            plt.scatter(self.z_camber, self.r_camber, marker='o', edgecolors='black', facecolors='none')
+            plt.scatter(self.z_paraview, self.x_paraview, marker='^', edgecolors='red', facecolors='none')
+
     def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid'):
         """
         write the file requireed by Paraview to run the circumferential avg.
         The format of the file generated is:
         istream, ispan, x, y, z
         """
-        x = self.r_camber
-        y = np.zeros_like(self.r_camber)
-        z = self.z_camber
-
         os.makedirs(foldername, exist_ok=True)
         with open(foldername + '/' + filename, 'w') as file:
-            for istream in range(0, x.shape[0]):
-                for ispan in range(0, x.shape[1]):
+            for istream in range(0, self.x_paraview.shape[0]):
+                for ispan in range(0, self.x_paraview.shape[1]):
                     file.write(
-                        '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, x[istream, ispan], y[istream, ispan], z[istream, ispan]))
+                        '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, self.x_paraview[istream, ispan],
+                                                    self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
     def read_paraview_processed_dataset(self, folder_path):
        """
-       Read the processed dataset stored in folder_path location obtained by the Paraview Macro
+       Read the processed dataset stored in folder_path location obtained by the Paraview Macro.
+       :param folder_path: folder where the dataset is saved
        """
 
        def extract_grid_location(file_name):
@@ -1246,16 +1265,13 @@ class Blade:
        data_dir = folder_path
        files = [f for f in os.listdir(data_dir) if '.csv' in f]
        files = sorted(files)
-       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Velocity_2']
+       fields = ['Density', 'Mach', 'Pressure', 'Temperature', 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_2', 'Entropy']
        nz, nr = extract_grid_location(files[-1])
        field_grids = {}
        for field in fields:
            field_grids[field] = np.zeros((nz+1, nr+1))
        z_grid = np.zeros((nz+1, nr+1))
        r_grid = np.zeros((nz+1, nr+1))
-
-       output_folder = 'Contours'
-       os.makedirs(output_folder, exist_ok=True)
 
        for file in files:
            df = pd.read_csv(data_dir + file)
@@ -1284,17 +1300,138 @@ class Blade:
                        data_dict['Momentum_2'])
 
        self.meridional_fields = field_grids
-       print()
 
 
+    def contour_meridional_fields(self, output_folder = 'Contours'):
+        """
+        contour of the fields stored in meridional fields
+        """
+        os.makedirs(output_folder, exist_ok=True)
+
+        for key, values in self.meridional_fields.items():
+            fig, ax = plt.subplots()
+            contour = ax.contourf(self.z_camber, self.r_camber, values, levels=N_levels, cmap=color_map)
+            # ax.set_xticks([])
+            # ax.set_yticks([])
+            cbar = fig.colorbar(contour)
+            plt.title(key)
+            ax.set_aspect('equal', adjustable='box')
+            plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+
+    def compute_additional_meridional_fields(self):
+        """
+        Compute additional Meridional Fields
+        """
+        self.meridional_fields['Velocity_Meridional'] = np.sqrt(self.meridional_fields['Velocity_2']**2+
+                                                                self.meridional_fields['Velocity_Radial']**2)
+        self.meridional_fields['Velocity_Tangential_Relative'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.r_camber
+        self.meridional_fields['Absolute_Flow_Angle'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
+                                                                 self.meridional_fields['Velocity_2'])
+        self.meridional_fields['Relative_Flow_Angle'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
+                                                                 self.meridional_fields['Velocity_2'])
+        self.meridional_fields['Velocity_Magnitude'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
+                                                               self.meridional_fields['Velocity_Tangential']**2 +
+                                                               self.meridional_fields['Velocity_2']**2)
+        self.meridional_fields['Velocity_Magnitude_Relative'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
+                                                                        self.meridional_fields['Velocity_Tangential_Relative'] ** 2 +
+                                                                        self.meridional_fields['Velocity_2'] ** 2)
+        self.meridional_fields['Mach_Relative'] = self.meridional_fields['Velocity_Magnitude_Relative']/np.sqrt(
+            self.config.get_fluid_gamma()*self.meridional_fields['Pressure']/self.meridional_fields['Density']
+        )
 
 
+    def extract_body_forces(self, f_turn_method='Thermodynamic', f_loss_method='Thermodynamic'):
+        """
+        From the meridional fields, extract the body forces
+        :param f_turn_method: method selected to extract the turning component of the body force
+        :param f_loss_method: method selected to extract the loss component of the body force
+        """
+
+        # loss component
+        self.meridional_fields['Force_Loss'] = np.zeros_like(self.z_camber)
+        self.meridional_fields['Force_Tangential'] = np.zeros_like(self.z_camber)
+
+        if f_loss_method.lower()=='thermodynamic':
+            for jj in range(self.z_camber.shape[1]):
+                self.meridional_fields['Force_Loss'][:, jj] = ((self.meridional_fields['Temperature'][:,jj] * (
+                                 self.meridional_fields['Entropy'][-1,jj]-self.meridional_fields['Entropy'][0,jj])
+                                 / (self.streamline_length[-1,jj]-self.streamline_length[0,jj])) *
+                                 np.cos(self.meridional_fields['Relative_Flow_Angle'][:,jj]))
+
+        self.meridional_fields['Force_Loss'] = clip_negative_values(self.meridional_fields['Force_Loss'])
+        self.meridional_fields['Force_Loss_Axial'] = -self.meridional_fields['Force_Loss']*self.meridional_fields['Velocity_2']/self.meridional_fields['Velocity_Magnitude_Relative']
+        self.meridional_fields['Force_Loss_Radial'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
+            'Velocity_Radial'] / self.meridional_fields['Velocity_Magnitude_Relative']
+        self.meridional_fields['Force_Loss_Tangential'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
+            'Velocity_Tangential_Relative'] / self.meridional_fields['Velocity_Magnitude_Relative']
+        self.meridional_fields['Force_Loss_Normalized'] = self.meridional_fields['Force_Loss']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
+
+        if f_turn_method.lower()=='thermodynamic':
+            self.meridional_fields['Specific_Angular_Momentum'] = self.r_camber * self.meridional_fields['Velocity_Tangential']
+            for jj in range(self.z_camber.shape[1]):
+                self.meridional_fields['Force_Tangential'][:, jj] = (self.meridional_fields['Specific_Angular_Momentum'][-1, jj] - self.meridional_fields['Specific_Angular_Momentum'][0, jj]) / (self.streamline_length[-1,jj]-self.streamline_length[0,jj]) * self.meridional_fields['Velocity_Meridional'][:,jj]/self.r_camber[:,jj]
+        self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Loss_Tangential']
+        self.meridional_fields['Force_Turning'] = self.meridional_fields['Force_Turning_Tangential']/self.n_camber_t
+        self.meridional_fields['Force_Turning'] = clip_negative_values(self.meridional_fields['Force_Turning'])
+        self.meridional_fields['Force_Turning_Axial'] = self.meridional_fields['Force_Turning'] * self.n_camber_z
+        self.meridional_fields['Force_Turning_Radial'] = self.meridional_fields['Force_Turning'] * self.n_camber_r
+        self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Turning'] * self.n_camber_t
+        self.meridional_fields['Force_Turning_Normalized'] = self.meridional_fields['Force_Turning']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
+        self.meridional_fields['Total_Force_Magnitude'] = np.sqrt(self.meridional_fields['Force_Loss_Axial']**2+self.meridional_fields['Force_Turning_Axial']**2 +
+                                                                  self.meridional_fields['Force_Loss_Radial']**2+self.meridional_fields['Force_Turning_Radial']**2 +
+                                                                  self.meridional_fields['Force_Loss_Tangential']**2+self.meridional_fields['Force_Turning_Tangential']**2)
+        self.meridional_fields['Total_Force_Radial'] = self.meridional_fields['Force_Loss_Radial'] + self.meridional_fields[
+            'Force_Turning_Radial']
+        self.meridional_fields['Total_Force_Tangential'] = self.meridional_fields['Force_Loss_Tangential'] + self.meridional_fields[
+            'Force_Turning_Tangential']
+        self.meridional_fields['Total_Force_Axial'] = self.meridional_fields['Force_Loss_Axial'] + self.meridional_fields[
+            'Force_Turning_Axial']
+
+    def plot_body_forces_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
+        """
+        plot slices of the body forces and its gradient along streamwise direction from leading to trailing edge
+        :param jump: jump between streamlines from hub to shroud
+        """
+        if folder_name is not None:
+            os.makedirs(folder_name, exist_ok=True)
+
+        stations = np.arange(0, self.z_camber.shape[1], jump)
+        if self.z_camber.shape[1] - 1 not in stations:
+            stations = np.concatenate((stations, np.array([self.z_camber.shape[1] - 1])))
+
+        plt.figure()
+        for ispan in stations:
+            plt.plot(self.streamline_length[:, ispan]/self.streamline_length[-1, ispan], self.meridional_fields['Force_Turning_Normalized'][:, ispan], '-s', ms=3,
+                     label=r'$i_{span}: \ %i/%i$' % (ispan, self.blockage.shape[1] - 1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.ylabel(r'$\bar{f}_{turn} \ \rm{[-]}$')
+        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'f_turning_slices.pdf', bbox_inches='tight')
 
 
+    def plot_body_forces_hub_to_shroud(self, jump=5, save_filename=None, folder_name=None):
+        """
+        plot slices of the loss force along spanwise direction from hub to shroud
+        :param jump: jump between streamlines from hub to shroud
+        """
+        if folder_name is not None:
+            os.makedirs(folder_name, exist_ok=True)
 
+        stations = np.arange(0, self.z_camber.shape[0], jump)
+        if self.z_camber.shape[0]-1 not in stations:
+            stations = np.concatenate((stations, np.array([self.z_camber.shape[0] - 1])))
 
-
-
+        plt.figure()
+        for istream in stations:
+            plt.plot(self.meridional_fields['Force_Loss_Normalized'][istream, :], self.spanline_length[istream, :]/self.spanline_length[istream, -1], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
+        plt.legend()
+        plt.grid(alpha=0.3)
+        plt.xlabel(r'$\bar{f}_{loss} \ \rm{[-]}$')
+        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'f_loss_slices.pdf', bbox_inches='tight')
 
 
 
