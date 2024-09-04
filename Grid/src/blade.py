@@ -45,11 +45,17 @@ class Blade:
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered'):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
+        :param poly_degree: degree of the polynomial for guessing the camber distribution
+        :param blade_dataset: specify if the points in the blade cordinates file are ordered or not ordered
         """
+        blade_dataset = blade_dataset.lower()
+        if blade_dataset not in ['ordered', 'not ordered']:
+            raise ValueError('Specify ordering type of the blade cordinates file. Ordered or not ordered')
+
         blade_type = 'MAIN'
         filepath = self.config.get_blade_curve_filepath()
         if isinstance(filepath, list):
@@ -218,18 +224,10 @@ class Blade:
                 z1, r1, theta1 = z[0:len(z)//2], r[0:len(z)//2], theta[0:len(z)//2]
                 z2, r2, theta2 = z[len(z)//2:], r[len(z)//2:], theta[len(z)//2:]
 
-                plt.figure()
-                plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
-                plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
-                plt.xlabel('z')
-                plt.ylabel('theta')
-                plt.legend()
-
-                def append_last_numpy_value(arr):
-                    arr = np.append(arr, np.array([arr[-1]]))
-                    return arr
-
                 def generate_intermediate_point(z, r, theta):
+                    """
+                    Include a point just before the last, intermediate between the last and the one before.
+                    """
                     zm, rm, thetam = np.zeros(len(z)+1), np.zeros(len(z)+1), np.zeros(len(z)+1)
                     zm[0:-1], rm[0:-1], thetam[0:-1] = z, r, theta
                     zm[-1], rm[-1], thetam[-1] = z[-1], r[-1], theta[-1]
@@ -247,28 +245,24 @@ class Blade:
                     rc = 0.5 * (r1 + r2)
                     thetac = 0.5 * (theta1 + theta2)
                 except:
+                    # handle the case in which one of the two sides has less points than the others
                     if (len(z1)>len(z2)):
-                        # z1, r1, theta1 = z1[0:-1], r1[0:-1], theta1[0:-1]
-                        # np.delete(z1, -2), np.delete(r1, -2), np.delete(theta1, -2)
-                        # z2, r2, theta2 = append_last_numpy_value(z2), append_last_numpy_value(r2), append_last_numpy_value(theta2)
                         z2, r2, theta2 = generate_intermediate_point(z2, r2, theta2)
                     else:
-                        # z2, r2, theta2 = z2[0:-1], r2[0:-1], theta2[0:-1]
-                        # np.delete(z2, -2), np.delete(r2, -2), np.delete(theta2, -2)
-                        # z1, r1, theta1 = append_last_numpy_value(z1), append_last_numpy_value(r1), append_last_numpy_value(theta1)
                         z1, r1, theta1 = generate_intermediate_point(z1, r1, theta1)
 
                     zc = 0.5 * (z1 + z2)
                     rc = 0.5 * (r1 + r2)
                     thetac = 0.5 * (theta1 + theta2)
 
-                plt.figure()
-                plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
-                plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
-                plt.plot(zc, thetac, '--s', label='camber', mec='C2', mfc='none')
-                plt.xlabel('z')
-                plt.ylabel('theta')
-                plt.legend()
+                if visual_debug:
+                    plt.figure()
+                    plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                    plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                    plt.plot(zc, thetac, '--s', label='camber', mec='C2', mfc='none')
+                    plt.xlabel('z')
+                    plt.ylabel('theta')
+                    plt.legend()
 
                 zss.append(z1)
                 rss.append(r1)
@@ -349,7 +343,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_camber_surface(self, blade_block, degree=5):
+    def find_camber_surface(self, blade_block, degree=3):
         """
         Find the camber surface via regression of the function theta = f(z, r), using only the main blade points.
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -536,7 +530,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 
-    def find_ss_surface(self, blade_block, degree=4):
+    def find_ss_surface(self, blade_block, degree=3):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
@@ -565,7 +559,7 @@ class Blade:
 
 
 
-    def find_ps_surface(self, blade_block, degree=4):
+    def find_ps_surface(self, blade_block, degree=3):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
@@ -1279,7 +1273,7 @@ class Blade:
 
         plt.figure()
         for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan], self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %i/%i' %(ispan+1,self.blade_lean_angle.shape[1]))
+            plt.plot(self.streamline_length[:, ispan], -self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %i/%i' %(ispan, self.blade_lean_angle.shape[1]-1))
         plt.xlabel('Meridional Length LE-to-TE [-]')
         plt.ylabel(r'Blade Metal Angle [deg]')
         plt.grid(alpha=0.2)
