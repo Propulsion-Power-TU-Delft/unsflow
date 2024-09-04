@@ -223,6 +223,13 @@ class Blade:
 
                 z1, r1, theta1 = z[0:len(z)//2], r[0:len(z)//2], theta[0:len(z)//2]
                 z2, r2, theta2 = z[len(z)//2:], r[len(z)//2:], theta[len(z)//2:]
+                if visual_debug:
+                    plt.figure()
+                    plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                    plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                    plt.xlabel('z')
+                    plt.ylabel('theta')
+                    plt.legend()
 
                 def generate_intermediate_point(z, r, theta):
                     """
