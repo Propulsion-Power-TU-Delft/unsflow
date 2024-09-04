@@ -1196,3 +1196,17 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
 def clip_negative_values(f):
     return np.sqrt(f**2)
 
+def compute_curvilinear_abscissa(x, y):
+    """
+    having 2 arrays of data points on a curve in a x-y plane, compute the curvilinear abscissa coordinate for every point
+    """
+    s = np.zeros_like(x)
+    for i in range(1, len(x)):
+        s[i] = s[i-1] + np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
+    if x[0]<x[-1]:
+        return s
+    else:
+        return np.flip(s)
+
+
+

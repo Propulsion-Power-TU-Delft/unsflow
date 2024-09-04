@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy.interpolate import griddata
@@ -45,7 +45,7 @@ class Blade:
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered'):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -105,7 +105,7 @@ class Blade:
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
 
-        # inspect points, for three blades
+        # inspect points, for a 90 degree sector blades
         N_Blades = self.config.get_blades_number()
         if isinstance(N_Blades, list):
             N_Blades = N_Blades[iblade]
@@ -135,97 +135,153 @@ class Blade:
         rcamb = []
         thetacamb = []
 
-        def compute_unstructured_streamline_length(r, theta, z, le_idx, te_idx):
+        if blade_dataset == 'not ordered':
             """
-            function to compute the stremaline length of an nustructured dataset, starting from the leading edge point
+            Try to guess the right ordering of the points, when the points are not given in an ordered fashion. It doesn't
+            look really good, especially for radial blades. If possible use the ordered method, providing ordered data points
             """
-            x = r*np.cos(theta)
-            y = r*np.sin(theta)
-            swl = np.zeros_like(x)
-            z_stream = np.linspace(z[le_idx], z[te_idx], 100)
-            for istream in range(len(z_stream)-1):
-                z_min = z_stream[istream]
-                z_max = z_stream[istream+1]
-                mask1 = z < z_max
-                mask2 = z > z_min
-                combined_mask = mask1 & mask2
-                idx = np.where(combined_mask)
+            for i in range(number_main_profiles):
+                idx = np.where(self.profile == main_profiles[i])
+                z = self.z_main[idx]
+                r = self.r_main[idx]
+                theta = self.theta_main[idx]
+                var1 = z
+                var2 = theta
+                le_idx = np.where(var1 == var1.min())
+                te_idx = np.where(var1 == var1.max())
+                if len(le_idx[0])>1:
+                    le_idx = le_idx[0][0]
+                if len(te_idx[0])>1:
+                    te_idx = te_idx[0][0]
 
                 plt.figure()
-                plt.scatter(z, r*theta, c='black')
-                plt.scatter(z[le_idx], r[le_idx]*theta[le_idx], c='red')
-                plt.plot(np.zeros(10)+z_min, np.linspace(-2,2,10),'--r')
-                plt.plot(np.zeros(10) + z_max, np.linspace(-2, 2, 10),'--r')
+                plt.plot(var1, var2, '-k.')
+                plt.scatter(var1[le_idx], var2[le_idx], label='LE', s=40, c='red')
+                plt.scatter(var1[te_idx], var2[te_idx], label='TE', s=40, c='red')
+                var1_pol = np.linspace(var1[le_idx], var1[te_idx], 100)
+                coefficients = np.polyfit(var1, var2, poly_degree)
+                var2_pol = np.polyval(coefficients, var1_pol)
+                plt.plot(var1_pol, var2_pol, '--b', label='camber')
 
-                warnings.warn('Beta feature. Not ready yet')
-
-
-        for i in range(number_main_profiles):
-            idx = np.where(self.profile == main_profiles[i])
-            z = self.z_main[idx]
-            r = self.r_main[idx]
-            theta = self.theta_main[idx]
-            var1 = z
-            var2 = theta
-            le_idx = np.where(var1 == var1.min())
-            te_idx = np.where(var1 == var1.max())
-            if len(le_idx[0])>1:
-                le_idx = le_idx[0][0]
-            if len(te_idx[0])>1:
-                te_idx = te_idx[0][0]
-            #
-            # swl = compute_unstructured_streamline_length(r, theta, z, le_idx, te_idx)
-
-            plt.figure()
-            plt.plot(var1, var2, '-k.')
-            plt.scatter(var1[le_idx], var2[le_idx], label='LE', s=40, c='red')
-            plt.scatter(var1[te_idx], var2[te_idx], label='TE', s=40, c='red')
-            var1_pol = np.linspace(var1[le_idx], var1[te_idx], 100)
-            coefficients = np.polyfit(var1, var2, poly_degree)
-            var2_pol = np.polyval(coefficients, var1_pol)
-            plt.plot(var1_pol, var2_pol, '--b', label='camber')
-
-            ps = []
-            ss = []
-            for ipoint in range(len(z)):
-                if theta[ipoint]>np.polyval(coefficients, z[ipoint]):
-                    if self.config.get_shaft_rpm()>=0:
-                        ps.append(ipoint)
+                ps = []
+                ss = []
+                for ipoint in range(len(z)):
+                    if theta[ipoint]>np.polyval(coefficients, z[ipoint]):
+                        if self.config.get_shaft_rpm()>=0:
+                            ps.append(ipoint)
+                        else:
+                            ss.append(ipoint)
                     else:
-                        ss.append(ipoint)
+                        if self.config.get_shaft_rpm() >= 0:
+                            ss.append(ipoint)
+                        else:
+                            ps.append(ipoint)
+                plt.scatter(z[ps], theta[ps], s=100, label='PS')
+                plt.scatter(z[ss], theta[ss], s=100, label='SS')
+                plt.legend()
+
+                z_camber = z[ps].copy()
+                r_camber = r[ps].copy()
+                theta_camber = np.polyval(coefficients, z_camber)
+
+                # n_per_side = math.ceil(len(idx[0]) / 2)
+                profiles.append(Profile(self.x_main[idx][ss],
+                                        self.y_main[idx][ss],
+                                        self.z_main[idx][ss],
+                                        self.x_main[idx][ps],
+                                        self.y_main[idx][ps],
+                                        self.z_main[idx][ps]))
+                profiles[i].plot_profile()
+                zss.append(z[ss])
+                rss.append(r[ss])
+                thetass.append(theta[ss])
+
+                zps.append(z[ps])
+                rps.append(r[ps])
+                thetaps.append(theta[ps])
+
+                zcamb.append(z_camber)
+                rcamb.append(r_camber)
+                thetacamb.append(theta_camber)
+
+        elif blade_dataset == 'ordered':
+            """
+            Make use of the ordering of the points. The first half of the points belongs to one surface, the second half to the
+            second surface. Pressure or suction side designation depends on the rotational direction.
+            """
+            for i in range(number_main_profiles):
+                idx = np.where(self.profile == main_profiles[i])
+                z = self.z_main[idx]
+                r = self.r_main[idx]
+                theta = self.theta_main[idx]
+
+                z1, r1, theta1 = z[0:len(z)//2], r[0:len(z)//2], theta[0:len(z)//2]
+                z2, r2, theta2 = z[len(z)//2:], r[len(z)//2:], theta[len(z)//2:]
+
+                plt.figure()
+                plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                plt.xlabel('z')
+                plt.ylabel('theta')
+                plt.legend()
+
+                def append_last_numpy_value(arr):
+                    arr = np.append(arr, np.array([arr[-1]]))
+                    return arr
+
+                def generate_intermediate_point(z, r, theta):
+                    zm, rm, thetam = np.zeros(len(z)+1), np.zeros(len(z)+1), np.zeros(len(z)+1)
+                    zm[0:-1], rm[0:-1], thetam[0:-1] = z, r, theta
+                    zm[-1], rm[-1], thetam[-1] = z[-1], r[-1], theta[-1]
+                    zm[-2], rm[-2], thetam[-2] = 0.5*(z[-1]+z[-2]), 0.5*(r[-1]+r[-2]), 0.5*(theta[-1]+theta[-2])
+                    return zm, rm, thetam
+
+                # order from inlet to outlet
+                if z1[0]<z1[-1]:
+                    z2, r2, theta2 = np.flip(z2), np.flip(r2), np.flip(theta2)
                 else:
-                    if self.config.get_shaft_rpm() >= 0:
-                        ss.append(ipoint)
+                    z1, r1, theta1 = np.flip(z1), np.flip(r1), np.flip(theta1)
+
+                try:
+                    zc = 0.5 * (z1 + z2)
+                    rc = 0.5 * (r1 + r2)
+                    thetac = 0.5 * (theta1 + theta2)
+                except:
+                    if (len(z1)>len(z2)):
+                        # z1, r1, theta1 = z1[0:-1], r1[0:-1], theta1[0:-1]
+                        # np.delete(z1, -2), np.delete(r1, -2), np.delete(theta1, -2)
+                        # z2, r2, theta2 = append_last_numpy_value(z2), append_last_numpy_value(r2), append_last_numpy_value(theta2)
+                        z2, r2, theta2 = generate_intermediate_point(z2, r2, theta2)
                     else:
-                        ps.append(ipoint)
-            plt.scatter(z[ps], theta[ps], s=100, label='PS')
-            plt.scatter(z[ss], theta[ss], s=100, label='SS')
-            plt.legend()
+                        # z2, r2, theta2 = z2[0:-1], r2[0:-1], theta2[0:-1]
+                        # np.delete(z2, -2), np.delete(r2, -2), np.delete(theta2, -2)
+                        # z1, r1, theta1 = append_last_numpy_value(z1), append_last_numpy_value(r1), append_last_numpy_value(theta1)
+                        z1, r1, theta1 = generate_intermediate_point(z1, r1, theta1)
 
-            z_camber = z[ps].copy()
-            r_camber = r[ps].copy()
-            theta_camber = np.polyval(coefficients, z_camber)
+                    zc = 0.5 * (z1 + z2)
+                    rc = 0.5 * (r1 + r2)
+                    thetac = 0.5 * (theta1 + theta2)
 
+                plt.figure()
+                plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                plt.plot(zc, thetac, '--s', label='camber', mec='C2', mfc='none')
+                plt.xlabel('z')
+                plt.ylabel('theta')
+                plt.legend()
 
-            # n_per_side = math.ceil(len(idx[0]) / 2)
-            profiles.append(Profile(self.x_main[idx][ss],
-                                    self.y_main[idx][ss],
-                                    self.z_main[idx][ss],
-                                    self.x_main[idx][ps],
-                                    self.y_main[idx][ps],
-                                    self.z_main[idx][ps]))
-            profiles[i].plot_profile()
-            zss.append(z[ss])
-            rss.append(r[ss])
-            thetass.append(theta[ss])
+                zss.append(z1)
+                rss.append(r1)
+                thetass.append(theta1)
 
-            zps.append(z[ps])
-            rps.append(r[ps])
-            thetaps.append(theta[ps])
+                zps.append(z2)
+                rps.append(r2)
+                thetaps.append(theta2)
 
-            zcamb.append(z_camber)
-            rcamb.append(r_camber)
-            thetacamb.append(theta_camber)
+                zcamb.append(zc)
+                rcamb.append(rc)
+                thetacamb.append(thetac)
+
 
         self.zss_points = np.concatenate(zss)
         self.rss_points = np.concatenate(rss)
@@ -540,7 +596,7 @@ class Blade:
         """
         plot the main blade points and the camber surface
         """
-        fig = plt.figure(figsize=self.picture_size_blank)
+        fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='green', label='camber')
         if points:
@@ -952,7 +1008,7 @@ class Blade:
 
     def compute_blade_thickness(self, save_filename=None, folder_name=None):
         self.thk = self.r_ss * self.theta_ss - self.r_ps * self.theta_ps
-        plt.figure(figsize=self.picture_size_contour)
+        plt.figure()
         plt.contourf(self.z_ss, self.r_ss, self.thk, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xlabel(r'$z$')
@@ -967,7 +1023,7 @@ class Blade:
         # #artifically fix leading and trailing edge
         # self.blockage[0, :] = np.zeros_like(self.blockage[0, :])+1
         # self.blockage[-1, :] = np.zeros_like(self.blockage[-1, :]) + 1
-        plt.figure(figsize=self.picture_size_contour)
+        plt.figure()
         plt.contourf(self.z_ss, self.r_ss, self.blockage, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xlabel(r'$z$')
@@ -980,7 +1036,7 @@ class Blade:
         self.db_dz, self.db_dr = compute_2d_curvilinear_gradient(self.z_camber, self.r_camber, self.blockage)
 
         # levels = np.linspace(-8, 8, N_levels)
-        plt.figure(figsize=self.picture_size_contour)
+        plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_camber, self.r_camber, self.db_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
@@ -991,7 +1047,7 @@ class Blade:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz.pdf', bbox_inches='tight')
 
         # levels = np.linspace(0, 0.4, N_levels)
-        plt.figure(figsize=self.picture_size_contour)
+        plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_camber, self.r_camber, self.db_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
@@ -1001,7 +1057,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr.pdf', bbox_inches='tight')
 
-        plt.figure(figsize=self.picture_size_contour)
+        plt.figure()
         plt.contourf(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), levels=[0], colors='white', linestyles='dashed', linewidths=2)
@@ -1179,7 +1235,7 @@ class Blade:
         :param save_filename: if specified, saves the plots with the given name
         """
 
-        fig, ax = plt.subplots(figsize=self.picture_size_blank)
+        fig, ax = plt.subplots()
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\varphi$')
         cb = fig.colorbar(cs)
@@ -1187,7 +1243,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots(figsize=self.picture_size_blank)
+        fig, ax = plt.subplots()
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\kappa$')
         cb = fig.colorbar(cs)
@@ -1195,7 +1251,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots(figsize=self.picture_size_blank)
+        fig, ax = plt.subplots()
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, N_levels, cmap=color_map)
         ax.set_title(r'$\lambda$')
         cb = fig.colorbar(cs)
@@ -1203,7 +1259,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
 
-    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None):
+    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, jump=5):
         """
         Plot inlet and metal angle
         """
@@ -1216,6 +1272,20 @@ class Blade:
         plt.legend()
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + 'inlet_outlet_metal_angle.pdf', bbox_inches='tight')
+
+        stations = np.arange(0, self.z_camber.shape[1], jump)
+        if self.z_camber.shape[1] - 1 not in stations:
+            stations = np.concatenate((stations, np.array([self.z_camber.shape[1] - 1])))
+
+        plt.figure()
+        for ispan in stations:
+            plt.plot(self.streamline_length[:, ispan], self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %i/%i' %(ispan+1,self.blade_lean_angle.shape[1]))
+        plt.xlabel('Meridional Length LE-to-TE [-]')
+        plt.ylabel(r'Blade Metal Angle [deg]')
+        plt.grid(alpha=0.2)
+        plt.legend()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + 'metal_angle_spans.pdf', bbox_inches='tight')
 
 
     def compute_paraview_grid_points(self, coeff, debug_visual=False):
