@@ -21,6 +21,8 @@ from scipy.interpolate import griddata
 import math
 import os
 import pandas as pd
+import plotly.graph_objects as go
+
 
 
 class Blade:
@@ -593,7 +595,7 @@ class Blade:
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True):
+    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True, render_plotly=False):
         """
         plot the main blade points and the camber surface
         """
@@ -609,8 +611,14 @@ class Blade:
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
         # fig.legend()
+
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+
+        if render_plotly:
+            fig = go.Figure(data=[go.Surface(z=self.z_camber, x=self.x_camber, y=self.y_camber)])
+            fig.update_layout()
+            fig.show()
 
     def plot_camber_meridional_grid(self, save_filename=None, folder_name=None):
         """
