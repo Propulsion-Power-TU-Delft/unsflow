@@ -92,8 +92,6 @@ class Blade:
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
-        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z, self.r)
-
         # check if the blade has a splitter blade
         if np.unique(self.blade).shape[0] > 1:
             self.splitter = True
@@ -111,7 +109,7 @@ class Blade:
         N_Blades = self.config.get_blades_number()
         if isinstance(N_Blades, list):
             N_Blades = N_Blades[iblade]
-        theta_machine = np.linspace(0, np.pi, N_Blades//2)
+        theta_machine = np.linspace(0, np.pi, N_Blades//4)
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         for theta_position in theta_machine:
@@ -162,7 +160,7 @@ class Blade:
                 warnings.warn('Beta feature. Not ready yet')
 
 
-        for i in range(number_main_profiles-1):
+        for i in range(number_main_profiles):
             idx = np.where(self.profile == main_profiles[i])
             z = self.z_main[idx]
             r = self.r_main[idx]
@@ -295,7 +293,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_camber_surface(self, blade_block, degree=4):
+    def find_camber_surface(self, blade_block, degree=5):
         """
         Find the camber surface via regression of the function theta = f(z, r), using only the main blade points.
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -1204,6 +1202,21 @@ class Blade:
         cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
+
+    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None):
+        """
+        Plot inlet and metal angle
+        """
+        plt.figure()
+        plt.plot(self.spanline_length[0,:], self.blade_metal_angle[0,:]*180/np.pi, '-o', ms=3, label='leading edge')
+        plt.plot(self.spanline_length[-1, :], self.blade_metal_angle[-1, :]*180/np.pi, '-s', ms=3, label='trailing edge')
+        plt.xlabel('Normalized Span Hub-to-Shroud [-]')
+        plt.ylabel(r'Blade Metal Angle [deg]')
+        plt.grid(alpha=0.2)
+        plt.legend()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + 'inlet_outlet_metal_angle.pdf', bbox_inches='tight')
+
 
     def compute_paraview_grid_points(self, coeff, debug_visual=False):
         """
