@@ -1016,6 +1016,9 @@ class Blade:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
     def compute_blade_thickness(self, save_filename=None, folder_name=None):
+        """
+        Compute blade thickness in the tangential direction
+        """
         self.thk = self.r_ss * self.theta_ss - self.r_ps * self.theta_ps
         plt.figure()
         plt.contourf(self.z_ss, self.r_ss, self.thk, cmap=color_map, levels=N_levels)
@@ -1025,6 +1028,20 @@ class Blade:
         plt.title(r'$t$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'blade_thickness.pdf', bbox_inches='tight')
+
+    def compute_blade_thickness_normal_to_camber(self, save_filename=None, folder_name=None):
+        """
+        Compute the blade thickness in the direction perpendicular to the local camber
+        """
+        self.thk_normal = self.thk * np.cos(self.blade_metal_angle)
+        plt.figure()
+        plt.contourf(self.z_camber, self.r_camber, self.thk_normal, cmap=color_map, levels=N_levels)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title(r'$t$')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_' + 'blade_thickness_normal.pdf', bbox_inches='tight')
 
     def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
         self.blockage = 1 - Nb * (np.abs(self.theta_ss - self.theta_ps)) / 2 / np.pi
@@ -1268,7 +1285,7 @@ class Blade:
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
 
-    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, jump=5):
+    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
         """
         Plot inlet and metal angle
         """
@@ -1282,13 +1299,11 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + 'inlet_outlet_metal_angle.pdf', bbox_inches='tight')
 
-        stations = np.arange(0, self.z_camber.shape[1], jump)
-        if self.z_camber.shape[1] - 1 not in stations:
-            stations = np.concatenate((stations, np.array([self.z_camber.shape[1] - 1])))
+        idx_spans = self.compute_blade_span_indexes(spans)
 
         plt.figure()
-        for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan], -self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %i/%i' %(ispan, self.blade_lean_angle.shape[1]-1))
+        for ispan in idx_spans:
+            plt.plot(self.streamline_length[:, ispan], -self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %.3f' %(self.spanline_length[0,ispan]))
         plt.xlabel('Meridional Length LE-to-TE [-]')
         plt.ylabel(r'Blade Metal Angle [deg]')
         plt.grid(alpha=0.2)
@@ -1296,6 +1311,31 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + 'metal_angle_spans.pdf', bbox_inches='tight')
 
+    def plot_inlet_outlet_normal_thickness(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
+        """
+        Plot normal thickness
+        """
+        idx_spans = self.compute_blade_span_indexes(spans)
+        plt.figure()
+        for ispan in idx_spans:
+            plt.plot(self.streamline_length[:, ispan], self.thk_normal[:, ispan], '-o', ms=3, label='span %.3f' %(self.spanline_length[0,ispan]))
+        plt.xlabel('Meridional Length LE-to-TE [-]')
+        plt.ylabel(r'Blade Thickness [-]')
+        plt.grid(alpha=0.2)
+        plt.legend()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
+
+    def compute_blade_span_indexes(self, spans):
+        """
+        Given a tuple of spans (normalized from 0-hub to 1-tip), return the indexes of the meridional grid as close as possible
+        to those values.
+        """
+        idx_spans = np.zeros(len(spans), dtype=int)
+        span_len = self.spanline_length[0, :]
+        for ii, span in enumerate(spans):
+            idx_spans[ii] = int(min(range(len(span_len)), key=lambda kk: abs(span_len[kk] - span)))
+        return idx_spans
 
     def compute_paraview_grid_points(self, coeff, debug_visual=False):
         """
