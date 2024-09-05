@@ -14,10 +14,10 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve
 from Grid.src.profile import Profile
 from Utils.styles import *
-from scipy.interpolate import griddata
+from scipy import interpolate
 import math
 import os
 import pandas as pd
@@ -43,11 +43,13 @@ class Blade:
         self.blade = []  # main or splitter type
         self.profile = []  # span level
         self.mark = []  # leading, trailing edge
+        self.leading_edge = []
+        self.trailing_edge = []
 
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=False, camber_method = 'spline based'):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -57,7 +59,6 @@ class Blade:
         blade_dataset = blade_dataset.lower()
         if blade_dataset not in ['ordered', 'not ordered']:
             raise ValueError('Specify ordering type of the blade cordinates file. Ordered or not ordered')
-
         blade_type = 'MAIN'
         filepath = self.config.get_blade_curve_filepath()
         if isinstance(filepath, list):
@@ -113,20 +114,21 @@ class Blade:
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
 
-        # inspect points, for a 90 degree sector blades
-        N_Blades = self.config.get_blades_number()
-        if isinstance(N_Blades, list):
-            N_Blades = N_Blades[iblade]
-        theta_machine = np.linspace(0, np.pi, N_Blades//4)
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        for theta_position in theta_machine:
-            ax.scatter(self.r_main*np.cos(self.theta_main+theta_position),
-                       self.r_main*np.sin(self.theta_main+theta_position),
-                       self.z_main)
-        ax.set_xlabel('X Axis')
-        ax.set_ylabel('Y Axis')
-        ax.set_zlabel('Z Axis')
+        if visual_debug:
+            # inspect points, for a 90 degree sector blades
+            N_Blades = self.config.get_blades_number()
+            if isinstance(N_Blades, list):
+                N_Blades = N_Blades[iblade]
+            theta_machine = np.linspace(0, np.pi, N_Blades//4)
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            for theta_position in theta_machine:
+                ax.scatter(self.r_main*np.cos(self.theta_main+theta_position),
+                           self.r_main*np.sin(self.theta_main+theta_position),
+                           self.z_main)
+            ax.set_xlabel('X Axis')
+            ax.set_ylabel('Y Axis')
+            ax.set_zlabel('Z Axis')
 
         number_main_profiles = np.unique(self.profile).shape[0]
         main_profiles = np.unique(self.profile)
@@ -249,37 +251,53 @@ class Blade:
                 else:
                     z1, r1, theta1 = np.flip(z1), np.flip(r1), np.flip(theta1)
 
-                try:
-                    zc = 0.5 * (z1 + z2)
-                    rc = 0.5 * (r1 + r2)
-                    thetac = 0.5 * (theta1 + theta2)
-                except:
-                    # handle the case in which one of the two sides has less points than the others
-                    if (len(z1)>len(z2)):
-                        z2, r2, theta2 = generate_intermediate_point(z2, r2, theta2)
-                    else:
-                        z1, r1, theta1 = generate_intermediate_point(z1, r1, theta1)
-
-                    zc = 0.5 * (z1 + z2)
-                    rc = 0.5 * (r1 + r2)
-                    thetac = 0.5 * (theta1 + theta2)
+                if camber_method == 'brutal':
+                    # compute the camber points
+                    try:
+                        zc = 0.5 * (z1 + z2)
+                        rc = 0.5 * (r1 + r2)
+                        thetac = 0.5 * (theta1 + theta2)
+                    except:
+                        # handle the case in which one of the two sides has less points than the other
+                        if (len(z1)>len(z2)):
+                            z2, r2, theta2 = generate_intermediate_point(z2, r2, theta2)
+                        else:
+                            z1, r1, theta1 = generate_intermediate_point(z1, r1, theta1)
+                        zc = 0.5 * (z1 + z2)
+                        rc = 0.5 * (r1 + r2)
+                        thetac = 0.5 * (theta1 + theta2)
+                elif camber_method == 'spline based':
+                    num_points = len(z1)
+                    z1s, r1s, theta1s = compute_3dSpline_curve(z1, r1, theta1, num_points)
+                    z2s, r2s, theta2s = compute_3dSpline_curve(z2, r2, theta2, num_points)
+                    zc = 0.5 * (z1s + z2s)
+                    rc = 0.5 * (r1s + r2s)
+                    thetac = 0.5 * (theta1s + theta2s)
+                    #store the initial and final points for future reference
+                    self.leading_edge.append([zc[0], rc[0], thetac[0]])
+                    self.trailing_edge.append([zc[-1], rc[-1], thetac[-1]])
 
                 if visual_debug:
                     plt.figure()
-                    plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
-                    plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                    # plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                    # plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
                     plt.plot(zc, thetac, '--s', label='camber', mec='C2', mfc='none')
+                    plt.plot(z1s, theta1s, '-o', mec='C3', mfc='none')
+                    plt.plot(z2s, theta2s, '-^', mec='C4', mfc='none')
+                    plt.plot(zc[0], thetac[0], 's', label='LE', ms=10)
+                    plt.plot(zc[-1], thetac[-1], 's', label='TE', ms=10)
                     plt.xlabel('z')
                     plt.ylabel('theta')
                     plt.legend()
+                    print()
 
-                zss.append(z1)
-                rss.append(r1)
-                thetass.append(theta1)
+                zss.append(z1s)
+                rss.append(r1s)
+                thetass.append(theta1s)
 
-                zps.append(z2)
-                rps.append(r2)
-                thetaps.append(theta2)
+                zps.append(z2s)
+                rps.append(r2s)
+                thetaps.append(theta2s)
 
                 zcamb.append(zc)
                 rcamb.append(rc)
@@ -352,30 +370,21 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_camber_surface(self, blade_block, degree=3):
+    def find_camber_surface(self, blade_block, smooth):
         """
-        Find the camber surface via regression of the function theta = f(z, r), using only the main blade points.
+        Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
         :param blade_block: the block storing the meridional mesh of the bladed domain
-        :param degree: degree of the regression
         """
-
-        self.camber_degree = degree  # mixed polynomial order
-        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(np.column_stack((self.zc_points, self.rc_points)))  # dataset in right format
-        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
-        self.camber_model.fit(X, self.thetac_points)  # least square fit of the regression coefficient
-        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
-        self.camber_intercept = self.camber_model.intercept_  # constant term
-
         # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_camber = blade_block.z_grid_points
         self.r_camber = blade_block.r_grid_points
-        z_eval = self.z_camber.flatten()
-        r_eval = self.r_camber.flatten()
-        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
-        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_camber = camber_surface_values.reshape(self.z_camber.shape)
+
+        # self.theta_camber = interpolate.griddata((self.zc_points, self.rc_points), self.thetac_points, (self.z_camber, self.r_camber), method='cubic')
+        # rbf = interpolate.Rbf(self.zc_points, self.rc_points, self.thetac_points, function='multiquadric', smooth=smooth)
+        # self.theta_camber = rbf(self.z_camber, self.r_camber)
+
+        self.theta_camber = 0.5*(self.theta_ps+self.theta_ss)
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
@@ -539,74 +548,46 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 
-    def find_ss_surface(self, blade_block, degree=3):
+    def find_ss_surface(self, blade_block, smooth):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
         :param degree: degree of the regression
         """
-
-        self.camber_degree = degree  # mixed polynomial order
-        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(
-            np.column_stack((self.zss_points, self.rss_points)))  # dataset in right format
-        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
-        self.camber_model.fit(X, self.thetass_points)  # least square fit of the regression coefficient
-        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
-        self.camber_intercept = self.camber_model.intercept_  # constant term
-
-        # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_ss = blade_block.z_grid_points
         self.r_ss = blade_block.r_grid_points
-        z_eval = self.z_ss.flatten()
-        r_eval = self.r_ss.flatten()
-        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
-        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_ss = camber_surface_values.reshape(blade_block.z_grid_points.shape)
+        rbf = interpolate.Rbf(self.zss_points, self.rss_points, self.thetass_points, function='multiquadric', smooth=smooth)
+        self.theta_ss = rbf(self.z_ss, self.r_ss)
         self.x_ss = self.r_ss * np.cos(self.theta_ss)
         self.y_ss = self.r_ss * np.sin(self.theta_ss)
 
 
 
-    def find_ps_surface(self, blade_block, degree=3):
+    def find_ps_surface(self, blade_block, smooth):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
         :param degree: degree of the regression
         """
-
-        self.camber_degree = degree  # mixed polynomial order
-        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(
-            np.column_stack((self.zps_points, self.rps_points)))  # dataset in right format
-        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
-        self.camber_model.fit(X, self.thetaps_points)  # least square fit of the regression coefficient
-        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
-        self.camber_intercept = self.camber_model.intercept_  # constant term
-
-        # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_ps = blade_block.z_grid_points
         self.r_ps = blade_block.r_grid_points
-        z_eval = self.z_ps.flatten()
-        r_eval = self.r_ps.flatten()
-        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
-        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_ps = camber_surface_values.reshape(blade_block.z_grid_points.shape)
+        rbf = interpolate.Rbf(self.zps_points, self.rps_points, self.thetaps_points, function='multiquadric', smooth=smooth)
+        self.theta_ps = rbf(self.z_ps, self.r_ps)
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True, render_plotly=False):
+    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=True, points=True, render_plotly=False):
         """
         plot the main blade points and the camber surface
         """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='green', label='camber')
+        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.45, color='red', label='camber')
         if points:
-            ax.scatter(self.x_main, self.y_main, self.z_main)
+            ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1)
         if sides:
-            ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.5, color='red', label='ss')
-            ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.5, color='blue', label='ps')
+            ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.25, color='blue', label='ss')
+            ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.25, color='green', label='ps')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -846,6 +827,32 @@ class Blade:
             self.inlet_z.append(min_z)
             self.inlet_r.append(min_r)
         self.inlet = np.stack((self.inlet_z, self.inlet_r), axis=1)
+
+    def extract_inlet_points(self, iblade):
+        """
+        Find the points defining the inlet from the coordinates of the blade points.
+        """
+        inlet_z, inlet_r = [], []
+        for i in range(len(self.leading_edge)):
+            inlet_z.append(self.leading_edge[i][0])
+            inlet_r.append(self.leading_edge[i][1])
+        plt.figure()
+        plt.plot(self.z_main, self.r_main, 'o')
+        plt.plot(inlet_z, inlet_r, 's')
+        self.inlet = np.stack((inlet_z, inlet_r), axis=1)
+
+    def extract_outlet_points(self, iblade):
+        """
+        Find the points defining the inlet from the coordinates of the blade points.
+        """
+        outlet_z, outlet_r = [], []
+        for i in range(len(self.leading_edge)):
+            outlet_z.append(self.trailing_edge[i][0])
+            outlet_r.append(self.trailing_edge[i][1])
+        plt.figure()
+        plt.plot(self.z_main, self.r_main, 'o')
+        plt.plot(outlet_z, outlet_r, 's')
+        self.outlet = np.stack((outlet_z, outlet_r), axis=1)
 
     def find_outlet_points(self, iblade):
         """

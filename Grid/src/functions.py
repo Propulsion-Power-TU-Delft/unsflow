@@ -15,6 +15,7 @@ import math
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
 from scipy.interpolate import CubicSpline
+from scipy import interpolate
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -1135,12 +1136,12 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
                 im = 0
                 jp = 0
                 jm = -1
-            elif ii == nstream-1 and jj==0:
+            elif ii == nstream - 1 and jj == 0:
                 ip = 0
                 im = -1
                 jp = 1
                 jm = 0
-            elif ii==nstream-1 and jj==nspan-1:
+            elif ii == nstream - 1 and jj == nspan - 1:
                 ip = 0
                 im = -1
                 jp = 0
@@ -1150,17 +1151,17 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
                 im = 0
                 jp = 1
                 jm = -1
-            elif ii == nstream-1:
+            elif ii == nstream - 1:
                 ip = 0
                 im = -1
                 jp = 1
                 jm = -1
-            elif jj==0:
+            elif jj == 0:
                 ip = 1
                 im = -1
                 jp = 1
                 jm = 0
-            elif jj == nspan-1:
+            elif jj == nspan - 1:
                 ip = 1
                 im = -1
                 jp = 0
@@ -1180,8 +1181,8 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
             dfdstream = (f[ii + ip, jj] - f[ii + im, jj]) / dstream_mag
             dfdspan = (f[ii, jj + jp] - f[ii, jj + jm]) / dspan_mag
 
-            dfdz[ii, jj] = dfdstream * dstream[0]/dstream_mag + dfdspan * dspan[0]/dspan_mag
-            dfdr[ii, jj] = dfdstream * dstream[1]/dstream_mag + dfdspan * dspan[1]/dspan_mag
+            dfdz[ii, jj] = dfdstream * dstream[0] / dstream_mag + dfdspan * dspan[0] / dspan_mag
+            dfdr[ii, jj] = dfdstream * dstream[1] / dstream_mag + dfdspan * dspan[1] / dspan_mag
 
     # if fix_borders:
     #     dfdz[0,:] = dfdz[1,:]
@@ -1190,11 +1191,12 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
     #     dfdr[:,0] = dfdr[:,1]
     #     dfdr[:,-1] = dfdr[:,-2]
 
-
     return dfdz, dfdr
 
+
 def clip_negative_values(f):
-    return np.sqrt(f**2)
+    return np.sqrt(f ** 2)
+
 
 def compute_curvilinear_abscissa(x, y):
     """
@@ -1202,11 +1204,20 @@ def compute_curvilinear_abscissa(x, y):
     """
     s = np.zeros_like(x)
     for i in range(1, len(x)):
-        s[i] = s[i-1] + np.sqrt((x[i]-x[i-1])**2 + (y[i]-y[i-1])**2)
-    if x[0]<x[-1]:
+        s[i] = s[i - 1] + np.sqrt((x[i] - x[i - 1]) ** 2 + (y[i] - y[i - 1]) ** 2)
+    if x[0] < x[-1]:
         return s
     else:
         return np.flip(s)
 
 
-
+def compute_3dSpline_curve(x, y, z, num_points, spacing=None):
+    """
+    Given points in the space x,y,z, return the points lying on the spline passing throug them
+    """
+    tck, u = interpolate.splprep([x, y, z], s=0)
+    u_fine = np.linspace(0, 1, num_points)
+    if spacing is not None:
+        u_fine = eriksson_stretching_function_both(u_fine, spacing)
+    x, y, z = interpolate.splev(u_fine, tck)
+    return x, y, z

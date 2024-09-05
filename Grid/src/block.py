@@ -290,7 +290,7 @@ class Block:
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
-    def find_intersections(self, tol=1e-6, visual_check=False):
+    def find_intersections(self, tol=1e-6, visual_check=True):
         """
         Having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         :param tol: tolerance of the algorithm to find intersection. If too small, it doesn't find the correct intersections
@@ -312,11 +312,12 @@ class Block:
             plt.scatter(hub_curve[:, 0], hub_curve[:, 1])
             plt.scatter(shroud_curve[:, 0], shroud_curve[:, 1])
             plt.scatter(inlet_curve[:, 0], inlet_curve[:, 1])
-            plt.scatter(self.point_hub_inlet[0], self.point_hub_inlet[1])
-            plt.scatter(self.point_shroud_inlet[0], self.point_shroud_inlet[1])
+            plt.scatter(self.point_hub_inlet[0], self.point_hub_inlet[1], label='hub_le')
+            plt.scatter(self.point_shroud_inlet[0], self.point_shroud_inlet[1], label='shroud_le')
             plt.scatter(outlet_curve[:, 0], outlet_curve[:, 1])
-            plt.scatter(self.point_hub_outlet[0], self.point_hub_outlet[1])
-            plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1])
+            plt.scatter(self.point_hub_outlet[0], self.point_hub_outlet[1], label='hub_te')
+            plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1], label='shroud_te')
+            plt.legend()
 
     @staticmethod
     def point_intersection(curve1, curve2, tol):
