@@ -266,6 +266,8 @@ class Blade:
                         zc = 0.5 * (z1 + z2)
                         rc = 0.5 * (r1 + r2)
                         thetac = 0.5 * (theta1 + theta2)
+                        z1s, r1s, theta1s = z1, r1, theta1
+                        z2s, r2s, theta2s = z2, r2, theta2
                 elif camber_method == 'spline based':
                     num_points = len(z1)
                     z1s, r1s, theta1s = compute_3dSpline_curve(z1, r1, theta1, num_points)
@@ -279,13 +281,11 @@ class Blade:
 
                 if visual_debug:
                     plt.figure()
-                    # plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
-                    # plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
+                    plt.plot(z1, theta1, '-o', label='1st half', mec='C0', mfc='none')
+                    plt.plot(z2, theta2, '-^', label='2nd half', mec='C1', mfc='none')
                     plt.plot(zc, thetac, '--s', label='camber', mec='C2', mfc='none')
                     plt.plot(z1s, theta1s, '-o', mec='C3', mfc='none')
                     plt.plot(z2s, theta2s, '-^', mec='C4', mfc='none')
-                    plt.plot(zc[0], thetac[0], 's', label='LE', ms=10)
-                    plt.plot(zc[-1], thetac[-1], 's', label='TE', ms=10)
                     plt.xlabel('z')
                     plt.ylabel('theta')
                     plt.legend()
@@ -370,7 +370,29 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def find_camber_surface(self, blade_block, smooth):
+    def compute_surface(self, z, r, theta, z_eval, r_eval, method, degree, smooth):
+        """
+        Routine valid for different surfaces. Evaluate theta as a function of the z and r.
+        :param method: decide between regression and interpolation
+        :param degree: degree of the regression surface
+        :param smooth: smooth parameter of the rbf interpolation
+        """
+        if method == 'regression':
+            poly_features = PolynomialFeatures(degree=degree)  # object for regression
+            X = poly_features.fit_transform(np.column_stack((z, r)))
+            model = LinearRegression()
+            model.fit(X, theta)
+            coefficients = model.coef_
+            intercept = model.intercept_
+            X_eval = poly_features.fit_transform(np.column_stack((z_eval.flatten(), r_eval.flatten())))
+            surface_values = np.dot(X_eval, coefficients) + intercept
+            theta_eval = surface_values.reshape(z_eval.shape)
+        elif method == 'interpolation':
+            rbf = interpolate.Rbf(z, r, theta, function='multiquadric', smooth=smooth)
+            theta_eval = rbf(z_eval, r_eval)
+        return theta_eval
+
+    def find_camber_surface(self, blade_block, smooth, degree, method):
         """
         Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -379,12 +401,7 @@ class Blade:
         # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_camber = blade_block.z_grid_points
         self.r_camber = blade_block.r_grid_points
-
-        # self.theta_camber = interpolate.griddata((self.zc_points, self.rc_points), self.thetac_points, (self.z_camber, self.r_camber), method='cubic')
-        # rbf = interpolate.Rbf(self.zc_points, self.rc_points, self.thetac_points, function='multiquadric', smooth=smooth)
-        # self.theta_camber = rbf(self.z_camber, self.r_camber)
-
-        self.theta_camber = 0.5*(self.theta_ps+self.theta_ss)
+        self.theta_camber = self.compute_surface(self.zc_points, self.rc_points, self.thetac_points, self.z_camber, self.r_camber, method, degree, smooth)
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
@@ -548,7 +565,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 
-    def find_ss_surface(self, blade_block, smooth):
+    def find_ss_surface(self, blade_block, smooth, method, degree):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
@@ -556,14 +573,13 @@ class Blade:
         """
         self.z_ss = blade_block.z_grid_points
         self.r_ss = blade_block.r_grid_points
-        rbf = interpolate.Rbf(self.zss_points, self.rss_points, self.thetass_points, function='multiquadric', smooth=smooth)
-        self.theta_ss = rbf(self.z_ss, self.r_ss)
+        self.theta_ss = self.compute_surface(self.zss_points, self.rss_points, self.thetass_points, self.z_ss, self.r_ss, method, degree, smooth)
         self.x_ss = self.r_ss * np.cos(self.theta_ss)
         self.y_ss = self.r_ss * np.sin(self.theta_ss)
 
 
 
-    def find_ps_surface(self, blade_block, smooth):
+    def find_ps_surface(self, blade_block, smooth, method, degree):
         """
         Find the suction surface via regression of the function theta = f(z, r), using only the main blade ss points.
         :param blade_block: the block storing the meridional mesh of the bladed domain
@@ -571,8 +587,7 @@ class Blade:
         """
         self.z_ps = blade_block.z_grid_points
         self.r_ps = blade_block.r_grid_points
-        rbf = interpolate.Rbf(self.zps_points, self.rps_points, self.thetaps_points, function='multiquadric', smooth=smooth)
-        self.theta_ps = rbf(self.z_ps, self.r_ps)
+        self.theta_ps = self.compute_surface(self.zps_points, self.rps_points, self.thetaps_points, self.z_ps, self.r_ps, method, degree, smooth)
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
