@@ -22,6 +22,8 @@ import math
 import os
 import pandas as pd
 import plotly.graph_objects as go
+from scipy.interpolate import bisplrep, bisplev
+
 
 
 
@@ -387,10 +389,32 @@ class Blade:
             X_eval = poly_features.fit_transform(np.column_stack((z_eval.flatten(), r_eval.flatten())))
             surface_values = np.dot(X_eval, coefficients) + intercept
             theta_eval = surface_values.reshape(z_eval.shape)
-        elif method == 'interpolation':
+        elif method == 'rbf-interpolation':
             rbf = interpolate.Rbf(z, r, theta, function='multiquadric', smooth=smooth)
             theta_eval = rbf(z_eval, r_eval)
+        # elif method == 'griddata':
+        #     points = np.array((z.flatten(), r.flatten())).T
+        #     values = theta.flatten()
+        #     theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='cubic')
+        #     theta_eval = self.fix_the_borders(theta_eval, z_eval, r_eval)
+        else:
+            raise ValueError('Unknown method')
+
+
         return theta_eval
+
+    def fix_the_borders(self, theta, z, r):
+        """
+        Extrapolate the nan values
+        """
+        # theta[0, :] = theta[1, :] - (z[1, :] - z[0, :]) * (theta[2, :] - theta[1, :]) / (z[2, :] - z[1, :])
+        # theta[-1, :] = theta[-1, :] + (z[-1, :] - z[-2, :]) * (theta[-2, :] - theta[-3, :]) / (z[-2, :] - z[-3, :])
+        theta[0,:] = theta[1,:]
+        theta[-2,:] = theta[-1,:]
+        theta[:,0] = theta[:,1]
+        theta[:,-1] = theta[:,-2]
+        print()
+        return theta
 
     def find_camber_surface(self, blade_block, smooth, degree, method):
         """
