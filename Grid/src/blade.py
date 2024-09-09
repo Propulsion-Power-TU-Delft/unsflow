@@ -392,11 +392,12 @@ class Blade:
         elif method == 'rbf-interpolation':
             rbf = interpolate.Rbf(z, r, theta, function='multiquadric', smooth=smooth)
             theta_eval = rbf(z_eval, r_eval)
-        # elif method == 'griddata':
-        #     points = np.array((z.flatten(), r.flatten())).T
-        #     values = theta.flatten()
-        #     theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='cubic')
-        #     theta_eval = self.fix_the_borders(theta_eval, z_eval, r_eval)
+        elif method == 'griddata':
+            points = np.array((z.flatten(), r.flatten())).T
+            values = theta.flatten()
+            theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
+            # theta_eval = self.fix_the_borders(theta_eval, z_eval, r_eval)
+            warnings.warn('The surface interpolation with griddata is not able to extrapolate. There may be nan points on the borders')
         else:
             raise ValueError('Unknown method')
 
