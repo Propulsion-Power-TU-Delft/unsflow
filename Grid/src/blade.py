@@ -23,6 +23,8 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 from scipy.interpolate import bisplrep, bisplev
+from shapely.geometry import LineString
+from scipy.spatial import KDTree
 
 
 
@@ -132,7 +134,7 @@ class Blade:
             ax.set_ylabel('Y Axis')
             ax.set_zlabel('Z Axis')
 
-        number_main_profiles = np.unique(self.profile).shape[0]
+        self.number_profiles = np.unique(self.profile).shape[0]
         main_profiles = np.unique(self.profile)
 
         # create a list of profiles, which store information of the pressure and suction side
@@ -152,7 +154,7 @@ class Blade:
             Try to guess the right ordering of the points, when the points are not given in an ordered fashion. It doesn't
             look really good, especially for radial blades. If possible use the ordered method, providing ordered data points
             """
-            for i in range(number_main_profiles):
+            for i in range(self.number_profiles):
                 idx = np.where(self.profile == main_profiles[i])
                 z = self.z_main[idx]
                 r = self.r_main[idx]
@@ -221,7 +223,7 @@ class Blade:
             Make use of the ordering of the points. The first half of the points belongs to one surface, the second half to the
             second surface. Pressure or suction side designation depends on the rotational direction.
             """
-            for i in range(number_main_profiles):
+            for i in range(self.number_profiles):
                 idx = np.where(self.profile == main_profiles[i])
                 z = self.z_main[idx]
                 r = self.r_main[idx]
@@ -236,6 +238,7 @@ class Blade:
                     plt.xlabel('z')
                     plt.ylabel('theta')
                     plt.legend()
+                    print()
 
                 def generate_intermediate_point(z, r, theta):
                     """
@@ -271,7 +274,7 @@ class Blade:
                         z1s, r1s, theta1s = z1, r1, theta1
                         z2s, r2s, theta2s = z2, r2, theta2
                 elif camber_method == 'spline based':
-                    num_points = len(z1)
+                    num_points = len(z1)*2
                     z1s, r1s, theta1s = compute_3dSpline_curve(z1, r1, theta1, num_points)
                     z2s, r2s, theta2s = compute_3dSpline_curve(z2, r2, theta2, num_points)
                     zc = 0.5 * (z1s + z2s)
@@ -292,6 +295,7 @@ class Blade:
                     plt.ylabel('theta')
                     plt.legend()
                     print()
+
 
                 zss.append(z1s)
                 rss.append(r1s)
@@ -324,6 +328,67 @@ class Blade:
             self.z_splitter = self.z[self.idx_splitter]
             self.theta_splitter = self.theta[self.idx_splitter]
             self.r_splitter = self.r[self.idx_splitter]
+
+    def compute_thickness_along_camber(self):
+        """
+        compute thickness for each points on the spline along the camber
+        """
+        points_per_profile = len(self.zc_points) // self.number_profiles
+        def get_profile(arr, ii):
+            return arr[ii*points_per_profile:(ii+1)*points_per_profile]
+
+        for iProfile in range(self.number_profiles):
+            zc, rc, thetac = get_profile(self.zc_points, iProfile), get_profile(self.rc_points, iProfile), get_profile(self.thetac_points, iProfile)
+            zss, rss, thetass = get_profile(self.zss_points, iProfile), get_profile(self.rss_points, iProfile), get_profile(self.thetass_points, iProfile)
+            zps, rps, thetaps = get_profile(self.zps_points, iProfile), get_profile(self.rps_points, iProfile), get_profile(self.thetaps_points, iProfile)
+
+            plt.figure()
+            plt.plot(zc, rc*thetac, '-o', label='camber', mec='C0', mfc='none')
+            plt.plot(zss, rss*thetass, '-^', label='pside', mec='C1', mfc='none')
+            plt.plot(zps, rps*thetaps, '--s', label='sside', mec='C2', mfc='none')
+            plt.legend()
+            print()
+
+            zint, rint, thetaint = np.zeros_like(zc), np.zeros_like(rc), np.zeros_like(thetac)
+            dz, dy = np.zeros_like(zc), np.zeros_like(rc)
+            dz[1:-1], dy[1:-1] = zc[2:]-zc[0:-2], rc[2:]*thetac[2:]-rc[0:-2]*thetac[0:-2]
+            dz[0], dy[0] = zc[1] - zc[0], rc[1]*thetac[1] - rc[0]*thetac[0]
+            dz[-1], dy[-1] = zc[-1]-zc[-2], rc[-2]*thetac[-2]-rc[-1]*thetac[-1]
+            zdir = dz/np.sqrt(dz**2+dy**2)
+            dydir = dy/np.sqrt(dz**2+dy**2)
+            t = np.linspace(-zc[-1]-zc[0], zc[-1]-zc[0])
+            for iPoint in range(len(dz)):
+                zline = zc[iPoint] -dydir[iPoint]*t
+                yline = rc[iPoint]*thetac[iPoint] + zdir[iPoint]*t
+                plt.plot(zline, yline, 'k', lw=0.1)
+                plt.gca().set_aspect('equal', adjustable='box')
+
+                # curve1 = np.stack((zss, rss*thetass), axis=1)
+                # curve2 = np.stack((zline, yline), axis=1)
+                # point = self.point_hub_inlet = self.point_intersection(curve1, curve2)
+                # plt.plot(point[0], point[1], 'o')
+            print()
+
+
+    def point_intersection(self, curve1, curve2, tol=1e-18):
+        """
+        find and return the intersection between 2 curves. static method because it is bound to the class, not to an instance
+        of the class. It could also avoid to specify the self, since it is not used.
+        :param curve1: first curve
+        :param curve2: second curve
+        :param tol: tolerance threshold for the algorithm. 1e-2 seems like a good value, since at this point the cordinates
+        are already non-dimensional
+        """
+        tree = KDTree(curve1)
+        intersection_points = []
+
+        # while loop to make sure the intersection algorithm finds a point
+        while len(intersection_points) == 0:
+            distances, indices = tree.query(curve2)
+            intersection_points = curve1[indices[distances < tol]]
+            tol *= 10
+        point = np.mean(intersection_points, axis=0)
+        return point
 
     def print_blade_info(self):
         """
