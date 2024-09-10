@@ -53,7 +53,7 @@ class Blade:
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True, camber_method = 'spline based'):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -254,136 +254,66 @@ class Blade:
                     ax.legend()
                     print()
 
-
-
-                def generate_intermediate_point(z, r, theta):
-                    """
-                    Include a point just before the last, intermediate between the last and the one before.
-                    """
-                    zm, rm, thetam = np.zeros(len(z)+1), np.zeros(len(z)+1), np.zeros(len(z)+1)
-                    zm[0:-1], rm[0:-1], thetam[0:-1] = z, r, theta
-                    zm[-1], rm[-1], thetam[-1] = z[-1], r[-1], theta[-1]
-                    zm[-2], rm[-2], thetam[-2] = 0.5*(z[-1]+z[-2]), 0.5*(r[-1]+r[-2]), 0.5*(theta[-1]+theta[-2])
-                    return zm, rm, thetam
-
                 # order from inlet to outlet
                 if z1[0]<z1[-1]:
                     z2, r2, theta2 = np.flip(z2), np.flip(r2), np.flip(theta2)
-                    x2, y2 = np.flip(x2), np.flip(y2)
                 else:
                     z1, r1, theta1 = np.flip(z1), np.flip(r1), np.flip(theta1)
-                    x1, y1 = np.flip(x1), np.flip(y1)
 
-                if camber_method == 'brutal':
-                    # compute the camber points
-                    try:
-                        zc = 0.5 * (z1 + z2)
-                        rc = 0.5 * (r1 + r2)
-                        thetac = 0.5 * (theta1 + theta2)
-                        xc = 0.5 * (x1 + x2)
-                        yc = 0.5 * (y1 + y2)
-                    except:
-                        # handle the case in which one of the two sides has less points than the other
-                        if (len(z1)>len(z2)):
-                            z2, r2, theta2 = generate_intermediate_point(z2, r2, theta2)
-                            x2, y2 = generate_intermediate_point(x2, y2)
-                        else:
-                            z1, r1, theta1 = generate_intermediate_point(z1, r1, theta1)
-                            x1, y1 = generate_intermediate_point(x1, y1)
-                        zc = 0.5 * (z1 + z2)
-                        rc = 0.5 * (r1 + r2)
-                        thetac = 0.5 * (theta1 + theta2)
-                        xc = 0.5 * (x1 + x2)
-                        yc = 0.5 * (y1 + y2)
-                        z1s, r1s, theta1s = z1, r1, theta1
-                        z2s, r2s, theta2s = z2, r2, theta2
-                        x1s, y1s = x1, y1
-                        x2s, y2s = x2, y2
-                elif camber_method == 'spline based':
-                    num_points = len(z1)
-                    # z1s, r1s, theta1s = compute_3dSpline_curve(z1, r1, theta1, num_points)
-                    # z2s, r2s, theta2s = compute_3dSpline_curve(z2, r2, theta2, num_points)
-                    s1s, s2s = self.compute_streamwise_meridional_projection(z1, r1, theta1, z2, r2, theta2)
-                    # x1s, y1s, z1s = compute_3dSpline_curve(x1, y1, z1, num_points)
-                    # x2s, y2s, z2s = compute_3dSpline_curve(x2, y2, z2, num_points)
-                    # zc = 0.5 * (z1s + z2s)
-                    # rc = 0.5 * (r1s + r2s)
-                    # thetac = 0.5 * (theta1s + theta2s)
-                    # xc = 0.5* (x1s + x2s)
-                    # yc = 0.5 * (y1s + y2s)
-                    #store the initial and final points for future reference
-                    # self.leading_edge.append([zc[0], rc[0], thetac[0]])
-                    # self.trailing_edge.append([zc[-1], rc[-1], thetac[-1]])
+                # decide which one is pressure side and suction side
+                dum = len(z1)//2
+                if np.mean(theta1[0:dum] - theta2[0:dum]) * self.config.get_omega_shaft() > 0:
+                    z_ps, r_ps, theta_ps = z1, r1, theta1
+                    z_ss, r_ss, theta_ss = z2, r2, theta2
+                else:
+                    z_ps, r_ps, theta_ps = z2, r2, theta2
+                    z_ss, r_ss, theta_ss = z1, r1, theta1
+
+                s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
+                zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
+                sglob = np.append(s_ps, s_ss)
+                s_camber = np.linspace(np.min(sglob), np.max(sglob), 100)
+                # degree 9 should be enough to exactly locate the camber in the middle for a radial compressor. For an axial machine much less
+                coeff = np.polyfit(sglob, rglob*thetaglob, deg=9)
+                rtheta_camber = np.polyval(coeff, s_camber)
+
 
                 if visual_debug:
-                    # plt.figure()
-                    # plt.plot(z1, r1*theta1, 'o', label='1st half', mec='C0', mfc='none')
-                    # plt.plot(z2, r2*theta2, '^', label='2nd half', mec='C1', mfc='none')
-                    # plt.plot(zc, rc*thetac, '--', label='camber', mec='C2', mfc='none')
-                    # plt.plot(z1s, r1s*theta1s, '--', color='C0', label='1st half spline')
-                    # plt.plot(z2s, r2s*theta2s, '--', color='C1', label='2nd half sline')
-                    # plt.xlabel('z')
-                    # plt.ylabel('theta')
-                    # plt.legend()
-                    # plt.gca().set_aspect('equal', adjustable='box')
-
                     plt.figure()
-                    plt.plot(s1s, r1 * theta1, '--', color='C0', label='1st half spline')
-                    plt.plot(s2s, r2 * theta2, '--', color='C1', label='2nd half sline')
+                    plt.plot(s_ps, r_ps*theta_ps, '-', color='C0', label='PSide')
+                    plt.plot(s_ss, r_ss*theta_ss, '-', color='C1', label='SSide')
+                    plt.plot(s_camber, rtheta_camber, '-o', color='C2', ms=2, label='Camber')
                     plt.xlabel('s')
                     plt.ylabel('r*theta')
                     plt.legend()
                     plt.gca().set_aspect('equal', adjustable='box')
-
-                    sparam = np.linspace(0, np.max(s1s))
-                    coeff = np.polyfit(s1s, r1*theta1, deg=5)
-                    theta1eval = np.polyval(coeff, sparam)
-                    plt.plot(sparam, theta1eval)
-
-                    sparam = np.linspace(0, np.max(s2s))
-                    coeff = np.polyfit(s2s, r2 * theta2, deg=5)
-                    theta2eval = np.polyval(coeff, sparam)
-                    plt.plot(sparam, theta2eval)
-
-                    plt.plot(sparam, (theta1eval+theta2eval)*0.5)
-
-                    print()
-
-                    fig = plt.figure()
-                    ax = fig.add_subplot(111, projection='3d')
-                    ax.scatter(x1, y1, z1, label='1st half')
-                    ax.scatter(x2, y2, z2, label='2nd half')
-                    ax.scatter(x1s, y1s, z1s, label='1st half spline')
-                    ax.scatter(x2s, y2s, z2s, label='2nd half spline')
-                    ax.set_xlabel('X Label')
-                    ax.set_ylabel('Y Label')
-                    ax.set_zlabel('Z Label')
-                    ax.legend()
                     print()
 
 
-                zss.append(z1s)
-                rss.append(r1s)
-                thetass.append(theta1s)
 
-                zps.append(z2s)
-                rps.append(r2s)
-                thetaps.append(theta2s)
-
-                zcamb.append(zc)
-                rcamb.append(rc)
-                thetacamb.append(thetac)
-
-
-        self.zss_points = np.concatenate(zss)
-        self.rss_points = np.concatenate(rss)
-        self.thetass_points = np.concatenate(thetass)
-        self.zps_points = np.concatenate(zps)
-        self.rps_points = np.concatenate(rps)
-        self.thetaps_points = np.concatenate(thetaps)
-        self.zc_points = np.concatenate(zcamb)
-        self.rc_points = np.concatenate(rcamb)
-        self.thetac_points = np.concatenate(thetacamb)
+        #
+        #         zss.append(z1s)
+        #         rss.append(r1s)
+        #         thetass.append(theta1s)
+        #
+        #         zps.append(z2s)
+        #         rps.append(r2s)
+        #         thetaps.append(theta2s)
+        #
+        #         zcamb.append(zc)
+        #         rcamb.append(rc)
+        #         thetacamb.append(thetac)
+        #
+        #
+        # self.zss_points = np.concatenate(zss)
+        # self.rss_points = np.concatenate(rss)
+        # self.thetass_points = np.concatenate(thetass)
+        # self.zps_points = np.concatenate(zps)
+        # self.rps_points = np.concatenate(rps)
+        # self.thetaps_points = np.concatenate(thetaps)
+        # self.zc_points = np.concatenate(zcamb)
+        # self.rc_points = np.concatenate(rcamb)
+        # self.thetac_points = np.concatenate(thetacamb)
 
         if self.splitter:
             raise ValueError('Splitter blade not implemented yet')
@@ -1742,16 +1672,16 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'f_loss_slices.pdf', bbox_inches='tight')
 
-    def compute_streamwise_meridional_projection(self, z1, r1, theta1, z2, r2, theta2):
+    def compute_streamwise_meridional_projection_length(self, z1, r1, theta1, z2, r2, theta2, debug_visual=False):
         """
-        Given a set of coordinates arrays, compute their representation meridional length (projected on the meridional plane
-        of the machine z,r)
+        Given the coordinates defining the two sides of the blade, compute the associated curvilinear abscissa of their projection
+        on the meridional plane (z,r)
         """
         blade_type = self.config.get_blade_outlet_type()
         s1 = np.zeros_like(z1)
         s2 = np.zeros_like(z2)
 
-        # leading edge index
+        # leading edge index of the minimum-z coordinate, and bookkeping of the associated curve
         if np.min(z1)<np.min(z2):
             id_LE = np.argmin(z1)
             inlet_line = 1
@@ -1759,7 +1689,7 @@ class Blade:
             id_LE = np.argmin(z2)
             inlet_line = 2
 
-        # trailing edge index
+        # trailing edge index of the last point, and bookkeping of the associated curve
         if blade_type == 'axial':
             if np.max(z1) >= np.max(z2):
                 id_TE = np.argmax(z1)
@@ -1775,8 +1705,9 @@ class Blade:
                 id_TE = np.argmax(r2)
                 outlet_line = 2
         else:
-            raise ValueError('Set a geometry type of the blade leading edge')
+            raise ValueError('Unknown blade type')
 
+        # generate the curve from leading edge to trailing edge, deciding automatically which data using thanks to previous bookkeping
         if inlet_line==1 and outlet_line==2:
             zmeridional, rmeridional = z1[id_LE:], r1[id_LE:]
             zmeridional = np.append(zmeridional, np.array([z2[id_TE]]))
@@ -1792,7 +1723,7 @@ class Blade:
         else:
             raise ValueError('Problem')
 
-
+        # spline of the projection on the (z,r) plane, and associated curvilinear abscissa length
         zs, rs = compute_2dSpline_curve(zmeridional, rmeridional, 5000)
         sref = np.zeros_like(zs)
         sref[0] = 0
@@ -1803,19 +1734,24 @@ class Blade:
             sref[iPoint] = sref[iPoint-1] + dl
 
         def find_projected_length(zp, rp, zl, rl, sl):
+            """
+            for zp,rp coordinate of the points, find the associated value of curvilinear length on the meridional spline
+            """
             length = np.sqrt((zp-zl)**2+(rp-rl)**2)
             index = np.argmin(length)
             return sl[index]
 
+        # for each side point, find the related curvilinear length projection on the meridional plane
         for ii in range(len(z1)):
             s1[ii] = find_projected_length(z1[ii], r1[ii], zs, rs, sref)
         for ii in range(len(z2)):
             s2[ii] = find_projected_length(z2[ii], r2[ii], zs, rs, sref)
 
-        plt.figure()
-        plt.plot(z1, r1, 'o', mec='C0', mfc='none')
-        plt.plot(z2, r2, '^', mec='C1', mfc='none')
-        plt.plot(zs, rs, '--', c='C2')
+        if debug_visual == True:
+            plt.figure()
+            plt.plot(z1, r1, 'o', mec='C0', mfc='none')
+            plt.plot(z2, r2, '^', mec='C1', mfc='none')
+            plt.plot(zs, rs, '--', c='C2')
 
         return s1, s2
 
