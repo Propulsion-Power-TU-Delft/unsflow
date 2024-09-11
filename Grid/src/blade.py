@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy import interpolate
@@ -53,7 +53,7 @@ class Blade:
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=False):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -272,11 +272,15 @@ class Blade:
                 s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
                 zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
                 sglob = np.append(s_ps, s_ss)
-                s_camber = np.linspace(np.min(sglob), np.max(sglob), 100)
-                # degree 9 should be enough to exactly locate the camber in the middle for a radial compressor. For an axial machine much less
-                coeff = np.polyfit(sglob, rglob*thetaglob, deg=9)
+                s_camber = np.linspace(np.min(sglob), np.max(sglob), 250)
+                coeff = np.polyfit(sglob, rglob*thetaglob, deg=9) # degree 9 should be fine for a radial compressor
                 rtheta_camber = np.polyval(coeff, s_camber)
-
+                z_camber, r_camber  = self.extract_coordinates_from_camber(s_camber, sglob, zglob, rglob, thetaglob)
+                theta_camber = rtheta_camber/r_camber
+                t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
+                                                                       s_ss, r_ss*theta_ss)
+                t_tang = self.compute_blade_thickness_tangential(s_camber, rtheta_camber, s_ps, r_ps * theta_ps, s_ss,
+                                                                       r_ss * theta_ss)
 
                 if visual_debug:
                     plt.figure()
@@ -287,33 +291,36 @@ class Blade:
                     plt.ylabel('r*theta')
                     plt.legend()
                     plt.gca().set_aspect('equal', adjustable='box')
-                    print()
+
+                    plt.figure()
+                    plt.plot(s_camber, t_norm, label='thk normal')
+                    plt.plot(s_camber, t_tang, label='thk tang.')
+                    plt.xlabel('s')
+                    plt.ylabel('t_norm')
+                    plt.legend()
+
+                zss.append(z_ss)
+                rss.append(r_ss)
+                thetass.append(theta_ss)
+
+                zps.append(z_ps)
+                rps.append(r_ps)
+                thetaps.append(theta_ps)
+
+                zcamb.append(z_camber)
+                rcamb.append(r_camber)
+                thetacamb.append(theta_camber)
 
 
-
-        #
-        #         zss.append(z1s)
-        #         rss.append(r1s)
-        #         thetass.append(theta1s)
-        #
-        #         zps.append(z2s)
-        #         rps.append(r2s)
-        #         thetaps.append(theta2s)
-        #
-        #         zcamb.append(zc)
-        #         rcamb.append(rc)
-        #         thetacamb.append(thetac)
-        #
-        #
-        # self.zss_points = np.concatenate(zss)
-        # self.rss_points = np.concatenate(rss)
-        # self.thetass_points = np.concatenate(thetass)
-        # self.zps_points = np.concatenate(zps)
-        # self.rps_points = np.concatenate(rps)
-        # self.thetaps_points = np.concatenate(thetaps)
-        # self.zc_points = np.concatenate(zcamb)
-        # self.rc_points = np.concatenate(rcamb)
-        # self.thetac_points = np.concatenate(thetacamb)
+        self.zss_points = np.concatenate(zss)
+        self.rss_points = np.concatenate(rss)
+        self.thetass_points = np.concatenate(thetass)
+        self.zps_points = np.concatenate(zps)
+        self.rps_points = np.concatenate(rps)
+        self.thetaps_points = np.concatenate(thetaps)
+        self.zc_points = np.concatenate(zcamb)
+        self.rc_points = np.concatenate(rcamb)
+        self.thetac_points = np.concatenate(thetacamb)
 
         if self.splitter:
             raise ValueError('Splitter blade not implemented yet')
@@ -561,59 +568,37 @@ class Blade:
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
-    def compute_streamline_length(self, projection=True, normalize=True):
+    def compute_streamline_length(self, zgrid, rgrid, normalize=True):
         """
         Compute the streamline length (meridional projection) of the streamlines going from leading edge to trailing edge.
         The leading edge is the starting point.
         :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
         :param normalize: if True, normalize every streamline from 0 to 1
         """
-        self.streamline_length = np.zeros_like(self.z_camber)
-        self.streamline_length_ps = np.zeros_like(self.z_camber)
-        self.streamline_length_ss = np.zeros_like(self.z_camber)
-        for ii in range(1, self.z_camber.shape[0]):
-            if not projection:
-                ds = np.sqrt((self.x_camber[ii, :] - self.x_camber[ii - 1, :]) ** 2 + (
-                            self.y_camber[ii, :] - self.y_camber[ii - 1, :]) ** 2 + (
-                                         self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
-            else:
-                ds = np.sqrt((self.r_camber[ii, :] - self.r_camber[ii - 1, :]) ** 2 + (
-                            self.z_camber[ii, :] - self.z_camber[ii - 1, :]) ** 2)
+        self.z_grid, self.r_grid = zgrid, rgrid
+        self.streamline_length = np.zeros_like(zgrid)
+        for ii in range(1, self.streamline_length.shape[0]):
+            ds = np.sqrt((zgrid[ii, :] - zgrid[ii - 1, :]) ** 2 + (rgrid[ii, :] - rgrid[ii - 1, :]) ** 2)
             self.streamline_length[ii, :] = self.streamline_length[ii - 1, :] + ds
 
-            if not projection:
-                ds = np.sqrt((self.x_ps[ii, :] - self.x_ps[ii - 1, :]) ** 2 + (self.y_ps[ii, :] - self.y_ps[ii - 1, :]) ** 2 + (
-                            self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
-            else:
-                ds = np.sqrt((self.r_ps[ii, :] - self.r_ps[ii - 1, :]) ** 2 + (self.z_ps[ii, :] - self.z_ps[ii - 1, :]) ** 2)
-            self.streamline_length_ps[ii, :] = self.streamline_length_ps[ii - 1, :] + ds
-
-            if not projection:
-                ds = np.sqrt((self.x_ss[ii, :] - self.x_ss[ii - 1, :]) ** 2 + (self.y_ss[ii, :] - self.y_ss[ii - 1, :]) ** 2 + (
-                            self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
-            else:
-                ds = np.sqrt((self.r_ss[ii, :] - self.r_ss[ii - 1, :]) ** 2 + (self.z_ss[ii, :] - self.z_ss[ii - 1, :]) ** 2)
-            self.streamline_length_ss[ii, :] = self.streamline_length_ss[ii - 1, :] + ds
-
         if normalize:
-            for jj in range(0, self.z_camber.shape[1]):
+            for jj in range(0, self.streamline_length.shape[1]):
                 self.streamline_length[:, jj] /= self.streamline_length[-1, jj]
 
-    def compute_spanline_length(self, normalize=True):
+    def compute_spanline_length(self, zgrid, rgrid, normalize=True):
         """
         Compute the spanline length (meridional projection) of the streamlines going from leading edge to trailing edge.
         The leading edge is the starting point.
         :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
         :param normalize: if True, normalize every streamline from 0 to 1
         """
-        self.spanline_length = np.zeros_like(self.z_camber)
-        for jj in range(1, self.z_camber.shape[1]):
-            ds = np.sqrt((self.r_camber[:, jj] - self.r_camber[:, jj -1]) ** 2 +
-                         (self.z_camber[:, jj] - self.z_camber[:, jj -1]) ** 2)
+        self.spanline_length = np.zeros_like(self.streamline_length)
+        for jj in range(1, self.spanline_length.shape[1]):
+            ds = np.sqrt((zgrid[:, jj] - zgrid[:, jj -1]) ** 2 + (rgrid[:, jj] - rgrid[:, jj -1]) ** 2)
             self.spanline_length[:, jj] = self.spanline_length[:, jj -1] + ds
 
         if normalize:
-            for ii in range(0, self.z_camber.shape[0]):
+            for ii in range(0, self.spanline_length.shape[0]):
                 self.spanline_length[ii, :] /= self.spanline_length[ii, -1]
 
     def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
@@ -621,12 +606,10 @@ class Blade:
         plot the streamline length contour
         """
         plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.streamline_length, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.streamline_length, levels=N_levels)
         plt.xlabel(r'$z \ \rm{[-]}$')
         plt.ylabel(r'$r \ \rm{[-]}$')
-        bar_ticks = np.linspace(0, 1, 5)
         cbar = plt.colorbar()
-        cbar.set_ticks(bar_ticks)  # Optional: set specific ticks
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$\bar{s}_{stw} \ \rm{[-]}$')
@@ -638,12 +621,10 @@ class Blade:
         plot the spanline length contour
         """
         plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.spanline_length, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.spanline_length, levels=N_levels)
         plt.xlabel(r'$z \ \rm{[-]}$')
         plt.ylabel(r'$r \ \rm{[-]}$')
-        bar_ticks = np.linspace(0, 1, 5)
         cbar = plt.colorbar()
-        cbar.set_ticks(bar_ticks)  # Optional: set specific ticks
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$\bar{s}_{spw} \ \rm{[-]}$')
@@ -1136,19 +1117,78 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'blade_thickness.pdf', bbox_inches='tight')
 
-    def compute_blade_thickness_normal_to_camber(self, save_filename=None, folder_name=None):
+    def compute_blade_thickness_normal_to_camber(self, xc, yc, xps, yps, xss, yss, visual_debug=False):
         """
         Compute the blade thickness in the direction perpendicular to the local camber
         """
-        self.thk_normal = self.thk * np.cos(self.blade_metal_angle)
-        plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.thk_normal, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$t$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'blade_thickness_normal.pdf', bbox_inches='tight')
+        if visual_debug:
+            plt.figure()
+            plt.plot(xc, yc, '-o', label='camber', mec='C0', mfc='none', ms=2)
+            plt.plot(xps, yps, '-^', label='PSide', mec='C1', mfc='none', ms=2)
+            plt.plot(xss, yss, '--s', label='SSide', mec='C2', mfc='none', ms=2)
+            plt.gca().set_aspect('equal', adjustable='box')
+            plt.legend()
+
+        dx, dy = np.zeros_like(xc), np.zeros_like(yc)
+        dx[1:-1], dy[1:-1] = xc[2:] - xc[0:-2], yc[2:] - yc[0:-2]
+        dx[0], dy[0] = xc[1] - xc[0], yc[1] - yc[0]
+        dx[-1], dy[-1] = xc[-1] - xc[-2], yc[-1] - yc[-2]
+        x_vers = dx / np.sqrt(dx ** 2 + dy ** 2)
+        y_vers = dy / np.sqrt(dx ** 2 + dy ** 2)
+        t = np.linspace(-(xc[-1] - xc[0]), (xc[-1] - xc[0]))
+        thk_normal = np.zeros_like(xc)
+        for iPoint in range(len(dx)):
+            x_line = xc[iPoint] - y_vers[iPoint] * t
+            y_line = yc[iPoint] + x_vers[iPoint] * t
+
+            # Find intersection between the two curves
+            x_int_ps, y_int_ps = find_intersection(x_line, y_line, xps, yps)
+            x_int_ss, y_int_ss = find_intersection(x_line, y_line, xss, yss)
+
+            if visual_debug:
+                plt.plot(x_line, y_line, 'k', lw=0.1)
+                plt.plot(x_int_ps, y_int_ps, 'ro', ms=5)
+                plt.plot(x_int_ss, y_int_ss, 'ro', ms=5)
+
+            if len(x_int_ss)>0 and len(x_int_ps)>0:
+                thk_normal[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
+            else:
+                thk_normal[iPoint] = 0
+        return thk_normal
+
+    def compute_blade_thickness_tangential(self, xc, yc, xps, yps, xss, yss, visual_debug=False):
+        """
+        Compute the blade thickness in the direction perpendicular to the local camber
+        """
+        if visual_debug:
+            plt.figure()
+            plt.plot(xc, yc, '-o', label='camber', mec='C0', mfc='none', ms=2)
+            plt.plot(xps, yps, '-^', label='PSide', mec='C1', mfc='none', ms=2)
+            plt.plot(xss, yss, '--s', label='SSide', mec='C2', mfc='none', ms=2)
+            plt.gca().set_aspect('equal', adjustable='box')
+            plt.legend()
+
+        t = np.linspace(-(xc[-1] - xc[0]), (xc[-1] - xc[0]))
+        thk = np.zeros_like(xc)
+        for iPoint in range(len(xc)):
+            x_line = xc[iPoint] + np.zeros_like(t)
+            y_line = yc[iPoint] + t
+
+            # Find intersection between the two curves
+            x_int_ps, y_int_ps = find_intersection(x_line, y_line, xps, yps)
+            x_int_ss, y_int_ss = find_intersection(x_line, y_line, xss, yss)
+
+            if visual_debug:
+                plt.plot(x_line, y_line, 'k', lw=0.1)
+                plt.plot(x_int_ps, y_int_ps, 'ro', ms=5)
+                plt.plot(x_int_ss, y_int_ss, 'ro', ms=5)
+
+            if (len(x_int_ss)*len(x_int_ps)*len(x_int_ss)*len(x_int_ps)>0):
+                thk[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
+            else:
+                thk[iPoint] = 0
+        return thk
+
 
     def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
         self.blockage = 1 - Nb * (np.abs(self.theta_ss - self.theta_ps)) / 2 / np.pi
@@ -1755,6 +1795,15 @@ class Blade:
 
         return s1, s2
 
+    def extract_coordinates_from_camber(self, s_camber, s, z, r, theta):
+        """
+        Extract z,r,theta for the points on the camber, using the values that created the camber in first place
+        """
+        z_camber, r_camber = np.zeros_like(s_camber), np.zeros_like(s_camber)
+        for i in range(len(s_camber)):
+            idx = np.argmin((s_camber[i]-s)**2)
+            z_camber[i], r_camber[i] = z[idx], r[idx]
+        return z_camber, r_camber
 
 
 

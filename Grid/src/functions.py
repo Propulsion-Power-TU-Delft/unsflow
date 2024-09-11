@@ -16,7 +16,7 @@ from scipy.optimize import fsolve
 from scipy.optimize import minimize
 from scipy.interpolate import CubicSpline
 from scipy import interpolate
-
+from shapely.geometry import LineString
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     """
@@ -1232,3 +1232,13 @@ def compute_2dSpline_curve(x, y, num_points, spacing=5):
         u_fine = eriksson_stretching_function_both(u_fine, spacing)
     x, y = interpolate.splev(u_fine, tck)
     return x, y
+
+
+def find_intersection(x1, y1, x2, y2):
+    """
+    Given two curves on a x-y plane find and return the intersection points (if any).
+    """
+    line_1 = LineString(np.column_stack((x1, y1)))
+    line_2 = LineString(np.column_stack((x2, y2)))
+    intersection = line_1.intersection(line_2)
+    return intersection.xy[0], intersection.xy[1]
