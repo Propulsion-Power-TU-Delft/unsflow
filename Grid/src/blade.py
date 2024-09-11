@@ -25,6 +25,7 @@ import plotly.graph_objects as go
 from scipy.interpolate import bisplrep, bisplev
 from shapely.geometry import LineString
 from scipy.spatial import KDTree
+from Grid.src.surface import Surface
 
 
 
@@ -49,6 +50,7 @@ class Blade:
         self.mark = []  # leading, trailing edge
         self.leading_edge = []
         self.trailing_edge = []
+        self.camberSurf = Surface('Camber')
 
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
@@ -136,6 +138,8 @@ class Blade:
 
         self.number_profiles = np.unique(self.profile).shape[0]
         main_profiles = np.unique(self.profile)
+        main_profiles = [int(prof) for prof in main_profiles]
+        main_profiles.sort()
 
         # create a list of profiles, which store information of the pressure and suction side
         profiles = []
@@ -227,7 +231,7 @@ class Blade:
             second surface. Pressure or suction side designation depends on the rotational direction.
             """
             for i in range(self.number_profiles):
-                idx = np.where(self.profile == main_profiles[i])
+                idx = np.where(self.profile == str(main_profiles[i]))
                 z = self.z_main[idx]
                 r = self.r_main[idx]
                 theta = self.theta_main[idx]
@@ -332,8 +336,15 @@ class Blade:
                 rcamb.append(r_camber)
                 thetacamb.append(theta_camber)
 
+                self.camberSurf.add_curve(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber)
+
                 tCamb.append(t_tang)
                 kappaCamb.append(metal_angle)
+
+        self.camberSurf.plot_surface()
+        self.camberSurf.loft_through_profiles()
+        self.camberSurf.plot_surface(surfaces=True)
+        self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_surface(method='cylindrical')
 
 
         self.zss_points = np.concatenate(zss)
@@ -514,17 +525,17 @@ class Blade:
         # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_camber = blade_block.z_grid_points
         self.r_camber = blade_block.r_grid_points
-        self.theta_camber = self.compute_surface(self.camb_points_stream, self.camb_points_span,
-                                                 self.thetac_points, self.streamline_length, self.spanline_length,
+        self.theta_camber = self.compute_surface(self.z_cambSurface.flatten(), self.r_cambSurface.flatten(),
+                                                 self.theta_cambSurface.flatten(), self.z_grid, self.r_grid,
                                                  method, degree, smooth)
         self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
-        self.blade_metal_angle = self.compute_surface(self.camb_points_stream, self.camb_points_span,
-                                                      self.blade_metal_angle_points, self.streamline_length,
-                                                      self.spanline_length, method, degree, smooth)
-        self.thk_tang = self.compute_surface(self.camb_points_stream, self.camb_points_span,
-                                             self.thk_points, self.streamline_length, self.spanline_length,
-                                             method, degree, smooth)
+        # self.blade_metal_angle = self.compute_surface(self.camb_points_stream, self.camb_points_span,
+        #                                               self.blade_metal_angle_points, self.streamline_length,
+        #                                               self.spanline_length, method, degree, smooth)
+        # self.thk_tang = self.compute_surface(self.camb_points_stream, self.camb_points_span,
+        #                                      self.thk_points, self.streamline_length, self.spanline_length,
+        #                                      method, degree, smooth)
 
 
     def update_camber_surface(self, blade_block, degree=3):

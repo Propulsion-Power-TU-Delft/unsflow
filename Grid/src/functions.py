@@ -1211,12 +1211,14 @@ def compute_curvilinear_abscissa(x, y):
         return np.flip(s)
 
 
-def compute_3dSpline_curve(x, y, z, num_points, spacing=5):
+def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
     tck, u = interpolate.splprep([x, y, z], s=0)
     u_fine = np.linspace(0, 1, num_points)
+    if u_param is not None:
+        u_fine = u_param
     if spacing is not None:
         u_fine = eriksson_stretching_function_both(u_fine, spacing)
     x, y, z = interpolate.splev(u_fine, tck)
