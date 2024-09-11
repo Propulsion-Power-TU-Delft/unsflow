@@ -53,7 +53,7 @@ class Blade:
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=False):
+    def read_from_curve_file(self, iblade, poly_degree, blade_dataset='ordered', visual_debug=True):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         :param iblade: number of the blade row
@@ -272,15 +272,28 @@ class Blade:
                 s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
                 zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
                 sglob = np.append(s_ps, s_ss)
-                s_camber = np.linspace(np.min(sglob), np.max(sglob), 250)
+                s_camber = np.linspace(np.min(sglob), np.max(sglob), self.config.get_streamwise_points()[1])
                 coeff = np.polyfit(sglob, rglob*thetaglob, deg=9) # degree 9 should be fine for a radial compressor
                 rtheta_camber = np.polyval(coeff, s_camber)
-                z_camber, r_camber  = self.extract_coordinates_from_camber(s_camber, sglob, zglob, rglob, thetaglob)
+                coeff = np.polyfit(sglob, rglob, deg=9)  # degree 9 should be fine for a radial compressor
+                r_camber = np.polyval(coeff, s_camber)
+                coeff = np.polyfit(sglob, zglob, deg=9)  # degree 9 should be fine for a radial compressor
+                z_camber = np.polyval(coeff, s_camber)
                 theta_camber = rtheta_camber/r_camber
+
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                ax.scatter(x, y, z, c='b', marker='o')
+                ax.scatter(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber, c='r', marker='o')
+                ax.set_xlabel('X Label')
+                ax.set_ylabel('Y Label')
+                ax.set_zlabel('Z Label')
+
                 t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
                                                                        s_ss, r_ss*theta_ss)
                 t_tang = self.compute_blade_thickness_tangential(s_camber, rtheta_camber, s_ps, r_ps * theta_ps, s_ss,
                                                                        r_ss * theta_ss)
+                metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
 
                 if visual_debug:
                     plt.figure()
@@ -298,6 +311,11 @@ class Blade:
                     plt.xlabel('s')
                     plt.ylabel('t_norm')
                     plt.legend()
+
+                    plt.figure()
+                    plt.plot(s_camber, metal_angle*180/np.pi)
+                    plt.xlabel('s')
+                    plt.ylabel('metal angle [deg]')
 
                 zss.append(z_ss)
                 rss.append(r_ss)
@@ -1804,6 +1822,22 @@ class Blade:
             idx = np.argmin((s_camber[i]-s)**2)
             z_camber[i], r_camber[i] = z[idx], r[idx]
         return z_camber, r_camber
+
+    def compute_metal_angle_along_camber(self, xc, yc):
+        """
+        Compute metal angle considering the camber
+        """
+        dx, dy = np.zeros_like(xc), np.zeros_like(yc)
+        dx[1:-1], dy[1:-1] = xc[2:] - xc[0:-2], yc[2:] - yc[0:-2]
+        dx[0], dy[0] = xc[1] - xc[0], yc[1] - yc[0]
+        dx[-1], dy[-1] = xc[-1] - xc[-2], yc[-1] - yc[-2]
+        x_vers = dx / np.sqrt(dx ** 2 + dy ** 2)
+        y_vers = dy / np.sqrt(dx ** 2 + dy ** 2)
+        alpha = np.arctan2(y_vers, x_vers)
+        return alpha
+
+
+
 
 
 

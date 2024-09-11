@@ -1241,4 +1241,7 @@ def find_intersection(x1, y1, x2, y2):
     line_1 = LineString(np.column_stack((x1, y1)))
     line_2 = LineString(np.column_stack((x2, y2)))
     intersection = line_1.intersection(line_2)
-    return intersection.xy[0], intersection.xy[1]
+    try:
+        return intersection.xy[0], intersection.xy[1]
+    except:
+        return 0, 0
