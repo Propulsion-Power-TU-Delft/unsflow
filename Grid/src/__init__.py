@@ -8,3 +8,4 @@ from .multiblock import MultiBlock
 from .meridional_process import MeridionalProcess
 from .meridional_process_group import MeridionalProcessGroup
 from .bfm_writer import BFM_Writer
+from .surface import Surface

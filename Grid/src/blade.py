@@ -50,7 +50,9 @@ class Blade:
         self.mark = []  # leading, trailing edge
         self.leading_edge = []
         self.trailing_edge = []
-        self.camberSurf = Surface('Camber')
+        self.camberSurf = Surface('Camber Surface')
+        self.psSurf = Surface('Pressure Surface')
+        self.ssSurf = Surface('Suctions Surface')
 
         self.read_from_curve_file(iblade, poly_degree)
         self.print_blade_info()
@@ -288,13 +290,14 @@ class Blade:
                 z_camber = np.polyval(coeff, s_camber)
                 theta_camber = rtheta_camber/r_camber
 
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(x, y, z, c='b', marker='o')
-                ax.scatter(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber, c='r', marker='o')
-                ax.set_xlabel('X Label')
-                ax.set_ylabel('Y Label')
-                ax.set_zlabel('Z Label')
+                if visual_debug:
+                    fig = plt.figure()
+                    ax = fig.add_subplot(111, projection='3d')
+                    ax.scatter(x, y, z, c='b', marker='o')
+                    ax.scatter(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber, c='r', marker='o')
+                    ax.set_xlabel('X Label')
+                    ax.set_ylabel('Y Label')
+                    ax.set_zlabel('Z Label')
 
                 t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
                                                                        s_ss, r_ss*theta_ss)
@@ -337,27 +340,51 @@ class Blade:
                 thetacamb.append(theta_camber)
 
                 self.camberSurf.add_curve(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber)
+                self.psSurf.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
+                self.ssSurf.add_curve(r_ss * np.cos(theta_ss), r_ss * np.sin(theta_ss), z_ss)
 
                 tCamb.append(t_tang)
                 kappaCamb.append(metal_angle)
 
-        self.camberSurf.plot_surface()
-        self.camberSurf.loft_through_profiles()
-        self.camberSurf.plot_surface(surfaces=True)
+        self.camberSurf.loft_through_profiles(extension=0)
+        if visual_debug: self.camberSurf.plot_surface(surfaces=True)
         self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_surface(method='cylindrical')
 
+        self.psSurf.loft_through_profiles()
+        if visual_debug: self.psSurf.plot_surface(surfaces=True)
+        self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_surface(method='cylindrical')
 
-        self.zss_points = np.concatenate(zss)
-        self.rss_points = np.concatenate(rss)
-        self.thetass_points = np.concatenate(thetass)
-        self.zps_points = np.concatenate(zps)
-        self.rps_points = np.concatenate(rps)
-        self.thetaps_points = np.concatenate(thetaps)
-        self.zc_points = np.concatenate(zcamb)
-        self.rc_points = np.concatenate(rcamb)
-        self.thetac_points = np.concatenate(thetacamb)
-        self.blade_metal_angle_points = np.concatenate(kappaCamb)
-        self.thk_points = np.concatenate(tCamb)
+        self.ssSurf.loft_through_profiles()
+        if visual_debug: self.ssSurf.plot_surface(surfaces=True)
+        self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_surface(method='cylindrical')
+
+
+        self.thkSurf = self.r_cambSurface*(self.theta_ssSurface-self.theta_psSurface)
+        if np.mean(self.thkSurf)>0:
+            for ii in range(self.thkSurf.shape[0]):
+                for jj in range(self.thkSurf.shape[1]):
+                    if self.thkSurf[ii, jj]<0:
+                        self.thkSurf[ii,jj]= 0
+        else:
+            for ii in range(self.thkSurf.shape[0]):
+                for jj in range(self.thkSurf.shape[1]):
+                    if self.thkSurf[ii, jj]<0:
+                        self.thkSurf[ii,jj] *= -1
+                    else:
+                        self.thkSurf[ii, jj] = 0
+
+
+        # self.zss_points = np.concatenate(zss)
+        # self.rss_points = np.concatenate(rss)
+        # self.thetass_points = np.concatenate(thetass)
+        # self.zps_points = np.concatenate(zps)
+        # self.rps_points = np.concatenate(rps)
+        # self.thetaps_points = np.concatenate(thetaps)
+        # self.zc_points = np.concatenate(zcamb)
+        # self.rc_points = np.concatenate(rcamb)
+        # self.thetac_points = np.concatenate(thetacamb)
+        # self.blade_metal_angle_points = np.concatenate(kappaCamb)
+        # self.thk_points = np.concatenate(tCamb)
 
         if self.splitter:
             raise ValueError('Splitter blade not implemented yet')
@@ -367,6 +394,26 @@ class Blade:
             self.z_splitter = self.z[self.idx_splitter]
             self.theta_splitter = self.theta[self.idx_splitter]
             self.r_splitter = self.r[self.idx_splitter]
+
+    def compute_thickness(self):
+        self.thk_tang = self.r_cambSurface * (self.theta_ssSurface - self.theta_psSurface)
+        if np.mean(self.thk_tang) > 0:
+            for ii in range(self.thk_tang.shape[0]):
+                for jj in range(self.thk_tang.shape[1]):
+                    if self.thk_tang[ii, jj] < 0:
+                        self.thk_tang[ii, jj] = 0
+        else:
+            for ii in range(self.thk_tang.shape[0]):
+                for jj in range(self.thk_tang.shape[1]):
+                    if self.thk_tang[ii, jj] < 0:
+                        self.thk_tang[ii, jj] *= -1
+                    else:
+                        self.thk_tang[ii, jj] = 0
+        plt.figure()
+        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.thk_tang, levels=N_levels)
+        plt.colorbar()
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
 
     def compute_thickness_along_camber(self):
         """
@@ -495,8 +542,6 @@ class Blade:
             points = np.array((z.flatten(), r.flatten())).T
             values = theta.flatten()
             theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
-            # theta_eval = self.fix_the_borders(theta_eval, z_eval, r_eval)
-            warnings.warn('The surface interpolation with griddata is not able to extrapolate. There may be nan points on the borders')
         else:
             raise ValueError('Unknown method')
 
@@ -533,9 +578,9 @@ class Blade:
         # self.blade_metal_angle = self.compute_surface(self.camb_points_stream, self.camb_points_span,
         #                                               self.blade_metal_angle_points, self.streamline_length,
         #                                               self.spanline_length, method, degree, smooth)
-        # self.thk_tang = self.compute_surface(self.camb_points_stream, self.camb_points_span,
-        #                                      self.thk_points, self.streamline_length, self.spanline_length,
-        #                                      method, degree, smooth)
+        self.thk_tang = self.compute_surface(self.z_cambSurface.flatten(), self.r_cambSurface.flatten(),
+                                             self.thkSurf.flatten(), self.z_grid, self.r_grid,
+                                             method, degree, smooth)
 
 
     def update_camber_surface(self, blade_block, degree=3):
@@ -1459,7 +1504,7 @@ class Blade:
         """
 
         self.gas_path_angle = np.zeros_like(self.x_camber)
-        # self.blade_metal_angle = np.zeros_like(self.x_camber)
+        self.blade_metal_angle = np.zeros_like(self.x_camber)
         self.blade_lean_angle = np.zeros_like(self.x_camber)
 
         for i in range(0, self.x_camber.shape[0]):
@@ -1473,10 +1518,10 @@ class Blade:
                 meridional_sp_vec /= np.linalg.norm(meridional_sp_vec)
 
                 if convention == 'neutral':
-                    # self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
+                    self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
                     self.blade_lean_angle[i, j] = np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
                 elif convention == 'rotation-wise':
-                    # self.blade_metal_angle[i, j] = -np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
+                    self.blade_metal_angle[i, j] = -np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
                     self.blade_lean_angle[i, j] = -np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
                 else:
                     raise ValueError('Choose a convention for the angles')

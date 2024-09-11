@@ -82,11 +82,12 @@ class Surface:
         else:
             raise ValueError('Not curves stored in the object yet')
 
-    def loft_through_profiles(self, num_points=100, extension=0.1):
+    def loft_through_profiles(self, points_along_profile=200, points_between_profiles=100, extension=0.025):
         """
         Use interpolation between 2 profiles to assemble the overall surface of the camber.
         The camber is extended at the borders for 10% in order to cope for following griddata interpolation.
-        :param num_points: number of points used to interpolate splines along the generator curves
+        :param points_along_profile: number of points used to interpolate splines along the generator curves
+        :param points_between_profiles: number of points used in between the different lofts
         :param extension: percentage of extension at the borders
         """
         if self.get_number_profiles() < 2:
@@ -94,22 +95,22 @@ class Surface:
         self.surface = {}
         keys_list = list(self.coords.keys())
         for iSurf in range(self.get_number_profiles()-1):
-            t = np.linspace(0-extension, 1+extension, num_points)  # parameter flowing on one curve tangentially
+            t = np.linspace(0-extension, 1+extension, points_along_profile)  # parameter flowing on one curve tangentially
             if iSurf==0:
-                s = np.linspace(0-extension, 1, 20)  # parameter connecting one curve to the other
+                s = np.linspace(0-extension, 1, points_between_profiles)  # parameter connecting one curve to the other
             elif iSurf==self.get_number_profiles()-2:
-                s = np.linspace(0, 1+extension, 20)
+                s = np.linspace(0, 1+extension, points_between_profiles)
             else:
-                s = np.linspace(0, 1, 20)
+                s = np.linspace(0, 1, points_between_profiles)
 
             T, S = np.meshgrid(t, s, indexing='ij')
 
             xint0, yint0, zint0 = compute_3dSpline_curve(self.coords[keys_list[iSurf]]['x'],
                                                          self.coords[keys_list[iSurf]]['y'],
-                                                         self.coords[keys_list[iSurf]]['z'], u_param=t)
+                                                         self.coords[keys_list[iSurf]]['z'], u_param=t, spacing=3)
             xint1, yint1, zint1 = compute_3dSpline_curve(self.coords[keys_list[iSurf+1]]['x'],
                                                          self.coords[keys_list[iSurf+1]]['y'],
-                                                         self.coords[keys_list[iSurf+1]]['z'], u_param=t)
+                                                         self.coords[keys_list[iSurf+1]]['z'], u_param=t, spacing=3)
 
             X, Y, Z = np.zeros_like(T), np.zeros_like(T), np.zeros_like(T)
             for ii in range(T.shape[0]):
