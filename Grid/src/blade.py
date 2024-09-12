@@ -625,7 +625,7 @@ class Blade:
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True, render_plotly=False):
+    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True):
         """
         plot the main blade points and the camber surface
         """
@@ -634,22 +634,13 @@ class Blade:
         ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.5, color='red', label='reference camber')
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='blue', label='regressed camber')
         if points:
-            ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1)
-        if sides:
-            ax.plot_surface(self.x_ss, self.y_ss, self.z_ss, alpha=0.25, color='blue', label='ss')
-            ax.plot_surface(self.x_ps, self.y_ps, self.z_ps, alpha=0.25, color='green', label='ps')
+            ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1, label='points')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
-        # fig.legend()
 
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-        if render_plotly:
-            fig = go.Figure(data=[go.Surface(z=self.z_camber, x=self.x_camber, y=self.y_camber)])
-            fig.update_layout()
-            fig.show()
 
     def plot_camber_meridional_grid(self, save_filename=None, folder_name=None):
         """
@@ -665,7 +656,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def plot_camber_normal_contour_on_loft(self, save_filename=None, folder_name=None):
+    def plot_camber_normal_contour_on_loft(self):
         """
         plot the camber normal vector contours
         """
@@ -677,8 +668,6 @@ class Blade:
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$n_r$ reference')
         plt.colorbar()
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_r.pdf', bbox_inches='tight')
 
         plt.figure()
         plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_t, levels=N_levels)
@@ -688,8 +677,6 @@ class Blade:
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$n_{\theta}$ reference')
         plt.colorbar()
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_theta.pdf', bbox_inches='tight')
 
         plt.figure()
         plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_z, levels=N_levels)
@@ -699,8 +686,6 @@ class Blade:
         ax.set_aspect('equal', adjustable='box')
         plt.title(r'$n_z$ reference')
         plt.colorbar()
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_z.pdf', bbox_inches='tight')
 
     def plot_blockage_contour(self, save_filename=None, folder_name=None):
         """
@@ -730,7 +715,7 @@ class Blade:
         plt.title(r'$n_r$')
         plt.colorbar()
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_r.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + 'normal_r.pdf', bbox_inches='tight')
 
         plt.figure()
         plt.contourf(self.z_grid, self.r_grid, self.nt, levels=N_levels)
@@ -741,7 +726,7 @@ class Blade:
         plt.title(r'$n_{\theta}$')
         plt.colorbar()
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_theta.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + 'normal_theta.pdf', bbox_inches='tight')
 
         plt.figure()
         plt.contourf(self.z_grid, self.r_grid, self.nz, levels=N_levels)
@@ -752,7 +737,7 @@ class Blade:
         plt.title(r'$n_z$')
         plt.colorbar()
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_z.pdf', bbox_inches='tight')
+            plt.savefig(folder_name + '/' + save_filename + 'normal_z.pdf', bbox_inches='tight')
 
     def write_bfm_input_file(self, filename=None, rescale=True):
 
@@ -1223,7 +1208,7 @@ class Blade:
         return thk
 
 
-    def compute_blade_blockage_on_camber_loft(self, Nb, save_filename=None, folder_name=None):
+    def compute_blade_blockage_on_camber_loft(self, Nb):
         """
         Compute blade blockage based on the thickness of the blade in tangential direction
         """
@@ -1235,8 +1220,7 @@ class Blade:
         plt.ylabel(r'$r$')
         plt.title(r'$b$ reference')
         plt.gca().set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_factor.pdf', bbox_inches='tight')
+
 
     def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
         """
@@ -1411,7 +1395,6 @@ class Blade:
         :param convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the
         direction of rotation
         """
-
         self.gas_path_angle = np.zeros_like(self.x_camber)
         self.blade_metal_angle = np.zeros_like(self.x_camber)
         self.blade_lean_angle = np.zeros_like(self.x_camber)
