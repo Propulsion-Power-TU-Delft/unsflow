@@ -26,6 +26,7 @@ from scipy.interpolate import bisplrep, bisplev
 from shapely.geometry import LineString
 from scipy.spatial import KDTree
 from Grid.src.surface import Surface
+from scipy.interpolate import bisplev, bisplrep
 
 
 
@@ -122,22 +123,6 @@ class Blade:
         self.r_main = self.r[self.idx_main]
         self.theta_main = self.theta[self.idx_main]
 
-        if visual_debug:
-            # inspect points, for a 90 degree sector blades
-            N_Blades = self.config.get_blades_number()
-            if isinstance(N_Blades, list):
-                N_Blades = N_Blades[iblade]
-            theta_machine = np.linspace(0, np.pi, N_Blades//4)
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            for theta_position in theta_machine:
-                ax.scatter(self.r_main*np.cos(self.theta_main+theta_position),
-                           self.r_main*np.sin(self.theta_main+theta_position),
-                           self.z_main)
-            ax.set_xlabel('X Axis')
-            ax.set_ylabel('Y Axis')
-            ax.set_zlabel('Z Axis')
-
         self.number_profiles = np.unique(self.profile).shape[0]
         main_profiles = np.unique(self.profile)
         main_profiles = [int(prof) for prof in main_profiles]
@@ -156,7 +141,6 @@ class Blade:
         thetacamb = []
         tCamb = []
         kappaCamb = []
-
 
         if blade_dataset == 'not ordered':
             """
@@ -245,24 +229,6 @@ class Blade:
                 x1, y1 = x[0:len(z)//2], y[0:len(z)//2]
                 x2, y2 = x[len(z)//2:], y[len(z)//2:]
 
-                if visual_debug:
-                    plt.figure()
-                    plt.plot(z1, r1*theta1, '-o', label='1st half', mec='C0', mfc='none')
-                    plt.plot(z2, r2*theta2, '-^', label='2nd half', mec='C1', mfc='none')
-                    plt.xlabel('z')
-                    plt.ylabel('r*theta')
-                    plt.legend()
-
-                    fig = plt.figure()
-                    ax = fig.add_subplot(111, projection='3d')
-                    ax.scatter(x1, y1, z1, label='1st half')
-                    ax.scatter(x2, y2, z2, label='2nd half')
-                    ax.set_xlabel('X Label')
-                    ax.set_ylabel('Y Label')
-                    ax.set_zlabel('Z Label')
-                    ax.legend()
-                    print()
-
                 # order from inlet to outlet
                 if z1[0]<z1[-1]:
                     z2, r2, theta2 = np.flip(z2), np.flip(r2), np.flip(theta2)
@@ -291,6 +257,7 @@ class Blade:
                 theta_camber = rtheta_camber/r_camber
 
                 if visual_debug:
+                    # 3D plot of the camber line
                     fig = plt.figure()
                     ax = fig.add_subplot(111, projection='3d')
                     ax.scatter(x, y, z, c='b', marker='o')
@@ -315,18 +282,6 @@ class Blade:
                     plt.legend()
                     plt.gca().set_aspect('equal', adjustable='box')
 
-                    plt.figure()
-                    plt.plot(s_camber, t_norm, label='thk normal')
-                    plt.plot(s_camber, t_tang, label='thk tang.')
-                    plt.xlabel('s')
-                    plt.ylabel('t_norm')
-                    plt.legend()
-
-                    plt.figure()
-                    plt.plot(s_camber, metal_angle*180/np.pi)
-                    plt.xlabel('s')
-                    plt.ylabel('metal angle [deg]')
-
                 zss.append(z_ss)
                 rss.append(r_ss)
                 thetass.append(theta_ss)
@@ -346,45 +301,17 @@ class Blade:
                 tCamb.append(t_tang)
                 kappaCamb.append(metal_angle)
 
-        self.camberSurf.loft_through_profiles(extension=0)
+        self.camberSurf.loft_through_profiles(extension=0.0)
         if visual_debug: self.camberSurf.plot_surface(surfaces=True)
         self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_surface(method='cylindrical')
 
-        self.psSurf.loft_through_profiles()
+        self.psSurf.loft_through_profiles(extension=0.0)
         if visual_debug: self.psSurf.plot_surface(surfaces=True)
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_surface(method='cylindrical')
 
-        self.ssSurf.loft_through_profiles()
+        self.ssSurf.loft_through_profiles(extension=0.0)
         if visual_debug: self.ssSurf.plot_surface(surfaces=True)
         self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_surface(method='cylindrical')
-
-
-        self.thkSurf = self.r_cambSurface*(self.theta_ssSurface-self.theta_psSurface)
-        if np.mean(self.thkSurf)>0:
-            for ii in range(self.thkSurf.shape[0]):
-                for jj in range(self.thkSurf.shape[1]):
-                    if self.thkSurf[ii, jj]<0:
-                        self.thkSurf[ii,jj]= 0
-        else:
-            for ii in range(self.thkSurf.shape[0]):
-                for jj in range(self.thkSurf.shape[1]):
-                    if self.thkSurf[ii, jj]<0:
-                        self.thkSurf[ii,jj] *= -1
-                    else:
-                        self.thkSurf[ii, jj] = 0
-
-
-        # self.zss_points = np.concatenate(zss)
-        # self.rss_points = np.concatenate(rss)
-        # self.thetass_points = np.concatenate(thetass)
-        # self.zps_points = np.concatenate(zps)
-        # self.rps_points = np.concatenate(rps)
-        # self.thetaps_points = np.concatenate(thetaps)
-        # self.zc_points = np.concatenate(zcamb)
-        # self.rc_points = np.concatenate(rcamb)
-        # self.thetac_points = np.concatenate(thetacamb)
-        # self.blade_metal_angle_points = np.concatenate(kappaCamb)
-        # self.thk_points = np.concatenate(tCamb)
 
         if self.splitter:
             raise ValueError('Splitter blade not implemented yet')
@@ -395,25 +322,23 @@ class Blade:
             self.theta_splitter = self.theta[self.idx_splitter]
             self.r_splitter = self.r[self.idx_splitter]
 
-    def compute_thickness(self):
-        self.thk_tang = self.r_cambSurface * (self.theta_ssSurface - self.theta_psSurface)
-        if np.mean(self.thk_tang) > 0:
-            for ii in range(self.thk_tang.shape[0]):
-                for jj in range(self.thk_tang.shape[1]):
-                    if self.thk_tang[ii, jj] < 0:
-                        self.thk_tang[ii, jj] = 0
+    def compute_thickness_on_camber_loft(self):
+        """
+        Using the blade camber surface obtained through lofting
+        """
+        self.thk_tang_cambSurface = self.r_cambSurface * (self.theta_ssSurface - self.theta_psSurface)
+        if np.mean(self.thk_tang_cambSurface) > 0:
+            for ii in range(self.thk_tang_cambSurface.shape[0]):
+                for jj in range(self.thk_tang_cambSurface.shape[1]):
+                    if self.thk_tang_cambSurface[ii, jj] < 0:
+                        self.thk_tang_cambSurface[ii, jj] = 0
         else:
-            for ii in range(self.thk_tang.shape[0]):
-                for jj in range(self.thk_tang.shape[1]):
-                    if self.thk_tang[ii, jj] < 0:
-                        self.thk_tang[ii, jj] *= -1
+            for ii in range(self.thk_tang_cambSurface.shape[0]):
+                for jj in range(self.thk_tang_cambSurface.shape[1]):
+                    if self.thk_tang_cambSurface[ii, jj] < 0:
+                        self.thk_tang_cambSurface[ii, jj] *= -1
                     else:
-                        self.thk_tang[ii, jj] = 0
-        plt.figure()
-        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.thk_tang, levels=N_levels)
-        plt.colorbar()
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
+                        self.thk_tang_cambSurface[ii, jj] = 0
 
     def compute_thickness_along_camber(self):
         """
@@ -448,8 +373,6 @@ class Blade:
                 yline = rc[iPoint]*thetac[iPoint] + zdir[iPoint]*t
                 plt.plot(zline, yline, 'k', lw=0.1)
                 plt.gca().set_aspect('equal', adjustable='box')
-
-
 
     def point_intersection(self, curve1, curve2, tol=1e-18):
         """
@@ -518,7 +441,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def compute_surface(self, z, r, theta, z_eval, r_eval, method, degree, smooth):
+    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method, degree, smooth):
         """
         Routine valid for different surfaces. Evaluate theta as a function of the z and r.
         :param method: decide between regression and interpolation
@@ -542,6 +465,16 @@ class Blade:
             points = np.array((z.flatten(), r.flatten())).T
             values = theta.flatten()
             theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
+            idx, idy = np.where(np.isnan(theta_eval))
+            for inan in range(len(idx)):
+                theta_eval[idx[inan], idy[inan]] = interpolate.griddata(points, values,
+                                                                    (z_eval[idx[inan], idy[inan]],
+                                                                        r_eval[idx[inan], idy[inan]]), method='nearest')
+        elif method == 'bivariate_spline':
+            tck = bisplrep(z.flatten(), r.flatten(), theta.flatten(), s=0)
+            theta_eval = bisplev(z_eval.flatten(), r_eval.flatten(), tck)
+            theta_eval = np.reshape(theta_eval, self.z_cambSurface.shape)
+
         else:
             raise ValueError('Unknown method')
 
@@ -561,98 +494,42 @@ class Blade:
         print()
         return theta
 
-    def find_camber_surface(self, blade_block, smooth, degree, method):
+    def obtain_quantities_on_meridional_grid(self, smooth=0, degree=3, method='griddata'):
         """
         Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
         :param blade_block: the block storing the meridional mesh of the bladed domain
         """
         # evaluate the camber surface on the (r,z) points of the primary structured grid
-        self.z_camber = blade_block.z_grid_points
-        self.r_camber = blade_block.r_grid_points
-        self.theta_camber = self.compute_surface(self.z_cambSurface.flatten(), self.r_cambSurface.flatten(),
-                                                 self.theta_cambSurface.flatten(), self.z_grid, self.r_grid,
-                                                 method, degree, smooth)
-        self.x_camber = self.r_camber * np.cos(self.theta_camber)
-        self.y_camber = self.r_camber * np.sin(self.theta_camber)
-        # self.blade_metal_angle = self.compute_surface(self.camb_points_stream, self.camb_points_span,
-        #                                               self.blade_metal_angle_points, self.streamline_length,
-        #                                               self.spanline_length, method, degree, smooth)
-        self.thk_tang = self.compute_surface(self.z_cambSurface.flatten(), self.r_cambSurface.flatten(),
-                                             self.thkSurf.flatten(), self.z_grid, self.r_grid,
-                                             method, degree, smooth)
+        self.z_camber = self.z_grid
+        self.r_camber = self.r_grid
+        self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                                         self.r_cambSurface.flatten(),
+                                                         (self.r_cambSurface*self.theta_cambSurface).flatten(),
+                                                         self.z_grid, self.r_grid,
+                                                         method, degree, smooth) / self.r_grid
+        self.x_camber = self.r_grid * np.cos(self.theta_camber)
+        self.y_camber = self.r_grid * np.sin(self.theta_camber)
 
+        self.blockage = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                                     self.r_cambSurface.flatten(),
+                                                     self.blockage_cambSurface.flatten(),
+                                                     self.z_grid, self.r_grid, method, degree, smooth)
 
-    def update_camber_surface(self, blade_block, degree=3):
-        """
-        Update the camber surface via regression of the function theta = f(stream, span), using only the main blade points.
-        Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
-        :param degree: degree of the regression
-        """
-        points = np.column_stack((self.z_camber.flatten(), self.r_camber.flatten()))
-        stw_values = self.streamline_length.flatten()
-        spw_values = self.spanline_length.flatten()
-        stw_points = griddata(points, stw_values, (self.z_main, self.r_main), method='nearest')
-        spw_points = griddata(points, spw_values, (self.z_main, self.r_main), method='nearest')
+        self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                               self.r_cambSurface.flatten(),
+                                               self.n_camber_r.flatten(),
+                                               self.z_grid, self.r_grid, method, degree, smooth)
 
-        plt.figure()
-        plt.scatter(self.z_main, self.r_main, c=stw_points)
-        plt.colorbar()
+        self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                                   self.r_cambSurface.flatten(),
+                                                   self.n_camber_t.flatten(),
+                                                   self.z_grid, self.r_grid, method, degree, smooth)
 
-        plt.figure()
-        plt.scatter(self.z_main, self.r_main, c=spw_points)
-        plt.colorbar()
-
-        x_param = self.z_main
-        y_param = self.r_main
-        self.camber_degree = degree  # mixed polynomial order
-        self.camber_poly_features = PolynomialFeatures(degree=degree)  # object for regression
-        X = self.camber_poly_features.fit_transform(np.column_stack((x_param, y_param)))  # dataset in right format
-        self.camber_model = LinearRegression()  # object for linear regression (least square fit)
-        self.camber_model.fit(X, self.theta_main)  # least square fit of the regression coefficient
-
-        plt.figure()
-        plt.scatter(self.z_main, self.r_main, c=self.theta_main, s=50)
-        plt.xlabel('z')
-        plt.ylabel('r')
-        plt.title('theta camber')
-        # plt.show()
-
-        plt.figure()
-        plt.scatter(stw_points.flatten(), spw_points.flatten(), c=self.theta_main,s=50)
-        plt.xlabel('streamwise position')
-        plt.ylabel('spanwise position')
-        plt.title('theta camber')
-        # plt.show()
-
-
-
-        self.camber_coefficients = self.camber_model.coef_  # polynomial coefficients
-        self.camber_intercept = self.camber_model.intercept_  # constant term
-        self.z_camber = blade_block.z_grid_points
-        self.r_camber = blade_block.r_grid_points
-        z_eval = self.z_camber.flatten()
-        r_eval = self.r_camber.flatten()
-        X_eval = self.camber_poly_features.fit_transform(np.column_stack((z_eval, r_eval)))
-        camber_surface_values = np.dot(X_eval, self.camber_coefficients) + self.camber_intercept
-        self.theta_camber = camber_surface_values.reshape(self.z_camber.shape)
-        self.x_camber = self.r_camber * np.cos(self.theta_camber)
-        self.y_camber = self.r_camber * np.sin(self.theta_camber)
-
-
-
-
-
-    def find_camber_surface2(self, blade_block, degree=4):
-        """
-        Find the camber surface as the surface sitting in between the pressure and the suction side
-        """
-
-        self.z_camber = blade_block.z_grid_points
-        self.r_camber = blade_block.r_grid_points
-        self.theta_camber = (self.theta_ss+self.theta_ps)/2
-        self.x_camber = self.r_camber * np.cos(self.theta_camber)
-        self.y_camber = self.r_camber * np.sin(self.theta_camber)
+        self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                               self.r_cambSurface.flatten(),
+                                               self.n_camber_z.flatten(),
+                                               self.z_grid, self.r_grid, method, degree, smooth)
 
     def add_meridional_grid(self, zgrid, rgrid):
         """
@@ -691,41 +568,6 @@ class Blade:
         if normalize:
             for ii in range(0, self.spanline_length.shape[0]):
                 self.spanline_length[ii, :] /= self.spanline_length[ii, -1]
-
-    def infer_stream_span_length_on_camber_points(self, debug_visual=False):
-        """
-        For each point lying on the camber, infer the associated value of (s_stw, s_spw) coordinates, defined on the meridional
-        plane
-        """
-        if debug_visual:
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(self.rss_points*np.cos(self.thetass_points), self.rss_points*np.sin(self.thetass_points), self.zss_points, c='b', marker='o')
-            ax.scatter(self.rps_points * np.cos(self.thetaps_points), self.rps_points * np.sin(self.thetaps_points), self.zps_points, c='b', marker='o')
-            ax.scatter(self.rc_points * np.cos(self.thetac_points), self.rc_points * np.sin(self.thetac_points), self.zc_points, c='r', marker='o')
-
-            # Labels and title
-            ax.set_xlabel('X Label')
-            ax.set_ylabel('Y Label')
-            ax.set_zlabel('Z Label')
-            ax.set_title('3D Scatter Plot')
-
-        # Infer the streamwise coordinate
-        points = np.array((self.z_grid.flatten(), self.r_grid.flatten())).T
-        values = self.streamline_length.flatten()
-        self.camb_points_stream = interpolate.griddata(points, values, (self.zc_points, self.rc_points), method='linear')
-        for ii in range(len(self.camb_points_stream)):
-            if math.isnan(self.camb_points_stream[ii]):
-                self.camb_points_stream[ii] = interpolate.griddata(points, values, (self.zc_points[ii], self.rc_points[ii]), method='nearest')
-
-        # infer the spanwise coordinate
-        points = np.array((self.z_grid.flatten(), self.r_grid.flatten())).T
-        values = self.spanline_length.flatten()
-        self.camb_points_span = interpolate.griddata(points, values, (self.zc_points, self.rc_points), method='linear')
-        for ii in range(len(self.camb_points_span)):
-            if math.isnan(self.camb_points_span[ii]):
-                self.camb_points_span[ii] = interpolate.griddata(points, values, (self.zc_points[ii], self.rc_points[ii]), method='nearest')
-
 
     def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
         """
@@ -789,7 +631,8 @@ class Blade:
         """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.45, color='red', label='camber')
+        ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.5, color='red', label='reference camber')
+        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='blue', label='regressed camber')
         if points:
             ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1)
         if sides:
@@ -822,12 +665,64 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
+    def plot_camber_normal_contour_on_loft(self, save_filename=None, folder_name=None):
+        """
+        plot the camber normal vector contours
+        """
+        plt.figure()
+        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_r, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_r$ reference')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_r.pdf', bbox_inches='tight')
+
+        plt.figure()
+        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_t, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_{\theta}$ reference')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_theta.pdf', bbox_inches='tight')
+
+        plt.figure()
+        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_z, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$n_z$ reference')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '_z.pdf', bbox_inches='tight')
+
+    def plot_blockage_contour(self, save_filename=None, folder_name=None):
+        """
+        plot the blockage
+        """
+        plt.figure()
+        plt.contourf(self.z_grid, self.r_grid, self.blockage, levels=N_levels)
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal', adjustable='box')
+        plt.title(r'$b$')
+        plt.colorbar()
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+
     def plot_camber_normal_contour(self, save_filename=None, folder_name=None):
         """
         plot the camber normal vector contours
         """
         plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.n_camber_r, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.nr, levels=N_levels)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         ax = plt.gca()
@@ -838,7 +733,7 @@ class Blade:
             plt.savefig(folder_name + '/' + save_filename + '_r.pdf', bbox_inches='tight')
 
         plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.n_camber_t, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.nt, levels=N_levels)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         ax = plt.gca()
@@ -849,7 +744,7 @@ class Blade:
             plt.savefig(folder_name + '/' + save_filename + '_theta.pdf', bbox_inches='tight')
 
         plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.n_camber_z, levels=N_levels)
+        plt.contourf(self.z_grid, self.r_grid, self.nz, levels=N_levels)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         ax = plt.gca()
@@ -924,7 +819,7 @@ class Blade:
                 file.write('</blade section>\n')
                 file.write('</data>')
 
-    def compute_camber_vector(self, i, j, check=False):
+    def compute_camber_vector(self, i, j, xgrid, ygrid, zgrid, check=False):
         """
         For a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
         of the vectors connecting streamwise and spanwise points. Preserve the directions to have consistent vectors
@@ -932,32 +827,46 @@ class Blade:
         :param j: j index of the point on the blade grid
         :param check: if True plots the result
         """
-        ni = self.z_camber.shape[0] - 1  # last element index
-        nj = self.r_camber.shape[1] - 1  # last element index
+        ni = xgrid.shape[0] - 1  # last element index
+        nj = xgrid.shape[1] - 1  # last element index
 
-        # vector along the streamline
+        # compute versor along the first direction
         if i == ni:
-            stream_v = np.array([self.x_camber[i, j] - self.x_camber[i - 1, j], self.y_camber[i, j] - self.y_camber[i - 1, j],
-                                 self.z_camber[i, j] - self.z_camber[i - 1, j]])
+            stream_v = np.array([xgrid[i, j] - xgrid[i - 1, j],
+                                 ygrid[i, j] - ygrid[i - 1, j],
+                                 zgrid[i, j] - zgrid[i - 1, j]])
+        elif i == 0:
+            stream_v = np.array([xgrid[i + 1, j] - xgrid[i, j],
+                                 ygrid[i + 1, j] - ygrid[i, j],
+                                 zgrid[i + 1, j] - zgrid[i, j]])
         else:
-            stream_v = np.array([self.x_camber[i + 1, j] - self.x_camber[i, j], self.y_camber[i + 1, j] - self.y_camber[i, j],
-                                 self.z_camber[i + 1, j] - self.z_camber[i, j]])
+            stream_v = np.array([xgrid[i + 1, j] - xgrid[i - 1, j],
+                                 ygrid[i + 1, j] - ygrid[i - 1, j],
+                                 zgrid[i + 1, j] - zgrid[i - 1, j]])
         stream_v /= np.linalg.norm(stream_v)
 
-        # vector along the spanline
+        # compute versor along the second direction
         if j == nj:
-            span_v = np.array([self.x_camber[i, j] - self.x_camber[i, j - 1], self.y_camber[i, j] - self.y_camber[i, j - 1],
-                               self.z_camber[i, j] - self.z_camber[i, j - 1]])
+            span_v = np.array([xgrid[i, j] - xgrid[i, j - 1],
+                               ygrid[i, j] - ygrid[i, j - 1],
+                               zgrid[i, j] - zgrid[i, j - 1]])
+        elif j == 0:
+            span_v = np.array([xgrid[i, j + 1] - xgrid[i, j],
+                               ygrid[i, j + 1] - ygrid[i, j],
+                               zgrid[i, j + 1] - zgrid[i, j]])
         else:
-            span_v = np.array([self.x_camber[i, j + 1] - self.x_camber[i, j], self.y_camber[i, j + 1] - self.y_camber[i, j],
-                               self.z_camber[i, j + 1] - self.z_camber[i, j]])
+            span_v = np.array([xgrid[i, j + 1] - xgrid[i, j - 1],
+                               ygrid[i, j + 1] - ygrid[i, j - 1],
+                               zgrid[i, j + 1] - zgrid[i, j - 1]])
         span_v /= np.linalg.norm(span_v)
 
         # the normal is the vectorial product of the two
         normal = np.cross(stream_v, span_v)
         normal /= np.linalg.norm(normal)
+
         if normal[2] < 0:  # if the axial component of the normal is negative, invert the direction
             normal *= -1
+
         if check:
             fig = plt.figure(figsize=self.picture_size_blank)
             ax = fig.add_subplot(111, projection='3d')
@@ -1099,57 +1008,56 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-    def compute_camber_vectors(self, fix=None):
+    def compute_camber_vectors(self):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
-        :param fix: parameter needed to artificially fix the sign of the normal vector
         """
+        self.x_cambSurface = self.r_cambSurface*np.cos(self.theta_cambSurface)
+        self.y_cambSurface = self.r_cambSurface * np.sin(self.theta_cambSurface)
 
         # Create 2D NumPy array of empty arrays
-        self.normal_vectors = np.empty(self.z_camber.shape, dtype=object)
-        self.streamline_vectors = np.empty(self.z_camber.shape, dtype=object)
-        self.spanline_vectors = np.empty(self.z_camber.shape, dtype=object)
+        self.normal_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
+        self.streamline_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
+        self.spanline_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
 
         # compute also the vector in cylindrical cordinates
-        self.normal_vectors_cyl = np.empty(self.z_camber.shape, dtype=object)
-        self.streamline_vectors_cyl = np.empty(self.z_camber.shape, dtype=object)
-        self.spanline_vectors_cyl = np.empty(self.z_camber.shape, dtype=object)
+        self.normal_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
+        self.streamline_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
+        self.spanline_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
 
-        for i in range(0, self.z_camber.shape[0]):
-            for j in range(0, self.z_camber.shape[1]):
+        for i in range(0, self.z_cambSurface.shape[0]):
+            for j in range(0, self.z_cambSurface.shape[1]):
                 self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
-                    i, j] = self.compute_camber_vector(i, j)
+                    i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface)
 
-                self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
-                                                                         self.z_camber[i, j], self.normal_vectors[i, j])
-                self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
-                                                                             self.z_camber[i, j], self.streamline_vectors[i, j])
-                self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j], self.y_camber[i, j],
-                                                                           self.z_camber[i, j], self.spanline_vectors[i, j])
+                self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
+                                                                         self.y_cambSurface[i, j],
+                                                                         self.z_cambSurface[i, j],
+                                                                         self.normal_vectors[i, j])
+                # self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
+                #                                                              self.y_cambSurface[i, j],
+                #                                                              self.z_cambSurface[i, j],
+                #                                                              self.streamline_vectors[i, j])
+                # self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
+                #                                                            self.y_cambSurface[i, j],
+                #                                                            self.z_cambSurface[i, j],
+                #                                                            self.spanline_vectors[i, j])
 
         # reorder the vectors in 2d arrays
-        self.n_camber_r = np.zeros_like(self.z_camber)
-        self.n_camber_t = np.zeros_like(self.z_camber)
-        self.n_camber_z = np.zeros_like(self.z_camber)
-        for i in range(0, self.z_camber.shape[0]):
-            for j in range(0, self.z_camber.shape[1]):
+        self.n_camber_r = np.zeros_like(self.z_cambSurface)
+        self.n_camber_t = np.zeros_like(self.z_cambSurface)
+        self.n_camber_z = np.zeros_like(self.z_cambSurface)
+        for i in range(0, self.z_cambSurface.shape[0]):
+            for j in range(0, self.z_cambSurface.shape[1]):
                 self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
                 self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
                 self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
 
-        if fix == 'plus':
-            warnings.warn('Attention, camber normal vector artificially corrected to positive on all the domain')
-            self.n_camber_r = np.abs(self.n_camber_r)
-            self.n_camber_t = np.abs(self.n_camber_t)
-            self.n_camber_z = np.abs(self.n_camber_z)
-        elif fix == 'minus':
-            warnings.warn('Attention, camber normal vector artificially corrected to negative on all the domain')
-            self.n_camber_r = -np.abs(self.n_camber_r)
-            self.n_camber_t = -np.abs(self.n_camber_t)
-            self.n_camber_z = -np.abs(self.n_camber_z)
-        else:
-            pass
+        if np.mean(self.n_camber_z)<0:
+            self.n_camber_z *= -1
+            self.n_camber_r *= -1
+            self.n_camber_t *= -1
 
     def show_normal_vectors(self, save_filename=None, folder_name=None):
         """
@@ -1315,39 +1223,41 @@ class Blade:
         return thk
 
 
-    def compute_blade_blockage(self, Nb, save_filename=None, folder_name=None):
+    def compute_blade_blockage_on_camber_loft(self, Nb, save_filename=None, folder_name=None):
         """
         Compute blade blockage based on the thickness of the blade in tangential direction
         """
-        self.blockage = 1 - Nb * self.thk_tang / (2*np.pi*self.r_grid)
+        self.blockage_cambSurface = 1 - Nb * self.thk_tang_cambSurface / (2*np.pi*self.r_cambSurface)
         plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.blockage, cmap=color_map, levels=N_levels)
+        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, cmap=color_map, levels=N_levels)
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
-        plt.title(r'$b$')
+        plt.title(r'$b$ reference')
+        plt.gca().set_aspect('equal', adjustable='box')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_factor.pdf', bbox_inches='tight')
 
     def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
+        """
+        Compute the blockage gradient via finite difference on the meridional grid
+        """
         self.db_dz, self.db_dr = compute_2d_curvilinear_gradient(self.z_camber, self.r_camber, self.blockage)
 
-        # levels = np.linspace(-8, 8, N_levels)
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, self.db_dz, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.contour(self.z_camber, self.r_camber, self.db_dz, colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$dbdz$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz.pdf', bbox_inches='tight')
 
-        # levels = np.linspace(0, 0.4, N_levels)
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, self.db_dr, levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.contour(self.z_camber, self.r_camber, self.db_dr, colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$dbdr$')
@@ -1357,7 +1267,7 @@ class Blade:
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), levels=[0], colors='white', linestyles='dashed', linewidths=2)
+        plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$| \nabla b|$')
@@ -1441,7 +1351,6 @@ class Blade:
         plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr_hub_to_shroud.pdf', bbox_inches='tight')
-
 
     def plot_bladetoblade_section(self, span_idx, save_filename=None, folder_name=None):
         """

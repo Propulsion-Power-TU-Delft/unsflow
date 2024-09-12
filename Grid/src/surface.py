@@ -72,17 +72,15 @@ class Surface:
         ax = fig.add_subplot(111, projection='3d')
         if self.get_number_profiles()>0:
             for key, values in self.coords.items():
-                ax.plot(values['x'], values['y'], values['z'], 'o', label=key)
+                ax.plot(values['x'], values['y'], values['z'], lw=3, label=key)
             ax.legend()
-            try:
+            if surfaces:
                 for key, values in self.surface.items():
                     ax.plot_surface(values['X'], values['Y'], values['Z'], alpha=0.5)
-            except:
-                print('Surfaces not plotted, since not yet computed. Call the method loft_through_profiles')
         else:
             raise ValueError('Not curves stored in the object yet')
 
-    def loft_through_profiles(self, points_along_profile=200, points_between_profiles=100, extension=0.025):
+    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=20, extension=0.025):
         """
         Use interpolation between 2 profiles to assemble the overall surface of the camber.
         The camber is extended at the borders for 10% in order to cope for following griddata interpolation.
@@ -144,6 +142,22 @@ class Surface:
         else:
             raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
 
+    def get_global_points(self, method):
+        """
+        Get the arrays with the coordinates of the points
+        """
+        xcoord, ycoord, zcoord = [], [], []
+        for key, values in self.coords.items():
+            xcoord.append(values['x'])
+            ycoord.append(values['y'])
+            zcoord.append(values['z'])
+        x = np.concatenate(xcoord)
+        y = np.concatenate(ycoord)
+        z = np.concatenate(zcoord)
+        if method == 'cartesian':
+            return x, y, z
+        else:
+            return np.sqrt(x**2+y**2), np.arctan2(y,x), z
 
 
 
