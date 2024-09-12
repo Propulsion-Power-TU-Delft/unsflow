@@ -186,7 +186,7 @@ class BFM_Writer:
         return variables
 
 
-    def write_bfm_input_file_smart(self, filename='BFM_input.drg', addFields=['blockage_gradient'], formatType='.10e'):
+    def write_bfm_input_file_smart(self, filename='BFM_input.drg', addFields=None, formatType='.10e'):
         """
         Write the BFM configuration file according to SU2 structure.
         :param filename: filename of the bfm input file
@@ -200,17 +200,18 @@ class BFM_Writer:
         # Add the additional requested values to each blade in the list
         for ii, OutFieldDict in enumerate(outFieldList):
             keyDum = len(OutFieldDict)
-            for addField in addFields:
-                if addField == 'blockage_gradient':
-                    OutFieldDict['%i:dblockage_daxial' %(keyDum)] = self.blades[ii].db_dz
-                    OutFieldDict['%i:dblockage_dradial' %(keyDum+1)] = self.blades[ii].db_dr
-                    keyDum += 2
-                elif addField == 'frozen_forces':
-                    OutFieldDict['%i:force_turning' %(keyDum)] = self.blades[ii].meridional_fields['Force_Turning']
-                    OutFieldDict['%i:force_loss' %(keyDum+1)] = self.blades[ii].meridional_fields['Force_Loss']
-                    keyDum += 2
-                else:
-                    raise ValueError('Not valid field')
+            if addFields is not None:
+                for addField in addFields:
+                    if addField == 'blockage_gradient':
+                        OutFieldDict['%i:dblockage_daxial' %(keyDum)] = self.blades[ii].db_dz
+                        OutFieldDict['%i:dblockage_dradial' %(keyDum+1)] = self.blades[ii].db_dr
+                        keyDum += 2
+                    elif addField == 'frozen_forces':
+                        OutFieldDict['%i:force_turning' %(keyDum)] = self.blades[ii].meridional_fields['Force_Turning']
+                        OutFieldDict['%i:force_loss' %(keyDum+1)] = self.blades[ii].meridional_fields['Force_Loss']
+                        keyDum += 2
+                    else:
+                        raise ValueError('Not valid field')
 
         # Select the fields needed for the output, depending on the bfm-file model chosen
         if filename is None:
@@ -304,22 +305,6 @@ class BFM_Writer:
                     file.write('<radial section>\n')
                     for i in range(blade.z_camber.shape[0]):
                         file.write(self.getSingleStringOfValues(outFieldList[iblade], i, j, formatType))
-                        # if model=='bGrad':
-                        #     file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
-                        #     blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
-                        #     blade.n_camber_r[i, j], blade.blockage[i, j], blade.db_dz[i, j], blade.db_dr[i, j],
-                        #     blade.streamline_length[0, j], blade.streamline_length[i, j]))
-                        # elif model=='frozen_forces':
-                        #     file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
-                        #     blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
-                        #     blade.n_camber_r[i, j], blade.blockage[i, j], blade.db_dz[i, j], blade.db_dr[i, j],
-                        #     blade.streamline_length[0, j], blade.streamline_length[i, j],
-                        #     blade.meridional_fields['Force_Turning'][i,j], blade.meridional_fields['Force_Loss'][i,j]))
-                        # else:
-                        #     file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
-                        #         blade.z_camber[i, j], blade.r_camber[i, j], blade.n_camber_z[i, j], blade.n_camber_t[i, j],
-                        #         blade.n_camber_r[i, j], blade.blockage[i, j],
-                        #         blade.streamline_length[0, j], blade.streamline_length[i, j]))
                     file.write('</radial section>\n')
                 file.write('</tang section>\n')
                 file.write('</blade row>\n')
