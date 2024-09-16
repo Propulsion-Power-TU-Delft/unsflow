@@ -80,7 +80,7 @@ class Surface:
         else:
             raise ValueError('Not curves stored in the object yet')
 
-    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=20, extension=0.025):
+    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=40, extension=0.025):
         """
         Use interpolation between 2 profiles to assemble the overall surface of the camber.
         The camber is extended at the borders for 10% in order to cope for following griddata interpolation.

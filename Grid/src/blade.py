@@ -87,7 +87,7 @@ class Blade:
                     blade_type = words_list[1].upper()
 
                 elif words_list[0] == '#':
-                    profile_span = words_list[-1]
+                    profile_span = words_list[2]
 
                 elif (len(words_list) == 3 or len(words_list) == 4):
                     self.x.append(words_list[0])
@@ -125,6 +125,11 @@ class Blade:
 
         self.number_profiles = np.unique(self.profile).shape[0]
         main_profiles = np.unique(self.profile)
+        # for i,prof in enumerate(main_profiles):
+        #     if '%' in prof:
+        #         main_profiles[i] = i
+        #     else:
+        #         main_profiles[i] = prof
         main_profiles = [int(prof) for prof in main_profiles]
         main_profiles.sort()
 
@@ -217,7 +222,7 @@ class Blade:
             second surface. Pressure or suction side designation depends on the rotational direction.
             """
             for i in range(self.number_profiles):
-                idx = np.where(self.profile == str(main_profiles[i]))
+                idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
                 z = self.z_main[idx]
                 r = self.r_main[idx]
                 theta = self.theta_main[idx]
@@ -314,13 +319,14 @@ class Blade:
         self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_surface(method='cylindrical')
 
         if self.splitter:
-            raise ValueError('Splitter blade not implemented yet')
-            self.idx_splitter = np.where(self.blade == 'SPLITTER')
-            self.x_splitter = self.x[self.idx_splitter]
-            self.y_splitter = self.y[self.idx_splitter]
-            self.z_splitter = self.z[self.idx_splitter]
-            self.theta_splitter = self.theta[self.idx_splitter]
-            self.r_splitter = self.r[self.idx_splitter]
+            pass
+            # raise ValueError('Splitter blade not implemented yet')
+            # self.idx_splitter = np.where(self.blade == 'SPLITTER')
+            # self.x_splitter = self.x[self.idx_splitter]
+            # self.y_splitter = self.y[self.idx_splitter]
+            # self.z_splitter = self.z[self.idx_splitter]
+            # self.theta_splitter = self.theta[self.idx_splitter]
+            # self.r_splitter = self.r[self.idx_splitter]
 
     def compute_thickness_on_camber_loft(self):
         """
@@ -1201,9 +1207,12 @@ class Blade:
                 plt.plot(x_int_ps, y_int_ps, 'ro', ms=5)
                 plt.plot(x_int_ss, y_int_ss, 'ro', ms=5)
 
-            if (len(x_int_ss)*len(x_int_ps)*len(x_int_ss)*len(x_int_ps)>0):
-                thk[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
-            else:
+            try:
+                if (len(x_int_ss)*len(x_int_ps)*len(y_int_ss)*len(y_int_ps)>0):
+                    thk[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
+                else:
+                    thk[iPoint] = 0
+            except:
                 thk[iPoint] = 0
         return thk
 
