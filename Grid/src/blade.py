@@ -1000,7 +1000,7 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-    def compute_camber_vectors(self):
+    def compute_normal_vectors_on_reference_surface(self):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
@@ -1010,31 +1010,18 @@ class Blade:
 
         # Create 2D NumPy array of empty arrays
         self.normal_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
-        self.streamline_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
-        self.spanline_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
 
         # compute also the vector in cylindrical cordinates
         self.normal_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
-        self.streamline_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
-        self.spanline_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
 
         for i in range(0, self.z_cambSurface.shape[0]):
             for j in range(0, self.z_cambSurface.shape[1]):
-                self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
-                    i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface)
+                self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface)[0]
 
                 self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
                                                                          self.y_cambSurface[i, j],
                                                                          self.z_cambSurface[i, j],
                                                                          self.normal_vectors[i, j])
-                # self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
-                #                                                              self.y_cambSurface[i, j],
-                #                                                              self.z_cambSurface[i, j],
-                #                                                              self.streamline_vectors[i, j])
-                # self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
-                #                                                            self.y_cambSurface[i, j],
-                #                                                            self.z_cambSurface[i, j],
-                #                                                            self.spanline_vectors[i, j])
 
         # reorder the vectors in 2d arrays
         self.n_camber_r = np.zeros_like(self.z_cambSurface)
@@ -1042,6 +1029,57 @@ class Blade:
         self.n_camber_z = np.zeros_like(self.z_cambSurface)
         for i in range(0, self.z_cambSurface.shape[0]):
             for j in range(0, self.z_cambSurface.shape[1]):
+                self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
+                self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
+                self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
+
+        if np.mean(self.n_camber_z)<0:
+            self.n_camber_z *= -1
+            self.n_camber_r *= -1
+            self.n_camber_t *= -1
+
+    def compute_camber_vectors(self):
+        """
+        for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
+        spanline vector, all in cartesian and cylindrical reference systems.
+        """
+        self.x_camber = self.r_camber*np.cos(self.theta_camber)
+        self.y_camber = self.r_camber * np.sin(self.theta_camber)
+
+        # Create 2D NumPy array of empty arrays
+        self.normal_vectors = np.empty(self.x_camber.shape, dtype=object)
+        self.streamline_vectors = np.empty(self.x_camber.shape, dtype=object)
+        self.spanline_vectors = np.empty(self.x_camber.shape, dtype=object)
+
+        # compute also the vector in cylindrical cordinates
+        self.normal_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
+        self.streamline_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
+        self.spanline_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
+
+        for i in range(0, self.x_camber.shape[0]):
+            for j in range(0, self.x_camber.shape[1]):
+                self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
+                    i, j] = self.compute_camber_vector(i, j, self.x_camber, self.y_camber, self.z_camber)
+
+                self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                                                                         self.y_camber[i, j],
+                                                                         self.z_camber[i, j],
+                                                                         self.normal_vectors[i, j])
+                self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                                                                             self.y_camber[i, j],
+                                                                             self.z_camber[i, j],
+                                                                             self.streamline_vectors[i, j])
+                self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                                                                           self.y_camber[i, j],
+                                                                           self.z_camber[i, j],
+                                                                           self.spanline_vectors[i, j])
+
+        # reorder the vectors in 2d arrays
+        self.n_camber_r = np.zeros_like(self.x_camber)
+        self.n_camber_t = np.zeros_like(self.x_camber)
+        self.n_camber_z = np.zeros_like(self.x_camber)
+        for i in range(0, self.x_camber.shape[0]):
+            for j in range(0, self.x_camber.shape[1]):
                 self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
                 self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
                 self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]

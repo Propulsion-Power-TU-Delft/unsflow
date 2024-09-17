@@ -146,12 +146,12 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, visual_debug=False):
+    def bspline_surface_generation(self, visual_debug=False, extension=0.01):
         """
         Generation of surface by bi-variate spline
         """
-        t = np.linspace(0, 1, 150)
-        s = np.linspace(0, 1, 20)
+        t = np.linspace(0-extension, 1+extension, 150)
+        s = np.linspace(0-extension, 1+extension, 20)
 
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
