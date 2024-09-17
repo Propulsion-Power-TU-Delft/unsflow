@@ -153,7 +153,7 @@ class Blade:
             look really good, especially for radial blades. If possible use the ordered method, providing ordered data points
             """
             for i in range(self.number_profiles):
-                idx = np.where(self.profile == main_profiles[i])
+                idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
                 z = self.z_main[idx]
                 r = self.r_main[idx]
                 theta = self.theta_main[idx]
@@ -306,27 +306,28 @@ class Blade:
                 tCamb.append(t_tang)
                 kappaCamb.append(metal_angle)
 
-        self.camberSurf.loft_through_profiles(extension=0.0)
-        if visual_debug: self.camberSurf.plot_surface(surfaces=True)
-        self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_surface(method='cylindrical')
+            # self.camberSurf.loft_through_profiles(extension=0.0)
+            self.camberSurf.bspline_surface_generation()
+            self.camberSurf.plot_bspline_surface()
+            self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
-        self.psSurf.loft_through_profiles(extension=0.0)
-        if visual_debug: self.psSurf.plot_surface(surfaces=True)
-        self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_surface(method='cylindrical')
+            self.psSurf.bspline_surface_generation()
+            self.psSurf.plot_bspline_surface()
+            self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cylindrical')
 
-        self.ssSurf.loft_through_profiles(extension=0.0)
-        if visual_debug: self.ssSurf.plot_surface(surfaces=True)
-        self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_surface(method='cylindrical')
+            self.ssSurf.bspline_surface_generation()
+            self.ssSurf.plot_bspline_surface()
+            self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cylindrical')
 
-        if self.splitter:
-            pass
-            # raise ValueError('Splitter blade not implemented yet')
-            # self.idx_splitter = np.where(self.blade == 'SPLITTER')
-            # self.x_splitter = self.x[self.idx_splitter]
-            # self.y_splitter = self.y[self.idx_splitter]
-            # self.z_splitter = self.z[self.idx_splitter]
-            # self.theta_splitter = self.theta[self.idx_splitter]
-            # self.r_splitter = self.r[self.idx_splitter]
+            if self.splitter:
+                pass
+                # raise ValueError('Splitter blade not implemented yet')
+                # self.idx_splitter = np.where(self.blade == 'SPLITTER')
+                # self.x_splitter = self.x[self.idx_splitter]
+                # self.y_splitter = self.y[self.idx_splitter]
+                # self.z_splitter = self.z[self.idx_splitter]
+                # self.theta_splitter = self.theta[self.idx_splitter]
+                # self.r_splitter = self.r[self.idx_splitter]
 
     def compute_thickness_on_camber_loft(self):
         """

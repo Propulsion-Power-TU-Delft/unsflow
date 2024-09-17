@@ -49,6 +49,14 @@ class Surface:
         iDum = len(self.coords)
         self.coords['Profile %i' % iDum] = {'x': x, 'y': y, 'z': z}
 
+    def get_number_points_per_profile(self):
+        """
+        Get the number of points that define a single profile
+        """
+        nProf = self.get_number_profiles()
+        nTot = len(self.get_global_points()[0])
+        return nTot//nProf
+
     def get_number_profiles(self):
         """
         Get the number of profiles
@@ -63,7 +71,7 @@ class Surface:
         assert (n == self.get_number_profiles()-1)
         return n
 
-    def plot_surface(self, surfaces=False):
+    def plot_lofted_surface(self, surfaces=False):
         """
         Plot the profiles points, and the surface lofts if available.
         :param surfaces: bool value, True to plot the surface lofts
@@ -80,23 +88,41 @@ class Surface:
         else:
             raise ValueError('Not curves stored in the object yet')
 
-    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=40, extension=0.025):
+    def plot_bspline_surface(self):
+        """
+        Plot the profiles points, and the surface lofts if available.
+        :param surfaces: bool value, True to plot the surface lofts
+        """
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(*self.get_global_points('cartesian'), s=30, alpha=0.3, c='black')
+        ax.plot_surface(self.Xg, self.Yg, self.Zg, alpha=0.8)
+        ax.set_xlabel('x')
+        ax.set_xlabel('y')
+        ax.set_xlabel('z')
+
+
+    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=40, extension=0.025, order='linear'):
         """
         Use interpolation between 2 profiles to assemble the overall surface of the camber.
         The camber is extended at the borders for 10% in order to cope for following griddata interpolation.
         :param points_along_profile: number of points used to interpolate splines along the generator curves
         :param points_between_profiles: number of points used in between the different lofts
         :param extension: percentage of extension at the borders
+        :param order: linear or quadratic bi-interpolation
         """
-        if self.get_number_profiles() < 2:
-            raise ValueError('At least two profiles are needed for the loft function')
+        if order == 'linear' and self.get_number_profiles() < 2:
+            raise ValueError('At least two profiles are needed for a linear loft generation')
+        elif order == 'quadratic' and self.get_number_profiles() < 3:
+            raise ValueError('At least three profiles are needed for a quadratic loft surface generation. Not implemented yet!')
+
         self.surface = {}
         keys_list = list(self.coords.keys())
         for iSurf in range(self.get_number_profiles()-1):
             t = np.linspace(0-extension, 1+extension, points_along_profile)  # parameter flowing on one curve tangentially
-            if iSurf==0:
+            if iSurf == 0:
                 s = np.linspace(0-extension, 1, points_between_profiles)  # parameter connecting one curve to the other
-            elif iSurf==self.get_number_profiles()-2:
+            elif iSurf == self.get_number_profiles()-2:
                 s = np.linspace(0, 1+extension, points_between_profiles)
             else:
                 s = np.linspace(0, 1, points_between_profiles)
@@ -106,6 +132,7 @@ class Surface:
             xint0, yint0, zint0 = compute_3dSpline_curve(self.coords[keys_list[iSurf]]['x'],
                                                          self.coords[keys_list[iSurf]]['y'],
                                                          self.coords[keys_list[iSurf]]['z'], u_param=t, spacing=3)
+
             xint1, yint1, zint1 = compute_3dSpline_curve(self.coords[keys_list[iSurf+1]]['x'],
                                                          self.coords[keys_list[iSurf+1]]['y'],
                                                          self.coords[keys_list[iSurf+1]]['z'], u_param=t, spacing=3)
@@ -119,7 +146,65 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def get_global_surface(self, method):
+    def bspline_surface_generation(self, visual_debug=False):
+        """
+        Generation of surface by bi-variate spline
+        """
+        t = np.linspace(0, 1, 150)
+        s = np.linspace(0, 1, 20)
+
+        # generate the spline along the profile (streamwise)
+        prf_splx, prf_sply, prf_splz = [], [], []
+        for key, values in self.coords.items():
+            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=t)
+            prf_splx.append(xint)
+            prf_sply.append(yint)
+            prf_splz.append(zint)
+
+        # generate the dataset across the profiles (spanwise)
+        self.cross_coords = {}
+        for i in range(len(t)):
+            self.cross_coords[i] = {}
+            xtmp, ytmp, ztmp = [], [], []
+            for iProf in range(len(prf_splx)):
+                xtmp.append(prf_splx[iProf][i])
+                ytmp.append(prf_sply[iProf][i])
+                ztmp.append(prf_splz[iProf][i])
+            x, y, z = np.array(xtmp), np.array(ytmp), np.array(ztmp)
+            self.cross_coords[i]['x'] = x
+            self.cross_coords[i]['y'] = y
+            self.cross_coords[i]['z'] = z
+
+        # generate the spline in the spanwise direction
+        crs_splx, crs_sply, crs_splz = [], [], []
+        for key, values in self.cross_coords.items():
+            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
+            crs_splx.append(xint)
+            crs_sply.append(yint)
+            crs_splz.append(zint)
+
+        if visual_debug:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            for i in range(len(prf_splx)):
+                ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0', label='streamwise', lw=0.5)
+
+            for i in range(len(crs_splx)):
+                ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
+
+            ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
+
+        self.Xg, self.Yg, self.Zg = np.zeros((len(t), len(s))), np.zeros((len(t), len(s))), np.zeros((len(t), len(s)))
+        for ii in range(len(t)):
+            for jj in range(len(s)):
+                self.Xg[ii, jj] = crs_splx[ii][jj]
+                self.Yg[ii, jj] = crs_sply[ii][jj]
+                self.Zg[ii, jj] = crs_splz[ii][jj]
+
+
+
+
+    def get_global_lofted_surface(self, method):
         """
         Get the coordinates arrays for whole lofted surface.
         :param method: decide between cylindrical (r,theta,z) and cartesian (x, y, z) return
@@ -142,7 +227,19 @@ class Surface:
         else:
             raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
 
-    def get_global_points(self, method):
+    def get_global_bspline_surface(self, method):
+        """
+        Get the coordinates arrays for whole bspline surface.
+        :param method: decide between cylindrical (r,theta,z) and cartesian (x, y, z) return
+        """
+        if method == 'cartesian':
+            return self.Xg, self.Yg, self.Zg
+        elif method == 'cylindrical':
+            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg,self.Xg), self.Zg
+        else:
+            raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
+
+    def get_global_points(self, method='cartesian'):
         """
         Get the arrays with the coordinates of the points
         """

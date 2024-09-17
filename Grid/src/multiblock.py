@@ -164,7 +164,7 @@ class MultiBlock:
         r_mean = (self.r_grid_points[0, self.nspan // 2] + self.r_grid_points[-1, self.nspan // 2]) / 2
         return min_length / r_mean
 
-    def compute_three_dimensional_mesh(self, config, mode, conserve_AR=True, theta_max=1, nodes_number=2, dimensional=True):
+    def compute_three_dimensional_mesh(self, config, mode='singlezone', conserve_AR=True, theta_max=1, nodes_number=2, dimensional=True):
         """
         Compute the Three-dimensional mesh X,Y,Z as 3D arrays, structured.
         :param config: config object needed to pass reference dimensions
@@ -210,7 +210,7 @@ class MultiBlock:
                             block.Z_mesh[i, j, k] = block.z_grid_cg[i, j]
 
 
-    def save_mesh_pickle(self, mode):
+    def save_mesh_pickle(self, mode='singlezone'):
         """
         Save the mesh cordinates in a pickle.
         :param mode: if single or multizone output
