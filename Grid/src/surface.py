@@ -146,7 +146,7 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, visual_debug=False, extension=0.01):
+    def bspline_surface_generation(self, visual_debug=False, extension=0.001):
         """
         Generation of surface by bi-variate spline
         """

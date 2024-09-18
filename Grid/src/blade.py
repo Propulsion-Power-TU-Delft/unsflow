@@ -308,15 +308,15 @@ class Blade:
 
             # self.camberSurf.loft_through_profiles(extension=0.0)
             self.camberSurf.bspline_surface_generation()
-            self.camberSurf.plot_bspline_surface()
+            if visual_debug: self.camberSurf.plot_bspline_surface()
             self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
             self.psSurf.bspline_surface_generation()
-            self.psSurf.plot_bspline_surface()
+            if visual_debug: self.psSurf.plot_bspline_surface()
             self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cylindrical')
 
             self.ssSurf.bspline_surface_generation()
-            self.ssSurf.plot_bspline_surface()
+            if visual_debug: self.ssSurf.plot_bspline_surface()
             self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cylindrical')
 
             if self.splitter:
@@ -642,6 +642,7 @@ class Blade:
         ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='blue', label='regressed camber')
         if points:
             ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1, label='points')
+        ax.set_aspect('equal', adjustable='box')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -856,20 +857,19 @@ class Blade:
         normal = np.cross(stream_v, span_v)
         normal /= np.linalg.norm(normal)
 
-        if normal[2] < 0:  # if the axial component of the normal is negative, invert the direction
-            normal *= -1
-
         if check:
-            fig = plt.figure(figsize=self.picture_size_blank)
+            arrow_len = (np.max(zgrid)-np.min(zgrid))/3
+            fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
-            ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
+            ax.plot_surface(xgrid, ygrid, zgrid, alpha=0.3)
             ax.set_xlabel(r'$x$')
             ax.set_ylabel(r'$y$')
             ax.set_zlabel(r'$z$')
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], vec_1[0], vec_1[1], vec_1[2], length=0.004)
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], vec_2[0], vec_2[1], vec_2[2], length=0.004)
-            ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], normal[0], normal[1], normal[2],
-                      length=0.004)
+            ax.set_aspect('equal', adjustable='box')
+            ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], stream_v[0], stream_v[1], stream_v[2], length=arrow_len, color='red')
+            ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], span_v[0], span_v[1], span_v[2], length=arrow_len, color='green')
+            ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], normal[0], normal[1], normal[2], length=arrow_len, color='blue')
+            pass
         return normal, stream_v, span_v
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
@@ -1000,7 +1000,7 @@ class Blade:
             self.outlet_r.append(max_r)
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
-    def compute_normal_vectors_on_reference_surface(self):
+    def compute_normal_vectors_on_reference_surface(self, visual_debug=True):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
@@ -1016,7 +1016,7 @@ class Blade:
 
         for i in range(0, self.z_cambSurface.shape[0]):
             for j in range(0, self.z_cambSurface.shape[1]):
-                self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface)[0]
+                self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, check=False)[0]
 
                 self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
                                                                          self.y_cambSurface[i, j],
@@ -1038,12 +1038,26 @@ class Blade:
             self.n_camber_r *= -1
             self.n_camber_t *= -1
 
+        if visual_debug:
+            arrow_len = (np.max(self.z_cambSurface) - np.min(self.z_cambSurface)) / 5
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.3)
+            ax.set_xlabel(r'$x$')
+            ax.set_ylabel(r'$y$')
+            ax.set_zlabel(r'$z$')
+            ax.set_aspect('equal', adjustable='box')
+            for i in range(0, self.z_cambSurface.shape[0], 10):
+                for j in range(0, self.z_cambSurface.shape[1], 5):
+                    ax.quiver(self.x_cambSurface[i, j], self.y_cambSurface[i, j], self.z_cambSurface[i, j], self.normal_vectors[i,j][0], self.normal_vectors[i,j][1], self.normal_vectors[i,j][2], length=arrow_len, color='blue')
+            pass
+
     def compute_camber_vectors(self):
         """
         for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
         spanline vector, all in cartesian and cylindrical reference systems.
         """
-        self.x_camber = self.r_camber*np.cos(self.theta_camber)
+        self.x_camber = self.r_camber * np.cos(self.theta_camber)
         self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
         # Create 2D NumPy array of empty arrays
@@ -1059,7 +1073,7 @@ class Blade:
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
                 self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
-                    i, j] = self.compute_camber_vector(i, j, self.x_camber, self.y_camber, self.z_camber)
+                    i, j] = self.compute_camber_vector(i, j, self.x_camber, self.y_camber, self.z_camber, check=False)
 
                 self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
                                                                          self.y_camber[i, j],
@@ -1433,7 +1447,7 @@ class Blade:
         else:
             raise ValueError('Span value not recognized')
 
-    def compute_blade_camber_angles(self, convention='rotation-wise'):
+    def compute_blade_camber_angles(self, convention='neutral'):
         """
         From the normal and streamline vectors of the camber compute:
         -gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)
@@ -1449,7 +1463,7 @@ class Blade:
 
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                self.gas_path_angle[i, j] = np.arctan(self.streamline_vectors_cyl[i, j][0] / self.streamline_vectors_cyl[i, j][2])
+                self.gas_path_angle[i, j] = np.arctan2(self.streamline_vectors_cyl[i, j][0] , self.streamline_vectors_cyl[i, j][2])
 
                 meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
                 meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
@@ -1477,6 +1491,7 @@ class Blade:
         ax.set_title(r'$\varphi$')
         cb = fig.colorbar(cs)
         cb.set_label(r'$\varphi \quad \mathrm{[deg]}$')
+        ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
 
@@ -1485,6 +1500,7 @@ class Blade:
         ax.set_title(r'$\kappa$')
         cb = fig.colorbar(cs)
         cb.set_label(r'$\kappa \quad \mathrm{[deg]}$')
+        ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
 
@@ -1493,6 +1509,7 @@ class Blade:
         ax.set_title(r'$\lambda$')
         cb = fig.colorbar(cs)
         cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
+        ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
             fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
 
