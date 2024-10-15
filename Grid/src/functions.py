@@ -18,6 +18,7 @@ from scipy.interpolate import CubicSpline
 from scipy import interpolate
 from shapely.geometry import LineString
 
+
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
@@ -1224,11 +1225,12 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
     x, y, z = interpolate.splev(u_fine, tck)
     return x, y, z
 
-def compute_2dSpline_curve(x, y, num_points, spacing=5):
+
+def compute_2dSpline_curve(x, y, num_points, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
-    tck, u = interpolate.splprep([x, y], s=0)
+    tck, u = interpolate.splprep([x, y], s=1)
     u_fine = np.linspace(0, 1, num_points)
     if spacing is not None:
         u_fine = eriksson_stretching_function_both(u_fine, spacing)

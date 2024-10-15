@@ -253,6 +253,8 @@ class Blade:
                 zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
                 sglob = np.append(s_ps, s_ss)
                 s_camber = np.linspace(np.min(sglob), np.max(sglob), self.config.get_streamwise_points()[1])
+
+
                 coeff = np.polyfit(sglob, rglob*thetaglob, deg=9) # degree 9 should be fine for a radial compressor
                 rtheta_camber = np.polyval(coeff, s_camber)
                 coeff = np.polyfit(sglob, rglob, deg=9)  # degree 9 should be fine for a radial compressor
@@ -271,8 +273,8 @@ class Blade:
                     ax.set_ylabel('Y Label')
                     ax.set_zlabel('Z Label')
 
-                t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
-                                                                       s_ss, r_ss*theta_ss)
+                # t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
+                #                                                        s_ss, r_ss*theta_ss)
                 t_tang = self.compute_blade_thickness_tangential(s_camber, rtheta_camber, s_ps, r_ps * theta_ps, s_ss,
                                                                        r_ss * theta_ss)
                 metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
@@ -1293,7 +1295,7 @@ class Blade:
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, self.db_dz, colors='white', linestyles='dashed', linewidths=2)
+        # plt.contour(self.z_camber, self.r_camber, self.db_dz, colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$dbdz$')
@@ -1303,7 +1305,7 @@ class Blade:
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, self.db_dr, colors='white', linestyles='dashed', linewidths=2)
+        # plt.contour(self.z_camber, self.r_camber, self.db_dr, colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$dbdr$')
@@ -1313,7 +1315,7 @@ class Blade:
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), cmap=color_map, levels=N_levels)
         plt.colorbar()
-        plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), colors='white', linestyles='dashed', linewidths=2)
+        # plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), colors='white', linestyles='dashed', linewidths=2)
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
         plt.title(r'$| \nabla b|$')
@@ -1831,12 +1833,12 @@ class Blade:
         # generate the curve from leading edge to trailing edge, deciding automatically which data using thanks to previous bookkeping
         if inlet_line==1 and outlet_line==2:
             zmeridional, rmeridional = z1[id_LE:], r1[id_LE:]
-            zmeridional = np.append(zmeridional, np.array([z2[id_TE]]))
-            rmeridional = np.append(rmeridional, np.array([r2[id_TE]]))
+            # zmeridional = np.append(zmeridional, np.array([z2[id_TE]]))
+            # rmeridional = np.append(rmeridional, np.array([r2[id_TE]]))
         elif inlet_line==2 and outlet_line==1:
             zmeridional, rmeridional = z2[id_LE:], r2[id_LE:]
-            zmeridional = np.append(zmeridional, np.array([z1[id_TE]]))
-            rmeridional = np.append(rmeridional, np.array([r1[id_TE]]))
+            # zmeridional = np.append(zmeridional, np.array([z1[id_TE]]))
+            # rmeridional = np.append(rmeridional, np.array([r1[id_TE]]))
         elif inlet_line==1 and outlet_line==1:
             zmeridional, rmeridional = z1[id_LE:id_TE+1], r1[id_LE:id_TE+1]
         elif inlet_line==2 and outlet_line==2:
@@ -1845,7 +1847,7 @@ class Blade:
             raise ValueError('Problem')
 
         # spline of the projection on the (z,r) plane, and associated curvilinear abscissa length
-        zs, rs = compute_2dSpline_curve(zmeridional, rmeridional, 5000)
+        zs, rs = compute_2dSpline_curve(zmeridional, rmeridional, 2000)
         sref = np.zeros_like(zs)
         sref[0] = 0
         for iPoint in range(1, len(sref)):
