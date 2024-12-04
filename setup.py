@@ -11,8 +11,10 @@ setup(
         'scikit-learn',
         'matplotlib',
         'pandas',
-        'sympy'
-        # other dependencies...
+        'sympy',
+        'shapely',
+        'findiff',
+        'plotly'
     ],
     packages=find_packages(),
 )
