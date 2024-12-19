@@ -350,3 +350,19 @@ class MultiBlock:
                     file.write('%i,%i,%.6f,%.6f,%.6f\n'
                                %(istream, ispan,
                                  x[istream, ispan], y[istream, ispan], z[istream, ispan]))
+    
+
+    def write_turbobfm_grid_file_2D(self):
+        """
+        Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
+        """
+        X = self.z_grid_points
+        Y = self.r_grid_points
+
+        ni,nj = X.shape
+
+        mesh = {'X': X, 'Y': Y}
+        filepath = 'grid_%02i_%02i.pik' % (ni, nj)
+        with open(filepath, 'wb') as f:
+            pickle.dump(mesh, f)
+        print(f"TurboBFM pickle grid saved to '{filepath}'")

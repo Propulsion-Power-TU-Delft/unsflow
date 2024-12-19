@@ -10,12 +10,6 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 
-# default size of the figures
-fig_size_single = (7, 5)
-fig_size_12 = (12, 5)
-fig_size_13 = (15, 4)
-fig_size_22 = (12, 10)
-fig_size_3 = (15, 13)
 
 # Set grid opacity:
 grid_opacity = 0.2
