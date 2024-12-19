@@ -33,6 +33,7 @@ class Block:
         self.shroud = Curve(config=config, curve_filepath=config.get_shroud_curve_filepath(), degree_spline=1)
         self.nstream = nstream
         self.nspan = nspan
+        self.blockage = np.ones((nstream, nspan))
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -519,7 +520,7 @@ class Block:
             plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
 
         if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(save_foldername + '/' + save_filename + '_%02i_%02i.pdf' %(self.nstream, self.nspan), bbox_inches='tight')
 
     def find_border(self):
         """
@@ -662,4 +663,14 @@ class Block:
             pickle.dump(mesh, f)
 
         print(f"Data saved to '{filepath}'")
+    
+
+    def add_blockage_grid(self, blockage_grid):
+        """
+        Overwrite the blockage grid data with the blade data. Instead of 1, it will decrease to the value specified.
+        """
+        assert blockage_grid.shape[0] == self.z_grid_points.shape[0], 'The blockage must have the same dimensions of the background grid'
+        assert blockage_grid.shape[1] == self.z_grid_points.shape[1], 'The blockage must have the same dimensions of the background grid'
+        self.blockage = blockage_grid
+
 

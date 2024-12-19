@@ -38,10 +38,12 @@ class MultiBlock:
         # self.nspan = self.blocks[0].nspan
         self.z_grid_cg = self.blocks[0].z_grid_cg
         self.r_grid_cg = self.blocks[0].r_grid_cg
+        self.blockage = self.blocks[0].blockage
 
         for block in self.blocks[1:]:
             self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[1:, :]), axis=0)
             self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[1:, :]), axis=0)
+            self.blockage = np.concatenate((self.blockage, block.blockage[1:, :]), axis=0)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -134,6 +136,24 @@ class MultiBlock:
 
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+    
+
+    def plot_blockage(self, save_filename=None, save_foldername=None):
+        """
+        Plot the full machine blockage.
+        """
+        plt.figure()
+
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.blockage, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+
 
     def compute_average_dtheta(self):
         """
@@ -361,7 +381,7 @@ class MultiBlock:
 
         ni,nj = X.shape
 
-        mesh = {'X': X, 'Y': Y}
+        mesh = {'X': X, 'Y': Y, 'Blockage': self.blockage}
         filepath = 'grid_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
