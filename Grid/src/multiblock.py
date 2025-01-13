@@ -39,11 +39,17 @@ class MultiBlock:
         self.z_grid_cg = self.blocks[0].z_grid_cg
         self.r_grid_cg = self.blocks[0].r_grid_cg
         self.blockage = self.blocks[0].blockage
+        self.rpm = self.blocks[0].rpm
+        self.streamline_length = self.blocks[0].streamline_length
+        self.normal_camber = self.blocks[0].normal_camber
 
         for block in self.blocks[1:]:
             self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[1:, :]), axis=0)
             self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[1:, :]), axis=0)
             self.blockage = np.concatenate((self.blockage, block.blockage[1:, :]), axis=0)
+            self.rpm = np.concatenate((self.rpm, block.rpm[1:, :]), axis=0)
+            self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[1:, :]), axis=0)
+            self.normal_camber = np.concatenate((self.normal_camber, block.normal_camber[1:, :, :]), axis=0)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -148,11 +154,86 @@ class MultiBlock:
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
+        plt.title('b')
         ax = plt.gca()
         ax.set_aspect('equal')
 
         if save_filename is not None and save_foldername is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+    
+
+    def plot_rpm(self, save_filename=None, save_foldername=None):
+        """
+        Plot the full rpm.
+        """
+        plt.figure()
+
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.rpm, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title('rpm')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '_rpm.pdf', bbox_inches='tight')
+
+    
+    def plot_streamline_length(self, save_filename=None, save_foldername=None):
+        """
+        Plot the full rpm.
+        """
+        plt.figure()
+
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.streamline_length, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title('stwl')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
+
+    
+    def plot_normal_camber(self, save_filename=None, save_foldername=None):
+        """
+        Plot the full machine normal camber.
+        """
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,0], levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        plt.title('nz')
+        ax.set_aspect('equal')
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '_axial.pdf', bbox_inches='tight')
+        
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,1], levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        plt.title('nr')
+        ax.set_aspect('equal')
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '_radial.pdf', bbox_inches='tight')
+        
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,2], levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        ax = plt.gca()
+        plt.title('nt')
+        ax.set_aspect('equal')
+        if save_filename is not None and save_foldername is not None:
+            plt.savefig(save_foldername + '/' + save_filename + '_tangential.pdf', bbox_inches='tight')
 
 
     def compute_average_dtheta(self):
@@ -372,7 +453,7 @@ class MultiBlock:
                                  x[istream, ispan], y[istream, ispan], z[istream, ispan]))
     
 
-    def write_turbobfm_grid_file_2D(self):
+    def write_turbobfm_grid_file_2D(self, blockage=False, normal=False, rpm=False, stwl=False):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """
@@ -381,7 +462,20 @@ class MultiBlock:
 
         ni,nj = X.shape
 
-        mesh = {'X': X, 'Y': Y, 'Blockage': self.blockage}
+        mesh = {'X': X, 'Y': Y}
+        if blockage:
+            print('Blockage added to the grid file')
+            mesh['Blockage'] = self.blockage
+        if normal:
+            print('Camber normal added to the grid file')
+            mesh['Normal'] = self.normal_camber
+        if rpm:
+            print('Revs added to the grid file')
+            mesh['RPM'] = self.rpm
+        if stwl:
+            print('Streamwise length added to the grid file')
+            mesh['StreamwiseLength'] = self.streamline_length
+
         filepath = 'grid_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)

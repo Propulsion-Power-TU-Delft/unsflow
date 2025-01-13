@@ -15,7 +15,6 @@ class Config:
         sp_points = self.get_spanwise_points()
         print('Number of streamwise points: ', sw_points)
         print('Number of spanwise points: ', sp_points)
-
         self.picture_name_template = self.compute_picture_name_template(config_file)
 
     def compute_picture_name_template(self, config_file):
@@ -62,7 +61,10 @@ class Config:
 
     def get_streamwise_points(self):
         value = self.config_parser.get('CFD PROCESSING', 'STREAMWISE_POINTS')
-        return ast.literal_eval(value)
+        values = value.split()
+        vals = [int(value) for val in values]
+        vals = np.array(vals, dtype=int)
+        return vals
 
     def get_blocks_type(self):
         value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TYPE')
@@ -70,7 +72,8 @@ class Config:
 
     def get_blocks_topology(self):
         value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TOPOLOGY')
-        return ast.literal_eval(value)
+        values = [str(val) for val in value]
+        return values
 
     def get_spanwise_points(self):
         return int(self.config_parser.get('CFD PROCESSING', 'SPANWISE_POINTS'))
@@ -131,13 +134,10 @@ class Config:
             raise ValueError('Units not supported')
         return factor
 
-    def get_sigmoid_stream_coefficient(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENT'))
-        if len(value.split()) > 1:
-            factors = [float(i) for i in value.split()]
-        else:
-            factors = float(value)
-        return factors
+    def get_sigmoid_stream_coefficients(self):
+        value = str(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENTS'))
+        value = [float(val) for val in value.split()]
+        return value
 
     def get_sigmoid_span_coefficient(self):
         return float(self.config_parser.get('CFD PROCESSING', 'SIGMOID_SPAN_COEFFICIENT'))
@@ -150,11 +150,8 @@ class Config:
 
     def get_blade_curve_filepath(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
-        if len(value.split())>1:
-            filepath = [i for i in value.split()]
-        else:
-            filepath = value
-        return filepath
+        values = [str(val) for val in value.split()]
+        return values
 
     def get_blade_inlet_type(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
@@ -162,6 +159,12 @@ class Config:
             value = [i for i in value.split()]
         else:
             pass
+        return value
+
+
+    def get_block_trim_types(self):
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLOCK_TRIM_TYPES'))
+        value = [i for i in value.split()]
         return value
 
     def get_blade_outlet_type(self):
@@ -174,6 +177,14 @@ class Config:
 
     def get_verbosity(self):
         res = self.config_parser.get('CFD PROCESSING', 'VERBOSITY')
+        if res.lower() == 'true':
+            return True
+        else:
+            return False
+    
+
+    def get_visual_debug(self):
+        res = self.config_parser.get('CFD PROCESSING', 'VISUAL_DEBUG')
         if res.lower() == 'true':
             return True
         else:
@@ -267,10 +278,7 @@ class Config:
 
     def get_blades_number(self):
         value = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
-        if len(value.split()) > 1:
-            blades = [int(i) for i in value.split()]
-        else:
-            blades = int(value)
+        blades = [int(i) for i in value.split()]
         return blades
 
     def get_rotation_factors(self):
@@ -280,5 +288,12 @@ class Config:
         else:
             factors = int(value)
         return factors
+    
+    def get_bfm_rotational_speeds(self):
+        value = self.config_parser.get('BFM DATA', 'BFM_ROTATIONAL_SPEEDS')
+        components = value.strip("[]").split(", ")
+        float_values = [float(value) for value in components]
+        float_array = np.array(float_values)
+        return float_array
 
 

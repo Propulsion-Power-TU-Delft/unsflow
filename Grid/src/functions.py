@@ -634,7 +634,7 @@ def eriksson_stretching_function_both(x, alpha):
     """
     equation 4.97 Farrashkhalvat Book. Gives clustering at the initial and final part of the computational domain
     """
-    x_midpoint = 0.5
+    x_midpoint = x[len(x)//2]
     f = np.zeros_like(x)
 
     for i in range(len(x)):
@@ -643,11 +643,11 @@ def eriksson_stretching_function_both(x, alpha):
         else:
             f[i] = 1 - (1 - x_midpoint) * (np.exp(alpha * (1 - x[i]) / (1 - x_midpoint)) - 1) / (np.exp(alpha) - 1)
 
-    # plt.figure()
-    # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    # plt.xlabel(r'$x$')
-    # plt.xlabel(r'$f$')
-    # plt.grid(alpha=grid_opacity)
+    plt.figure()
+    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$f$')
+    plt.grid(alpha=grid_opacity)
     return f
 
 
@@ -1230,7 +1230,7 @@ def compute_2dSpline_curve(x, y, num_points, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
-    tck, u = interpolate.splprep([x, y], s=1)
+    tck, u = interpolate.splprep([x, y], s=0, k=3)
     u_fine = np.linspace(0, 1, num_points)
     if spacing is not None:
         u_fine = eriksson_stretching_function_both(u_fine, spacing)

@@ -11,6 +11,7 @@ from Utils.styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size, transfinite_grid_generation
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Grid.src.config import Config
 from .area_element import AreaElement
 import pickle
 
@@ -20,20 +21,28 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, config, nstream, nspan):
+    def __init__(self, config, iblock, iblade=None):
         """
         Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
         dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
         :param config: configuration file
-        :param nstream: number of grid points along the streamwise direction
-        :param nspan: number of grid points along the spanwise direction
         """
         self.config = config
         self.hub = Curve(config=config, curve_filepath=config.get_hub_curve_filepath(), degree_spline=1)
         self.shroud = Curve(config=config, curve_filepath=config.get_shroud_curve_filepath(), degree_spline=1)
-        self.nstream = nstream
-        self.nspan = nspan
-        self.blockage = np.ones((nstream, nspan))
+        self.nstream = self.config.get_streamwise_points()[iblock]
+        self.nspan = self.config.get_spanwise_points()
+        self.iblock = iblock
+        self.iblade = iblade
+    
+    def add_bfm_file_data(self):
+        """
+        When the BFM file must be written, generate also the data needed for it
+        """
+        self.blockage = np.ones((self.nstream, self.nspan))
+        self.normal_camber = np.full((self.nstream, self.nspan, 3), np.nan)
+        self.streamline_length = np.zeros((self.nstream, self.nspan))
+        self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -60,10 +69,11 @@ class Block:
         self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, mode='cordinates')
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, mode='cordinates')
 
-    def spline_of_leading_trailing_edge(self, iblade):
+    def spline_of_leading_trailing_edge(self):
         """
         Make splines of the inlet and outlet border of the domain considered
         """
+        iblade = self.iblade
 
         def remove_excess_points(topology, point_hub, point_shroud, curve):
             # plt.figure()
@@ -185,7 +195,7 @@ class Block:
         self.leading_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
         self.trailing_edge.sample(npoints=self.nspan, sampling_mode=sampling_mode)
 
-    def compute_grid_points(self, block_counter, inlet_block=False, outlet_block=False, inlet_meridional_obj=None,
+    def compute_grid_points(self, inlet_block=False, outlet_block=False, inlet_meridional_obj=None,
                             outlet_meridional_obj=None, save_animation=False):
         """
         Compute the internal grid points with a certain algorithm, specified by grid_mode.
@@ -196,11 +206,8 @@ class Block:
         :param outlet_meridional_obj: provide outlet meridional object if you wish to mantain consistency of the shared nodes
         :param save_animation: if True store the Matrix necessary for the animation of the elliptic grid generation.
         """
-        stream_coeff = self.config.get_sigmoid_stream_coefficient()
-        if isinstance(stream_coeff, list):
-            stream_coeff = stream_coeff[block_counter]
-        else:
-            print('Using the same streamwise stretching coefficients for all blocks')
+        block_counter = self.iblock
+        stream_coeff = self.config.get_sigmoid_stream_coefficients()[block_counter]
         span_coeff = self.config.get_sigmoid_span_coefficient()
 
         if self.config.get_verbosity():
@@ -241,7 +248,6 @@ class Block:
         if self.config.get_mesh_generation_method() == 'elliptic':
             self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.config.get_grid_orthogonality(),
-                                                                              self.config.get_mesh_type(),
                                                                               self.config.get_mesh_type(),
                                                                               inlet_block=inlet_block, outlet_block=outlet_block,
                                                                               save_animation=save_animation)
@@ -341,17 +347,18 @@ class Block:
         point = np.mean(intersection_points, axis=0)
         return point
 
-    def bladed_zone_trim(self, machine_type):
+    def bladed_zone_trim(self):
         """
         Trim the block hub and shroud curves at the found intersections with the inlet and outlet curves.
         :param machine_type: needed to know what kind of cut to apply
         """
-        if machine_type == 'radial':
+        block_type = self.config.get_block_trim_types()[self.iblock]
+        if block_type.lower() == 'radial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
             self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])
             self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
             self.shroud.trim_outlet(r_trim=self.point_shroud_outlet[1])
-        elif machine_type == 'axial':
+        elif block_type.lower() == 'axial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
             self.hub.trim_outlet(z_trim=self.point_hub_outlet[0])
             self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
@@ -672,5 +679,23 @@ class Block:
         assert blockage_grid.shape[0] == self.z_grid_points.shape[0], 'The blockage must have the same dimensions of the background grid'
         assert blockage_grid.shape[1] == self.z_grid_points.shape[1], 'The blockage must have the same dimensions of the background grid'
         self.blockage = blockage_grid
+    
+
+    def add_streamline_length_grid(self, stream):
+        """
+        Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
+        """
+        self.streamline_length = stream
+
+
+    def add_camber_grid(self, nz, nr, nt):
+        """
+        Add the values of the normal camber vector (axial, radial, tangential).
+        """
+        assert nz.shape[0] == self.z_grid_points.shape[0], 'The camnber normal must have the same dimensions of the background grid'
+        assert nz.shape[1] == self.z_grid_points.shape[1], 'The camber normal must have the same dimensions of the background grid'
+        self.normal_camber[:,:,0] = nz
+        self.normal_camber[:,:,1] = nr
+        self.normal_camber[:,:,2] = nt
 
 

@@ -98,8 +98,10 @@ class Surface:
         ax.scatter(*self.get_global_points('cartesian'), s=30, alpha=0.3, c='black')
         ax.plot_surface(self.Xg, self.Yg, self.Zg, alpha=0.8)
         ax.set_xlabel('x')
-        ax.set_xlabel('y')
-        ax.set_xlabel('z')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        
+        
 
 
     def loft_through_profiles(self, points_along_profile=100, points_between_profiles=40, extension=0.025, order='linear'):
