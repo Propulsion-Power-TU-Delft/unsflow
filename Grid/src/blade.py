@@ -38,10 +38,18 @@ class Blade:
 
     def __init__(self, config, iblock, iblade, poly_degree=3):
         """
-        reads the info from the blade file .curve, which is created during blade generation, e.g. with BladeGen.
-        :param config : configuration object
-        :param iblade : bladerow number
-        :param iblock : block number
+        Class used to model the blade from the file .curve, which is created during blade generation. The usual format for that file is the one of Ansys.
+
+        Parameters
+        -----------------------------------
+
+        `config` : configuration object
+        
+        `iblock` : grid block counter
+        
+        `iblade`: blade counter
+
+        `poly_degree`: degree of the polynomial fitting the blade
         """
         self.config = config
         self.x = []
@@ -52,26 +60,37 @@ class Blade:
         self.mark = []  # leading, trailing edge
         self.leading_edge = []
         self.trailing_edge = []
-        self.camberSurf = Surface('Camber Surface')
-        self.psSurf = Surface('Pressure Surface')
-        self.ssSurf = Surface('Suctions Surface')
+        self.camberSurf = Surface('Camber Surface', config)
+        self.psSurf = Surface('Pressure Surface', config)
+        self.ssSurf = Surface('Suctions Surface', config)
         self.iblock = iblock
         self.iblade = iblade
 
         self.read_from_curve_file(iblade, iblock, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, iblock, poly_degree, blade_dataset='ordered'):
+    def read_from_curve_file(self, iblade, iblock, poly_degree, blade_dataset='ordered', camber_stream_points=50):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
-        :param iblade: number of the blade row
-        :param iblock: number of the block
-        :param poly_degree: degree of the polynomial for guessing the camber distribution
-        :param blade_dataset: specify if the points in the blade cordinates file are ordered or not ordered
+        
+        Parameters
+        -----------------------------------
+
+        `config` : configuration object
+        
+        `iblock` : grid block counter
+        
+        `iblade`: blade counter
+
+        `poly_degree`: degree of the polynomial fitting the blade
+
+        `blade_dataset`: ordered if the points are on one side, and then on the other side. As it should be. Not order is deprecated, it could work badly.
+
+        `camber_stream_points`: points in the streamwise direction to obtain the curvilinear absicssa for each profile
         """
-        blade_dataset = blade_dataset.lower()
-        if blade_dataset not in ['ordered', 'not ordered']:
+        if blade_dataset.lower() not in ['ordered', 'not ordered']:
             raise ValueError('Specify ordering type of the blade cordinates file. Ordered or not ordered')
+        
         blade_type = 'MAIN'
         filepath = self.config.get_blade_curve_filepath()[iblade]
 
@@ -83,30 +102,42 @@ class Blade:
             words_list = line.split()
             if len(words_list) > 0:
 
-                if words_list[0] == '##':
+                if words_list[0] == '##':                               # this rows defines the blade type (main or splitter)
                     blade_type = words_list[1].upper()
-
-                elif words_list[0] == '#':
+                elif words_list[0] == '#':                              # this rows define the span of the profile described below
                     profile_span = words_list[2]
-
-                elif (len(words_list) == 3 or len(words_list) == 4):
-                    self.x.append(words_list[0])
-                    self.y.append(words_list[1])
-                    self.z.append(words_list[2])
+                elif (len(words_list) == 3 or len(words_list) == 4):    # this rows has the coordinate of the blade points
+                    self.x.append(float(words_list[0]))
+                    self.y.append(float(words_list[1]))
+                    self.z.append(float(words_list[2]))
                     self.blade.append(blade_type)
                     self.profile.append(profile_span)
 
                     if len(words_list) == 3:
-                        self.mark.append('')
+                        self.mark.append('')                            # it is a normal point on the surface
                     else:
-                        self.mark.append(words_list[-1])
+                        self.mark.append(words_list[-1])                # it is defined as leading or trailing edge point (optional)
+                else:
+                    pass                                                # ignore different type of lines
 
-        self.convert_to_floats()
-        self.convert_to_arrays()
+        # convert in numpy arrays
+        self.x = array(self.x, dtype=float)
+        self.y = array(self.y, dtype=float)
+        self.z = array(self.z, dtype=float)
+        self.blade = array(self.blade)
+        self.profile = array(self.profile)
+        self.mark = array(self.mark)
 
-        self.x *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
-        self.y *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
-        self.z *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
+        # rescale the coordinates to SI units
+        self.x *= self.config.get_coordinates_rescaling_factor()
+        self.y *= self.config.get_coordinates_rescaling_factor()
+        self.z *= self.config.get_coordinates_rescaling_factor()
+
+        if self.config.get_normalize_coordinates():
+            self.x /= self.config.get_reference_length()
+            self.y /= self.config.get_reference_length()
+            self.z /= self.config.get_reference_length()
+
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
@@ -247,8 +278,14 @@ class Blade:
                 s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
                 zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
                 sglob = np.append(s_ps, s_ss)
-                s_camber = np.linspace(np.min(sglob), np.max(sglob), 50)
-                s_camber = eriksson_stretching_function_both(s_camber, 2)
+
+                # curvilinear abscissa running on the revolution surface defined by the profile (z-r)
+                s_camber = np.linspace(np.min(sglob), np.max(sglob), camber_stream_points)
+                stretch = eriksson_stretching_function_both(np.linspace(0,1,camber_stream_points), alpha=2.5) # to cluster points at leading and trailing edge
+                s_camber_stretch = np.zeros_like(s_camber)
+                for i in range(camber_stream_points):
+                    s_camber_stretch[i] = s_camber[0]+stretch[i]*(s_camber[-1]-s_camber[0])
+                s_camber = s_camber_stretch
 
                 # degree 9 should be fine to fit the camber for a radial compressor
                 coeff = np.polyfit(sglob, rglob*thetaglob, deg=9) 
@@ -258,7 +295,6 @@ class Blade:
                 theta_camber = rtheta_camber/r_camber
                 coeff = np.polyfit(sglob, zglob, deg=9)  
                 z_camber = np.polyval(coeff, s_camber)
-                
 
                 if self.config.get_visual_debug():
                     fig = plt.figure()
@@ -315,25 +351,38 @@ class Blade:
 
             self.thickness_camber = tCamb
 
+            # check the full reconstructed blade
+            if self.config.get_visual_debug():
+                def cartesian_points(r, t, z):
+                    return r*np.cos(t), r*np.sin(t), z
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
+                ax.plot_surface(*cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface), alpha=0.6)
+                ax.plot_surface(*cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface), alpha=0.6)
+                ax.set_xlabel('x')
+                ax.set_ylabel('y')
+                ax.set_zlabel('z')      
+
         else:
             raise ValueError('The blade dataset must be ordered or not ordered. Value not recognized.')
     
 
-    def compute_thickness_on_camber_loft(self):
+    def compute_thickness(self):
         """
         Using the blade camber surface obtained through lofting
         """
-        # self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
-        self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
+        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
+        # self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
 
-        if self.config.get_visual_debug():
-            plt.figure()
-            plt.scatter(self.z_cambSurface, self.r_cambSurface, label='camber')
-            plt.scatter(self.z_psSurface, self.r_psSurface, label='pside')
-            plt.scatter(self.z_ssSurface, self.r_ssSurface, label='sside')
-            plt.xlabel(r'$z$')
-            plt.ylabel(r'$r$')
-            plt.title('Meridional grid points')
+        # if self.config.get_visual_debug():
+        #     plt.figure()
+        #     plt.scatter(self.z_cambSurface, self.r_cambSurface, label='camber')
+        #     plt.scatter(self.z_psSurface, self.r_psSurface, label='pside')
+        #     plt.scatter(self.z_ssSurface, self.r_ssSurface, label='sside')
+        #     plt.xlabel(r'$z$')
+        #     plt.ylabel(r'$r$')
+        #     plt.title('Meridional grid points')
 
         if self.config.get_visual_debug():
             plt.figure()
@@ -422,24 +471,6 @@ class Blade:
             print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
             print_banner_end()
 
-    def convert_to_floats(self):
-        """
-        Convert the list of cordinates to a list of float variables
-        """
-        self.x = [float(a) for a in self.x]
-        self.y = [float(a) for a in self.y]
-        self.z = [float(a) for a in self.z]
-
-    def convert_to_arrays(self):
-        """
-        Convert the data lists in numpy arrays.
-        """
-        self.x = array(self.x, dtype=float)
-        self.y = array(self.y, dtype=float)
-        self.z = array(self.z, dtype=float)
-        self.blade = array(self.blade)
-        self.profile = array(self.profile)
-        self.mark = array(self.mark)
 
     def plot_blade_points(self, save_filename=None, folder_name=None):
         """

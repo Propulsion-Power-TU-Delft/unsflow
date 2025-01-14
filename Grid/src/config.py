@@ -189,6 +189,21 @@ class Config:
             return True
         else:
             return False
+    
+
+    def get_normalize_coordinates(self):
+        
+        try:
+            res = self.config_parser.get('CFD PROCESSING', 'NORMALIZE_COORDINATES')
+            if res.lower() == 'yes':
+                return True
+            elif res.lower() == 'no':
+                return False
+            else:
+                raise ValueError('Invalid option NORMALIZE_COORDINATES. Specify yes or no.')
+        except:
+            return False # default option
+        
 
     def get_normalize_data(self):
         res = self.config_parser.get('CFD PROCESSING', 'NORMALIZE_DATA')

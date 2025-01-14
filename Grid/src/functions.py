@@ -643,11 +643,11 @@ def eriksson_stretching_function_both(x, alpha):
         else:
             f[i] = 1 - (1 - x_midpoint) * (np.exp(alpha * (1 - x[i]) / (1 - x_midpoint)) - 1) / (np.exp(alpha) - 1)
 
-    plt.figure()
-    plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$f$')
-    plt.grid(alpha=grid_opacity)
+    # plt.figure()
+    # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
+    # plt.xlabel(r'$x$')
+    # plt.ylabel(r'$f$')
+    # plt.grid(alpha=grid_opacity)
     return f
 
 

@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy import interpolate
@@ -31,13 +31,14 @@ class Surface:
     class used for the surface generation by means of curves lofting.
     """
 
-    def __init__(self, name):
+    def __init__(self, name ,config):
         """
         General constructor.
         :param name: string with the name of the surface
         """
         self.name = name
         self.coords = {}
+        self.config = config
 
     def add_curve(self, x, y, z):
         """
@@ -148,12 +149,14 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, visual_debug=False, extension=0.001):
+    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=50):
         """
         Generation of surface by bi-variate spline
         """
-        t = np.linspace(0-extension, 1+extension, 150)
-        s = np.linspace(0-extension, 1+extension, 20)
+        t = np.linspace(0-extension, 1+extension, stream_resolution)
+        s = np.linspace(0-extension, 1+extension, span_resolution)
+
+        t = eriksson_stretching_function_both(t, 3)
 
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
@@ -185,7 +188,7 @@ class Surface:
             crs_sply.append(yint)
             crs_splz.append(zint)
 
-        if visual_debug:
+        if self.config.get_visual_debug():
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             for i in range(len(prf_splx)):
