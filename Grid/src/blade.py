@@ -496,7 +496,7 @@ class Blade:
         :param smooth: smooth parameter of the rbf interpolation
         """
         if method == 'regression':
-            poly_features = PolynomialFeatures(degree=degree)  # object for regression
+            poly_features = PolynomialFeatures(degree=5)  # object for regression
             X = poly_features.fit_transform(np.column_stack((z, r)))
             model = LinearRegression()
             model.fit(X, theta)
@@ -541,7 +541,7 @@ class Blade:
         print()
         return theta
 
-    def obtain_quantities_on_meridional_grid(self, smooth=0, degree=1, method='griddata'):
+    def obtain_quantities_on_meridional_grid(self, smooth=0, degree=1, method='regression'):
         """
         Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -1543,7 +1543,7 @@ class Blade:
         cb.set_label(r'$\varphi \quad \mathrm{[deg]}$')
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            fig.savefig(folder_name + '/' + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
+            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + 'gas_path_angle.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots()
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)
@@ -1552,7 +1552,7 @@ class Blade:
         cb.set_label(r'$\kappa \quad \mathrm{[deg]}$')
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            fig.savefig(folder_name + '/' + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
+            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + 'blade_metal_angle.pdf', bbox_inches='tight')
 
         fig, ax = plt.subplots()
         cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, N_levels, cmap=color_map)
@@ -1561,7 +1561,7 @@ class Blade:
         cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            fig.savefig(folder_name + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
+            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + 'blade_lean_angle.pdf', bbox_inches='tight')
 
     def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
         """
