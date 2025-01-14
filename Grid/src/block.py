@@ -34,8 +34,10 @@ class Block:
         self.nspan = self.config.get_spanwise_points()
         self.iblock = iblock
         self.iblade = iblade
+
+        self.add_bfm_file_arrays()
     
-    def add_bfm_file_data(self):
+    def add_bfm_file_arrays(self):
         """
         When the BFM file must be written, generate also the data needed for it
         """
@@ -352,7 +354,7 @@ class Block:
         Trim the block hub and shroud curves at the found intersections with the inlet and outlet curves.
         :param machine_type: needed to know what kind of cut to apply
         """
-        block_type = self.config.get_block_trim_types()[self.iblock]
+        block_type = self.config.get_blocks_trim_type()[self.iblock]
         if block_type.lower() == 'radial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
             self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])

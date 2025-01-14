@@ -69,7 +69,7 @@ class Blade:
         self.read_from_curve_file(iblade, iblock, poly_degree)
         self.print_blade_info()
 
-    def read_from_curve_file(self, iblade, iblock, poly_degree, blade_dataset='ordered', camber_stream_points=50):
+    def read_from_curve_file(self, iblade, iblock, poly_degree, blade_dataset='ordered', camber_stream_points=100):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         
@@ -268,7 +268,7 @@ class Blade:
 
                 # decide which one is pressure side and suction side
                 dum = len(z1)//2
-                if np.mean(theta1[0:dum] - theta2[0:dum]) * self.config.get_omega_shaft() > 0:
+                if np.mean(theta1[0:dum] - theta2[0:dum]) * self.config.get_omega_shaft()[iblock] > 0:
                     z_ps, r_ps, theta_ps = z1, r1, theta1
                     z_ss, r_ss, theta_ss = z2, r2, theta2
                 else:
@@ -281,7 +281,7 @@ class Blade:
 
                 # curvilinear abscissa running on the revolution surface defined by the profile (z-r)
                 s_camber = np.linspace(np.min(sglob), np.max(sglob), camber_stream_points)
-                stretch = eriksson_stretching_function_both(np.linspace(0,1,camber_stream_points), alpha=2.5) # to cluster points at leading and trailing edge
+                stretch = eriksson_stretching_function_both(np.linspace(0,1,camber_stream_points), alpha=1.1) # to cluster points at leading and trailing edge
                 s_camber_stretch = np.zeros_like(s_camber)
                 for i in range(camber_stream_points):
                     s_camber_stretch[i] = s_camber[0]+stretch[i]*(s_camber[-1]-s_camber[0])

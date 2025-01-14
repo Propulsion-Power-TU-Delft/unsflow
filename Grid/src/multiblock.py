@@ -23,7 +23,7 @@ class MultiBlock:
     this class contains a multiblock meridional grid
     """
 
-    def __init__(self, *blocks):
+    def __init__(self, config, *blocks):
         """
         Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
         dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
@@ -31,6 +31,7 @@ class MultiBlock:
         :param nstream: number of grid points along the streamwise direction
         :param nspan: number of grid points along the spanwise direction
         """
+        self.config = config
         self.blocks = blocks
 
     def assemble_grid(self):
@@ -140,8 +141,8 @@ class MultiBlock:
             plt.xticks([])
             plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
 
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '.pdf', bbox_inches='tight')
     
 
     def plot_blockage(self, save_filename=None, save_foldername=None):
@@ -158,8 +159,8 @@ class MultiBlock:
         ax = plt.gca()
         ax.set_aspect('equal')
 
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '.pdf', bbox_inches='tight')
     
 
     def plot_rpm(self, save_filename=None, save_foldername=None):
@@ -176,8 +177,8 @@ class MultiBlock:
         ax = plt.gca()
         ax.set_aspect('equal')
 
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_rpm.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_rpm.pdf', bbox_inches='tight')
 
     
     def plot_streamline_length(self, save_filename=None, save_foldername=None):
@@ -194,8 +195,8 @@ class MultiBlock:
         ax = plt.gca()
         ax.set_aspect('equal')
 
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
 
     
     def plot_normal_camber(self, save_filename=None, save_foldername=None):
@@ -210,8 +211,8 @@ class MultiBlock:
         ax = plt.gca()
         plt.title('nz')
         ax.set_aspect('equal')
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_axial.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_axial.pdf', bbox_inches='tight')
         
         plt.figure()
         plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,1], levels=N_levels, cmap=color_map)
@@ -221,8 +222,8 @@ class MultiBlock:
         ax = plt.gca()
         plt.title('nr')
         ax.set_aspect('equal')
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_radial.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_radial.pdf', bbox_inches='tight')
         
         plt.figure()
         plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,2], levels=N_levels, cmap=color_map)
@@ -232,8 +233,8 @@ class MultiBlock:
         ax = plt.gca()
         plt.title('nt')
         ax.set_aspect('equal')
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_tangential.pdf', bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_tangential.pdf', bbox_inches='tight')
 
 
     def compute_average_dtheta(self):
@@ -453,7 +454,7 @@ class MultiBlock:
                                  x[istream, ispan], y[istream, ispan], z[istream, ispan]))
     
 
-    def write_turbobfm_grid_file_2D(self, blockage=False, normal=False, rpm=False, stwl=False):
+    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """

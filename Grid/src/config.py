@@ -11,20 +11,15 @@ class Config:
 
         cwd = os.getcwd()
         print('Configuration file path: %s' % os.path.join(cwd, config_file))
+
+        pic_folder = self.get_pictures_folder_path()
+        os.makedirs(pic_folder, exist_ok=True)
+        print('Output folder for the pictures is: %s' %(pic_folder))
         sw_points = self.get_streamwise_points()
         sp_points = self.get_spanwise_points()
         print('Number of streamwise points: ', sw_points)
         print('Number of spanwise points: ', sp_points)
-        self.picture_name_template = self.compute_picture_name_template(config_file)
-
-    def compute_picture_name_template(self, config_file):
-        prefix = config_file.split('.')[0]
-        streamwise = self.get_streamwise_points()
-        spanwise = self.get_spanwise_points()
-        for st in streamwise:
-            prefix += '_' + str(st)
-        prefix += '_' + str(spanwise)
-        return prefix
+        
 
     def get_config_value(self, section, option, default=None):
         """
@@ -61,8 +56,7 @@ class Config:
 
     def get_streamwise_points(self):
         value = self.config_parser.get('CFD PROCESSING', 'STREAMWISE_POINTS')
-        values = value.split()
-        vals = [int(value) for val in values]
+        vals = [int(val.strip(',')) for val in value.split()]
         vals = np.array(vals, dtype=int)
         return vals
 
@@ -72,7 +66,7 @@ class Config:
 
     def get_blocks_topology(self):
         value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TOPOLOGY')
-        values = [str(val) for val in value]
+        values = [str(val.strip(',')) for val in value.split()]
         return values
 
     def get_spanwise_points(self):
@@ -97,7 +91,9 @@ class Config:
         return 2 * np.pi * float(self.config_parser.get('CFD PROCESSING', 'RPM_REF')) / 60
 
     def get_omega_shaft(self):
-        return 2 * np.pi * self.get_shaft_rpm() / 60
+        rpm = self.get_shaft_rpm()
+        omega = [2*np.pi*n/60 for n in rpm]
+        return omega
 
     def get_reference_velocity(self):
         return self.get_reference_omega() * self.get_reference_length()
@@ -115,7 +111,9 @@ class Config:
         return float(self.config_parser.get('CFD PROCESSING', 'T_REF'))
 
     def get_shaft_rpm(self):
-        return float(self.config_parser.get('CFD PROCESSING', 'SHAFT_RPM'))
+        values = self.config_parser.get('CFD PROCESSING', 'SHAFT_RPM')
+        values = [float(val.strip(',')) for val in values.split()]
+        return values
 
     def get_coordinates_file_units(self):
         return str(self.config_parser.get('CFD PROCESSING', 'COORDINATES_FILE_UNITS'))
@@ -136,7 +134,7 @@ class Config:
 
     def get_sigmoid_stream_coefficients(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENTS'))
-        value = [float(val) for val in value.split()]
+        value = [float(val.strip(',')) for val in value.split()]
         return value
 
     def get_sigmoid_span_coefficient(self):
@@ -162,9 +160,9 @@ class Config:
         return value
 
 
-    def get_block_trim_types(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLOCK_TRIM_TYPES'))
-        value = [i for i in value.split()]
+    def get_blocks_trim_type(self):
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLOCKS_TRIM_TYPE'))
+        value = [str(i.strip(',')) for i in value.split()]
         return value
 
     def get_blade_outlet_type(self):
@@ -243,6 +241,13 @@ class Config:
 
     def get_meridional_pickle_filepath(self):
         return str(self.config_parser.get('SUN MODEL', 'MERIDIONAL_PICKLE_FILEPATH'))
+    
+
+    def get_pictures_folder_path(self):
+        try:
+            return str(self.config_parser.get('SUN MODEL', 'PICTURES_FOLDER_PATH'))
+        except:
+            return 'Pictures' # default
 
     def get_grid_transformation_gradient_routine(self):
         return str(self.config_parser.get('SUN MODEL', 'GRID_TRANSFORMATION_GRADIENT_ROUTINE'))
