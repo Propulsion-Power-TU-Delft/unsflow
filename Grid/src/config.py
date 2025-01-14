@@ -296,6 +296,12 @@ class Config:
         else:
             return False
 
+    def get_blades_camber_reconstruction(self):
+        values = str(self.config_parser.get('CFD PROCESSING', 'BLADES_CAMBER_RECONSTRUCTION'))
+        values = [str(i.strip(',')) for i in values.split()]
+        return values
+    
+
     def get_blades_number(self):
         value = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
         blades = [int(i) for i in value.split()]

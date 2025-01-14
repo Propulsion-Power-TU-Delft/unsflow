@@ -488,15 +488,32 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method, degree, smooth):
+    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method, degree=5, smooth=1):
         """
-        Routine valid for different surfaces. Evaluate theta as a function of the z and r.
-        :param method: decide between regression and interpolation
-        :param degree: degree of the regression surface
-        :param smooth: smooth parameter of the rbf interpolation
+        Routine to evaluate theta as a function of the z and r.
+
+        Parameters
+        --------------------------------------
+        
+        `z`: np.ndarray of z coordinates where `theta` is stored
+
+        `r`: np.ndarray of r coordinates where `theta` is stored
+
+        `theta`: np.ndarray of theta values corresponding to `z` and `r`
+
+        `z_eval`: np.ndarray of z coordinates where evaluating `theta`
+
+        `r_eval`: np.ndarray of r coordinates where evaluating `theta`
+
+        `method`: regression or interpolation (linear) of the function theta(z,r)
+
+        `degree`: polynomial order for the regression case
+
+        `smooth`: smooth parameter for the rbf-interpolation case
+
         """
-        if method == 'regression':
-            poly_features = PolynomialFeatures(degree=5)  # object for regression
+        if method == 'regression': # polynomial regression of order <degree>
+            poly_features = PolynomialFeatures(degree)  
             X = poly_features.fit_transform(np.column_stack((z, r)))
             model = LinearRegression()
             model.fit(X, theta)
@@ -505,10 +522,10 @@ class Blade:
             X_eval = poly_features.fit_transform(np.column_stack((z_eval.flatten(), r_eval.flatten())))
             surface_values = np.dot(X_eval, coefficients) + intercept
             theta_eval = surface_values.reshape(z_eval.shape)
-        elif method == 'rbf-interpolation':
+        elif method == 'rbf-interpolation': # rbf interpolation, not working good
             rbf = interpolate.Rbf(z, r, theta, function='multiquadric', smooth=smooth)
             theta_eval = rbf(z_eval, r_eval)
-        elif method == 'griddata':
+        elif method == 'interpolation': # linear interpolation, with nearest-neighbor for the extrapolated points
             points = np.array((z.flatten(), r.flatten())).T
             values = theta.flatten()
             theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
@@ -517,7 +534,7 @@ class Blade:
                 theta_eval[idx[inan], idy[inan]] = interpolate.griddata(points, values,
                                                                     (z_eval[idx[inan], idy[inan]],
                                                                         r_eval[idx[inan], idy[inan]]), method='nearest')
-        elif method == 'bivariate_spline':
+        elif method == 'bivariate_spline': # not working good at the moment
             tck = bisplrep(z.flatten(), r.flatten(), theta.flatten(), s=0)
             theta_eval = bisplev(z_eval.flatten(), r_eval.flatten(), tck)
             theta_eval = np.reshape(theta_eval, self.z_cambSurface.shape)
@@ -541,7 +558,7 @@ class Blade:
         print()
         return theta
 
-    def obtain_quantities_on_meridional_grid(self, smooth=0, degree=1, method='regression'):
+    def obtain_quantities_on_meridional_grid(self, smooth=1, degree=1):
         """
         Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -550,6 +567,9 @@ class Blade:
         # evaluate the camber surface on the (r,z) points of the primary structured grid
         self.z_camber = self.z_grid
         self.r_camber = self.r_grid
+        
+        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        
         self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                          self.r_cambSurface.flatten(),
                                                          (self.r_cambSurface*self.theta_cambSurface).flatten(),
