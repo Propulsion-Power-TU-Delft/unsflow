@@ -372,8 +372,8 @@ class Blade:
         """
         Using the blade camber surface obtained through lofting
         """
-        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
-        # self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
+        # self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
+        self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
 
         # if self.config.get_visual_debug():
         #     plt.figure()

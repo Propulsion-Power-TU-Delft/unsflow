@@ -240,7 +240,7 @@ class Surface:
         if method == 'cartesian':
             return self.Xg, self.Yg, self.Zg
         elif method == 'cylindrical':
-            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg,self.Xg), self.Zg
+            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg, self.Xg), self.Zg
         else:
             raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
 
