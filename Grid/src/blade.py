@@ -1671,7 +1671,7 @@ class Blade:
                         '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, self.x_paraview[istream, ispan],
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
-    def read_paraview_processed_dataset(self, folder_path):
+    def read_paraview_processed_dataset(self, folder_path, average_type='density'):
        """
        Read the processed dataset stored in folder_path location obtained by the Paraview Macro.
        :param folder_path: folder where the dataset is saved
@@ -1687,7 +1687,7 @@ class Blade:
            return nz, nr
 
        available_avg_types = ['raw', 'density', 'axialMomentum']
-       self.avg_type = 'raw'
+       self.avg_type = average_type
 
        if self.avg_type not in available_avg_types:
            raise ValueError('Not valid average type')
@@ -1696,7 +1696,7 @@ class Blade:
        data_dir = folder_path
        files = [f for f in os.listdir(data_dir) if '.csv' in f]
        files = sorted(files)
-       fields = ['Density', 'Mach', 'Pressure', 'Temperature', 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_2', 'Entropy']
+       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Axial', 'Velocity_Tangential_Relative', 'Velocity_Meridional']
        nz, nr = extract_grid_location(files[-1])
        field_grids = {}
        for field in fields:
@@ -1718,19 +1718,25 @@ class Blade:
            z_grid[stream_id, span_id] = np.sum(z) / len(z)
            r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
+           data_dict['Velocity_Radial'] = data_dict['Velocity_0']*np.cos(theta)+data_dict['Velocity_1']*np.sin(theta)
+           data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*np.sin(theta)+data_dict['Velocity_1']*np.cos(theta)
+           data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']+data_dict['Grid_Velocity_Magnitude']  # attention on the sign here
+           data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+           data_dict['Velocity_Meridional'] = np.sqrt(data_dict['Velocity_Axial']**2+data_dict['Velocity_Radial']**2)
+
            for field in fields:
                f = data_dict[field]
 
                if self.avg_type == 'raw':
                    field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
                elif self.avg_type == 'density':
-                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(
-                       data_dict['Density'])
+                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
                elif self.avg_type == 'axialMomentum':
-                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(
-                       data_dict['Momentum_2'])
+                   field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
 
        self.meridional_fields = field_grids
+       self.meridional_fields['Z'] = z_grid
+       self.meridional_fields['R'] = r_grid
 
 
     def contour_meridional_fields(self, output_folder = 'Contours'):
@@ -1739,35 +1745,48 @@ class Blade:
         """
         os.makedirs(output_folder, exist_ok=True)
 
-        for key, values in self.meridional_fields.items():
-            fig, ax = plt.subplots()
-            contour = ax.contourf(self.z_camber, self.r_camber, values, levels=N_levels, cmap=color_map)
-            # ax.set_xticks([])
-            # ax.set_yticks([])
-            cbar = fig.colorbar(contour)
-            plt.title(key)
-            ax.set_aspect('equal', adjustable='box')
-            plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+        z = self.meridional_fields['Z']
+        r = self.meridional_fields['R']
+
+        for key, value in self.meridional_fields.items():
+            if key!='Z' and key!='R':
+                fig, ax = plt.subplots()
+                contour = ax.contourf(z, r, value, levels=N_levels, cmap=color_map)
+                cbar = fig.colorbar(contour)
+                contour = ax.contour(z, r, value, levels=N_levels, colors='black', linewidths=0.1)
+                plt.title(key)
+                ax.set_aspect('equal', adjustable='box')
+                plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+
 
     def compute_additional_meridional_fields(self):
         """
-        Compute additional Meridional Fields
+        Compute additional Meridional Fields.
+        WARNING: All these fields are computed using the circumferential averages through some function. For this reason the suffix postAVG is used. 
+        It's probably not mathematically correct, since a function of the average is not the same of the average of a function. If that produces error, these fields should be computed
+        during the reading process
         """
-        self.meridional_fields['Velocity_Meridional'] = np.sqrt(self.meridional_fields['Velocity_2']**2+
+        self.meridional_fields['Velocity_Meridional_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Axial']**2+
                                                                 self.meridional_fields['Velocity_Radial']**2)
-        self.meridional_fields['Velocity_Tangential_Relative'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.r_camber
-        self.meridional_fields['Absolute_Flow_Angle'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
-                                                                 self.meridional_fields['Velocity_2'])
-        self.meridional_fields['Relative_Flow_Angle'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
-                                                                 self.meridional_fields['Velocity_2'])
-        self.meridional_fields['Velocity_Magnitude'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
+        
+        self.meridional_fields['Velocity_Tangential_Relative_postAVG'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.meridional_fields['R']
+        
+        self.meridional_fields['Absolute_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
+                                                                 self.meridional_fields['Velocity_Axial'])
+        
+        self.meridional_fields['Relative_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
+                                                                 self.meridional_fields['Velocity_Axial'])
+        
+        self.meridional_fields['Velocity_Magnitude_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
                                                                self.meridional_fields['Velocity_Tangential']**2 +
-                                                               self.meridional_fields['Velocity_2']**2)
-        self.meridional_fields['Velocity_Magnitude_Relative'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
+                                                               self.meridional_fields['Velocity_Axial']**2)
+        
+        self.meridional_fields['Velocity_Magnitude_Relative_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
                                                                         self.meridional_fields['Velocity_Tangential_Relative'] ** 2 +
-                                                                        self.meridional_fields['Velocity_2'] ** 2)
-        self.meridional_fields['Mach_Relative'] = self.meridional_fields['Velocity_Magnitude_Relative']/np.sqrt(
-            self.config.get_fluid_gamma()*self.meridional_fields['Pressure']/self.meridional_fields['Density']
+                                                                        self.meridional_fields['Velocity_Axial'] ** 2)
+        
+        self.meridional_fields['Mach_Relative_postAVG'] = self.meridional_fields['Velocity_Magnitude_Relative_postAVG']/np.sqrt(
+            1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density']
         )
 
 
@@ -1779,8 +1798,8 @@ class Blade:
         """
 
         # loss component
-        self.meridional_fields['Force_Loss'] = np.zeros_like(self.z_camber)
-        self.meridional_fields['Force_Tangential'] = np.zeros_like(self.z_camber)
+        self.meridional_fields['Force_Loss'] = np.zeros_like(self.meridional_fields['Z'])
+        self.meridional_fields['Force_Tangential'] = np.zeros_like(self.meridional_fields['Z'])
 
         if f_loss_method.lower()=='thermodynamic':
             for jj in range(self.z_camber.shape[1]):
