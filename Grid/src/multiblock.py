@@ -435,23 +435,50 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid'):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.2):
         """
-        write the file requireed by Paraview to run the circumferential avg.
-        The format of the file generated is:
-        istream, ispan, x, y, z
-        """
-        x = self.r_grid_dual
-        y = np.zeros_like(self.r_grid_dual)
-        z = self.z_grid_dual
+        Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
+        The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid
+        sampling in Paraview where there is no data.
+        
+        Parameters
+        ----------------------------
 
+        `filename`: name of the grid file to save
+
+        `foldername`: folder name where to save the grid file
+
+        `border_factor`: factor used to shift the border points slightly inwards
+        """
+
+        def move_hub_shroud_points(grid):
+            grid[:,0] = grid[:,0] + (grid[:,1] - grid[:,0])*border_factor
+            grid[:,-1] = grid[:,-1] + (grid[:,-2] - grid[:,-1])*border_factor
+            return grid
+
+        zgrid = move_hub_shroud_points(self.z_grid_points.copy())
+        rgrid = move_hub_shroud_points(self.r_grid_points.copy())
+
+        # plt.figure()
+        # plt.plot(self.z_grid_points, self.r_grid_points, 'C0o', mfc='none')
+        # plt.plot(zgrid, rgrid, 'C1x')
+        # ax = plt.gca()
+        # ax.set_aspect('equal')
+
+        x = rgrid
+        y = np.zeros_like(x)
+        z = zgrid
+
+        ni, nj = zgrid.shape
         os.makedirs(foldername, exist_ok=True)
         with open(foldername + '/' + filename, 'w') as file:
-            for istream in range(1, self.z_grid_dual.shape[0]-1):
-                for ispan in range(1, self.z_grid_dual.shape[1]-1):
-                    file.write('%i,%i,%.6f,%.6f,%.6f\n'
+            for istream in range(ni):
+                for ispan in range(nj):
+                    file.write('%i,%i,%.9f,%.9f,%.9f\n'
                                %(istream, ispan,
-                                 x[istream, ispan], y[istream, ispan], z[istream, ispan]))
+                                 x[istream, ispan], 
+                                 y[istream, ispan], 
+                                 z[istream, ispan]))
     
 
     def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True):
