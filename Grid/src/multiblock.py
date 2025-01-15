@@ -142,7 +142,7 @@ class MultiBlock:
             plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
 
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_meridional_grid.pdf', bbox_inches='tight')
     
 
     def plot_blockage(self, save_filename=None, save_foldername=None):
@@ -160,7 +160,7 @@ class MultiBlock:
         ax.set_aspect('equal')
 
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blockage.pdf', bbox_inches='tight')
     
 
     def plot_rpm(self, save_filename=None, save_foldername=None):
@@ -212,7 +212,7 @@ class MultiBlock:
         plt.title('nz')
         ax.set_aspect('equal')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_axial.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-ax.pdf', bbox_inches='tight')
         
         plt.figure()
         plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,1], levels=N_levels, cmap=color_map)
@@ -223,7 +223,7 @@ class MultiBlock:
         plt.title('nr')
         ax.set_aspect('equal')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_radial.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-rad.pdf', bbox_inches='tight')
         
         plt.figure()
         plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,2], levels=N_levels, cmap=color_map)
@@ -234,7 +234,7 @@ class MultiBlock:
         plt.title('nt')
         ax.set_aspect('equal')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_tangential.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-tan.pdf', bbox_inches='tight')
 
 
     def compute_average_dtheta(self):
