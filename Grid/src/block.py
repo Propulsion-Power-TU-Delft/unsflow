@@ -45,6 +45,8 @@ class Block:
         self.normal_camber = np.full((self.nstream, self.nspan, 3), np.nan)
         self.streamline_length = np.zeros((self.nstream, self.nspan))
         self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
+        self.force_inviscid = np.zeros((self.nstream, self.nspan))
+        self.force_viscous = np.zeros((self.nstream, self.nspan))
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -688,6 +690,14 @@ class Block:
         Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
         """
         self.streamline_length = stream
+    
+
+    def add_body_force_grids(self, f_turn, f_loss):
+        """
+        Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
+        """
+        self.force_inviscid = f_turn
+        self.force_viscous = f_loss
 
 
     def add_camber_grid(self, nz, nr, nt):

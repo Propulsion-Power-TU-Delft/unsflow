@@ -43,6 +43,8 @@ class MultiBlock:
         self.rpm = self.blocks[0].rpm
         self.streamline_length = self.blocks[0].streamline_length
         self.normal_camber = self.blocks[0].normal_camber
+        self.force_inviscid = self.blocks[0].force_inviscid
+        self.force_viscous = self.blocks[0].force_viscous
 
         for block in self.blocks[1:]:
             self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[1:, :]), axis=0)
@@ -51,6 +53,8 @@ class MultiBlock:
             self.rpm = np.concatenate((self.rpm, block.rpm[1:, :]), axis=0)
             self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[1:, :]), axis=0)
             self.normal_camber = np.concatenate((self.normal_camber, block.normal_camber[1:, :, :]), axis=0)
+            self.force_inviscid = np.concatenate((self.force_inviscid, block.force_inviscid[1:, :]), axis=0)
+            self.force_viscous = np.concatenate((self.force_viscous, block.force_viscous[1:, :]), axis=0)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -481,7 +485,7 @@ class MultiBlock:
                                  z[istream, ispan]))
     
 
-    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True):
+    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=True, force_viscous=True):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """
@@ -503,6 +507,12 @@ class MultiBlock:
         if stwl:
             print('Streamwise length added to the grid file')
             mesh['StreamwiseLength'] = self.streamline_length
+        if force_inviscid:
+            print('Inviscid force added to the grid file')
+            mesh['ForceInviscid'] = self.force_inviscid
+        if force_viscous:
+            print('Viscous force added to the grid file')
+            mesh['ForceViscous'] = self.force_viscous
 
         filepath = 'grid_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:

@@ -21,12 +21,13 @@ from scipy import interpolate
 import math
 import os
 import pandas as pd
+import pickle
 import plotly.graph_objects as go
 from scipy.interpolate import bisplrep, bisplev
 from shapely.geometry import LineString
 from scipy.spatial import KDTree
 from Grid.src.surface import Surface
-from scipy.interpolate import bisplev, bisplrep
+from scipy.interpolate import bisplev, bisplrep, griddata
 
 
 
@@ -1671,7 +1672,7 @@ class Blade:
                         '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, self.x_paraview[istream, ispan],
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
-    def read_paraview_processed_dataset(self, folder_path, average_type='density'):
+    def read_paraview_processed_dataset(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300):
        """
        Read the processed dataset stored in folder_path location obtained by the Paraview Macro.
        :param folder_path: folder where the dataset is saved
@@ -1696,7 +1697,10 @@ class Blade:
        data_dir = folder_path
        files = [f for f in os.listdir(data_dir) if '.csv' in f]
        files = sorted(files)
-       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Axial', 'Velocity_Tangential_Relative', 'Velocity_Meridional']
+
+       # give the name of the fields to average, already present in the vtu file
+       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature',
+                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Velocity_Meridional', 'Entropy']
        nz, nr = extract_grid_location(files[-1])
        field_grids = {}
        for field in fields:
@@ -1718,15 +1722,21 @@ class Blade:
            z_grid[stream_id, span_id] = np.sum(z) / len(z)
            r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
+           # Compute additional fields that will be circumferentially averaged 
            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*np.cos(theta)+data_dict['Velocity_1']*np.sin(theta)
+
            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*np.sin(theta)+data_dict['Velocity_1']*np.cos(theta)
+
            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']+data_dict['Grid_Velocity_Magnitude']  # attention on the sign here
+           
            data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+
            data_dict['Velocity_Meridional'] = np.sqrt(data_dict['Velocity_Axial']**2+data_dict['Velocity_Radial']**2)
+
+           data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
 
            for field in fields:
                f = data_dict[field]
-
                if self.avg_type == 'raw':
                    field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
                elif self.avg_type == 'density':
@@ -1759,7 +1769,7 @@ class Blade:
                 plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
 
 
-    def compute_additional_meridional_fields(self):
+    def compute_additional_meridional_fields(self, CP=1005, R=287, TREF=288.15, PREF=101300):
         """
         Compute additional Meridional Fields.
         WARNING: All these fields are computed using the circumferential averages through some function. For this reason the suffix postAVG is used. 
@@ -1786,8 +1796,9 @@ class Blade:
                                                                         self.meridional_fields['Velocity_Axial'] ** 2)
         
         self.meridional_fields['Mach_Relative_postAVG'] = self.meridional_fields['Velocity_Magnitude_Relative_postAVG']/np.sqrt(
-            1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density']
-        )
+            1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density'])
+
+        self.meridional_fields['Entropy_postAVG'] = CP*np.log(self.meridional_fields['Temperature']/TREF)-R*np.log(self.meridional_fields['Pressure']/PREF)
 
 
     def extract_body_forces(self, f_turn_method='Thermodynamic', f_loss_method='Thermodynamic'):
@@ -1987,6 +1998,178 @@ class Blade:
         y_vers = dy / np.sqrt(dx ** 2 + dy ** 2)
         alpha = np.arctan2(y_vers, x_vers)
         return alpha
+    
+
+    def compute_marble_body_force(self):
+        """
+        Compute the body force density, using the marble thermodynamic approach based on the circumferentially averaged flow field
+        """
+        ni,nj = self.meridional_fields['Z'].shape
+        
+        self.meridional_fields['f_loss'] = self.compute_marble_loss_force()
+        self.meridional_fields['f_theta'] = self.compute_marble_ftheta()
+
+        fp_versor = np.zeros((ni,nj,3))
+        for i in range(ni):
+            for j in range(nj):
+                w = np.array([self.meridional_fields['Velocity_Radial'][i,j],
+                              self.meridional_fields['Velocity_Tangential_Relative'][i,j],
+                              self.meridional_fields['Velocity_Axial'][i,j]])
+                
+                fp_versor[i,j,:] = -w/np.linalg.norm(w)
+
+        self.meridional_fields['f_loss_r'] = self.meridional_fields['f_loss']*fp_versor[:,:,0]
+        self.meridional_fields['f_loss_t'] = self.meridional_fields['f_loss']*fp_versor[:,:,1]
+        self.meridional_fields['f_loss_a'] = self.meridional_fields['f_loss']*fp_versor[:,:,2]
+        
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_r'], r'$f_{p,r}$')
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_t'], r'$f_{p,\theta}$')
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_a'], r'$f_{p,z}$')
+        
+        self.meridional_fields['f_turn_t'] = self.meridional_fields['f_theta']-self.meridional_fields['f_loss_t']
+        self.meridional_fields['f_turn_r'] = np.abs(self.meridional_fields['f_turn_t'])*np.tan(self.blade_lean_angle)
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_t'], r'$f_{n,\theta}$')
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.blade_lean_angle, r'$\lambda$')
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_r'], r'$f_{n,r}$')
+
+        self.meridional_fields['f_a'] = self.meridional_fields['f_loss_a']-(self.meridional_fields['f_theta']-self.meridional_fields['f_loss_t'])*self.meridional_fields['Velocity_Tangential_Relative']/self.meridional_fields['Velocity_Axial']
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_a'], r'$f_{z}$', vmin=0, vmax=3e6)
+        self.meridional_fields['f_turn_a'] = self.meridional_fields['f_a']-self.meridional_fields['f_loss_a']
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_a'], r'$f_{n,z}$', vmin=0, vmax=3e6)
+
+        self.meridional_fields['f_turn'] = np.sqrt(self.meridional_fields['f_turn_a']**2+
+                                                   self.meridional_fields['f_turn_r']**2+
+                                                   self.meridional_fields['f_turn_t']**2)
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn'], r'$f_{n}$', vmin=0, vmax=3e6)
+        self.meridional_fields['f_turn'] = self.clip_contour(self.meridional_fields['f_turn'], vmin = 0, vmax = 3e6)
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn'], r'$f_{n}$', vmin=0, vmax=3e6)
+
+
+    def clip_contour(self, fsource, vmin, vmax):
+        f = fsource.copy()
+        ni,nj = f.shape
+        for i in range(ni):
+            for j in range(nj):
+                if f[i,j]<vmin:
+                    f[i,j] = vmin
+                elif f[i,j]>= vmax:
+                    f[i,j]=vmax
+                else:
+                    pass
+        return f
+
+    def compute_marble_ftheta(self):
+        """
+        Compute the global tangential force
+        """
+        um = self.meridional_fields['Velocity_Meridional'].copy()
+        ut = self.meridional_fields['Velocity_Tangential'].copy()
+        r = self.meridional_fields['R'].copy()
+        z = self.meridional_fields['Z'].copy()
+        drut_dz, drut_dr = compute_2d_curvilinear_gradient(self.meridional_fields['Z'], self.meridional_fields['R'], r*ut)
+        self.contour_template(z, r, r, r'$r$')
+        self.contour_template(z, r, ut, r'$u_{\theta}$')
+        self.contour_template(z, r, r*ut, r'$r u_{\theta}$')
+        # self.contour_template(z, r, drut_dz, r'$\partial(r u_{\theta}) / \partial z$')
+        # self.contour_template(z, r, drut_dr, r'$\partial(r u_{\theta}) / \partial r$')
+        
+        ftheta = np.zeros_like(um)
+        for j in range(um.shape[1]):
+            deltaF = (r[-1,j]*ut[-1,j])-(r[0,j]*ut[0,j])
+            deltaM = self.streamline_length[-1,j]-self.streamline_length[0,j]
+            # drut_grad = np.array([drut_dz[i,j], drut_dr[i,j]])
+            # m_vers = np.array([self.meridional_fields['Velocity_Axial'][i,j], self.meridional_fields['Velocity_Radial'][i,j]])
+            # m_vers /= np.linalg.norm(m_vers)
+            ftheta[:,j] = um[:,j]/r[:,j]*deltaF/deltaM
+        
+        self.contour_template(z, r, ftheta, r'$f_{\theta}$')
+        return ftheta
+    
+
+    def compute_marble_loss_force(self):
+        floss = np.zeros_like(self.meridional_fields['R'])
+
+        T = self.meridional_fields['Temperature'].copy()
+        W = np.sqrt(self.meridional_fields['Velocity_Axial']**2 + self.meridional_fields['Velocity_Radial']**2 + self.meridional_fields['Velocity_Tangential_Relative']**2)
+        Um = self.meridional_fields['Velocity_Meridional'].copy()
+
+        for j in range(T.shape[1]):
+            deltaS = self.meridional_fields['Entropy'][-1,j]-self.meridional_fields['Entropy'][0,j]
+            deltaM = self.streamline_length[-1,j]-self.streamline_length[0,j]
+
+            floss[:,j] = T[:,j]*Um[:,j]/W[:,j]*deltaS/deltaM
+        return floss 
+    
+
+    def contour_template(self, z, r, f, name, vmin=None, vmax=None):
+        if vmin == None:
+            minval = np.min(f)
+        else:
+            minval = vmin
+        if vmax == None:
+            maxval = np.max(f)
+        else:
+            maxval = vmax
+        
+        levels = np.linspace(minval, maxval, N_levels)
+
+        fig, ax = plt.subplots()
+        contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
+        cbar = fig.colorbar(contour)
+        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
+        plt.title(name)
+        ax.set_aspect('equal', adjustable='box')
+        # plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+    
+
+    def interpolate_body_force_data(self, filepath):
+        """
+        Interpolate the body force components stored in filepath onto the blade grid
+        """
+        with open(filepath, 'rb') as file:
+            data = pickle.load(file)
+        
+        def interpolate_linear_and_nearest(f):
+            f_interp = griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid, self.r_grid), fill_value=1e12)
+            ni,nj = f_interp.shape
+            for i in range(ni):
+                for j in range(nj):
+                    if f_interp[i,j]==1e12:
+                        f_interp[i,j]=griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid[i,j], self.r_grid[i,j]), method='nearest')
+            return f_interp
+
+
+        z_data = data['Z']
+        r_data = data['R']
+        f_turn = data['Force_Inviscid']
+        f_loss = data['Force_Viscous']
+
+        print('Interpolating turn body force onto blade grid')
+        self.contour_template(z_data, r_data, f_turn, 'fturn_reference')
+        f_turn_interp = interpolate_linear_and_nearest(f_turn)
+        self.contour_template(self.z_grid, self.r_grid, f_turn_interp, 'fturn_interpolated')
+        
+
+        print('Interpolating loss body force onto blade grid')
+        self.contour_template(z_data, r_data, f_loss, 'floss_reference')
+        f_loss_interp = interpolate_linear_and_nearest(f_loss)
+        self.contour_template(self.z_grid, self.r_grid, f_loss_interp, 'floss_interpolated')
+
+        return f_turn_interp, f_loss_interp
+    
+
+    def cut_blade_tip(self, clearance_meters):
+        gap = clearance_meters
+        self.compute_spanline_length()
+        ni,nj = self.meridional_fields['R'].shape
+
+        for i in range(ni):
+            for j in range(nj):
+                distance = self.spanline_length[i,-1]-self.spanline_length[i,j]
+                if distance<=gap:
+                    self.meridional_fields['f_turn'][i,j] = 0
+                    self.meridional_fields['f_loss'][i,j] = 0
+
 
 
 
