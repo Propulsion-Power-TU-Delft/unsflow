@@ -1249,3 +1249,75 @@ def find_intersection(x1, y1, x2, y2):
         return intersection.xy[0], intersection.xy[1]
     except:
         return 0, 0
+
+
+def compute_gradient_least_square(x, y, z):
+    """
+    Compute the gradient of z with respect to x and y using the least squares method.
+
+    Parameters:
+        x (numpy.ndarray): 2D array of x-coordinates.
+        y (numpy.ndarray): 2D array of y-coordinates.
+        z (numpy.ndarray): 2D array of z-values, a function of x and y.
+
+    Returns:
+        Gradients dz/dx and dz/dy.
+    """
+    ni,nj = x.shape
+    dzdx = np.zeros((ni,nj))
+    dzdy = np.zeros((ni,nj))
+
+    for i in range(ni):
+        for j in range(nj):
+            
+            # take the i,j of the neighbours to use depending on the location on the grid
+            if i==0 and j==0:
+                neighbours = [(1,0), (1,1), (0,1)]
+            elif i==ni-1 and j==0:
+                neighbours = [(-1,0), (-1,1), (0,1)]
+            elif i==0 and j==nj-1:
+                neighbours = [(0,-1), (1,-1), (1,0)]
+            elif i==ni-1 and j==nj-1:
+                neighbours = [(-1,0), (-1,-1), (0,-1)]
+            elif i==0:
+                neighbours = [(0,-1), (1,-1), (1,0), (1,1), (0,1)]
+            elif i==ni-1:
+                neighbours = [(0,-1), (-1,-1), (-1,0), (-1,1), (0,1)]
+            elif j==0:
+                neighbours = [(-1,0), (-1,1), (0,1), (1,1), (1,0)]
+            elif j==nj-1:
+                neighbours = [(-1,0), (-1,-1), (0,-1), (1,-1), (1,0)]
+            else:
+                neighbours = [(-1,-1), (0,-1), (0,1), (-1,0), (1,0), (-1,1), (0,1), (1,1)] 
+
+            A = np.zeros((len(neighbours), 2))
+            b = np.zeros((len(neighbours), 1))
+            grad = np.zeros((2,1))
+            for k in range(len(neighbours)):
+                istep, jstep = neighbours[k]
+                A[k,0] = x[i+istep, j+jstep]-x[i,j]
+                A[k,1] = y[i+istep, j+jstep]-y[i,j]
+                b[k,0] = z[i+istep, j+jstep]-z[i,j]
+            grad = np.linalg.inv(A.T@A) @A.T@b
+            dzdx[i,j] = grad[0,0]
+            dzdy[i,j] = grad[1,0]
+    return dzdx, dzdy
+
+
+def contour_template(z, r, f, name, vmin=None, vmax=None):
+        
+        if vmin == None:
+            minval = np.min(f)
+        else:
+            minval = vmin
+        if vmax == None:
+            maxval = np.max(f)
+        else:
+            maxval = vmax
+        levels = np.linspace(minval, maxval, N_levels)
+        fig, ax = plt.subplots()
+        contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
+        cbar = fig.colorbar(contour)
+        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
+        plt.title(name)
+        ax.set_aspect('equal', adjustable='box')
