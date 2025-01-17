@@ -2255,7 +2255,7 @@ class Blade:
     
     def compute_kiwada_force(self):
         """
-        Compute the force using the relations of Kiwada
+        Compute the force using the relations of Kiwada, for the global force, already decomposed in in its components.
         """
         R = self.meridional_fields['R'].copy()
         Z = self.meridional_fields['Z'].copy()
