@@ -1321,3 +1321,14 @@ def contour_template(z, r, f, name, vmin=None, vmax=None):
         contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
         plt.title(name)
         ax.set_aspect('equal', adjustable='box')
+
+
+def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
+    """
+    Express the cartesian tensor (x,y,z) in cylindrical ref frame
+    """
+    Q = np.array([[cos(theta),  sin(theta), 0],
+                  [-sin(theta), cos(theta), 0],
+                  [0,           0,          1]])
+    M_cyl = (Q.T)@M_cart@Q
+    return M_cyl
