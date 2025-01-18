@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both, rotate_cartesian_to_cylindric_tensor
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy import interpolate
@@ -373,8 +373,15 @@ class Blade:
         """
         Using the blade camber surface obtained through lofting
         """
-        # self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
-        self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
+        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'thickness, pre')
+
+        theta_ps_eval = griddata((self.z_psSurface.flatten(), self.r_psSurface.flatten()), self.theta_psSurface.flatten(), (self.z_cambSurface, self.r_cambSurface), method='linear', fill_value=0)
+        theta_ss_eval = griddata((self.z_ssSurface.flatten(), self.r_ssSurface.flatten()), self.theta_ssSurface.flatten(), (self.z_cambSurface, self.r_cambSurface), method='linear', fill_value=0)
+        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps_eval - theta_ss_eval)
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'thickness, post', vmin=self.thk_tang_cambSurface.min(), vmax=0.007)
+                
+        # self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
 
         # if self.config.get_visual_debug():
         #     plt.figure()
@@ -393,18 +400,18 @@ class Blade:
             plt.ylabel(r'$r$')
             plt.title('Tangential Thickness')
 
-        # if np.mean(self.thk_tang_cambSurface) > 0:
-        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
-        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
-        #             if self.thk_tang_cambSurface[ii, jj] < 0:
-        #                 self.thk_tang_cambSurface[ii, jj] = 0
-        # else:
-        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
-        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
-        #             if self.thk_tang_cambSurface[ii, jj] < 0:
-        #                 self.thk_tang_cambSurface[ii, jj] *= -1
-        #             else:
-        #                 self.thk_tang_cambSurface[ii, jj] = 0
+        if np.mean(self.thk_tang_cambSurface) > 0:
+            for ii in range(self.thk_tang_cambSurface.shape[0]):
+                for jj in range(self.thk_tang_cambSurface.shape[1]):
+                    if self.thk_tang_cambSurface[ii, jj] < 0:
+                        self.thk_tang_cambSurface[ii, jj] = 0
+        else:
+            for ii in range(self.thk_tang_cambSurface.shape[0]):
+                for jj in range(self.thk_tang_cambSurface.shape[1]):
+                    if self.thk_tang_cambSurface[ii, jj] < 0:
+                        self.thk_tang_cambSurface[ii, jj] *= -1
+                    else:
+                        self.thk_tang_cambSurface[ii, jj] = 0
 
     def compute_thickness_along_camber(self):
         """
@@ -1346,20 +1353,14 @@ class Blade:
         """
         Nb = self.config.get_blades_number()[self.iblade]
         self.blockage_cambSurface = 1 - Nb * self.thk_tang_cambSurface / (2*np.pi*self.r_cambSurface)
-        plt.figure()
-        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$b$ reference')
-        plt.gca().set_aspect('equal', adjustable='box')
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, r'$b$ reference', vmin=0.8, vmax=1)
 
 
     def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
         """
         Compute the blockage gradient via finite difference on the meridional grid
         """
-        self.db_dz, self.db_dr = compute_2d_curvilinear_gradient(self.z_camber, self.r_camber, self.blockage)
+        self.db_dz, self.db_dr = compute_gradient_least_square(self.z_camber, self.r_camber, self.blockage)
 
         plt.figure()
         plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
@@ -2277,6 +2278,23 @@ class Blade:
         d2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
         self.meridional_fields['Force_Tangential'] = 1/B*d1dz + 1/B/R*d2dr + self.meridional_fields['T3']/R
         self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], self.meridional_fields['Force_Tangential'][1:-1,1:-1], name='ftangential')
+
+        ni,nj = R.shape
+        self.meridional_fields['Force_Viscous'] = np.zeros((ni,nj))
+        for i in range(ni):
+            for j in range(nj):
+                w = np.array([self.meridional_fields['Velocity_Radial'][i,j],
+                              self.meridional_fields['Velocity_Tangential_Relative'][i,j],
+                              self.meridional_fields['Velocity_Axial'][i,j]])
+                fg = np.array([self.meridional_fields['Force_Radial'][i,j],
+                               self.meridional_fields['Force_Tangential'][i,j],
+                               self.meridional_fields['Force_Axial'][i,j]])
+                
+                fp_vers = -w/np.linalg.norm(w)
+                self.meridional_fields['Force_Viscous'][i,j] = np.dot(fg, fp_vers)
+
+                
+                
 
 
 
