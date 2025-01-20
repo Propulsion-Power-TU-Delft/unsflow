@@ -153,10 +153,7 @@ class Config:
 
     def get_blade_inlet_type(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
-        if len(value.split()) > 1:
-            value = [i for i in value.split()]
-        else:
-            pass
+        value = [i.strip(',') for i in value.split()]
         return value
 
 
@@ -167,10 +164,7 @@ class Config:
 
     def get_blade_outlet_type(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_OUTLET_TYPE'))
-        if len(value.split()) > 1:
-            value = [i for i in value.split()]
-        else:
-            pass
+        value = [i.strip(',') for i in value.split()]
         return value
 
     def get_verbosity(self):
@@ -245,7 +239,7 @@ class Config:
 
     def get_pictures_folder_path(self):
         try:
-            return str(self.config_parser.get('SUN MODEL', 'PICTURES_FOLDER_PATH'))
+            return str(self.config_parser.get('CFD PROCESSING', 'PICTURES_FOLDER_PATH'))
         except:
             return 'Pictures' # default
 
