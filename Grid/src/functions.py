@@ -14,7 +14,7 @@ from Utils.styles import *
 import math
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, griddata
 from scipy import interpolate
 from shapely.geometry import LineString
 
@@ -1332,3 +1332,36 @@ def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
                   [0,           0,          1]])
     M_cyl = (Q.T)@M_cart@Q
     return M_cyl
+
+
+def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear', filler = 1e10):
+    """
+    Interpolation using griddata, but the points lying out of the convex hull are treated with nearest neighbor.
+
+    Parameters
+    -------------------------------
+
+    `xpoints`: 1 or 2D array of x points where data is known
+
+    `ypoints`: 1 or 2D array of y points where data is known
+
+    `zpoints`: 1D array of function values where data is known, related to `xpoints` and `ypoints`
+
+    `x_eval`: 1 or 2D array where evaluating the function
+
+    `y_eval`: 1 or 2D array where evaluating the function
+
+    `method`: linear or cubic usually
+
+    `filler`: value used to fill and recognize points outside the convex hull
+    """
+    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method='linear', fill_value=filler)
+    
+    ni,nj = z_eval.shape
+
+    for i in range(ni):
+        for j in range(nj):
+            if z_eval[i,j] == filler:
+                z_eval[i,j] = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval[i,j], y_eval[i,j]), method='nearest')
+
+    return z_eval

@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square
+from Grid.src.functions import compute_picture_size, clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square, griddata_interpolation_with_nearest_filler
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy import interpolate
@@ -371,47 +371,28 @@ class Blade:
 
     def compute_thickness(self):
         """
-        Using the blade camber surface obtained through lofting
+        Compute the blade thickness evaluating theta of the pressure and suction side on the meridional points of the camber surface
         """
-        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(self.theta_ssSurface - self.theta_psSurface)
-        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'thickness, pre')
-
-        theta_ps_eval = griddata((self.z_psSurface.flatten(), self.r_psSurface.flatten()), self.theta_psSurface.flatten(), (self.z_cambSurface, self.r_cambSurface), method='linear', fill_value=0)
-        theta_ss_eval = griddata((self.z_ssSurface.flatten(), self.r_ssSurface.flatten()), self.theta_ssSurface.flatten(), (self.z_cambSurface, self.r_cambSurface), method='linear', fill_value=0)
-        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps_eval - theta_ss_eval)
-        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'thickness, post', vmin=self.thk_tang_cambSurface.min(), vmax=0.007)
+        theta_ps = griddata_interpolation_with_nearest_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
+        theta_ss = griddata_interpolation_with_nearest_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
+        
+        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps - theta_ss)
                 
-        # self.thk_tang_cambSurface = (self.r_ssSurface*self.theta_ssSurface) - (self.r_psSurface*self.theta_psSurface)
-
-        # if self.config.get_visual_debug():
-        #     plt.figure()
-        #     plt.scatter(self.z_cambSurface, self.r_cambSurface, label='camber')
-        #     plt.scatter(self.z_psSurface, self.r_psSurface, label='pside')
-        #     plt.scatter(self.z_ssSurface, self.r_ssSurface, label='sside')
-        #     plt.xlabel(r'$z$')
-        #     plt.ylabel(r'$r$')
-        #     plt.title('Meridional grid points')
-
         if self.config.get_visual_debug():
-            plt.figure()
-            plt.contourf(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, levels=25)
-            plt.colorbar()
-            plt.xlabel(r'$z$')
-            plt.ylabel(r'$r$')
-            plt.title('Tangential Thickness')
+            self.contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'Tangential Thickness')
 
-        if np.mean(self.thk_tang_cambSurface) > 0:
-            for ii in range(self.thk_tang_cambSurface.shape[0]):
-                for jj in range(self.thk_tang_cambSurface.shape[1]):
-                    if self.thk_tang_cambSurface[ii, jj] < 0:
-                        self.thk_tang_cambSurface[ii, jj] = 0
-        else:
-            for ii in range(self.thk_tang_cambSurface.shape[0]):
-                for jj in range(self.thk_tang_cambSurface.shape[1]):
-                    if self.thk_tang_cambSurface[ii, jj] < 0:
-                        self.thk_tang_cambSurface[ii, jj] *= -1
-                    else:
-                        self.thk_tang_cambSurface[ii, jj] = 0
+        # if np.mean(self.thk_tang_cambSurface) > 0:
+        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
+        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
+        #             if self.thk_tang_cambSurface[ii, jj] < 0:
+        #                 self.thk_tang_cambSurface[ii, jj] = 0
+        # else:
+        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
+        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
+        #             if self.thk_tang_cambSurface[ii, jj] < 0:
+        #                 self.thk_tang_cambSurface[ii, jj] *= -1
+        #             else:
+        #                 self.thk_tang_cambSurface[ii, jj] = 0
 
     def compute_thickness_along_camber(self):
         """
@@ -534,14 +515,15 @@ class Blade:
             rbf = interpolate.Rbf(z, r, theta, function='multiquadric', smooth=smooth)
             theta_eval = rbf(z_eval, r_eval)
         elif method == 'interpolation': # linear interpolation, with nearest-neighbor for the extrapolated points
-            points = np.array((z.flatten(), r.flatten())).T
-            values = theta.flatten()
-            theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
-            idx, idy = np.where(np.isnan(theta_eval))
-            for inan in range(len(idx)):
-                theta_eval[idx[inan], idy[inan]] = interpolate.griddata(points, values,
-                                                                    (z_eval[idx[inan], idy[inan]],
-                                                                        r_eval[idx[inan], idy[inan]]), method='nearest')
+            theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
+            # points = np.array((z.flatten(), r.flatten())).T
+            # values = theta.flatten()
+            # theta_eval = interpolate.griddata(points, values, (z_eval, r_eval), method='linear')
+            # idx, idy = np.where(np.isnan(theta_eval))
+            # for inan in range(len(idx)):
+            #     theta_eval[idx[inan], idy[inan]] = interpolate.griddata(points, values,
+            #                                                         (z_eval[idx[inan], idy[inan]],
+            #                                                             r_eval[idx[inan], idy[inan]]), method='nearest')
         elif method == 'bivariate_spline': # not working good at the moment
             tck = bisplrep(z.flatten(), r.flatten(), theta.flatten(), s=0)
             theta_eval = bisplev(z_eval.flatten(), r_eval.flatten(), tck)
@@ -644,35 +626,21 @@ class Blade:
             for ii in range(0, self.spanline_length.shape[0]):
                 self.spanline_length[ii, :] /= self.spanline_length[ii, -1]
 
-    def plot_streamline_length_contour(self, save_filename=None, folder_name=None):
+    def plot_streamline_length_contour(self, save_filename=None):
         """
         plot the streamline length contour
         """
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.streamline_length, levels=N_levels)
-        plt.xlabel(r'$z \ \rm{[-]}$')
-        plt.ylabel(r'$r \ \rm{[-]}$')
-        cbar = plt.colorbar()
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$\bar{s}_{stw} \ \rm{[-]}$')
+        self.contour_template(self.z_grid, self.r_grid, self.streamline_length, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
 
-    def plot_spanline_length_contour(self, save_filename=None, folder_name=None):
+    def plot_spanline_length_contour(self, save_filename=None):
         """
         plot the spanline length contour
         """
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.spanline_length, levels=N_levels)
-        plt.xlabel(r'$z \ \rm{[-]}$')
-        plt.ylabel(r'$r \ \rm{[-]}$')
-        cbar = plt.colorbar()
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$\bar{s}_{spw} \ \rm{[-]}$')
+        self.contour_template(self.z_grid, self.r_grid, self.spanline_length, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 
     def find_ss_surface(self, blade_block, smooth, method, degree):
         """
@@ -700,7 +668,7 @@ class Blade:
         self.x_ps = self.r_ps * np.cos(self.theta_ps)
         self.y_ps = self.r_ps * np.sin(self.theta_ps)
 
-    def plot_camber_surface(self, save_filename=None, folder_name=None, sides=False, points=True):
+    def plot_camber_surface(self, save_filename=None, sides=False, points=True):
         """
         plot the main blade points and the camber surface
         """
@@ -716,9 +684,9 @@ class Blade:
         ax.set_zlabel(r'$z$')
 
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + save_filename + '.pdf', bbox_inches='tight')
 
-    def plot_camber_meridional_grid(self, save_filename=None, folder_name=None):
+    def plot_camber_meridional_grid(self, save_filename=None):
         """
         plot the main camber meridional grid
         """
@@ -730,93 +698,44 @@ class Blade:
         ax = plt.gca()
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + save_filename + '.pdf', bbox_inches='tight')
 
     def plot_camber_normal_contour_on_loft(self):
         """
         plot the camber normal vector contours
         """
-        plt.figure()
-        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_r, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_r$ reference')
-        plt.colorbar()
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_r, r'$n_r$ reference')
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_t, r'$n_{\theta}$ reference')
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_z, r'$n_z$ reference')
 
-        plt.figure()
-        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_t, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_{\theta}$ reference')
-        plt.colorbar()
-
-        plt.figure()
-        plt.contourf(self.z_cambSurface, self.r_cambSurface, self.n_camber_z, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_z$ reference')
-        plt.colorbar()
-
-    def plot_blockage_contour(self, save_filename=None, folder_name=None):
+    def plot_blockage_contour(self, save_filename=None):
         """
         plot the blockage
         """
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.blockage, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$b$')
-        plt.colorbar()
+        self.contour_template(self.z_grid, self.r_grid, self.blockage, name=r'$b$', vmax=1)
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blockage.pdf', bbox_inches='tight')
 
-    def plot_camber_normal_contour(self, save_filename=None, folder_name=None):
+    def plot_camber_normal_contour(self, save_filename=None):
         """
         plot the camber normal vector contours
         """
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.nr, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_r$')
-        plt.colorbar()
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_r, name=r'$n_r$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'normal_r.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_r.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.nt, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_{\theta}$')
-        plt.colorbar()
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_t, name=r'$n_{\theta}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'normal_theta.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_theta.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.z_grid, self.r_grid, self.nz, levels=N_levels)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        plt.title(r'$n_z$')
-        plt.colorbar()
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_z, name=r'$n_z$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'normal_z.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_z.pdf', bbox_inches='tight')
 
     def write_bfm_input_file(self, filename=None, rescale=True):
-
+        """
+        Write the SU2 BFM input file
+        """
         # before writing the cordinates, rescale them to meters
         if rescale:
             self.z_camber *= self.config.get_reference_length()
@@ -1557,33 +1476,17 @@ class Blade:
         Contour of the blade angles.
         :param save_filename: if specified, saves the plots with the given name
         """
-
-        fig, ax = plt.subplots()
-        cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, N_levels, cmap=color_map)
-        ax.set_title(r'$\varphi$')
-        cb = fig.colorbar(cs)
-        cb.set_label(r'$\varphi \quad \mathrm{[deg]}$')
-        ax.set_aspect('equal', adjustable='box')
+        self.contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, r'$\varphi \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_gas_path_angle.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_gas_path_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots()
-        cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, N_levels, cmap=color_map)
-        ax.set_title(r'$\kappa$')
-        cb = fig.colorbar(cs)
-        cb.set_label(r'$\kappa \quad \mathrm{[deg]}$')
-        ax.set_aspect('equal', adjustable='box')
+        self.contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, r'$\kappa \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_metal_angle.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_metal_angle.pdf', bbox_inches='tight')
 
-        fig, ax = plt.subplots()
-        cs = ax.contourf(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, N_levels, cmap=color_map)
-        ax.set_title(r'$\lambda$')
-        cb = fig.colorbar(cs)
-        cb.set_label(r'$\lambda \quad \mathrm{[deg]}$')
-        ax.set_aspect('equal', adjustable='box')
+        self.contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, r'$\lambda \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            fig.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_lean_angle.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_lean_angle.pdf', bbox_inches='tight')
 
 
     def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
@@ -1972,7 +1875,7 @@ class Blade:
         Given the coordinates defining the two sides of the blade, compute the associated curvilinear abscissa of their projection
         on the meridional plane (z,r)
         """
-        blade_type = self.config.get_blade_outlet_type()
+        blade_type = self.config.get_blade_outlet_type()[self.iblade]
         s1 = np.zeros_like(z1)
         s2 = np.zeros_like(z2)
 
