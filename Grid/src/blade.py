@@ -477,7 +477,7 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
-    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method, degree=5, smooth=1):
+    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method):
         """
         Routine to evaluate theta as a function of the z and r.
 
@@ -496,11 +496,10 @@ class Blade:
 
         `method`: regression or interpolation (linear) of the function theta(z,r)
 
-        `degree`: polynomial order for the regression case
-
-        `smooth`: smooth parameter for the rbf-interpolation case
-
         """
+        smooth = 1 # rbf interpolation smoother
+        degree = self.config.get_blade_reconstruction_regression_order()
+
         if method == 'regression': # polynomial regression of order <degree>
             poly_features = PolynomialFeatures(degree)  
             X = poly_features.fit_transform(np.column_stack((z, r)))
@@ -548,7 +547,7 @@ class Blade:
         print()
         return theta
 
-    def obtain_quantities_on_meridional_grid(self, smooth=1, degree=5):
+    def obtain_quantities_on_meridional_grid(self, smooth=1):
         """
         Find the camber surface via interpolation of the function theta = f(z, r).
         Check the degree of the polynomial if it is ok. It preventively computes the surface bounding all the blade.
@@ -562,31 +561,31 @@ class Blade:
         
         self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                          self.r_cambSurface.flatten(),
-                                                         (self.r_cambSurface*self.theta_cambSurface).flatten(),
+                                                         (self.theta_cambSurface).flatten(),
                                                          self.z_grid, self.r_grid,
-                                                         method, degree, smooth) / self.r_grid
+                                                         method)
         self.x_camber = self.r_grid * np.cos(self.theta_camber)
         self.y_camber = self.r_grid * np.sin(self.theta_camber)
 
         self.blockage = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                      self.r_cambSurface.flatten(),
                                                      self.blockage_cambSurface.flatten(),
-                                                     self.z_grid, self.r_grid, method, degree, smooth)
+                                                     self.z_grid, self.r_grid, method)
 
         self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                self.r_cambSurface.flatten(),
                                                self.n_camber_r.flatten(),
-                                               self.z_grid, self.r_grid, method, degree, smooth)
+                                               self.z_grid, self.r_grid, method)
 
         self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                    self.r_cambSurface.flatten(),
                                                    self.n_camber_t.flatten(),
-                                                   self.z_grid, self.r_grid, method, degree, smooth)
+                                                   self.z_grid, self.r_grid, method)
 
         self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                self.r_cambSurface.flatten(),
                                                self.n_camber_z.flatten(),
-                                               self.z_grid, self.r_grid, method, degree, smooth)
+                                               self.z_grid, self.r_grid, method)
 
     def add_meridional_grid(self, zgrid, rgrid):
         """
@@ -1489,31 +1488,46 @@ class Blade:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_lean_angle.pdf', bbox_inches='tight')
 
 
-    def plot_inlet_outlet_metal_angle(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
+    def plot_inlet_outlet_metal_angle(self, save_filename=None, spans=(0, 0.25, 0.5, 0.75, 1)):
         """
         Plot inlet and metal angle
         """
+        def normalize(f, dir):
+            ni,nj = f.shape
+            fnew = np.zeros_like(f)
+            if dir==0:
+                for j in range(nj):
+                    fnew[:,j] = (f[:,j]-f[:,j].min())/(f[:,j].max()-f[:,j].min())
+            else:
+                for i in range(ni):
+                    fnew[i,:] = (f[i,:]-f[i,:].min())/(f[i,:].max()-f[i,:].min())
+            return fnew
+        
+        stream_len = normalize(self.streamline_length, dir=0)
+        span_len = normalize(self.spanline_length, dir=1)
+
         plt.figure()
-        plt.plot(self.spanline_length[0,:], self.blade_metal_angle[0,:]*180/np.pi, '-o', ms=3, label='leading edge')
-        plt.plot(self.spanline_length[-1, :], self.blade_metal_angle[-1, :]*180/np.pi, '-s', ms=3, label='trailing edge')
-        plt.xlabel('Normalized Span Hub-to-Shroud [-]')
+        plt.plot(span_len[0,:], self.blade_metal_angle[0,:]*180/np.pi, '-o', ms=3, mfc='none', label='leading edge')
+        plt.plot(span_len[-1, :], self.blade_metal_angle[-1, :]*180/np.pi, '-s', ms=3, mfc='none', label='trailing edge')
+        plt.xlabel('Normalized Span Length [-]')
         plt.ylabel(r'Blade Metal Angle [deg]')
         plt.grid(alpha=0.2)
         plt.legend()
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'inlet_outlet_metal_angle.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_metal_angle_span.pdf', bbox_inches='tight')
 
-        idx_spans = self.compute_blade_span_indexes(spans)
+        idx_spans = self.compute_blade_span_indexes(spans, span_len)
 
         plt.figure()
         for ispan in idx_spans:
-            plt.plot(self.streamline_length[:, ispan], -self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, label='span %.3f' %(self.spanline_length[0,ispan]))
-        plt.xlabel('Meridional Length LE-to-TE [-]')
+            plt.plot(stream_len[:, ispan], self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, mfc='none', label='span %.3f' %(span_len[0,ispan]))
+        plt.xlabel('Normalized Stream Length [-]')
         plt.ylabel(r'Blade Metal Angle [deg]')
         plt.grid(alpha=0.2)
         plt.legend()
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'metal_angle_spans.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_metal_angle_stream.pdf', bbox_inches='tight')
+
 
     def plot_inlet_outlet_normal_thickness(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
         """
@@ -1530,16 +1544,18 @@ class Blade:
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
 
-    def compute_blade_span_indexes(self, spans):
+
+    def compute_blade_span_indexes(self, spans, span_len):
         """
         Given a tuple of spans (normalized from 0-hub to 1-tip), return the indexes of the meridional grid as close as possible
         to those values.
         """
         idx_spans = np.zeros(len(spans), dtype=int)
-        span_len = self.spanline_length[0, :]
+        span_len = span_len[0, :]
         for ii, span in enumerate(spans):
-            idx_spans[ii] = int(min(range(len(span_len)), key=lambda kk: abs(span_len[kk] - span)))
+            idx_spans[ii] = np.argmin(np.abs(span_len-span))
         return idx_spans
+
 
     def compute_paraview_grid_points(self, coeff, debug_visual=False):
         """
@@ -1562,6 +1578,7 @@ class Blade:
             plt.scatter(self.z_camber, self.r_camber, marker='o', edgecolors='black', facecolors='none')
             plt.scatter(self.z_paraview, self.x_paraview, marker='^', edgecolors='red', facecolors='none')
 
+
     def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid'):
         """
         write the file requireed by Paraview to run the circumferential avg.
@@ -1575,6 +1592,7 @@ class Blade:
                     file.write(
                         '%i,%i,%.6f,%.6f,%.6f\n' % (istream, ispan, self.x_paraview[istream, ispan],
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
+
 
     def read_paraview_processed_dataset(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300):
        """
@@ -1824,6 +1842,7 @@ class Blade:
         self.meridional_fields['Total_Force_Axial'] = self.meridional_fields['Force_Loss_Axial'] + self.meridional_fields[
             'Force_Turning_Axial']
 
+
     def plot_body_forces_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
         """
         plot slices of the body forces and its gradient along streamwise direction from leading to trailing edge
@@ -1869,6 +1888,7 @@ class Blade:
         plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '_' + 'f_loss_slices.pdf', bbox_inches='tight')
+
 
     def compute_streamwise_meridional_projection_length(self, z1, r1, theta1, z2, r2, theta2):
         """
@@ -1952,6 +1972,7 @@ class Blade:
 
         return s1, s2
 
+
     def extract_coordinates_from_camber(self, s_camber, s, z, r, theta):
         """
         Extract z,r,theta for the points on the camber, using the values that created the camber in first place
@@ -1961,6 +1982,7 @@ class Blade:
             idx = np.argmin((s_camber[i]-s)**2)
             z_camber[i], r_camber[i] = z[idx], r[idx]
         return z_camber, r_camber
+
 
     def compute_metal_angle_along_camber(self, xc, yc):
         """
@@ -2026,6 +2048,9 @@ class Blade:
 
 
     def clip_contour(self, fsource, vmin, vmax):
+        """
+        clip a 2D array between vmin and vmax
+        """
         f = fsource.copy()
         ni,nj = f.shape
         for i in range(ni):
@@ -2037,6 +2062,7 @@ class Blade:
                 else:
                     pass
         return f
+
 
     def compute_marble_ftheta(self, method='local'):
         """
@@ -2087,7 +2113,10 @@ class Blade:
         return floss 
     
 
-    def contour_template(self, z, r, f, name, vmin=None, vmax=None):
+    def contour_template(self, z: np.ndarray, r: np.ndarray, f: np.ndarray, name: str, vmin=None, vmax=None):
+        """
+        Template function for 2D contours
+        """
         if vmin == None:
             minval = np.min(f)
         else:
