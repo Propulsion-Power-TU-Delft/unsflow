@@ -1228,7 +1228,7 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
 
 def compute_2dSpline_curve(x, y, num_points, spacing=None):
     """
-    Given points in the space x,y,z, return the points lying on the spline passing throug them
+    Given points in the space x,y, return the points lying on the spline passing throug them
     """
     tck, u = interpolate.splprep([x, y], s=0, k=3)
     u_fine = np.linspace(0, 1, num_points)
