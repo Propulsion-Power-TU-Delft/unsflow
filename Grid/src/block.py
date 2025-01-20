@@ -530,8 +530,8 @@ class Block:
             plt.xticks([])
             plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
 
-        if save_filename is not None and save_foldername is not None:
-            plt.savefig(save_foldername + '/' + save_filename + '_%02i_%02i.pdf' %(self.nstream, self.nspan), bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_%02i_%02i.pdf' %(self.nstream, self.nspan), bbox_inches='tight')
 
     def find_border(self):
         """
