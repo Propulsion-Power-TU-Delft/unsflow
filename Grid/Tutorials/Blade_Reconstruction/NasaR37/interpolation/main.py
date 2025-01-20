@@ -38,5 +38,6 @@ blade.plot_camber_normal_contour(save_filename='NasaR37')
 blade.plot_blockage_contour(save_filename='NasaR37')
 blade.compute_blade_camber_angles()
 blade.show_blade_angles_contour(save_filename='NasaR37')
+blade.plot_inlet_outlet_metal_angle(save_filename='NasaR37')
 
 plt.show()

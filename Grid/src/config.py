@@ -242,6 +242,12 @@ class Config:
             return str(self.config_parser.get('CFD PROCESSING', 'PICTURES_FOLDER_PATH'))
         except:
             return 'Pictures' # default
+    
+    def get_blade_reconstruction_regression_order(self):
+        try:
+            return int(self.config_parser.get('CFD PROCESSING', 'BLADE_RECONSTRUCTION_REGRESSION_ORDER'))
+        except:
+            return 7 # default
 
     def get_grid_transformation_gradient_routine(self):
         return str(self.config_parser.get('SUN MODEL', 'GRID_TRANSFORMATION_GRADIENT_ROUTINE'))
