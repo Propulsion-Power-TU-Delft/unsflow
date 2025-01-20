@@ -1274,43 +1274,25 @@ class Blade:
         self.contour_template(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, r'$b$ reference', vmin=0.8, vmax=1)
 
 
-    def compute_blade_blockage_gradient(self, save_filename=None, folder_name=None):
+    def compute_blade_blockage_gradient(self, save_filename=None):
         """
         Compute the blockage gradient via finite difference on the meridional grid
         """
         self.db_dz, self.db_dr = compute_gradient_least_square(self.z_camber, self.r_camber, self.blockage)
 
-        plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.db_dz, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        # plt.contour(self.z_camber, self.r_camber, self.db_dz, colors='white', linestyles='dashed', linewidths=2)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$dbdz$')
+        self.contour_template(self.z_camber, self.r_camber, self.db_dz, r'$\partial_z b$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + '_dbdz.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, self.db_dr, cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        # plt.contour(self.z_camber, self.r_camber, self.db_dr, colors='white', linestyles='dashed', linewidths=2)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$dbdr$')
+        self.contour_template(self.z_camber, self.r_camber, self.db_dr, r'$\partial_r b$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + '_dbdr.pdf', bbox_inches='tight')
 
-        plt.figure()
-        plt.contourf(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), cmap=color_map, levels=N_levels)
-        plt.colorbar()
-        # plt.contour(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), colors='white', linestyles='dashed', linewidths=2)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$| \nabla b|$')
+        self.contour_template(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), r'$| \nabla b|$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'bgrad_magnitude.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_bgrad_magnitude.pdf', bbox_inches='tight')
 
-    def plot_blockage_and_grad_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
+    def plot_blockage_and_grad_leading_to_trailing(self, jump=10, save_filename=None):
         """
         plot slices of the blockage and its gradient along streamwise direction from leading to trailing edge
         :param jump: jump between streamlines from hub to shroud
@@ -1327,7 +1309,7 @@ class Blade:
         plt.ylabel(r'$b \ \rm{[-]}$')
         plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_slices.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'blockage_slices.pdf', bbox_inches='tight')
 
         plt.figure()
         for ispan in stations:
@@ -1337,7 +1319,7 @@ class Blade:
         plt.ylabel(r'$db/dz \ \rm{[1/m]}$')
         plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz_slices.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'dbdz_slices.pdf', bbox_inches='tight')
 
         plt.figure()
         for ispan in stations:
@@ -1347,7 +1329,7 @@ class Blade:
         plt.ylabel(r'$db/dr \ \rm{[1/m]}$')
         plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr_slices.pdf', bbox_inches='tight')
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'dbdr_slices.pdf', bbox_inches='tight')
 
     def plot_blockage_and_grad_hub_to_shroud(self, jump=10, save_filename=None, folder_name=None):
         """
