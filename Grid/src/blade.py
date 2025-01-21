@@ -7,7 +7,7 @@ Created on Wed Jul 12 11:41:53 2023
 import warnings
 
 import matplotlib.pyplot as plt
-from numpy import array
+from numpy import array, sin, cos, tan, pi
 import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
@@ -1576,44 +1576,46 @@ class Blade:
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
 
-    def read_paraview_processed_dataset(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300):
-       """
-       Read the processed dataset stored in folder_path location obtained by the Paraview Macro.
-       :param folder_path: folder where the dataset is saved
-       """
+    def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300):
+        """
+        Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Kiwada Extraction procedure.
+        Average type distinguish the type of average used, raw for standard circumferential
+        """
+        available_avg_types = ['raw', 'density', 'axialMomentum']
+        self.avg_type = average_type
+        if self.avg_type not in available_avg_types:
+            raise ValueError('Not valid average type')
+        print('Weighted average type: %s' % self.avg_type)
 
-       def extract_grid_location(file_name):
-           print('Elaborating Filename: ' + file_name)
-           file_name = file_name.strip('spline_data_')
-           file_name = file_name.strip('.csv')
-           file_name = file_name.split('_')
-           nz = int(file_name[0])
-           nr = int(file_name[1])
-           return nz, nr
+        def extract_grid_location(file_name):
+            print('Elaborating Filename: ' + file_name)
+            file_name = file_name.strip('spline_data_')
+            file_name = file_name.strip('.csv')
+            file_name = file_name.split('_')
+            nz = int(file_name[0])
+            nr = int(file_name[1])
+            return nz, nr
+        
 
-       available_avg_types = ['raw', 'density', 'axialMomentum']
-       self.avg_type = average_type
+       
+        data_dir = folder_path
+        files = [f for f in os.listdir(data_dir) if '.csv' in f]
+        files = sorted(files)
 
-       if self.avg_type not in available_avg_types:
-           raise ValueError('Not valid average type')
-       print('Weighted average type: %s' % self.avg_type)
+        # give the name of the fields to average
+        fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
+                    'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy',
+                    'A1', 'A2', 'R2', 'R3', 'T1', 'T2', 'T3',
+                    'Tau_rr', 'Tau_tt', 'Tau_zz', 'Tau_rt', 'Tau_rz', 'Tau_tz']
+        
+        nz, nr = extract_grid_location(files[-1])
+        field_grids = {}
+        for field_name in fields:
+            field_grids[field_name] = np.zeros((nz+1, nr+1))
+        z_grid = np.zeros((nz+1, nr+1))
+        r_grid = np.zeros((nz+1, nr+1))
 
-       data_dir = folder_path
-       files = [f for f in os.listdir(data_dir) if '.csv' in f]
-       files = sorted(files)
-
-       # give the name of the fields to average, already present in the vtu file
-       fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature',
-                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Velocity_Meridional', 'Entropy',
-                 'A1', 'A2', 'R2', 'R3', 'T1', 'T2', 'T3']
-       nz, nr = extract_grid_location(files[-1])
-       field_grids = {}
-       for field in fields:
-           field_grids[field] = np.zeros((nz+1, nr+1))
-       z_grid = np.zeros((nz+1, nr+1))
-       r_grid = np.zeros((nz+1, nr+1))
-
-       for file in files:
+        for file in files:
             df = pd.read_csv(data_dir + file)
             data_dict = df.to_dict('list')
             data_dict = {key: np.array(value) for key, value in data_dict.items()}
@@ -1628,15 +1630,15 @@ class Blade:
             r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
             # Compute additional fields that will be circumferentially averaged 
-            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*np.cos(theta)+data_dict['Velocity_1']*np.sin(theta)
+            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
 
-            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*np.sin(theta)+data_dict['Velocity_1']*np.cos(theta)
+            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
 
-            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']+data_dict['Grid_Velocity_Magnitude']  # attention on the sign here
+            data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
+
+            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
             
             data_dict['Velocity_Axial'] = data_dict['Velocity_2']
-
-            data_dict['Velocity_Meridional'] = np.sqrt(data_dict['Velocity_Axial']**2+data_dict['Velocity_Radial']**2)
 
             data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
 
@@ -1652,25 +1654,37 @@ class Blade:
             div_u = duxdx+duydy+duzdz
             mu = (data_dict['Laminar_Viscosity']+data_dict['Eddy_Viscosity'])*data_dict['Density']
 
-            tauxx = -mu*(2*duxdx)+2/3*mu*div_u
-            tauyy = -mu*(2*duydy)+2/3*mu*div_u
-            tauzz = -mu*(2*duzdz)+2/3*mu*div_u
-            tauxy = -mu*(duydx+duxdy)
-            tauyz = -mu*(duydz+duzdy)
-            tauxz = -mu*(duxdz+duzdx)
+            tauxx = mu*(2*duxdx)-2/3*mu*div_u
+            tauyy = mu*(2*duydy)-2/3*mu*div_u
+            tauzz_cart = mu*(2*duzdz)-2/3*mu*div_u
+            tauxy = mu*(duydx+duxdy)
+            tauyz = mu*(duydz+duzdy)
+            tauxz = mu*(duxdz+duzdx)
+            trace_cart = tauxx+tauyy+tauzz_cart
 
             # plt.figure()
-            # plt.plot(theta, tauxx, '.', label='tauxx')
-            # plt.plot(theta, tauyy, '.', label='tauyy')
-            # plt.plot(theta, tauzz, '.', label='tauzz')
-            # plt.plot(theta, tauxy, '.', label='tauxy')
-            # plt.plot(theta, tauyz, '.', label='tauyz')
-            # plt.plot(theta, tauxz, '.', label='tauxz')
+            # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
+            # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
+            # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
+            # plt.plot(theta*180/pi, trace_cart, '.', label=r'$\tau_{xx} + \tau_{yy} + \tau_{zz}$')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'$\tau$ [Pa]')
+            # plt.legend()
+
+            # plt.figure()
+            # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
+            # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
+            # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
+            # plt.plot(theta*180/pi, tauxy, '.', label=r'$\tau_{xy}$')
+            # plt.plot(theta*180/pi, tauxz, '.', label=r'$\tau_{xz}$')
+            # plt.plot(theta*180/pi, tauyz, '.', label=r'$\tau_{yz}$')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'$\tau$ [Pa]')
             # plt.legend()
 
             taurr = np.zeros_like(tauxx) 
             tautt = np.zeros_like(tauxx) 
-            tauzz = np.zeros_like(tauxx) 
+            tauzz_cyl = np.zeros_like(tauxx) 
             taurt = np.zeros_like(tauxx) 
             taurz = np.zeros_like(tauxx) 
             tautz = np.zeros_like(tauxx) 
@@ -1684,26 +1698,57 @@ class Blade:
                 TAU[1,2] = tauyz[i]
                 TAU[2,0] = tauxz[i]
                 TAU[2,1] = tauyz[i]
-                TAU[2,2] = tauzz[i]
+                TAU[2,2] = tauzz_cart[i]
                 TAU_cyl = rotate_cartesian_to_cylindric_tensor(theta[i], TAU)
                 taurr[i] = TAU_cyl[0,0]
                 tautt[i] = TAU_cyl[1,1]
-                tauzz[i] = TAU_cyl[2,2]
+                tauzz_cyl[i] = TAU_cyl[2,2]
                 taurt[i] = TAU_cyl[0,1]
                 taurz[i] = TAU_cyl[0,2]
                 tautz[i] = TAU_cyl[1,2]
+            data_dict['Tau_rr'] = taurr
+            data_dict['Tau_tt'] = tautt
+            data_dict['Tau_zz'] = tauzz_cyl
+            data_dict['Tau_rt'] = taurt
+            data_dict['Tau_rz'] = taurz
+            data_dict['Tau_tz'] = tautz
+            # trace_cyl = taurr+tautt+tauzz_cyl
+            # plt.figure()
+            # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
+            # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
+            # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
+            # plt.plot(theta*180/pi, trace_cyl, '.', label=r'$\tau_{rr} + \tau_{\theta} + \tau_{zz}$')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'$\tau$ [Pa]')
+            # plt.legend()
+
+            # plt.figure()
+            # plt.plot(theta*180/pi, trace_cart, 'o', mfc='none', label='Cartesian')
+            # plt.plot(theta*180/pi, trace_cyl, 'x', label='Cylindrical')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'Tr$(\tau)$ [Pa]')
+            # plt.legend()
+
+            # plt.figure()
+            # plt.plot(theta*180/pi, tauzz_cart, 'o', mfc='none', label='Cartesian')
+            # plt.plot(theta*180/pi, tauzz_cyl, 'x', label='Cylindrical')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'$\tau_{zz}$ [Pa]')
+            # plt.legend()
             
             # plt.figure()
-            # plt.plot(theta, taurr, '.', label='taurr')
-            # plt.plot(theta, tautt, '.', label='tautt')
-            # plt.plot(theta, tauzz, '.', label='tauzz')
-            # plt.plot(theta, taurt, '.', label='taurt')
-            # plt.plot(theta, taurz, '.', label='taurz')
-            # plt.plot(theta, tautz, '.', label='tautz')
+            # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
+            # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
+            # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
+            # plt.plot(theta*180/pi, taurt, '.', label=r'$\tau_{r \theta}$')
+            # plt.plot(theta*180/pi, taurz, '.', label=r'$\tau_{r z}$')
+            # plt.plot(theta*180/pi, tautz, '.', label=r'$\tau_{\theta z}$')
+            # plt.xlabel(r'$\theta$ [deg]')
+            # plt.ylabel(r'$\tau$ [Pa]')
             # plt.legend()
 
             # follow nomenclature page 89 of Magrini
-            data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz
+            data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz_cyl
             data_dict['A2'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Radial']-taurz
             data_dict['R2'] = data_dict['Density']*data_dict['Velocity_Radial']**2+data_dict['Pressure']-taurr
             data_dict['R3'] = data_dict['Density']*data_dict['Velocity_Tangential']**2+data_dict['Pressure']-tautt
@@ -1712,17 +1757,17 @@ class Blade:
             data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt+data_dict['Pressure']
 
             for field in fields:
-                f = data_dict[field]
-                if self.avg_type == 'raw':
+                f = data_dict[field].copy()
+                if self.avg_type.lower() == 'raw':
                     field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
-                elif self.avg_type == 'density':
+                elif self.avg_type.lower() == 'density':
                     field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
-                elif self.avg_type == 'axialMomentum':
+                elif self.avg_type.lower() == 'axialMomentum':
                     field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
 
-       self.meridional_fields = field_grids
-       self.meridional_fields['Z'] = z_grid
-       self.meridional_fields['R'] = r_grid
+        self.meridional_fields = field_grids
+        self.meridional_fields['Z'] = z_grid
+        self.meridional_fields['R'] = r_grid
 
 
     def contour_meridional_fields(self, output_folder = 'Contours'):
@@ -2168,7 +2213,7 @@ class Blade:
                     self.meridional_fields['Force_Tangential'][i,j] = 0
                     self.meridional_fields['Force_Radial'][i,j] = 0
     
-    def compute_kiwada_force(self):
+    def compute_kiwada_body_force(self):
         """
         Compute the force using the relations of Kiwada, for the global force, already decomposed in in its components.
         """
@@ -2177,21 +2222,28 @@ class Blade:
         B = self.blockage.copy()
         dbdz, dbdr = compute_gradient_least_square(Z, R, self.blockage)
 
+        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], B[1:-1,1:-1], r'$b$')
+        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], dbdz[1:-1,1:-1], r'$\partial_z b$')
+        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], dbdr[1:-1,1:-1], r'$\partial_r b$')
+
         # axial equation
-        d1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
-        d2dr = compute_gradient_least_square(Z, R, B*self.meridional_fields['R']*self.meridional_fields['A2'])[1]
-        self.meridional_fields['Force_Axial'] = 1/B*d1dz+1/B/R*d2dr-self.meridional_fields['Pressure']/B*dbdz
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], self.meridional_fields['Force_Axial'][1:-1,1:-1], name='faxial',vmin=0)
+        dA1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
+        dA2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['A2'])[1]
+        self.meridional_fields['Force_Axial'] = 1/B*dA1dz+1/B/R*dA2dr-self.meridional_fields['Pressure']/B*dbdz
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Axial'][2:-2,2:-2], name='f_axial', vmin=0)
 
-        d1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A2'])[0]
-        d2dr = compute_gradient_least_square(Z,R, B*R*self.meridional_fields['R2'])[1]
-        self.meridional_fields['Force_Radial'] = 1/B*d1dz+1/B/R*d2dr-self.meridional_fields['Pressure']/B*dbdr-self.meridional_fields['R3']/R
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], self.meridional_fields['Force_Radial'][1:-1,1:-1], name='fradial')
+        dR1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A2'])[0]
+        dR2dr = compute_gradient_least_square(Z,R, B*R*self.meridional_fields['R2'])[1]
+        self.meridional_fields['Force_Radial'] = 1/B*dR1dz+1/B/R*dR2dr-self.meridional_fields['Pressure']/B*dbdr-self.meridional_fields['R3']/R
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Radial'][2:-2,2:-2], name='f_radial')
 
-        d1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['T1'])[0]
-        d2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
-        self.meridional_fields['Force_Tangential'] = 1/B*d1dz + 1/B/R*d2dr + self.meridional_fields['T3']/R
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], self.meridional_fields['Force_Tangential'][1:-1,1:-1], name='ftangential')
+        dT1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['T1'])[0]
+        dT2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
+        self.meridional_fields['Force_Tangential'] = 1/B*dT1dz + 1/B/R*dT2dr + self.meridional_fields['T3']/R
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Tangential'][2:-2,2:-2], name='f_tangential', vmax=0)
+
+        fmag = np.sqrt(self.meridional_fields['Force_Radial']**2+self.meridional_fields['Force_Tangential']**2+self.meridional_fields['Force_Axial']**2)
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], fmag[2:-2,2:-2], name='f_magnitude')
 
         ni,nj = R.shape
         self.meridional_fields['Force_Viscous'] = np.zeros((ni,nj))
@@ -2206,6 +2258,12 @@ class Blade:
                 
                 fp_vers = -w/np.linalg.norm(w)
                 self.meridional_fields['Force_Viscous'][i,j] = np.dot(fg, fp_vers)
+        self.meridional_fields['Force_Inviscid'] = np.sqrt(fmag**2-self.meridional_fields['Force_Viscous']**2)
+
+        
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Viscous'][2:-2,2:-2], name='f_viscous')
+        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Inviscid'][2:-2,2:-2], name='f_inviscid')
+        print()
 
                 
                 
