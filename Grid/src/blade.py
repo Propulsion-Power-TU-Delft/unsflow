@@ -2222,9 +2222,9 @@ class Blade:
         B = self.blockage.copy()
         dbdz, dbdr = compute_gradient_least_square(Z, R, self.blockage)
 
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], B[1:-1,1:-1], r'$b$')
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], dbdz[1:-1,1:-1], r'$\partial_z b$')
-        self.contour_template(Z[1:-1,1:-1], R[1:-1,1:-1], dbdr[1:-1,1:-1], r'$\partial_r b$')
+        self.contour_template(Z, R, B, r'$b$')
+        self.contour_template(Z, R, dbdz, r'$\partial_z b$')
+        self.contour_template(Z, R, dbdr, r'$\partial_r b$')
 
         # axial equation
         dA1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
