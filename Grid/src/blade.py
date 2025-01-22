@@ -1576,10 +1576,11 @@ class Blade:
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
 
-    def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300):
+    def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
         """
         Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Kiwada Extraction procedure.
-        Average type distinguish the type of average used, raw for standard circumferential
+        Average type distinguish the type of average used, raw for standard circumferential.
+        Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
         """
         available_avg_types = ['raw', 'density', 'axialMomentum']
         self.avg_type = average_type
@@ -1748,6 +1749,15 @@ class Blade:
             # plt.legend()
 
             # follow nomenclature page 89 of Magrini
+            if inviscid:
+                taurr *=0
+                tautt *=0
+                tauzz_cyl *= 0
+                tauzz_cart *= 0
+                taurt *= 0
+                taurz *= 0
+                tautz *= 0
+                
             data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz_cyl
             data_dict['A2'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Radial']-taurz
             data_dict['R2'] = data_dict['Density']*data_dict['Velocity_Radial']**2+data_dict['Pressure']-taurr
@@ -1768,12 +1778,92 @@ class Blade:
         self.meridional_fields = field_grids
         self.meridional_fields['Z'] = z_grid
         self.meridional_fields['R'] = r_grid
+    
+
+    def process_paraview_dataset_marble(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
+        """
+        Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
+        Average type distinguish the type of average used, raw for standard circumferential.
+        Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
+        """
+        available_avg_types = ['raw', 'density', 'axialMomentum']
+        self.avg_type = average_type
+        if self.avg_type not in available_avg_types:
+            raise ValueError('Not valid average type')
+        print('Weighted average type: %s' % self.avg_type)
+
+        def extract_grid_location(file_name):
+            print('Elaborating Filename: ' + file_name)
+            file_name = file_name.strip('spline_data_')
+            file_name = file_name.strip('.csv')
+            file_name = file_name.split('_')
+            nz = int(file_name[0])
+            nr = int(file_name[1])
+            return nz, nr
+        
+
+       
+        data_dir = folder_path
+        files = [f for f in os.listdir(data_dir) if '.csv' in f]
+        files = sorted(files)
+
+        # give the name of the fields to average
+        fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
+                    'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy']
+        
+        nz, nr = extract_grid_location(files[-1])
+        field_grids = {}
+        for field_name in fields:
+            field_grids[field_name] = np.zeros((nz+1, nr+1))
+        z_grid = np.zeros((nz+1, nr+1))
+        r_grid = np.zeros((nz+1, nr+1))
+
+        for file in files:
+            df = pd.read_csv(data_dir + file)
+            data_dict = df.to_dict('list')
+            data_dict = {key: np.array(value) for key, value in data_dict.items()}
+
+            x = data_dict['Points_0']
+            y = data_dict['Points_1']
+            z = data_dict['Points_2']
+            r = np.sqrt(x ** 2 + y ** 2)
+            theta = np.arctan2(y, x)
+            stream_id, span_id = extract_grid_location(file)
+            z_grid[stream_id, span_id] = np.sum(z) / len(z)
+            r_grid[stream_id, span_id] = np.sum(r) / len(r)
+
+            # Compute additional fields that will be circumferentially averaged 
+            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
+
+            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
+
+            data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
+
+            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
+            
+            data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+
+            data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
+
+            for field in fields:
+                f = data_dict[field].copy()
+                if self.avg_type.lower() == 'raw':
+                    field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
+                elif self.avg_type.lower() == 'density':
+                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
+                elif self.avg_type.lower() == 'axialMomentum':
+                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
+
+        self.meridional_fields = field_grids
+        self.meridional_fields['Z'] = z_grid
+        self.meridional_fields['R'] = r_grid
 
 
-    def contour_meridional_fields(self, output_folder = 'Contours'):
+    def contour_meridional_fields(self):
         """
         contour of the fields stored in meridional fields
         """
+        output_folder = self.config.get_pictures_folder_path()
         os.makedirs(output_folder, exist_ok=True)
 
         z = self.meridional_fields['Z']
@@ -1784,7 +1874,7 @@ class Blade:
                 fig, ax = plt.subplots()
                 contour = ax.contourf(z, r, value, levels=N_levels, cmap=color_map)
                 cbar = fig.colorbar(contour)
-                contour = ax.contour(z, r, value, levels=N_levels, colors='black', linewidths=0.1)
+                # contour = ax.contour(z, r, value, levels=N_levels, colors='black', linewidths=0.1)
                 plt.title(key)
                 ax.set_aspect('equal', adjustable='box')
                 plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
@@ -2031,12 +2121,8 @@ class Blade:
         """
         ni,nj = self.meridional_fields['Z'].shape
         
-        self.meridional_fields['f_loss'] = self.compute_marble_loss_force()
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss'], r'$f_{p}$')
-
-        self.meridional_fields['f_theta'] = self.compute_marble_ftheta()
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_theta'], r'$f_{\theta}$')
-
+        self.meridional_fields['Force_Viscous'] = self.compute_marble_loss_force()
+        self.meridional_fields['Force_Tangential'] = self.compute_marble_ftheta()
 
         fp_versor = np.zeros((ni,nj,3))
         for i in range(ni):
@@ -2047,31 +2133,21 @@ class Blade:
                 
                 fp_versor[i,j,:] = -w/np.linalg.norm(w)
 
-        self.meridional_fields['f_loss_r'] = self.meridional_fields['f_loss']*fp_versor[:,:,0]
-        self.meridional_fields['f_loss_t'] = self.meridional_fields['f_loss']*fp_versor[:,:,1]
-        self.meridional_fields['f_loss_a'] = self.meridional_fields['f_loss']*fp_versor[:,:,2]
+        self.meridional_fields['Force_Viscous_Radial'] = self.meridional_fields['Force_Viscous']*fp_versor[:,:,0]
+        self.meridional_fields['Force_Viscous_Tangential'] = self.meridional_fields['Force_Viscous']*fp_versor[:,:,1]
+        self.meridional_fields['Force_Viscous_Axial'] = self.meridional_fields['Force_Viscous']*fp_versor[:,:,2]
         
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_r'], r'$f_{p,r}$')
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_t'], r'$f_{p,\theta}$')
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_loss_a'], r'$f_{p,z}$')
+        self.meridional_fields['Force_Inviscid_Tangential'] = self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Viscous_Tangential']
+        self.meridional_fields['Force_Inviscid_Radial'] = np.abs(self.meridional_fields['Force_Inviscid_Tangential'])*np.tan(self.blade_lean_angle)
+
+        self.meridional_fields['Force_Axial'] = self.meridional_fields['Force_Viscous_Axial']-(self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Viscous_Tangential'])*self.meridional_fields['Velocity_Tangential_Relative']/self.meridional_fields['Velocity_Axial']
+        self.meridional_fields['Force_Inviscid_Axial'] = self.meridional_fields['Force_Axial']-self.meridional_fields['Force_Viscous_Axial']
+
+        self.meridional_fields['Force_Inviscid'] = np.sqrt(self.meridional_fields['Force_Inviscid_Axial']**2+
+                                                           self.meridional_fields['Force_Inviscid_Radial']**2+
+                                                           self.meridional_fields['Force_Inviscid_Tangential']**2)
         
-        self.meridional_fields['f_turn_t'] = self.meridional_fields['f_theta']-self.meridional_fields['f_loss_t']
-        self.meridional_fields['f_turn_r'] = np.abs(self.meridional_fields['f_turn_t'])*np.tan(self.blade_lean_angle)
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_t'], r'$f_{n,\theta}$')
-        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.blade_lean_angle, r'$\lambda$')
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_r'], r'$f_{n,r}$')
-
-        self.meridional_fields['f_a'] = self.meridional_fields['f_loss_a']-(self.meridional_fields['f_theta']-self.meridional_fields['f_loss_t'])*self.meridional_fields['Velocity_Tangential_Relative']/self.meridional_fields['Velocity_Axial']
-        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_a'], r'$f_{z}$', vmin=0, vmax=3e6)
-        self.meridional_fields['f_turn_a'] = self.meridional_fields['f_a']-self.meridional_fields['f_loss_a']
-        self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn_a'], r'$f_{n,z}$')
-
-        self.meridional_fields['f_turn'] = np.sqrt(self.meridional_fields['f_turn_a']**2+
-                                                   self.meridional_fields['f_turn_r']**2+
-                                                   self.meridional_fields['f_turn_t']**2)
-        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn'], r'$f_{n}$', vmin=0, vmax=3e6)
-        self.meridional_fields['f_turn'] = self.clip_contour(self.meridional_fields['f_turn'], vmin = 0, vmax = 3e6)
-        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], self.meridional_fields['f_turn'], r'$f_{n}$', vmin=0, vmax=3e6)
+        self.meridional_fields['Force_Radial'] = self.meridional_fields['Force_Viscous_Radial']+self.meridional_fields['Force_Inviscid_Radial']
 
 
     def clip_contour(self, fsource, vmin, vmax):
@@ -2097,6 +2173,7 @@ class Blade:
         Method <distributed> spread the gradient of angular momentum linearly from inlet to outlet
         Method <local> uses local gradients of the angular momentum
         """
+        self.meridional_fields['Velocity_Meridional'] = np.sqrt(self.meridional_fields['Velocity_Axial']**2 + self.meridional_fields['Velocity_Radial']**2)
         um = self.meridional_fields['Velocity_Meridional'].copy()
         ut = self.meridional_fields['Velocity_Tangential'].copy()
         r = self.meridional_fields['R'].copy()
@@ -2130,7 +2207,7 @@ class Blade:
 
         T = self.meridional_fields['Temperature'].copy()
         W = np.sqrt(self.meridional_fields['Velocity_Axial']**2 + self.meridional_fields['Velocity_Radial']**2 + self.meridional_fields['Velocity_Tangential_Relative']**2)
-        Um = self.meridional_fields['Velocity_Meridional'].copy()
+        Um = np.sqrt(self.meridional_fields['Velocity_Axial']**2 + self.meridional_fields['Velocity_Radial']**2)
 
         for j in range(T.shape[1]):
             deltaS = self.meridional_fields['Entropy'][-1,j]-self.meridional_fields['Entropy'][0,j]
@@ -2140,7 +2217,7 @@ class Blade:
         return floss 
     
 
-    def contour_template(self, z: np.ndarray, r: np.ndarray, f: np.ndarray, name: str, vmin=None, vmax=None):
+    def contour_template(self, z: np.ndarray, r: np.ndarray, f: np.ndarray, name: str, vmin=None, vmax=None, save_filename=None):
         """
         Template function for 2D contours
         """
@@ -2161,43 +2238,37 @@ class Blade:
         contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
         plt.title(name)
         ax.set_aspect('equal', adjustable='box')
-        # plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_%sAvg.pdf' % (self.avg_type), bbox_inches='tight')
     
 
-    def interpolate_body_force_data(self, filepath):
+    def interpolate_body_force_data(self, filepath, fields_name):
         """
         Interpolate the body force components stored in filepath onto the blade grid
         """
         with open(filepath, 'rb') as file:
             data = pickle.load(file)
         
-        def interpolate_linear_and_nearest(f):
-            f_interp = griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid, self.r_grid), fill_value=1e12)
-            ni,nj = f_interp.shape
-            for i in range(ni):
-                for j in range(nj):
-                    if f_interp[i,j]==1e12:
-                        f_interp[i,j]=griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid[i,j], self.r_grid[i,j]), method='nearest')
-            return f_interp
+        # def interpolate_linear_and_nearest(f):
+        #     f_interp = griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid, self.r_grid), fill_value=1e12)
+        #     ni,nj = f_interp.shape
+        #     for i in range(ni):
+        #         for j in range(nj):
+        #             if f_interp[i,j]==1e12:
+        #                 f_interp[i,j]=griddata(points=(z_data.flatten(), r_data.flatten()), values=f.flatten(), xi=(self.z_grid[i,j], self.r_grid[i,j]), method='nearest')
+        #     return f_interp
 
 
         z_data = data['Z']
         r_data = data['R']
-        f_turn = data['Force_Inviscid']
-        f_loss = data['Force_Viscous']
+        return_fields = []
+        for field in fields_name:
+            self.contour_template(z_data, r_data, data[field], field+'_reference')
+            f = griddata_interpolation_with_nearest_filler(z_data, r_data, data[field], self.z_grid, self.r_grid)
+            self.contour_template(z_data, r_data, data[field], field+'_interpolated')
+            return_fields.append(f.copy())
 
-        print('Interpolating turn body force onto blade grid')
-        self.contour_template(z_data, r_data, f_turn, 'fturn_reference')
-        f_turn_interp = interpolate_linear_and_nearest(f_turn)
-        self.contour_template(self.z_grid, self.r_grid, f_turn_interp, 'fturn_interpolated')
-        
-
-        print('Interpolating loss body force onto blade grid')
-        self.contour_template(z_data, r_data, f_loss, 'floss_reference')
-        f_loss_interp = interpolate_linear_and_nearest(f_loss)
-        self.contour_template(self.z_grid, self.r_grid, f_loss_interp, 'floss_interpolated')
-
-        return f_turn_interp, f_loss_interp
+        return return_fields
     
 
     def cut_blade_tip(self, clearance_meters):
@@ -2264,6 +2335,40 @@ class Blade:
         self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Viscous'][2:-2,2:-2], name='f_viscous')
         self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Inviscid'][2:-2,2:-2], name='f_inviscid')
         print()
+    
+
+    def cure_hub(self, span_extent, f):
+        """
+        For f defined on the meridional grid, cure the field within hub and the span extent
+        """
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_before')
+        gap = span_extent
+        self.compute_spanline_length(normalize=True)
+        ni,nj = f.shape
+        for i in range(ni):
+            j = 0
+            while self.spanline_length[i,j]<span_extent:
+                j_id = j
+                j += 1
+            f[i,0:j_id] = f[i,j_id]
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
+    
+    def cure_shroud(self, span_extent, f):
+        """
+        For f defined on the meridional grid, cure the field within shroud and the span extent
+        """
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_before')
+        self.compute_spanline_length(normalize=True)
+        ni,nj = f.shape
+        for i in range(ni):
+            j = nj-1
+            while self.spanline_length[i,j]>1-span_extent:
+                j_id = j
+                j -= 1
+            f[i,j_id:] = f[i,j_id]
+        # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
+                    
+
 
                 
                 

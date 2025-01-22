@@ -45,6 +45,10 @@ class MultiBlock:
         self.normal_camber = self.blocks[0].normal_camber
         self.force_inviscid = self.blocks[0].force_inviscid
         self.force_viscous = self.blocks[0].force_viscous
+        self.force_axial = self.blocks[0].force_axial
+        self.force_radial = self.blocks[0].force_radial
+        self.force_tangential = self.blocks[0].force_tangential
+        
 
         for block in self.blocks[1:]:
             self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[1:, :]), axis=0)
@@ -55,6 +59,9 @@ class MultiBlock:
             self.normal_camber = np.concatenate((self.normal_camber, block.normal_camber[1:, :, :]), axis=0)
             self.force_inviscid = np.concatenate((self.force_inviscid, block.force_inviscid[1:, :]), axis=0)
             self.force_viscous = np.concatenate((self.force_viscous, block.force_viscous[1:, :]), axis=0)
+            self.force_axial = np.concatenate((self.force_axial, block.force_axial[1:, :]), axis=0)
+            self.force_radial = np.concatenate((self.force_radial, block.force_radial[1:, :]), axis=0)
+            self.force_tangential = np.concatenate((self.force_tangential, block.force_tangential[1:, :]), axis=0)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -201,6 +208,43 @@ class MultiBlock:
 
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
+    
+    def plot_body_force_cylindric(self, save_filename=None, save_foldername=None):
+        """
+        Plot the full forces.
+        """
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_axial, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title('f_axial')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_fax.pdf', bbox_inches='tight')
+        
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_radial, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title('f_radial')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_frad.pdf', bbox_inches='tight')
+        
+        plt.figure()
+        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_tangential, levels=N_levels, cmap=color_map)
+        plt.colorbar()
+        plt.xlabel(r'$z$')
+        plt.ylabel(r'$r$')
+        plt.title('f_tangential')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+        if save_filename is not None:
+            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_ftan.pdf', bbox_inches='tight')
 
     
     def plot_normal_camber(self, save_filename=None, save_foldername=None):
@@ -485,7 +529,8 @@ class MultiBlock:
                                  z[istream, ispan]))
     
 
-    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=True, force_viscous=True):
+    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=False, force_viscous=False,
+                                    force_axial=True, force_radial=True, force_tangential=True):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """
@@ -513,6 +558,16 @@ class MultiBlock:
         if force_viscous:
             print('Viscous force added to the grid file')
             mesh['ForceViscous'] = self.force_viscous
+        if force_axial:
+            print('Axial force added to the grid file')
+            mesh['Force_Axial'] = self.force_axial
+        if force_radial:
+            print('Radial force added to the grid file')
+            mesh['Force_Radial'] = self.force_radial
+        if force_tangential:
+            print('Tangential force added to the grid file')
+            mesh['Force_Tangential'] = self.force_tangential
+        
 
         filepath = 'grid_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
