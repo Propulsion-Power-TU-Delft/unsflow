@@ -12,7 +12,7 @@ from Utils.styles import *
 from scipy.ndimage import gaussian_filter
 import pickle
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.functions import compute_picture_size, print_object_memory_info
+from Grid.src.functions import print_object_memory_info
 from Grid.src.polynomial_ls_regression import *
 
 

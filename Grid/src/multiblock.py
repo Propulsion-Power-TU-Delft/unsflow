@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size, transfinite_grid_generation
+from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
@@ -102,9 +102,8 @@ class MultiBlock:
         :param save_foldername: folder name to save pictures in
         """
 
-        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
 
-        plt.figure(figsize=self.picture_size_blank)
+        plt.figure()
 
         # hub and shroud plot
         if hub_shroud:
@@ -151,6 +150,9 @@ class MultiBlock:
         if not ticks:
             plt.xticks([])
             plt.yticks([])  # plt.xlabel('')  # plt.ylabel('')
+        
+        ax = plt.gca()
+        ax.set_aspect('equal')
 
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_meridional_grid.pdf', bbox_inches='tight')

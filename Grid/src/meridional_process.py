@@ -14,7 +14,6 @@ import pickle
 import sympy as sp
 from Utils.styles import *
 from .polynomial_ls_regression import *
-from .functions import compute_picture_size
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from scipy.interpolate import griddata
 from Grid.src.weighted_least_squares import *

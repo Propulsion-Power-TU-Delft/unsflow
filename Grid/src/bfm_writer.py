@@ -10,7 +10,7 @@ from scipy.spatial import KDTree
 
 import Grid.src
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size, transfinite_grid_generation
+from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement

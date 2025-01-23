@@ -104,30 +104,6 @@ def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, 
     return dur_dr, dut_dr
 
 
-# def second_order_finite_differences(x, y, z):
-#     """
-#     Args:
-#         x: grid values of x
-#         y: grid values of y
-#         z: grid values of z(x, y)
-#
-#     Returns:
-#         dzdx: grid value of partial derivative dzdx
-#         dzdy: grid value of partial derivative dzdy
-#     """
-#     dim = z.shape
-#     dzdx = np.zeros_like(z)
-#     dzdy = np.zeros_like(z)
-#
-#     # Calculate derivatives in the center with second order
-#     for i in range(1, dim[0] - 1):
-#         for j in range(1, dim[1] - 1):
-#             dzdx[i, j] = (z[i + 1, j] - z[i - 1, j]) / (x[i + 1, j] - x[i - 1, j])
-#             dzdy[i, j] = (z[i, j + 1] - z[i, j - 1]) / (y[i, j + 1] - y[i, j - 1])
-#
-#     return dzdx, dzdy
-
-
 def cartesian_to_cylindrical(x, y, z, v):
     """
     Pass from the cordinates in cartesian to cylindrical cordinate.
@@ -600,6 +576,9 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
         plt.plot(X[i, :], Y[i, :], 'k', lw=0.5)
     for j in range(ny):
         plt.plot(X[:, j], Y[:, j], 'k', lw=0.5)
+    
+    ax = plt.gca()
+    ax.set_aspect('equal')
 
     return X, Y
 
@@ -881,82 +860,6 @@ def find_updated_point(x, y, xp_new, yp_new, xb_old, yb_old, yb_prime):
     return xb_new, yb_new
 
 
-# def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
-#     """
-#     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
-#     minimizing the distance of the new point distance from the old point.
-#     xb_old, yb_old are the cordinates of the previous iteration
-#     :param xb_new: new x cordinate of the border point.
-#     :param yb_new: new y cordinate of the border point.
-#     :param x: set of x points of the border curve.
-#     :param y: set of y points of the border curve.
-#     :param xp_new: new x cordinate of the inner point close to the border.
-#     :param yp_new: new y cordinate of the inner point close to the border.
-#     """
-#     # from scipy.interpolate import CubicSpline
-#     from scipy.interpolate import make_interp_spline
-#     u = np.linspace(0, 1, len(x))
-#     xspline = make_interp_spline(u, x, k=1)
-#     yspline = make_interp_spline(u, y, k=1)
-#     # plt.figure()
-#     # plt.plot(x, y, 'o', label='data')
-#     # plt.plot(xspline(u), yspline(u), label='spline')
-#
-#     def objective(u_param, xpoint, ypoint):
-#         y_u = yspline(u_param)
-#         x_u = xspline(u_param)
-#         obj = (y_u - ypoint) ** 2 + (x_u - xpoint) ** 2
-#         return obj
-#
-#     initial_guess = np.mean(u)  # initial guess for u
-#     u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
-#     u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
-#     xb_new = xspline(u_result.x)
-#     yb_new = yspline(u_result.x)
-#     # plt.scatter(xp_new, yp_new, label='p new')
-#     # plt.scatter(xb_new, yb_new, label='b new')
-#     # plt.legend()
-#     return xb_new, yb_new
-#
-#
-# def find_optimized_point_old2(xb_new, yb_new, x, y, xp_new, yp_new):
-#     """
-#     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
-#     minimizing the distance of the new point distance from the old point.
-#     xb_old, yb_old are the cordinates of the previous iteration
-#     :param xb_new: new x cordinate of the border point.
-#     :param yb_new: new y cordinate of the border point.
-#     :param x: set of x points of the border curve.
-#     :param y: set of y points of the border curve.
-#     :param xp_new: new x cordinate of the inner point close to the border.
-#     :param yp_new: new y cordinate of the inner point close to the border.
-#     """
-#     # from scipy.interpolate import CubicSpline
-#     u = np.linspace(0, 1, len(x))  # curve parameterization
-#     xspline = CubicSpline(u, x)
-#     yspline = CubicSpline(u, y)
-#
-#     # plt.figure()
-#     # plt.plot(x, y, 'o', label='data')
-#     # plt.plot(xspline(u), yspline(u), label='spline')
-#
-#     def objective(u_param, xpoint, ypoint):
-#         y_u = yspline(u_param)
-#         x_u = xspline(u_param)
-#         obj = (y_u - ypoint) ** 2 + (x_u - xpoint) ** 2
-#         return obj
-#
-#     initial_guess = np.mean(u)  # initial guess for u
-#     u_bounds = (np.min(u), np.max(u))  # u cannot go outside the initial parameterization space
-#     u_result = minimize(objective, initial_guess, args=(xp_new, yp_new), bounds=[u_bounds])
-#     xb_new = xspline(u_result.x)
-#     yb_new = yspline(u_result.x)
-#     # plt.scatter(xp_new, yp_new, label='p new')
-#     # plt.scatter(xb_new, yb_new, label='b new')
-#     # plt.legend()
-#     return xb_new, yb_new
-
-
 def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     """
     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
@@ -993,26 +896,6 @@ def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
     return xb_new, yb_new
 
 
-def compute_picture_size(x, y):
-    """
-    given the x and y dimension of a domain, compute the picture size in order to be scaled. Blank stands for the size
-    without using colorbars, contour for cases where a part of the width (e.g. 10%) is used for the colorbar.
-    :param x: grid of x cordinates
-    :param y: grid of y cordinates
-    """
-    W = np.max(x) - np.min(x)
-    H = np.max(y) - np.min(y)
-    WH_ratio = W / H
-    color_bar_span = 0.15
-    if WH_ratio >= 1:
-        pic_size_blank = (8, 8 / WH_ratio)
-        pic_size_contour = (8 * (1 + color_bar_span), 8 / WH_ratio)
-    else:
-        pic_size_blank = (6 * WH_ratio, 6)
-        pic_size_contour = (6 * WH_ratio * (1 + color_bar_span), 6)
-    return pic_size_blank, pic_size_contour
-
-
 def sample_spline(x, sample_method, sample_coeff, sampling_points, inlet_block=False, outlet_block=False):
     """
     Sample the curve denoted by a generic x-cordinate, parametrized as cubic spline, in a certain method.
@@ -1044,35 +927,6 @@ def sample_spline(x, sample_method, sample_coeff, sampling_points, inlet_block=F
     # plt.plot(t, x, 'k')
     # plt.plot(t_scaled, x_spline, 'ro')
     return x_spline
-
-
-def rotate_3d_tensor(dux_dx, dux_dy, dux_dz, duy_dx, duy_dy, duy_dz, duz_dx, duz_dy, duz_dz, ur, ut, r, theta):
-    """
-    Having a tensor defined in cartesian cordinates, express the same quantity in cylindrical terms
-    :param dux_dx: component of the tensor, following convention grad*velocity^T
-    :param r: radial cordinate
-    :param theta: theta cordinate
-    """
-
-    # cartesian tensor
-    T = np.array([[dux_dx, duy_dx, duz_dx], [dux_dy, duy_dy, duz_dy], [dux_dz, duy_dz, duz_dz]])
-
-    # rotation matrix
-    R = np.array([[cos(theta), +sin(theta), 0], [-sin(theta), cos(theta), 0], [0, 0, 1]])
-
-    T_prime = R @ T @ R.T
-
-    dur_dr = T_prime[0, 0]
-    dur_dt = (T_prime[0, 1] + ut / r) * r
-    dur_dz = T_prime[0, 2]
-    dut_dr = T_prime[1, 0]
-    dut_dt = (T_prime[1, 1] - ur / r) * r
-    dut_dz = T_prime[1, 2]
-    duz_dr = T_prime[2, 0]
-    duz_dt = T_prime[2, 1] * r
-    duz_dz = T_prime[2, 2]
-
-    return dur_dr, dur_dt, dur_dz, dut_dr, dut_dt, dut_dz, duz_dr, duz_dt, T_prime[2, 2]
 
 
 def project_2d_gradient_to_cylindrical(du_dx, du_dy, r, theta):
@@ -1115,9 +969,10 @@ def create_folder(foldername):
         os.makedirs(foldername)
 
 
-def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
+def compute_2d_curvilinear_gradient(z, r, f):
     """
-    Compute a gradient of the field f, defined on z,r (2d arrays), where the coordinate lines may be curvilinear
+    Compute a gradient of the field f, defined on z,r (2d arrays), where the coordinate lines may be curvilinear.
+    Use of central finite differences. Deprecated, use the least square version
     """
     nstream = z.shape[0]
     nspan = z.shape[1]
@@ -1185,17 +1040,13 @@ def compute_2d_curvilinear_gradient(z, r, f, fix_borders=False):
             dfdz[ii, jj] = dfdstream * dstream[0] / dstream_mag + dfdspan * dspan[0] / dspan_mag
             dfdr[ii, jj] = dfdstream * dstream[1] / dstream_mag + dfdspan * dspan[1] / dspan_mag
 
-    # if fix_borders:
-    #     dfdz[0,:] = dfdz[1,:]
-    #     dfdz[-1, :] = dfdz[-2, :]
-    #
-    #     dfdr[:,0] = dfdr[:,1]
-    #     dfdr[:,-1] = dfdr[:,-2]
-
     return dfdz, dfdr
 
 
 def clip_negative_values(f):
+    """
+    Remove all the negative values from a numpy array `f`
+    """
     return np.sqrt(f ** 2)
 
 
@@ -1305,7 +1156,25 @@ def compute_gradient_least_square(x, y, z):
 
 
 def contour_template(z, r, f, name, vmin=None, vmax=None):
+        """
+        Template function to create contours.
+
+        Parameters
+        -----------------------------------
+
+        `z`: 2d array of x coordinates
         
+        `r`: 2d array of y coordinates
+
+        `f`: 2d array of function values
+
+        `name`: string name of the plot title
+
+        `vmin`: minimum value to truncate the color range
+
+        `vmax`: max value to truncate the color range
+
+        """
         if vmin == None:
             minval = np.min(f)
         else:

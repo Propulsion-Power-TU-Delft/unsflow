@@ -11,7 +11,6 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.functions import compute_picture_size
 from Utils.styles import *
 
 

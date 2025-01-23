@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, compute_picture_size, transfinite_grid_generation
+from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Grid.src.config import Config
@@ -483,9 +483,8 @@ class Block:
         :param save_foldername: folder name to save pictures in
         """
 
-        self.picture_size_blank, self.picture_size_contour = compute_picture_size(self.z_grid_cg, self.r_grid_cg)
 
-        plt.figure(figsize=self.picture_size_blank)
+        plt.figure()
 
         # hub and shroud plot
         if hub_shroud:
@@ -528,6 +527,8 @@ class Block:
         plt.xlabel(r'$z \ \mathrm{[-]}$')
         plt.ylabel(r'$r \ \mathrm{[-]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
+        ax=plt.gca()
+        ax.set_aspect('equal')
 
         if not ticks:
             plt.xticks([])
