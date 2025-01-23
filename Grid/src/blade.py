@@ -2221,6 +2221,9 @@ class Blade:
         """
         Template function for 2D contours
         """
+        folder = self.config.get_pictures_folder_path()
+        os.makedirs(folder, exist_ok=True)
+
         if vmin == None:
             minval = np.min(f)
         else:
@@ -2229,6 +2232,9 @@ class Blade:
             maxval = np.max(f)
         else:
             maxval = vmax
+        
+        if minval==maxval:
+            maxval += 1e-12
         
         levels = np.linspace(minval, maxval, N_levels)
 
@@ -2239,7 +2245,7 @@ class Blade:
         plt.title(name)
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_%sAvg.pdf' % (self.avg_type), bbox_inches='tight')
+            plt.savefig(folder + '/' + save_filename + '_%sAvg.pdf' % (self.avg_type), bbox_inches='tight')
     
 
     def interpolate_body_force_data(self, filepath, fields_name):
@@ -2301,20 +2307,20 @@ class Blade:
         dA1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
         dA2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['A2'])[1]
         self.meridional_fields['Force_Axial'] = 1/B*dA1dz+1/B/R*dA2dr-self.meridional_fields['Pressure']/B*dbdz
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Axial'][2:-2,2:-2], name='f_axial', vmin=0)
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Axial'][2:-2,2:-2], name='f_axial', vmin=0)
 
         dR1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A2'])[0]
         dR2dr = compute_gradient_least_square(Z,R, B*R*self.meridional_fields['R2'])[1]
         self.meridional_fields['Force_Radial'] = 1/B*dR1dz+1/B/R*dR2dr-self.meridional_fields['Pressure']/B*dbdr-self.meridional_fields['R3']/R
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Radial'][2:-2,2:-2], name='f_radial')
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Radial'][2:-2,2:-2], name='f_radial')
 
         dT1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['T1'])[0]
         dT2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
         self.meridional_fields['Force_Tangential'] = 1/B*dT1dz + 1/B/R*dT2dr + self.meridional_fields['T3']/R
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Tangential'][2:-2,2:-2], name='f_tangential', vmax=0)
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Tangential'][2:-2,2:-2], name='f_tangential', vmax=0)
 
         fmag = np.sqrt(self.meridional_fields['Force_Radial']**2+self.meridional_fields['Force_Tangential']**2+self.meridional_fields['Force_Axial']**2)
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], fmag[2:-2,2:-2], name='f_magnitude')
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], fmag[2:-2,2:-2], name='f_magnitude')
 
         ni,nj = R.shape
         self.meridional_fields['Force_Viscous'] = np.zeros((ni,nj))
@@ -2332,9 +2338,8 @@ class Blade:
         self.meridional_fields['Force_Inviscid'] = np.sqrt(fmag**2-self.meridional_fields['Force_Viscous']**2)
 
         
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Viscous'][2:-2,2:-2], name='f_viscous')
-        self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Inviscid'][2:-2,2:-2], name='f_inviscid')
-        print()
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Viscous'][2:-2,2:-2], name='f_viscous')
+        # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Inviscid'][2:-2,2:-2], name='f_inviscid')
     
 
     def cure_hub(self, span_extent, f):
