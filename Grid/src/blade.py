@@ -290,7 +290,7 @@ class Blade:
                 s_camber = s_camber_stretch
 
                 # degree 9 should be fine to fit the camber for a radial compressor
-                coeff = np.polyfit(sglob, rglob*thetaglob, deg=9) 
+                coeff = np.polyfit(sglob, rglob*thetaglob, deg=4) 
                 rtheta_camber = np.polyval(coeff, s_camber)
                 coeff = np.polyfit(sglob, rglob, deg=9)  
                 r_camber = np.polyval(coeff, s_camber)

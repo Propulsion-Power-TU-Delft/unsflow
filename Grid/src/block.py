@@ -42,7 +42,7 @@ class Block:
         When the BFM file must be written, generate also the data needed for it
         """
         self.blockage = np.ones((self.nstream, self.nspan))
-        self.normal_camber = np.full((self.nstream, self.nspan, 3), np.nan)
+        self.normal_camber = np.zeros((self.nstream, self.nspan, 3))
         self.streamline_length = np.zeros((self.nstream, self.nspan))
         self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
         self.force_inviscid = np.zeros((self.nstream, self.nspan))
