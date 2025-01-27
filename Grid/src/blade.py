@@ -28,6 +28,8 @@ from shapely.geometry import LineString
 from scipy.spatial import KDTree
 from Grid.src.surface import Surface
 from scipy.interpolate import bisplev, bisplrep, griddata
+from scipy.interpolate import splprep, splev
+
 
 
 
@@ -64,6 +66,7 @@ class Blade:
         self.camberSurf = Surface('Camber Surface', config)
         self.psSurf = Surface('Pressure Surface', config)
         self.ssSurf = Surface('Suctions Surface', config)
+        self.bladeSurf = Surface('Full Blade Surface', config)
         self.iblock = iblock
         self.iblade = iblade
 
@@ -257,31 +260,37 @@ class Blade:
                 x = self.x_main[idx]
                 y = self.y_main[idx]
 
-                z1, r1, theta1 = z[0:len(z)//2], r[0:len(z)//2], theta[0:len(z)//2]
-                z2, r2, theta2 = z[len(z)//2:], r[len(z)//2:], theta[len(z)//2:]
-                x1, y1 = x[0:len(z)//2], y[0:len(z)//2]
-                x2, y2 = x[len(z)//2:], y[len(z)//2:]
+                tck, u = splprep([x, y, z], k=3, s=0, per=True)
+                u_fine = np.linspace(0, 1, 10000)
+                spline_points = splev(u_fine, tck)
+                r1,t1,m1,z1, r2,t2,m2,z2 = self.compute_meridional_coordinate(spline_points)
 
-                # order from inlet to outlet
-                if z1[0]<z1[-1]:
-                    z2, r2, theta2 = np.flip(z2), np.flip(r2), np.flip(theta2)
-                else:
-                    z1, r1, theta1 = np.flip(z1), np.flip(r1), np.flip(theta1)
+
+                # z1, r1, theta1 = z[0:len(z)//2], r[0:len(z)//2], theta[0:len(z)//2]
+                # z2, r2, theta2 = z[len(z)//2:], r[len(z)//2:], theta[len(z)//2:]
+                # x1, y1 = x[0:len(z)//2], y[0:len(z)//2]
+                # x2, y2 = x[len(z)//2:], y[len(z)//2:]
+
+                # # order from inlet to outlet
+                # if z1[0]<z1[-1]:
+                #     z2, r2, theta2 = np.flip(z2), np.flip(r2), np.flip(theta2)
+                # else:
+                #     z1, r1, theta1 = np.flip(z1), np.flip(r1), np.flip(theta1)
 
                 # decide which one is pressure side and suction side
                 dum = len(z1)//2
-                if np.mean(theta1[0:dum] - theta2[0:dum]) * self.config.get_omega_shaft()[iblock] > 0:
-                    z_ps, r_ps, theta_ps = z1, r1, theta1
-                    z_ss, r_ss, theta_ss = z2, r2, theta2
+                if np.mean(t1[0:dum] - t2[0:dum]) * self.config.get_omega_shaft()[iblock] > 0:
+                    z_ps, r_ps, theta_ps, m_ps = z1, r1, t1, m1
+                    z_ss, r_ss, theta_ss, m_ss = z2, r2, t2, m2
                 else:
-                    z_ps, r_ps, theta_ps = z2, r2, theta2
-                    z_ss, r_ss, theta_ss = z1, r1, theta1
+                    z_ps, r_ps, theta_ps, m_ps = z2, r2, t2, m2
+                    z_ss, r_ss, theta_ss, m_ss = z1, r1, t1, m1
 
-                s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
+                # s_ps, s_ss = self.compute_streamwise_meridional_projection_length(z_ps, r_ps, theta_ps, z_ss, r_ss, theta_ss)
                 zglob, rglob, thetaglob = np.append(z_ps, z_ss), np.append(r_ps, r_ss), np.append(theta_ps, theta_ss)
-                sglob = np.append(s_ps, s_ss)
+                sglob = np.append(m_ps, m_ss)
 
-                # curvilinear abscissa running on the revolution surface defined by the profile (z-r)
+                # # curvilinear abscissa running on the revolution surface defined by the profile (z-r)
                 s_camber = np.linspace(np.min(sglob), np.max(sglob), camber_stream_points)
                 stretch = eriksson_stretching_function_both(np.linspace(0,1,camber_stream_points), alpha=1.1) # to cluster points at leading and trailing edge
                 s_camber_stretch = np.zeros_like(s_camber)
@@ -290,12 +299,12 @@ class Blade:
                 s_camber = s_camber_stretch
 
                 # degree 9 should be fine to fit the camber for a radial compressor
-                coeff = np.polyfit(sglob, rglob*thetaglob, deg=4) 
+                coeff = np.polyfit(sglob, rglob*thetaglob, deg=11) 
                 rtheta_camber = np.polyval(coeff, s_camber)
-                coeff = np.polyfit(sglob, rglob, deg=9)  
+                coeff = np.polyfit(sglob, rglob, deg=3)  
                 r_camber = np.polyval(coeff, s_camber)
                 theta_camber = rtheta_camber/r_camber
-                coeff = np.polyfit(sglob, zglob, deg=9)  
+                coeff = np.polyfit(sglob, zglob, deg=3)  
                 z_camber = np.polyval(coeff, s_camber)
 
                 if self.config.get_visual_debug():
@@ -310,16 +319,16 @@ class Blade:
                 # t_norm = self.compute_blade_thickness_normal_to_camber(s_camber, rtheta_camber, s_ps, r_ps*theta_ps,
                 #                                                        s_ss, r_ss*theta_ss)
                 t_tang = self.compute_blade_thickness_tangential(s_camber, rtheta_camber,
-                                                                 s_ps, r_ps * theta_ps, 
-                                                                 s_ss, r_ss * theta_ss,
+                                                                 m_ps, r_ps * theta_ps, 
+                                                                 m_ss, r_ss * theta_ss,
                                                                  z_camber, r_camber)
 
                 # metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
 
                 if self.config.get_visual_debug():
                     plt.figure()
-                    plt.plot(s_ps, r_ps*theta_ps, '-', color='C0', label='PSide')
-                    plt.plot(s_ss, r_ss*theta_ss, '-', color='C1', label='SSide')
+                    plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='PSide')
+                    plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='SSide')
                     plt.plot(s_camber, rtheta_camber, '-o', color='C2', ms=2, label='Camber')
                     plt.xlabel(r'$s_{z-r}$')
                     plt.ylabel(r'$r \theta$')
@@ -332,14 +341,13 @@ class Blade:
 
                 self.camberSurf.add_curve(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber)
                 self.psSurf.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
-                self.ssSurf.add_curve(r_ss * np.cos(theta_ss), r_ss * np.sin(theta_ss), z_ss)
+                self.ssSurf.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
 
                 tCamb.append(t_tang)
                 # kappaCamb.append(metal_angle)
 
             # self.camberSurf.loft_through_profiles(extension=0.0)
             self.camberSurf.bspline_surface_generation()
-
             if self.config.get_visual_debug(): self.camberSurf.plot_bspline_surface()
             self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
@@ -369,6 +377,84 @@ class Blade:
         else:
             raise ValueError('The blade dataset must be ordered or not ordered. Value not recognized.')
     
+
+    def compute_meridional_coordinate(self, spline_points):
+        """
+        For the x,y,z points in the spline_points list, compute the associated mprime coordinate (curvilinear abscissa).
+        """
+        x,y,z = spline_points
+        r = np.sqrt(x**2+y**2)
+
+        if self.config.get_blade_inlet_type()[self.iblade].lower()=='axial':
+            le = np.argmin(z)
+        else:
+            le = np.argmin(r)
+        
+        if self.config.get_blade_outlet_type()[self.iblade].lower()=='axial':
+            te = np.argmax(z)
+        else:
+            te = np.argmax(r)
+        
+        if le>te:
+            le_copy = le.copy()
+            le = te.copy()
+            te = le_copy
+        x1,y1,z1 = x[le:te+1], y[le:te+1], z[le:te+1]
+        x2,y2,z2 = x[te:], y[te:], z[te:]
+        x2 = np.concatenate((x2, x[0:le+1]))
+        y2 = np.concatenate((y2, y[0:le+1]))
+        z2 = np.concatenate((z2, z[0:le+1]))
+
+        def flip_orders(xp,yp,zp):
+            if zp[0]>zp[-1]:
+                return np.flip(xp), np.flip(yp), np.flip(zp)
+            else:
+                return xp, yp, zp
+        
+        x1,y1,z1 = flip_orders(x1,y1,z1)
+        x2,y2,z2 = flip_orders(x2,y2,z2)
+
+        def compute_mprime_coords(xp, yp, zp):
+            rp = np.sqrt(xp**2+yp**2)
+            thetap = np.arctan2(yp,xp)
+            sp = np.zeros_like(rp)
+            for i in range(1,len(sp)):
+                dr = rp[i]-rp[i-1]
+                dz = zp[i]-zp[i-1]
+                dm = np.sqrt(dr**2+dz**2)
+                sp[i] = sp[i-1]+dm
+            return rp, thetap, sp
+        
+        r1,t1,m1 = compute_mprime_coords(x1,y1,z1)
+        r2,t2,m2 = compute_mprime_coords(x2,y2,z2)
+
+        # plt.figure()
+        # plt.plot(m1, r1*t1)
+        # plt.plot(m2, r2*t2)
+        
+
+        rglob = np.concatenate((r1,r2))
+        tglob = np.concatenate((t1,t2))
+        mglob = np.concatenate((m1,m2))
+        zglob = np.concatenate((z1,z2))
+
+        s_camber = np.linspace(0,np.max(mglob), 1000)
+        coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
+        rt_camber = np.polyval(coeff, s_camber)
+        coeff = np.polyfit(mglob, rglob, deg=3)  
+        r_camber = np.polyval(coeff, s_camber)
+        theta_camber = rt_camber/r_camber
+        coeff = np.polyfit(mglob, zglob, deg=3)  
+        z_camber = np.polyval(coeff, s_camber)
+
+        # plt.plot(s_camber, rt_camber, '--g')
+        # ax = plt.gca()
+        # ax.set_aspect('equal')
+        # plt.title('blade to blade view')
+
+        return r1, t1, m1, z1, r2, t2, m2, z2
+
+
 
     def compute_thickness(self):
         """
