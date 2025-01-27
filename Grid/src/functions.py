@@ -532,10 +532,14 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
     spliney_right = CubicSpline(t_spanwise, c_right[1, :])
 
     plt.figure()
-    plt.plot(splinex_bottom(t_streamwise), spliney_bottom(t_streamwise), 'o')
-    plt.plot(splinex_top(t_streamwise), spliney_top(t_streamwise), 'o')
-    plt.plot(splinex_left(t_spanwise), spliney_left(t_spanwise), 'o')
-    plt.plot(splinex_right(t_spanwise), spliney_right(t_spanwise), 'o')
+    plt.plot(splinex_bottom(t_streamwise), spliney_bottom(t_streamwise), '-o', label='spline bottom border')
+    plt.plot(splinex_top(t_streamwise), spliney_top(t_streamwise), '-s', label='spline top border')
+    plt.plot(splinex_left(t_spanwise), spliney_left(t_spanwise), '-^', label='spline left border')
+    plt.plot(splinex_right(t_spanwise), spliney_right(t_spanwise), '-x', label='spline right border')
+    ax = plt.gca()
+    ax.set_aspect('equal')
+    plt.legend()
+    
 
     xi = np.linspace(0, 1, nx)
     eta = np.linspace(0, 1, ny)

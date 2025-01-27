@@ -54,6 +54,7 @@ class Blade:
 
         `poly_degree`: degree of the polynomial fitting the blade
         """
+        print_banner_begin('BLADE')
         self.config = config
         self.x = []
         self.y = []
@@ -71,7 +72,10 @@ class Blade:
         self.iblade = iblade
 
         self.read_from_curve_file(iblade, iblock, poly_degree)
-        self.print_blade_info()
+        print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
+        print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
+        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+        print_banner_end()
 
 
     def read_from_curve_file(self, iblade, iblock, poly_degree, blade_dataset='ordered', camber_stream_points=100):
@@ -98,6 +102,7 @@ class Blade:
         
         blade_type = 'MAIN'
         filepath = self.config.get_blade_curve_filepath()[iblade]
+        print(f"{'Blade coordinate file:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
 
         with open(filepath) as f:
             lines = f.readlines()
@@ -151,6 +156,8 @@ class Blade:
             self.splitter = True
         else:
             self.splitter = False
+        print(f"{'Blade coordinate file contains splitter blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+
 
         self.idx_main = np.where(self.blade == 'MAIN')
         self.x_main = self.x[self.idx_main]
@@ -160,6 +167,7 @@ class Blade:
         self.theta_main = self.theta[self.idx_main]
 
         self.number_profiles = np.unique(self.profile).shape[0]
+        print(f"{'Number of profiles:':<{total_chars_mid}}{self.number_profiles:>{total_chars_mid}}")
         main_profiles = np.unique(self.profile)
         main_profiles = [int(prof) for prof in main_profiles]
         main_profiles.sort()
@@ -251,6 +259,7 @@ class Blade:
             Make use of the ordering of the points. The first half of the points belongs to one surface, the second half to the
             second surface. Pressure or suction side designation depends on the rotational direction.
             """
+            print('The blade coordinate file is tretaed as ordered dataset of points')
             self.thickness = {}
             for i in range(self.number_profiles):
                 idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
@@ -538,19 +547,6 @@ class Blade:
         return point
 
 
-    def print_blade_info(self):
-        """
-        Print information of the blade object during construction.
-        """
-        if self.config.get_verbosity():
-            print_banner_begin('BLADE')
-            print(
-                f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
-            print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
-            print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
-            print_banner_end()
-
-
     def plot_blade_points(self, save_filename=None, folder_name=None):
         """
         Plot the blade points. Distinguish between main or main and splitter blade
@@ -618,6 +614,7 @@ class Blade:
         self.r_camber = self.r_grid
         
         method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{method:>{total_chars_mid}}")
         
         self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                          self.r_cambSurface.flatten(),

@@ -304,7 +304,7 @@ class Block:
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
-    def find_intersections(self, tol=1e-6, visual_check=True):
+    def find_intersections(self, tol=1e-6):
         """
         Having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         :param tol: tolerance of the algorithm to find intersection. If too small, it doesn't find the correct intersections
@@ -321,16 +321,18 @@ class Block:
         self.point_shroud_inlet = self.point_intersection(inlet_curve, shroud_curve, tol=tol)
         self.point_shroud_outlet = self.point_intersection(outlet_curve, shroud_curve, tol=tol)
 
-        if visual_check:
+        if self.config.get_visual_debug():
             plt.figure()
-            plt.scatter(hub_curve[:, 0], hub_curve[:, 1])
-            plt.scatter(shroud_curve[:, 0], shroud_curve[:, 1])
-            plt.scatter(inlet_curve[:, 0], inlet_curve[:, 1])
-            plt.scatter(self.point_hub_inlet[0], self.point_hub_inlet[1], label='hub_le')
-            plt.scatter(self.point_shroud_inlet[0], self.point_shroud_inlet[1], label='shroud_le')
-            plt.scatter(outlet_curve[:, 0], outlet_curve[:, 1])
-            plt.scatter(self.point_hub_outlet[0], self.point_hub_outlet[1], label='hub_te')
-            plt.scatter(self.point_shroud_outlet[0], self.point_shroud_outlet[1], label='shroud_te')
+            plt.plot(hub_curve[:, 0], hub_curve[:, 1], 'C0', label='hub curve')
+            plt.plot(shroud_curve[:, 0], shroud_curve[:, 1], 'C1', label='shroud curve')
+            plt.plot(inlet_curve[:, 0], inlet_curve[:, 1], 'C2', label='inlet curve')
+            plt.plot(outlet_curve[:, 0], outlet_curve[:, 1], 'C3', label='outlet curve')
+            plt.plot(self.point_hub_inlet[0], self.point_hub_inlet[1], 'C4x', ms=10, label='hub_le')
+            plt.plot(self.point_shroud_inlet[0], self.point_shroud_inlet[1], 'C5x', ms=10, label='shroud_le')
+            plt.plot(self.point_hub_outlet[0], self.point_hub_outlet[1], 'C6x', ms=10, label='hub_te')
+            plt.plot(self.point_shroud_outlet[0], self.point_shroud_outlet[1], 'C7x', ms=10, label='shroud_te')
+            ax = plt.gca()
+            ax.set_aspect('equal')
             plt.legend()
 
     @staticmethod
@@ -467,7 +469,7 @@ class Block:
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
-                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=False,
+                       secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=True,
                        save_foldername=None):
         """
         Plot the obtained grid.
@@ -524,8 +526,8 @@ class Block:
 
         if primary_grid_points or secondary_grid_points or outline:
             plt.legend()
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.xlabel(r'$z \ \mathrm{[m]}$')
+        plt.ylabel(r'$r \ \mathrm{[m]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
         ax=plt.gca()
         ax.set_aspect('equal')
