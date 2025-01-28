@@ -1808,7 +1808,7 @@ class Blade:
             data_dict['R3'] = data_dict['Density']*data_dict['Velocity_Tangential']**2+data_dict['Pressure']-tautt
             data_dict['T1'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Tangential']-tautz
             data_dict['T2'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt
-            data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt+data_dict['Pressure']
+            data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt # pressure not added here
 
             for field in fields:
                 f = data_dict[field].copy()
@@ -1913,13 +1913,12 @@ class Blade:
 
         for key, value in self.meridional_fields.items():
             if key!='Z' and key!='R':
-                fig, ax = plt.subplots()
-                contour = ax.contourf(z, r, value, levels=N_levels, cmap=color_map)
-                cbar = fig.colorbar(contour)
-                # contour = ax.contour(z, r, value, levels=N_levels, colors='black', linewidths=0.1)
-                plt.title(key)
-                ax.set_aspect('equal', adjustable='box')
-                plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+                try:
+                    self.contour_template(z, r, value, key)
+                    plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+                except:
+                    plt.close()
+                    pass
 
 
     def compute_additional_meridional_fields(self, CP=1005, R=287, TREF=288.15, PREF=101300):
@@ -2343,16 +2342,19 @@ class Blade:
         dA1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
         dA2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['A2'])[1]
         self.meridional_fields['Force_Axial'] = 1/B*dA1dz+1/B/R*dA2dr-self.meridional_fields['Pressure']/B*dbdz
+        self.meridional_fields['Force_Axial'] /= self.meridional_fields['Density']
         # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Axial'][2:-2,2:-2], name='f_axial', vmin=0)
 
         dR1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A2'])[0]
         dR2dr = compute_gradient_least_square(Z,R, B*R*self.meridional_fields['R2'])[1]
         self.meridional_fields['Force_Radial'] = 1/B*dR1dz+1/B/R*dR2dr-self.meridional_fields['Pressure']/B*dbdr-self.meridional_fields['R3']/R
+        self.meridional_fields['Force_Radial'] /= self.meridional_fields['Density']
         # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Radial'][2:-2,2:-2], name='f_radial')
 
         dT1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['T1'])[0]
         dT2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
         self.meridional_fields['Force_Tangential'] = 1/B*dT1dz + 1/B/R*dT2dr + self.meridional_fields['T3']/R
+        self.meridional_fields['Force_Tangential'] /= self.meridional_fields['Density']
         # self.contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Tangential'][2:-2,2:-2], name='f_tangential', vmax=0)
 
         fmag = np.sqrt(self.meridional_fields['Force_Radial']**2+self.meridional_fields['Force_Tangential']**2+self.meridional_fields['Force_Axial']**2)
