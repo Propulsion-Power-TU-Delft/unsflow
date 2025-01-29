@@ -11,10 +11,10 @@ block_counter = 0
 blade_counter = 0
 
 blade = Blade(config, iblade=blade_counter, iblock=block_counter)
-blade.compute_thickness()
-blade.compute_blade_blockage_on_camber_loft()
-blade.compute_normal_vectors_on_reference_surface()
-blade.plot_camber_normal_contour_on_loft()
+# blade.compute_thickness()
+# blade.compute_blade_blockage_on_camber_loft()
+# blade.compute_normal_vectors_on_reference_surface()
+# blade.plot_camber_normal_contour_on_loft()
 blade.find_inlet_points()
 blade.find_outlet_points()
 
@@ -35,7 +35,7 @@ blade.compute_streamline_length()
 blade.plot_streamline_length_contour(save_filename='HECC')
 blade.compute_spanline_length()
 blade.plot_spanline_length_contour(save_filename='HECC')
-blade.obtain_quantities_on_meridional_grid()
+blade.obtain_quantities_on_meridional_grid_secondversion()
 blade.compute_camber_vectors()
 blade.plot_camber_surface()
 blade.plot_camber_normal_contour(save_filename='HECC')

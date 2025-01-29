@@ -1228,7 +1228,7 @@ def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval
 
     `filler`: value used to fill and recognize points outside the convex hull
     """
-    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method='linear', fill_value=filler)
+    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method=method, fill_value=filler)
     
     ni,nj = z_eval.shape
 
