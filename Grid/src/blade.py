@@ -798,15 +798,15 @@ class Blade:
         """
         plot the camber normal vector contours
         """
-        self.contour_template(self.z_camber, self.r_camber, self.nr, name=r'$n_r$')
+        self.contour_template(self.z_camber, self.r_camber, self.n_camber_r, name=r'$n_r$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_r.pdf', bbox_inches='tight')
 
-        self.contour_template(self.z_camber, self.r_camber, self.nt, name=r'$n_{\theta}$')
+        self.contour_template(self.z_camber, self.r_camber, self.n_camber_t, name=r'$n_{\theta}$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_theta.pdf', bbox_inches='tight')
 
-        self.contour_template(self.z_camber, self.r_camber, self.nz, name=r'$n_z$')
+        self.contour_template(self.z_camber, self.r_camber, self.n_camber_z, name=r'$n_z$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_z.pdf', bbox_inches='tight')
 
