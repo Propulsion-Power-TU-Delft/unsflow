@@ -1311,7 +1311,7 @@ class Blade:
         """
         Nb = self.config.get_blades_number()[self.iblade]
         self.blockage_cambSurface = 1 - Nb * self.thk_tang_cambSurface / (2*np.pi*self.r_cambSurface)
-        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, r'$b$ reference', vmin=0.8, vmax=1)
+        self.contour_template(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, r'$b$ reference')
 
 
     def compute_blade_blockage_gradient(self, save_filename=None):
