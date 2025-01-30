@@ -262,6 +262,8 @@ class Blade:
             print('The blade coordinate file is tretaed as ordered dataset of points')
             self.thickness = {}
             self.rc_data, self.thetac_data, self.zc_data, self.thk_data = [], [], [], []
+            self.rss_data, self.thetass_data, self.zss_data = [], [], []
+            self.rps_data, self.thetaps_data, self.zps_data = [], [], []
             for i in range(self.number_profiles):
                 idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
                 z = self.z_main[idx]
@@ -286,7 +288,14 @@ class Blade:
                 else:
                     z_ps, r_ps, theta_ps, m_ps = z2, r2, t2, m2
                     z_ss, r_ss, theta_ss, m_ss = z1, r1, t1, m1
-
+                
+                # add surface data to dataset
+                self.rss_data.append(r_ss)
+                self.zss_data.append(z_ss)
+                self.thetass_data.append(theta_ss)
+                self.rps_data.append(r_ps)
+                self.zps_data.append(z_ps)
+                self.thetaps_data.append(theta_ps)
 
                 if self.config.get_visual_debug():
                     fig = plt.figure()
@@ -647,22 +656,40 @@ class Blade:
             arr = np.concatenate(l)
             return arr
         
-        z_data = unroll_list_in_nparray(self.zc_data)
-        r_data = unroll_list_in_nparray(self.rc_data)
-        theta_data = unroll_list_in_nparray(self.thetac_data)
-        thk_data = unroll_list_in_nparray(self.thk_data)
+        z_data = unroll_list_in_nparray(self.zss_data)
+        r_data = unroll_list_in_nparray(self.rss_data)
+        theta_data = unroll_list_in_nparray(self.thetass_data)
+        theta_ss = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
 
-        self.theta_camber = self.twoD_function_evaluation(z_data, r_data, (theta_data),
-                                                         self.z_grid, self.r_grid,
-                                                         method)
-        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_c$ [deg]')
-        self.x_camber = self.r_grid * np.cos(self.theta_camber)
-        self.y_camber = self.r_grid * np.sin(self.theta_camber)
+        z_data = unroll_list_in_nparray(self.zps_data)
+        r_data = unroll_list_in_nparray(self.rps_data)
+        theta_data = unroll_list_in_nparray(self.thetaps_data)
+        theta_ps = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
 
-        self.thk = self.twoD_function_evaluation(z_data, r_data, (thk_data),
-                                                self.z_grid, self.r_grid,
-                                                method)
+        self.theta_camber = 0.5*(theta_ps+theta_ss)
+        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
+        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
         self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
+
+        
+        # z_data = unroll_list_in_nparray(self.zc_data)
+        # r_data = unroll_list_in_nparray(self.rc_data)
+        # theta_data = unroll_list_in_nparray(self.thetac_data)
+        # thk_data = unroll_list_in_nparray(self.thk_data)
+
+        # self.theta_camber = self.twoD_function_evaluation(z_data, r_data, (theta_data),
+        #                                                  self.z_grid, self.r_grid,
+        #                                                  method)
+        # self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_c$ [deg]')
+        # self.x_camber = self.r_grid * np.cos(self.theta_camber)
+        # self.y_camber = self.r_grid * np.sin(self.theta_camber)
+
+        # self.thk = self.twoD_function_evaluation(z_data, r_data, (thk_data),
+        #                                         self.z_grid, self.r_grid,
+        #                                         method)
+        # self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
 
         Nb = self.config.get_blades_number()[self.iblade]
         self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
@@ -682,6 +709,13 @@ class Blade:
         #                                        self.r_cambSurface.flatten(),
         #                                        self.n_camber_z.flatten(),
         #                                        self.z_grid, self.r_grid, method)
+    
+    def compute_thollet_angles(self):
+        dtdz, dtdr = compute_gradient_least_square(self.z_camber, self.r_camber, self.theta_camber)
+        beta = np.arctan(self.r_grid*dtdz)
+        self.contour_template(self.z_camber, self.r_camber, beta*180/np.pi, 'metal angle thollet [deg]')
+        lmbda = np.arctan(self.r_grid*dtdr)
+        self.contour_template(self.z_camber, self.r_camber, lmbda*180/np.pi, 'lean angle thollet [deg]')
 
 
     def add_meridional_grid(self, zgrid, rgrid):
