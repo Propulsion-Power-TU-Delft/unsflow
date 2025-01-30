@@ -274,20 +274,23 @@ class Blade:
 
                 # spline of the profile in 3D
                 tck, u = splprep([x, y, z], k=3, s=0, per=True)
-                u_fine = np.linspace(0, 1, 5000)
+                u_fine = np.linspace(0, 1, 1000)
                 spline_points = splev(u_fine, tck)
+                # for i in range(3):
+                #     spline_points[i] = np.unique(spline_points[i])
+
 
                 # obtain the coordinates of the spline in the blade to blade view
                 r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
-
+                
                 # decide which one is pressure side and suction side
                 dum = len(z1)//2
                 if np.mean(t1[0:dum] - t2[0:dum]) * self.config.get_omega_shaft()[iblock] > 0:
-                    z_ps, r_ps, theta_ps, m_ps = z1, r1, t1, m1
-                    z_ss, r_ss, theta_ss, m_ss = z2, r2, t2, m2
+                    z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
+                    z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
                 else:
-                    z_ps, r_ps, theta_ps, m_ps = z2, r2, t2, m2
-                    z_ss, r_ss, theta_ss, m_ss = z1, r1, t1, m1
+                    z_ps, r_ps, theta_ps, m_ps = z2,r2,t2,m2
+                    z_ss, r_ss, theta_ss, m_ss = z1,r1,t1,m1
                 
                 # add surface data to dataset
                 self.rss_data.append(r_ss)
@@ -347,8 +350,8 @@ class Blade:
                 # self.thickness['t'] = t_tang
 
                 # self.camberSurf.add_curve(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber)
-                # self.psSurf.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
-                # self.ssSurf.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
+                self.psSurf.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
+                self.ssSurf.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
 
                 # tCamb.append(t_tang)
                 # kappaCamb.append(metal_angle)
@@ -710,6 +713,34 @@ class Blade:
         #                                        self.n_camber_z.flatten(),
         #                                        self.z_grid, self.r_grid, method)
     
+
+    def obtain_quantities_on_meridional_grid_thirdversion(self, smooth=1):
+        """
+        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
+        Check the degree of the polynomial if it is ok.
+        """
+        self.z_camber = self.z_grid
+        self.r_camber = self.r_grid
+        
+        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{method:>{total_chars_mid}}")
+        
+        theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
+
+        theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
+
+        self.theta_camber = 0.5*(theta_ps+theta_ss)
+        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
+        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
+        self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
+
+        Nb = self.config.get_blades_number()[self.iblade]
+        self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
+        self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
+
+    
     def compute_thollet_angles(self):
         dtdz, dtdr = compute_gradient_least_square(self.z_camber, self.r_camber, self.theta_camber)
         beta = np.arctan(self.r_grid*dtdz)
@@ -926,13 +957,13 @@ class Blade:
 
         # compute versor along the first direction
         if i == ni:
-            stream_v = np.array([xgrid[i, j] - xgrid[i - 1, j],
-                                 ygrid[i, j] - ygrid[i - 1, j],
-                                 zgrid[i, j] - zgrid[i - 1, j]])
+            stream_v = np.array([xgrid[i, j] - xgrid[i - 2, j],
+                                 ygrid[i, j] - ygrid[i - 2, j],
+                                 zgrid[i, j] - zgrid[i - 2, j]])
         elif i == 0:
-            stream_v = np.array([xgrid[i + 1, j] - xgrid[i, j],
-                                 ygrid[i + 1, j] - ygrid[i, j],
-                                 zgrid[i + 1, j] - zgrid[i, j]])
+            stream_v = np.array([xgrid[i + 2, j] - xgrid[i, j],
+                                 ygrid[i + 2, j] - ygrid[i, j],
+                                 zgrid[i + 2, j] - zgrid[i, j]])
         else:
             stream_v = np.array([xgrid[i + 1, j] - xgrid[i - 1, j],
                                  ygrid[i + 1, j] - ygrid[i - 1, j],
@@ -941,13 +972,13 @@ class Blade:
 
         # compute versor along the second direction
         if j == nj:
-            span_v = np.array([xgrid[i, j] - xgrid[i, j - 1],
-                               ygrid[i, j] - ygrid[i, j - 1],
-                               zgrid[i, j] - zgrid[i, j - 1]])
+            span_v = np.array([xgrid[i, j] - xgrid[i, j - 2],
+                               ygrid[i, j] - ygrid[i, j - 2],
+                               zgrid[i, j] - zgrid[i, j - 2]])
         elif j == 0:
-            span_v = np.array([xgrid[i, j + 1] - xgrid[i, j],
-                               ygrid[i, j + 1] - ygrid[i, j],
-                               zgrid[i, j + 1] - zgrid[i, j]])
+            span_v = np.array([xgrid[i, j + 2] - xgrid[i, j],
+                               ygrid[i, j + 2] - ygrid[i, j],
+                               zgrid[i, j + 2] - zgrid[i, j]])
         else:
             span_v = np.array([xgrid[i, j + 1] - xgrid[i, j - 1],
                                ygrid[i, j + 1] - ygrid[i, j - 1],
@@ -1189,14 +1220,14 @@ class Blade:
                                                                          self.y_camber[i, j],
                                                                          self.z_camber[i, j],
                                                                          self.normal_vectors[i, j])
-                self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                                                                             self.y_camber[i, j],
-                                                                             self.z_camber[i, j],
-                                                                             self.streamline_vectors[i, j])
-                self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                                                                           self.y_camber[i, j],
-                                                                           self.z_camber[i, j],
-                                                                           self.spanline_vectors[i, j])
+                # self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                #                                                              self.y_camber[i, j],
+                #                                                              self.z_camber[i, j],
+                #                                                              self.streamline_vectors[i, j])
+                # self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                #                                                            self.y_camber[i, j],
+                #                                                            self.z_camber[i, j],
+                #                                                            self.spanline_vectors[i, j])
 
         # reorder the vectors in 2d arrays
         self.n_camber_r = np.zeros_like(self.x_camber)

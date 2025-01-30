@@ -96,8 +96,8 @@ class Surface:
         """
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(*self.get_global_points('cartesian'), s=30, alpha=0.3, c='black')
-        ax.plot_surface(self.Xg, self.Yg, self.Zg, alpha=0.8)
+        ax.scatter(*self.get_global_points('cartesian'), s=5, alpha=0.3, c='black')
+        ax.plot_surface(self.Xg, self.Yg, self.Zg, alpha=0.6)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')
@@ -149,14 +149,14 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, extension=0.001, stream_resolution=200, span_resolution=50):
+    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=20):
         """
         Generation of surface by bi-variate spline
         """
         t = np.linspace(0-extension, 1+extension, stream_resolution)
         s = np.linspace(0-extension, 1+extension, span_resolution)
 
-        t = eriksson_stretching_function_both(t, 3)
+        t = eriksson_stretching_function_both(t, 2)
 
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
@@ -188,16 +188,16 @@ class Surface:
             crs_sply.append(yint)
             crs_splz.append(zint)
 
-        if self.config.get_visual_debug():
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            for i in range(len(prf_splx)):
-                ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0', label='streamwise', lw=0.5)
+        # if self.config.get_visual_debug():
+        #     fig = plt.figure()
+        #     ax = fig.add_subplot(111, projection='3d')
+        #     for i in range(len(prf_splx)):
+        #         ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0', label='streamwise', lw=0.5)
 
-            for i in range(len(crs_splx)):
-                ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
+        #     for i in range(len(crs_splx)):
+        #         ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
 
-            ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
+        #     ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
 
         self.Xg, self.Yg, self.Zg = np.zeros((len(t), len(s))), np.zeros((len(t), len(s))), np.zeros((len(t), len(s)))
         for ii in range(len(t)):
@@ -240,7 +240,8 @@ class Surface:
         if method == 'cartesian':
             return self.Xg, self.Yg, self.Zg
         elif method == 'cylindrical':
-            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg, self.Xg), self.Zg
+            # return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg, self.Xg), self.Zg
+            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan(self.Yg/self.Xg), self.Zg
         else:
             raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
 

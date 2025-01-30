@@ -394,7 +394,7 @@ class MultiBlock:
         create_folder(folder)
 
         if filename is None:
-            filename = 'spline'
+            filename = 'spline_span_%.2f' %(span)
 
         if format_file is None:
             format_file = 'csv'
