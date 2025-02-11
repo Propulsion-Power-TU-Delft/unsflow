@@ -364,13 +364,13 @@ class Blade:
             # if self.config.get_visual_debug(): self.camberSurf.plot_bspline_surface()
             # self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
-            # self.psSurf.bspline_surface_generation()
-            # if self.config.get_visual_debug(): self.psSurf.plot_bspline_surface()
-            # self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cylindrical')
+            self.psSurf.bspline_surface_generation()
+            if self.config.get_visual_debug(): self.psSurf.plot_bspline_surface()
+            self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cylindrical')
 
-            # self.ssSurf.bspline_surface_generation()
-            # if self.config.get_visual_debug(): self.ssSurf.plot_bspline_surface()
-            # self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cylindrical')
+            self.ssSurf.bspline_surface_generation()
+            if self.config.get_visual_debug(): self.ssSurf.plot_bspline_surface()
+            self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cylindrical')
 
             # self.thickness_camber = tCamb
 
