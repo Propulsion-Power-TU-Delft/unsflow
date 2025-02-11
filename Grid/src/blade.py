@@ -119,7 +119,10 @@ class Blade:
                 elif (len(words_list) == 3 or len(words_list) == 4):    # this rows has the coordinate of the blade points
                     self.x.append(float(words_list[0]))
                     self.y.append(float(words_list[1]))
-                    self.z.append(float(words_list[2]))
+                    if self.config.invert_axial_coordinates():
+                        self.z.append(-float(words_list[2]))
+                    else:
+                        self.z.append(float(words_list[2]))
                     self.blade.append(blade_type)
                     self.profile.append(profile_span)
 

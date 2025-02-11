@@ -33,11 +33,16 @@ class Curve:
             self.config = config
             self.r *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
             self.z *= self.config.get_coordinates_rescaling_factor() / self.config.get_reference_length()
+            if self.config.invert_axial_coordinates():
+                self.z = -self.z
+            
 
         elif mode == 'cordinates':
             self.r = r
             self.z = z
 
+        
+            
         # self.nstream = nstream
         self.r_spline, self.z_spline = self.compute_spline(degree_spline=degree_spline)
 

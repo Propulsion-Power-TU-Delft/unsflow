@@ -322,4 +322,17 @@ class Config:
         float_array = np.array(float_values)
         return float_array
 
+    
+    def invert_axial_coordinates(self):
+        try:
+            res = self.config_parser.get('CFD PROCESSING', 'INVERT_AXIAL_COORDINATES')
+            if res.lower() == 'yes':
+                return True
+            elif res.lower() == 'no':
+                return False
+            else:
+                raise ValueError('Invalid option INVERT_AXIAL_COORDINATES. Specify yes or no.')
+        except:
+            return False
+
 
