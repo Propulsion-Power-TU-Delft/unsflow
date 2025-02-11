@@ -150,6 +150,10 @@ class Config:
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
         values = [str(val) for val in value.split()]
         return values
+    
+    def get_blade_rows_number(self):
+        filepaths = self.get_blade_curve_filepath()
+        return len(filepaths)
 
     def get_blade_inlet_type(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
