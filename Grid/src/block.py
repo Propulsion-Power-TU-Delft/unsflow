@@ -34,7 +34,13 @@ class Block:
         self.nspan = self.config.get_spanwise_points()
         self.iblock = iblock
         self.iblade = iblade
-
+        
+        inletZ = np.linspace(self.hub.z[0], self.shroud.z[0], self.nspan)
+        inletR = np.linspace(self.hub.r[0], self.shroud.r[0], self.nspan)
+        outletZ = np.linspace(self.hub.z[-1], self.shroud.z[-1], self.nspan)
+        outletR = np.linspace(self.hub.r[-1], self.shroud.r[-1], self.nspan)
+        self.inletLine = np.stack((inletZ, inletR), axis=1)
+        self.outletLine = np.stack((outletZ, outletR), axis=1)
         self.add_bfm_file_arrays()
     
     def add_bfm_file_arrays(self):
@@ -76,12 +82,10 @@ class Block:
         self.hub_trim = Curve(z=self.hub.z_spline, r=self.hub.r_spline, mode='cordinates')
         self.shroud_trim = Curve(z=self.shroud.z_spline, r=self.shroud.r_spline, mode='cordinates')
 
-    def spline_of_leading_trailing_edge(self):
+    def spline_of_leading_trailing_edge(self, iblade):
         """
         Make splines of the inlet and outlet border of the domain considered
         """
-        iblade = self.iblade
-
         def remove_excess_points(topology, point_hub, point_shroud, curve):
             # plt.figure()
             # plt.scatter(point_hub[0], point_hub[1])
