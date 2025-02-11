@@ -10,5 +10,7 @@ configuration_file = 'input.ini'
 config = Config(configuration_file)
 driver = MultiBlockGridDriver(config)
 driver.GenerateGrid()
+driver.ComputeBladesData()
+driver.AssembleMultiBlockGrid()
 
-print()
+plt.show()

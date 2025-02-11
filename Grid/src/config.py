@@ -338,5 +338,11 @@ class Config:
                 raise ValueError('Invalid option INVERT_AXIAL_COORDINATES. Specify yes or no.')
         except:
             return False
+    
+    def get_machine_name(self):
+        try:
+            return str(self.config_parser.get('BFM DATA', 'MACHINE_NAME'))
+        except:
+            return 'Machine' # default
 
 

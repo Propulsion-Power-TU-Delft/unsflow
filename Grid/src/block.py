@@ -224,14 +224,11 @@ class Block:
         if self.config.get_verbosity():
             print_banner_begin('GRID GENERATION SETTINGS')
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
-            print(f"{'Grid Stretching Mode:':<{total_chars_mid}}{self.config.get_mesh_type():>{total_chars_mid}}")
             print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
-            if self.config.get_mesh_type() == 'sigmoid':
-
-                print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
-                      f"{stream_coeff:>{total_chars_mid}}")
-                print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"
-                      f"{span_coeff:>{total_chars_mid}}")
+            print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
+                    f"{stream_coeff:>{total_chars_mid}}")
+            print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"
+                    f"{span_coeff:>{total_chars_mid}}")
             if inlet_meridional_obj is not None:
                 print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             if outlet_meridional_obj is not None:
@@ -366,16 +363,26 @@ class Block:
         :param machine_type: needed to know what kind of cut to apply
         """
         block_type = self.config.get_blocks_trim_type()[self.iblock]
-        if block_type.lower() == 'radial':
+        if block_type.lower() == 'axial-radial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
             self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])
             self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
             self.shroud.trim_outlet(r_trim=self.point_shroud_outlet[1])
+        elif block_type.lower() == 'radial-axial':
+            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
+            self.hub.trim_outlet(z_trim=self.point_hub_outlet[0])
+            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
+            self.shroud.trim_outlet(z_trim=self.point_shroud_outlet[0])
         elif block_type.lower() == 'axial':
             self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
             self.hub.trim_outlet(z_trim=self.point_hub_outlet[0])
             self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
             self.shroud.trim_outlet(z_trim=self.point_shroud_outlet[0])
+        elif block_type.lower() == 'radial':
+            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
+            self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])
+            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
+            self.shroud.trim_outlet(r_trim=self.point_shroud_outlet[1])
         else:
             raise ValueError('Insert a valid machine type')
 
