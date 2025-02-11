@@ -1071,6 +1071,24 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
+    numberPoints = len(x)
+    uniquePointsX = np.unique(x)
+    uniquePointsY = np.unique(y)
+    uniquePointsZ = np.unique(z)
+    
+    if numberPoints != uniquePointsX.size or numberPoints != uniquePointsY.size or numberPoints != uniquePointsZ.size:
+        print("Warning: the points are not unique")
+        uniqueIndicesX = np.unique(x, return_index=True)[1]
+        uniqueIndicesY = np.unique(y, return_index=True)[1]
+        uniqueIndicesZ = np.unique(z, return_index=True)[1]
+        
+        if len(uniqueIndicesX)<len(uniqueIndicesY) or len(uniqueIndicesX)<len(uniqueIndicesZ):
+            x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+        elif len(uniqueIndicesY)<len(uniqueIndicesX) or len(uniqueIndicesY)<len(uniqueIndicesZ):
+            x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+        else:
+            x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+
     tck, u = interpolate.splprep([x, y, z], s=0)
     u_fine = np.linspace(0, 1, num_points)
     if u_param is not None:

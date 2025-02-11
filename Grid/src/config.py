@@ -148,7 +148,7 @@ class Config:
 
     def get_blade_curve_filepath(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
-        values = [str(val) for val in value.split()]
+        values = [str(val.strip()) for val in value.split(',')]
         return values
     
     def get_blade_rows_number(self):
@@ -307,8 +307,8 @@ class Config:
     
 
     def get_blades_number(self):
-        value = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
-        blades = [int(i) for i in value.split()]
+        values = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
+        blades = [int(i.strip(',')) for i in values.split()]
         return blades
 
     def get_rotation_factors(self):
