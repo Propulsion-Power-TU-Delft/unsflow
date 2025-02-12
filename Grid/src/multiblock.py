@@ -35,8 +35,6 @@ class MultiBlock:
         self.blocks = blocks
 
     def assemble_grid(self):
-        # self.nstream = self.blocks[0].nstream
-        # self.nspan = self.blocks[0].nspan
         self.z_grid_cg = self.blocks[0].z_grid_cg
         self.r_grid_cg = self.blocks[0].r_grid_cg
         self.blockage = self.blocks[0].blockage
@@ -485,7 +483,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.2):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.1):
         """
         Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
         The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid
@@ -498,7 +496,7 @@ class MultiBlock:
 
         `foldername`: folder name where to save the grid file
 
-        `border_factor`: factor used to shift the border points slightly inwards
+        `border_factor`: factor used to shift the border points slightly inwards such that the intersection with volumetric data is guaranteed
         """
 
         def move_hub_shroud_points(grid):

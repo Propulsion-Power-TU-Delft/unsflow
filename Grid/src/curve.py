@@ -45,6 +45,11 @@ class Curve:
             
         # self.nstream = nstream
         self.r_spline, self.z_spline = self.compute_spline(degree_spline=degree_spline)
+        
+        # plt.figure()
+        # plt.plot(self.z, self.r, 'o', mfc='none')
+        # plt.plot(self.z_spline, self.r_spline)
+        # plt.grid(alpha=0.1)
 
     def read_from_curve_file(self, filepath):
         """

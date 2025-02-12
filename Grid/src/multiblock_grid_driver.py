@@ -136,7 +136,7 @@ class MultiBlockGridDriver:
         self.multiBlockGrid = MultiBlock(self.config, *self.blocks)
         self.multiBlockGrid.assemble_grid()
         self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name())
-        self.multiBlockGrid.write_turbobfm_grid_file_2D()
+        # self.multiBlockGrid.write_turbobfm_grid_file_2D()
         
         
 
