@@ -194,6 +194,7 @@ class Blade:
             Try to guess the right ordering of the points, when the points are not given in an ordered fashion. It doesn't
             look really good, especially for radial blades. If possible use the ordered method, providing ordered data points
             """
+            raise ValueError('Not ordered set of blade points is not supported. Please order them!')
             for i in range(self.number_profiles):
                 idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
                 z = self.z_main[idx]
@@ -276,12 +277,18 @@ class Blade:
                 y = self.y_main[idx]
 
                 # spline of the profile in 3D
-                tck, u = splprep([x, y, z], k=3, s=0, per=True)
+                tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0, per=True)
                 u_fine = np.linspace(0, 1, 1000)
                 spline_points = splev(u_fine, tck)
-                # for i in range(3):
-                #     spline_points[i] = np.unique(spline_points[i])
-
+                if self.config.get_visual_debug():
+                    fig = plt.figure()
+                    ax = fig.add_subplot(111, projection='3d')
+                    ax.scatter(x, y, z, c='b', marker='o')
+                    ax.plot(*spline_points, c='r')
+                    ax.set_xlabel('x')
+                    ax.set_ylabel('y')
+                    ax.set_zlabel('z')
+                    ax.set_aspect('equal')            
 
                 # obtain the coordinates of the spline in the blade to blade view
                 r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
