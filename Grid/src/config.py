@@ -165,6 +165,18 @@ class Config:
         value = str(self.config_parser.get('CFD PROCESSING', 'BLOCKS_TRIM_TYPE'))
         value = [str(i.strip(',')) for i in value.split()]
         return value
+    
+    def get_blade_profiles_spline_order(self):
+        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_PROFILES_SPLINE_ORDER'))
+        value = [int(i.strip(',')) for i in value.split()]
+        return value
+    
+    def get_multiblock_driver_type(self):
+        try:
+            value = str(self.config_parser.get('CFD PROCESSING', 'MULTIBLOCK_DRIVER_TYPE'))
+            return value
+        except:
+            return 'multiblock'
 
     def get_blade_outlet_type(self):
         value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_OUTLET_TYPE'))
