@@ -15,7 +15,14 @@ class MultiBlockGridDriver:
     def __init__(self, config):
         self.config = config
         self.numberBlades = self.config.get_blade_rows_number()
-        self.numberBlocks = self.numberBlades + (self.numberBlades + 1)
+        
+        self.driverType = self.config.get_multiblock_driver_type()
+        if self.driverType=='multiblock':
+            self.numberBlocks = self.numberBlades + (self.numberBlades + 1)
+        elif self.driverType=='full_machine' or self.driverType=='single_blade':
+            self.numberBlocks = 1
+        else:
+            raise ValueError('Multiblock driver type not recognized. Possible options are (multiblock, full_machine, single_blade)')
         self.blades = []
         self.blocks = []
             
@@ -25,10 +32,14 @@ class MultiBlockGridDriver:
         Generate the grid stacking together the different bladed and unbladed blocks. It computes only the grid points, 
         nothing is interpolated yet on it due to the blades.
         """
-        for iblade in range(self.numberBlades):
-            iblock = 1 + iblade*2
-            blade = self.ReconstructBlade(iblade, iblock)
-            self.blades.append(blade)
+        if self.driverType!='full_machine':
+            for iblade in range(self.numberBlades):
+                if self.driverType=='multiblock':
+                    iblock = 1 + iblade*2
+                else:
+                    iblock = 0
+                blade = self.ReconstructBlade(iblade, iblock)
+                self.blades.append(blade)
         
         for iblock in range(self.numberBlocks):
             block = self.ReconstructBlock(iblock)
@@ -49,21 +60,23 @@ class MultiBlockGridDriver:
         block = Block(self.config, iblock=iblock)
         iblade = int((iblock-1)/2)
         
-        if iblock==0:
-            # the block is the first one
-            block.add_inlet_outlet_curves(block.inletLine, self.blades[iblade].inlet)
-        
-        elif iblock==self.numberBlocks-1:
-            # the block is the last one
-            block.add_inlet_outlet_curves(self.blades[iblade].outlet, block.outletLine)
-        
-        elif (iblock-1)%2==0:
-            # the block corresponds the blade iblade
+        if self.driverType=='multiblock':
+            if iblock==0:
+                # the block is the first one
+                block.add_inlet_outlet_curves(block.inletLine, self.blades[iblade].inlet)
+            elif iblock==self.numberBlocks-1:
+                # the block is the last one
+                block.add_inlet_outlet_curves(self.blades[iblade].outlet, block.outletLine)
+            elif (iblock-1)%2==0:
+                # the block corresponds the blade iblade
+                block.add_inlet_outlet_curves(self.blades[iblade].inlet, self.blades[iblade].outlet)
+            else:
+                # the block is downstream of the blade iblade
+                block.add_inlet_outlet_curves(self.blades[iblade].outlet, self.blades[iblade+1].inlet)
+        elif self.driverType=='single_blade':
             block.add_inlet_outlet_curves(self.blades[iblade].inlet, self.blades[iblade].outlet)
-        
-        else:
-            # the block is downstream of the blade iblade
-            block.add_inlet_outlet_curves(self.blades[iblade].outlet, self.blades[iblade+1].inlet)
+        elif self.driverType=='full_machine':
+            block.add_inlet_outlet_curves(block.inletLine, block.outletLine)
         
         block.extend_inlet_outlet_curves()
         block.find_intersections()
@@ -97,8 +110,15 @@ class MultiBlockGridDriver:
         """
         Compute the quantities on the meridional grid of the blades.
         """
+        if self.driverType=='full_machine':
+            print('In full_machine mode there are no blades specified. You cannot compute any blade related data.')
+            return
+        
         for iblade in range(self.numberBlades):
-            iblock = (iblade+1)+iblade
+            if self.driverType=='single_blade':
+                iblock = 0
+            else:
+                iblock = (iblade+1)+iblade
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
             self.blades[iblade].compute_streamline_length()
             self.blades[iblade].compute_spanline_length()
