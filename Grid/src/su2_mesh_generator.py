@@ -1,7 +1,7 @@
 def generate_SU2mesh(*coords, kind_elem, kind_bound, full_annulus=False, filename='mesh.su2'):
     """
     Functions to generate a su2 mesh file starting from coords arrays.
-    :param coords: coordinate arrays (x,y,x)
+    :param coords: coordinate arrays (x,y,z)
     :param kind_elem: element kind of the mesh
     :param kind_bound: kind of the boundary elements
     :param full_annulus: if True select a full-annulus mesh generation (no periodic boundaries)

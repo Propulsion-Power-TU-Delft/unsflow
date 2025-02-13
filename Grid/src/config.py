@@ -326,7 +326,7 @@ class Config:
     def get_rotation_factors(self):
         value = str(self.config_parser.get('BFM DATA', 'ROTATION_FACTORS'))
         if len(value.split()) > 1:
-            factors = [int(i) for i in value.split()]
+            factors = [int(i.strip(',')) for i in value.split()]
         else:
             factors = int(value)
         return factors
@@ -356,5 +356,14 @@ class Config:
             return str(self.config_parser.get('BFM DATA', 'MACHINE_NAME'))
         except:
             return 'Machine' # default
+    
+    
+    def get_output_type(self):
+        try:
+            values = self.config_parser.get('CFD PROCESSING', 'OUTPUT_TYPE')
+            values = [str(val.strip(',')) for val in values.split()]
+            return values
+        except:
+            return ['none'] # default
 
 

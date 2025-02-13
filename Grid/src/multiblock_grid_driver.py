@@ -6,6 +6,8 @@ from Utils.styles import *
 from Grid.src.blade import Blade
 from Grid.src.block import Block
 from Grid.src.multiblock import MultiBlock
+from Grid.src.su2_mesh_generator import generate_SU2mesh
+from Grid.src.bfm_writer import BFM_Writer
 
 class MultiBlockGridDriver:
     """
@@ -136,9 +138,57 @@ class MultiBlockGridDriver:
         """
         self.multiBlockGrid = MultiBlock(self.config, *self.blocks)
         self.multiBlockGrid.assemble_grid()
-        self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name())
+        self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
         # self.multiBlockGrid.write_turbobfm_grid_file_2D()
-        
-        
-
     
+    
+    def SaveOutput(self):
+        """
+        Save the output of the grid generation in a pickle file. 4 different options, possibly cumulative.
+        The output type is taken from the input.ini file, under the voice OUTPUT_TYPE. Possible options are:
+        1) turbobfm: save the turbobfm axisymmetric grid file with associated blade data
+        2) pickle: save the full object in a pickle file
+        3) su2mesh: export the su2 mesh file (3D, periodic boundaries for the moment)
+        4) meridional_paraview_splines: export the meridional splines in a paraview readable format for Paraview span macros
+        """
+        outputFolder = 'Output'
+        os.makedirs(outputFolder, exist_ok=True)
+        outputTypes = self.config.get_output_type()
+        for outputType in outputTypes:
+            
+            if outputType.lower()=='turbobfm':
+                if self.driverType=='single_blade' or self.driverType=='full_machine':
+                    raise ValueError('The output type turbobfm is not available for single_blade or full_machine driver configurations.')
+                self.multiBlockGrid.write_turbobfm_grid_file_2D(output_folder = outputFolder)
+            
+            elif outputType.lower()=='pickle':
+                filePath = os.path.join(outputFolder, self.config.get_machine_name() + '.pik')
+                with open(filePath, 'wb') as f:
+                    pickle.dump(self, f)
+                print('Object saved in %s' %(filePath))
+            
+            elif outputType.lower()=='su2mesh':
+                if self.driverType=='single_blade' or self.driverType=='full_machine':
+                    raise ValueError('The output type su2mesh is not available for single_blade or full_machine driver configurations.')
+                self.multiBlockGrid.compute_three_dimensional_mesh(self.config, nodes_number=5)
+                generate_SU2mesh(self.multiBlockGrid.X_mesh, self.multiBlockGrid.Y_mesh, self.multiBlockGrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh.su2')
+                print('SU2 mesh file written in %s' %(outputFolder+'/mesh.su2'))
+                
+            elif outputType.lower()=='su2bfm':
+                if self.driverType=='single_blade' or self.driverType=='full_machine':
+                    raise ValueError('The output type su2bfm is not available for single_blade or full_machine driver configurations.')
+                bfmWriter = BFM_Writer(self.blades, self.config)
+                bfmWriter.write_bfm_input_file(filename=outputFolder + '/BFM_input.drg')
+                print('SU2 BFM input file written in %s' %(outputFolder+'/BFM_input.drg'))
+
+            
+            elif outputType.lower()=='meridional_paraview_splines':
+                spanValues = [0.1, 0.3, 0.5, 0.7, 0.9] # default span values, modify if needed
+                for span in spanValues:
+                    self.multiBlockGrid.export_meridional_spline(folder=outputFolder, filename='meridional_spline_%.2f' %span, span=span)
+            
+            elif outputType=='none':
+                print('No output type specified, therefore no output saved.')
+            
+            else:
+                print('Output type %s not recognized, therefore ignored.' %(outputType))

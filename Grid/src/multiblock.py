@@ -13,10 +13,8 @@ from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
-from Grid.src.functions import create_folder
 import pickle
 import os
-
 
 class MultiBlock:
     """
@@ -141,8 +139,8 @@ class MultiBlock:
 
         if primary_grid_points or secondary_grid_points or outline:
             plt.legend()
-        plt.xlabel(r'$z \ \mathrm{[-]}$')
-        plt.ylabel(r'$r \ \mathrm{[-]}$')
+        plt.xlabel(r'$z \ \mathrm{[m]}$')
+        plt.ylabel(r'$r \ \mathrm{[m]}$')
         plt.title(r'$(%d \times %d)$' % (self.nstream, self.nspan))
 
         if not ticks:
@@ -389,7 +387,7 @@ class MultiBlock:
         """
         if folder is None:
             folder = 'spline'
-        create_folder(folder)
+        os.makedirs(folder, exist_ok=True)
 
         if filename is None:
             filename = 'spline_span_%.2f' %(span)
@@ -417,6 +415,7 @@ class MultiBlock:
             if format_file == 'csv':
                 for ii in range(len(x)):
                     file.write('%.6f,%.6f,%.6f\n' % (x[ii], y[ii], z[ii]))
+                print('Meridional spline at span %.2f saved to %s' % (span, filepath))
             else:
                 raise ValueError('Format not supported.')
 
@@ -530,7 +529,8 @@ class MultiBlock:
     
 
     def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=False, force_viscous=False,
-                                    force_axial=True, force_radial=True, force_tangential=True):
+                                    force_axial=False, force_radial=False, force_tangential=False,
+                                    output_folder = ''):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """
@@ -569,7 +569,7 @@ class MultiBlock:
             mesh['Force_Tangential'] = self.force_tangential
         
 
-        filepath = 'grid_%02i_%02i.pik' % (ni, nj)
+        filepath = output_folder + '/grid_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
         print(f"TurboBFM pickle grid saved to '{filepath}'")
