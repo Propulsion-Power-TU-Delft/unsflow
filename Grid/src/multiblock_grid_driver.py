@@ -171,8 +171,8 @@ class MultiBlockGridDriver:
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type su2mesh is not available for single_blade or full_machine driver configurations.')
                 self.multiBlockGrid.compute_three_dimensional_mesh(self.config, nodes_number=5)
-                generate_SU2mesh(self.multiBlockGrid.X_mesh, self.multiBlockGrid.Y_mesh, self.multiBlockGrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh.su2')
-                print('SU2 mesh file written in %s' %(outputFolder+'/mesh.su2'))
+                generate_SU2mesh(self.multiBlockGrid.X_mesh, self.multiBlockGrid.Y_mesh, self.multiBlockGrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh_%.4f.su2' %(self.multiBlockGrid.deltatheta_periodic))
+                print('SU2 mesh file written in %s/mesh_%.4f.su2' %(outputFolder, self.multiBlockGrid.deltatheta_periodic))
                 
             elif outputType.lower()=='su2bfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
