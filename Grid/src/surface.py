@@ -149,7 +149,7 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=20):
+    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=10):
         """
         Generation of surface by bi-variate spline
         """
@@ -241,7 +241,7 @@ class Surface:
             return self.Xg, self.Yg, self.Zg
         elif method == 'cylindrical':
             # return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg, self.Xg), self.Zg
-            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan(self.Yg/self.Xg), self.Zg
+            return np.sqrt(self.Xg**2+self.Yg**2), np.arctan2(self.Yg,self.Xg), self.Zg
         else:
             raise ValueError('Unknown type of return method. Choose between cartesian and cylindrical.')
 

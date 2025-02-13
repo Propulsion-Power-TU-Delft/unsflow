@@ -124,6 +124,7 @@ class MultiBlockGridDriver:
             self.blades[iblade].compute_spanline_length()
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].compute_camber_vectors()
+            self.blades[iblade].plot_camber_normal_contour()
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)

@@ -277,7 +277,7 @@ class Blade:
                 y = self.y_main[idx]
 
                 # spline of the profile in 3D
-                tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0, per=True)
+                tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0, per=0)
                 u_fine = np.linspace(0, 1, 1000)
                 spline_points = splev(u_fine, tck)
                 if self.config.get_visual_debug():
@@ -336,8 +336,8 @@ class Blade:
                 
                 if self.config.get_visual_debug():
                     plt.figure()
-                    plt.plot(mc, t_norm, '-o', mfc='none', label='normal thickness')
-                    plt.plot(mc, t_tang, '-^', mfc='none', label='tangential thickness')
+                    plt.plot(mc, t_norm, label='normal thickness')
+                    plt.plot(mc, t_tang, label='tangential thickness')
                     plt.grid(alpha=0.2)
                     plt.legend()
                     plt.xlabel(r'$s$ [m]')
@@ -374,25 +374,31 @@ class Blade:
             self.psSurf.bspline_surface_generation()
             if self.config.get_visual_debug(): self.psSurf.plot_bspline_surface()
             self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cylindrical')
+            self.x_psSurface, self.y_psSurface, self.z_psSurface = self.psSurf.get_global_bspline_surface(method='cartesian')
 
             self.ssSurf.bspline_surface_generation()
             if self.config.get_visual_debug(): self.ssSurf.plot_bspline_surface()
             self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cylindrical')
+            self.x_ssSurface, self.y_ssSurface, self.z_ssSurface = self.ssSurf.get_global_bspline_surface(method='cartesian')
+
 
             # self.thickness_camber = tCamb
 
-            # # check the full reconstructed blade
-            # if self.config.get_visual_debug():
-            #     def cartesian_points(r, t, z):
-            #         return r*np.cos(t), r*np.sin(t), z
-            #     fig = plt.figure()
-            #     ax = fig.add_subplot(111, projection='3d')
-            #     ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
-            #     ax.plot_surface(*cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface), alpha=0.6)
-            #     ax.plot_surface(*cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface), alpha=0.6)
-            #     ax.set_xlabel('x')
-            #     ax.set_ylabel('y')
-            #     ax.set_zlabel('z')      
+            # check the full reconstructed blade
+            if self.config.get_visual_debug():
+                def cartesian_points(r, t, z):
+                    return r*np.cos(t), r*np.sin(t), z
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
+                ax.plot_surface(*(self.x_psSurface, self.y_psSurface, self.z_psSurface), alpha=0.4)
+                ax.plot_surface(*(self.x_ssSurface, self.y_ssSurface, self.z_ssSurface), alpha=0.4)
+                ax.plot(*(self.x_main, self.y_main, self.z_main), 'o', color='k')
+                ax.set_xlabel('x')
+                ax.set_ylabel('y')
+                ax.set_zlabel('z')      
+                ax.set_title('Reconstructed blade')
+                ax.set_aspect('equal')
 
         else:
             raise ValueError('The blade dataset must be ordered or not ordered. Value not recognized.')

@@ -1089,7 +1089,7 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
         else:
             x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
 
-    tck, u = interpolate.splprep([x, y, z], s=0)
+    tck, u = interpolate.splprep([x, y, z], s=0, k=1)
     u_fine = np.linspace(0, 1, num_points)
     if u_param is not None:
         u_fine = u_param
