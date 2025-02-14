@@ -156,7 +156,7 @@ class Surface:
         t = np.linspace(0-extension, 1+extension, stream_resolution)
         s = np.linspace(0-extension, 1+extension, span_resolution)
 
-        t = eriksson_stretching_function_both(t, 2)
+        t = eriksson_stretching_function_both(t, 1)
 
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
@@ -165,7 +165,7 @@ class Surface:
             prf_splx.append(xint)
             prf_sply.append(yint)
             prf_splz.append(zint)
-
+        
         # generate the dataset across the profiles (spanwise)
         self.cross_coords = {}
         for i in range(len(t)):
@@ -188,12 +188,12 @@ class Surface:
             crs_sply.append(yint)
             crs_splz.append(zint)
 
+        
         # if self.config.get_visual_debug():
         #     fig = plt.figure()
         #     ax = fig.add_subplot(111, projection='3d')
         #     for i in range(len(prf_splx)):
         #         ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0', label='streamwise', lw=0.5)
-
         #     for i in range(len(crs_splx)):
         #         ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
 

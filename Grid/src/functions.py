@@ -1082,7 +1082,23 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
         uniqueIndicesY = np.unique(y, return_index=True)[1]
         uniqueIndicesZ = np.unique(z, return_index=True)[1]
         
-        if len(uniqueIndicesX)<len(uniqueIndicesY) or len(uniqueIndicesX)<len(uniqueIndicesZ):
+        
+        if len(uniqueIndicesX)==1:
+            if len(uniquePointsY)<len(uniquePointsZ):
+                x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+            else:
+                x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+        elif len(uniqueIndicesY)==1:
+            if len(uniquePointsX)<len(uniquePointsZ):
+                x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+            else:   
+                x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+        elif len(uniqueIndicesZ)==1:
+            if len(uniquePointsX)<len(uniquePointsY):
+                x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+            else:
+                x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+        elif len(uniqueIndicesX)<len(uniqueIndicesY) or len(uniqueIndicesX)<len(uniqueIndicesZ):
             x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
         elif len(uniqueIndicesY)<len(uniqueIndicesX) or len(uniqueIndicesY)<len(uniqueIndicesZ):
             x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
