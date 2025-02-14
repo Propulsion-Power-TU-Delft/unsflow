@@ -160,8 +160,16 @@ class Surface:
 
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
-        for key, values in self.coords.items():
+        for i, (key, values) in enumerate(self.coords.items()):
+            if i==6:
+                print('breakup point here')
             xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=t)
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            # ax.plot(values['x'], values['y'], values['z'], '-o', label='sample points')
+            # # ax.plot(xint, yint, zint, ms=1, label='spline')
+            # ax.legend()    
+            # ax.set_title('Profile %i' % i)
             prf_splx.append(xint)
             prf_sply.append(yint)
             prf_splz.append(zint)
@@ -193,7 +201,7 @@ class Surface:
         #     fig = plt.figure()
         #     ax = fig.add_subplot(111, projection='3d')
         #     for i in range(len(prf_splx)):
-        #         ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0', label='streamwise', lw=0.5)
+        #         ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0o', ms=1, label='streamwise', lw=0.5)
         #     for i in range(len(crs_splx)):
         #         ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
 

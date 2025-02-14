@@ -1067,7 +1067,7 @@ def compute_curvilinear_abscissa(x, y):
         return np.flip(s)
 
 
-def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
+def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
@@ -1085,25 +1085,30 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
         
         if len(uniqueIndicesX)==1:
             if len(uniquePointsY)<len(uniquePointsZ):
-                x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+                x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
             else:
-                x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+                x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
+        
         elif len(uniqueIndicesY)==1:
             if len(uniquePointsX)<len(uniquePointsZ):
-                x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+                x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
             else:   
-                x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+                x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
+        
         elif len(uniqueIndicesZ)==1:
             if len(uniquePointsX)<len(uniquePointsY):
-                x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+                x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
             else:
-                x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+                x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
+        
         elif len(uniqueIndicesX)<len(uniqueIndicesY) or len(uniqueIndicesX)<len(uniqueIndicesZ):
-            x, y, z = x[uniqueIndicesX], y[uniqueIndicesX], z[uniqueIndicesX]
+            x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
+        
         elif len(uniqueIndicesY)<len(uniqueIndicesX) or len(uniqueIndicesY)<len(uniqueIndicesZ):
-            x, y, z = x[uniqueIndicesY], y[uniqueIndicesY], z[uniqueIndicesY]
+            x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
+        
         else:
-            x, y, z = x[uniqueIndicesZ], y[uniqueIndicesZ], z[uniqueIndicesZ]
+            x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
 
     tck, u = interpolate.splprep([x, y, z], s=0, k=1)
     u_fine = np.linspace(0, 1, num_points)
@@ -1111,8 +1116,15 @@ def compute_3dSpline_curve(x, y, z, num_points=100, u_param=None, spacing=None):
         u_fine = u_param
     if spacing is not None:
         u_fine = eriksson_stretching_function_both(u_fine, spacing)
-    x, y, z = interpolate.splev(u_fine, tck)
-    return x, y, z
+    xnew, ynew, znew = interpolate.splev(u_fine, tck)
+    
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    # ax.plot(x, y, z, '-o', label='sample points filtered')
+    # ax.plot(xnew, ynew, znew, '-o', label='spline')
+    # ax.legend()    
+    
+    return xnew, ynew, znew
 
 
 def compute_2dSpline_curve(x, y, num_points, spacing=None):
