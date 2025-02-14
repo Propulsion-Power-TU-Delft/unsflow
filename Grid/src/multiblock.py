@@ -526,6 +526,7 @@ class MultiBlock:
                                  x[istream, ispan], 
                                  y[istream, ispan], 
                                  z[istream, ispan]))
+        print('Written meridional grid csv file to: %s' %(foldername + '/' + filename))
     
 
     def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=False, force_viscous=False,

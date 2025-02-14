@@ -149,7 +149,8 @@ class MultiBlockGridDriver:
         1) turbobfm: save the turbobfm axisymmetric grid file with associated blade data
         2) pickle: save the full object in a pickle file
         3) su2mesh: export the su2 mesh file (3D, periodic boundaries for the moment)
-        4) meridional_paraview_splines: export the meridional splines in a paraview readable format for Paraview span macros
+        4) meridional_splines: export the meridional splines in a paraview readable format for Paraview span macros
+        5) meridional_grid: export the meridional grid in csv format for paraview macro writing
         """
         outputFolder = 'Output'
         os.makedirs(outputFolder, exist_ok=True)
@@ -180,12 +181,14 @@ class MultiBlockGridDriver:
                 bfmWriter = BFM_Writer(self.blades, self.config)
                 bfmWriter.write_bfm_input_file(filename=outputFolder + '/BFM_input.drg')
                 print('SU2 BFM input file written in %s' %(outputFolder+'/BFM_input.drg'))
-
             
-            elif outputType.lower()=='meridional_paraview_splines':
+            elif outputType.lower()=='meridional_splines':
                 spanValues = [0.1, 0.3, 0.5, 0.7, 0.9] # default span values, modify if needed
                 for span in spanValues:
                     self.multiBlockGrid.export_meridional_spline(folder=outputFolder, filename='meridional_spline_%.2f' %span, span=span)
+            
+            elif outputType.lower()=='meridional_grid':
+                self.multiBlockGrid.write_paraview_grid_file(foldername=outputFolder, filename='meridional_grid.csv')
             
             elif outputType=='none':
                 print('No output type specified, therefore no output saved.')
