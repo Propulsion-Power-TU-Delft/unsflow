@@ -60,7 +60,7 @@ N_levels_fine = 100
 N_fine = 100
 
 # set colormap for contourf plots
-color_map = cm.jet
+color_map = cm.turbo
 
 # number of chars for the banners
 total_chars = 100
