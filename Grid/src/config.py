@@ -2,6 +2,8 @@ import configparser
 import ast
 import numpy as np
 import os
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+
 
 
 class Config:
@@ -10,6 +12,8 @@ class Config:
         self.config_parser.read(config_file)
 
         cwd = os.getcwd()
+        
+        print_banner_begin('CONFIGURATION FILE')
         print('Configuration file path: %s' % os.path.join(cwd, config_file))
 
         pic_folder = self.get_pictures_folder_path()
@@ -19,6 +23,7 @@ class Config:
         sp_points = self.get_spanwise_points()
         print('Number of streamwise points: ', sw_points)
         print('Number of spanwise points: ', sp_points)
+        print_banner_end('')
         
 
     def get_config_value(self, section, option, default=None):

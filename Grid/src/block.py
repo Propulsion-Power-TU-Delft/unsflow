@@ -222,9 +222,10 @@ class Block:
         span_coeff = self.config.get_sigmoid_span_coefficient()
 
         if self.config.get_verbosity():
-            print_banner_begin('GRID GENERATION SETTINGS')
+            print_banner_begin('GRID GENERATION OF BLOCK %02d' % block_counter)
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
-            print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
+            if self.config.get_mesh_generation_method().lower() == 'elliptic':
+                print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
             print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
                     f"{stream_coeff:>{total_chars_mid}}")
             print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"

@@ -1077,7 +1077,6 @@ def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None):
     uniquePointsZ = np.unique(z)
     
     if numberPoints != uniquePointsX.size or numberPoints != uniquePointsY.size or numberPoints != uniquePointsZ.size:
-        print("Warning: the points are not unique")
         uniqueIndicesX = np.unique(x, return_index=True)[1]
         uniqueIndicesY = np.unique(y, return_index=True)[1]
         uniqueIndicesZ = np.unique(z, return_index=True)[1]

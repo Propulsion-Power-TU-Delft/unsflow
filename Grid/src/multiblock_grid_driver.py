@@ -8,6 +8,8 @@ from Grid.src.block import Block
 from Grid.src.multiblock import MultiBlock
 from Grid.src.su2_mesh_generator import generate_SU2mesh
 from Grid.src.bfm_writer import BFM_Writer
+from Sun.src.general_functions import print_banner_begin, print_banner_end
+
 
 class MultiBlockGridDriver:
     """
@@ -156,6 +158,7 @@ class MultiBlockGridDriver:
         4) meridional_splines: export the meridional splines in a paraview readable format for Paraview span macros
         5) meridional_grid: export the meridional grid in csv format for paraview macro writing
         """
+        print_banner_begin('MULTIBLOCK GRID OUTPUT')
         outputFolder = 'Output'
         os.makedirs(outputFolder, exist_ok=True)
         outputTypes = self.config.get_output_type()
@@ -206,3 +209,4 @@ class MultiBlockGridDriver:
             
             else:
                 print('Output type %s not recognized, therefore ignored.' %(outputType))
+        print_banner_end('')

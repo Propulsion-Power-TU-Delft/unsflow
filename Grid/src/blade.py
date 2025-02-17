@@ -73,6 +73,7 @@ class Blade:
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
         print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
         print_banner_end()
 
 
@@ -137,13 +138,12 @@ class Blade:
         self.mark = array(self.mark)
 
         # rescale the coordinates to SI units
-        print(f"{'Coordinates rescaled to SI units by factor: :<{total_chars_mid}'}{self.config.get_coordinates_rescaling_factor():>.3f}")
+        print(f"{'Coordinates rescaled to SI units by factor: ':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         self.x *= self.config.get_coordinates_rescaling_factor()
         self.y *= self.config.get_coordinates_rescaling_factor()
         self.z *= self.config.get_coordinates_rescaling_factor()
 
         if self.config.get_normalize_coordinates():
-            print(f"{'Coordinates normalized by factor: :<{total_chars_mid}'}{self.config.get_reference_length():>.3f}")
             self.x /= self.config.get_reference_length()
             self.y /= self.config.get_reference_length()
             self.z /= self.config.get_reference_length()
@@ -184,9 +184,7 @@ class Blade:
         thetacamb = []
         tCamb = []
         kappaCamb = []
-
         
-        print('The blade coordinate file is tretaed as ordered dataset of points')
         self.thickness = {}
         self.rc_data, self.thetac_data, self.zc_data, self.thk_data = [], [], [], []
         self.rss_data, self.thetass_data, self.zss_data = [], [], []
@@ -537,7 +535,6 @@ class Blade:
         self.r_camber = self.r_grid
         
         method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{method:>{total_chars_mid}}")
         
         self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
                                                          self.r_cambSurface.flatten(),
@@ -577,7 +574,6 @@ class Blade:
         self.r_camber = self.r_grid
         
         method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{method:>{total_chars_mid}}")
         
         def unroll_list_in_nparray(l):
             arr = np.concatenate(l)
@@ -647,7 +643,6 @@ class Blade:
         self.r_camber = self.r_grid
         
         method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{method:>{total_chars_mid}}")
         
         theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
         self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
