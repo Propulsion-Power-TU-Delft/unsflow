@@ -1144,14 +1144,14 @@ class Blade:
                                                                          self.y_camber[i, j],
                                                                          self.z_camber[i, j],
                                                                          self.normal_vectors[i, j])
-                # self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                #                                                              self.y_camber[i, j],
-                #                                                              self.z_camber[i, j],
-                #                                                              self.streamline_vectors[i, j])
-                # self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                #                                                            self.y_camber[i, j],
-                #                                                            self.z_camber[i, j],
-                #                                                            self.spanline_vectors[i, j])
+                self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                                                                             self.y_camber[i, j],
+                                                                             self.z_camber[i, j],
+                                                                             self.streamline_vectors[i, j])
+                self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
+                                                                           self.y_camber[i, j],
+                                                                           self.z_camber[i, j],
+                                                                           self.spanline_vectors[i, j])
 
         # reorder the vectors in 2d arrays
         self.n_camber_r = np.zeros_like(self.x_camber)
@@ -1516,20 +1516,23 @@ class Blade:
             for j in range(0, self.x_camber.shape[1]):
                 self.gas_path_angle[i, j] = np.arctan2(self.streamline_vectors_cyl[i, j][0] , self.streamline_vectors_cyl[i, j][2])
 
-                meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
-                meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
+                # meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
+                # meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
 
-                meridional_sp_vec = np.array([self.spanline_vectors_cyl[i, j][0], 0, self.spanline_vectors_cyl[i, j][2]])
-                meridional_sp_vec /= np.linalg.norm(meridional_sp_vec)
+                # meridional_sp_vec = np.array([self.spanline_vectors_cyl[i, j][0], 0, self.spanline_vectors_cyl[i, j][2]])
+                # meridional_sp_vec /= np.linalg.norm(meridional_sp_vec)
 
-                if convention == 'neutral':
-                    self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
-                    self.blade_lean_angle[i, j] = np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
-                elif convention == 'rotation-wise':
-                    self.blade_metal_angle[i, j] = -np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
-                    self.blade_lean_angle[i, j] = -np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
-                else:
-                    raise ValueError('Choose a convention for the angles')
+                # if convention == 'neutral':
+                #     self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
+                #     self.blade_lean_angle[i, j] = np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
+                # elif convention == 'rotation-wise':
+                #     self.blade_metal_angle[i, j] = -np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
+                #     self.blade_lean_angle[i, j] = -np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
+                # else:
+                #     raise ValueError('Choose a convention for the angles')
+        
+        self.blade_metal_angle = np.arctan2(self.n_camber_t, self.n_camber_z)
+        self.blade_lean_angle = np.arctan2(self.n_camber_r, np.sqrt(self.n_camber_t**2+self.n_camber_z**2))
 
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
@@ -2457,7 +2460,7 @@ class Blade:
         
         def LinearExtrapolation(x, y, xnew):
             ynew = np.zeros_like(xnew)
-            yprime = np.gradient(y, x, edge_order=1)
+            yprime = np.gradient(y, x, edge_order=2)
             if xnew[0]<=x[0]:
                 # left extrapolation
                 for i in range(len(xnew)):
@@ -2500,6 +2503,11 @@ class Blade:
         self.n_camber_r = ExtrapolateDataSpan(self.n_camber_r)
         self.n_camber_t = ExtrapolateDataSpan(self.n_camber_t)
         self.n_camber_z = ExtrapolateDataSpan(self.n_camber_z)
+        
+        # renormalize the camber normal after the extrapolation
+        self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         
         
         
