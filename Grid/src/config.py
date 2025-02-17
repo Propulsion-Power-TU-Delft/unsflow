@@ -365,5 +365,17 @@ class Config:
             return values
         except:
             return ['none'] # default
+    
+    
+    def get_blade_edges_extrapolation_coefficient(self):
+        try:
+            value = self.config_parser.get('CFD PROCESSING', 'BLADE_EDGES_EXTRAPOLATION_COEFFICIENT')
+            vals = [float(val.strip(',')) for val in value.split()]
+            vals = np.array(vals, dtype=float)
+        except:
+            nblades = self.get_blade_rows_number()
+            vals = np.zeros(nblades)
+            print('Default extrapolation blade coefficient: 0')
+        return vals
 
 

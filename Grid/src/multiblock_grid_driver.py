@@ -127,6 +127,8 @@ class MultiBlockGridDriver:
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].compute_camber_vectors()
             self.blades[iblade].plot_camber_normal_contour()
+            self.blades[iblade].extrapolate_camber()
+            self.blades[iblade].plot_camber_normal_contour()
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)
@@ -192,6 +194,13 @@ class MultiBlockGridDriver:
             
             elif outputType=='none':
                 print('No output type specified, therefore no output saved.')
+            
+            elif outputType=='blade':
+                for i,blade in enumerate(self.blades):
+                    filePath = outputFolder + '/blade_%02i.pik' % i
+                    with open(filePath, 'wb') as file:
+                        pickle.dump(blade, file)
+                    print(f'Saved Blade object pickle {i} in: {filePath}.')
             
             else:
                 print('Output type %s not recognized, therefore ignored.' %(outputType))

@@ -161,8 +161,6 @@ class Surface:
         # generate the spline along the profile (streamwise)
         prf_splx, prf_sply, prf_splz = [], [], []
         for i, (key, values) in enumerate(self.coords.items()):
-            if i==6:
-                print('breakup point here')
             xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=t)
             # fig = plt.figure()
             # ax = fig.add_subplot(111, projection='3d')
