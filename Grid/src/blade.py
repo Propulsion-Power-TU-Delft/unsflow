@@ -76,6 +76,7 @@ class Blade:
         print(f"{'Blade inlet type:':<{total_chars_mid}}{self.config.get_blade_inlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Blade outlet type:':<{total_chars_mid}}{self.config.get_blade_outlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
+        print(f"{'Blade edges extrapolation coefficient:':<{total_chars_mid}}{self.config.get_blade_edges_extrapolation_coefficient()[self.iblade]:>{total_chars_mid}.3f}")
         print_banner_end()
 
 
