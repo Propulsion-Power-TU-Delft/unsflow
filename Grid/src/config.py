@@ -3,6 +3,7 @@ import ast
 import numpy as np
 import os
 from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Utils.styles import total_chars, total_chars_mid
 
 
 
@@ -10,19 +11,17 @@ class Config:
     def __init__(self, config_file='input.ini'):
         self.config_parser = configparser.ConfigParser()
         self.config_parser.read(config_file)
-
-        cwd = os.getcwd()
         
         print_banner_begin('CONFIGURATION FILE')
-        print('Configuration file path: %s' % os.path.join(cwd, config_file))
-
+        print(f"{'Configuration file: ':<{total_chars_mid}}{config_file:>{total_chars_mid}}")
         pic_folder = self.get_pictures_folder_path()
         os.makedirs(pic_folder, exist_ok=True)
-        print('Output folder for the pictures is: %s' %(pic_folder))
+        print(f"{'Output folder for the pictures: ':<{total_chars_mid}}{pic_folder:>{total_chars_mid}}")
         sw_points = self.get_streamwise_points()
         sp_points = self.get_spanwise_points()
-        print('Number of streamwise points: ', sw_points)
-        print('Number of spanwise points: ', sp_points)
+        print(f"{'Number of streamwise points: ':<{total_chars_mid}}{str(sw_points):>{total_chars_mid}}")
+        print(f"{'Number of spanwise points: ':<{total_chars_mid}}{sp_points:>{total_chars_mid}}")
+        print(f"{'Driver type: ':<{total_chars_mid}}{self.get_multiblock_driver_type():>{total_chars_mid}}")
         print_banner_end('')
         
 

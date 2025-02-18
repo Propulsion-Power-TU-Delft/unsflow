@@ -232,6 +232,7 @@ def print_banner_end(string=''):
     """
     n = total_chars - 2
     print("+", f"{string:-^{n}}", "+", sep='')
+    print()
 
 
 def annular_duct_analytical_transformation(z, L1, L2):

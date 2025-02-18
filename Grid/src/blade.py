@@ -73,6 +73,8 @@ class Blade:
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
         print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+        print(f"{'Blade inlet type:':<{total_chars_mid}}{self.config.get_blade_inlet_type()[iblade]:>{total_chars_mid}}")
+        print(f"{'Blade outlet type:':<{total_chars_mid}}{self.config.get_blade_outlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
         print_banner_end()
 

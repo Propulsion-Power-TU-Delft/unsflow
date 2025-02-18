@@ -33,6 +33,9 @@ class MultiBlock:
         self.blocks = blocks
 
     def assemble_grid(self):
+        """
+        Put together all the fields of the blocks needed for later
+        """
         self.z_grid_cg = self.blocks[0].z_grid_cg
         self.r_grid_cg = self.blocks[0].r_grid_cg
         self.blockage = self.blocks[0].blockage
@@ -164,7 +167,7 @@ class MultiBlock:
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
-        plt.title('b')
+        plt.title(r'$b$ [-]')
         ax = plt.gca()
         ax.set_aspect('equal')
 
@@ -182,7 +185,7 @@ class MultiBlock:
         plt.colorbar()
         plt.xlabel(r'$z$')
         plt.ylabel(r'$r$')
-        plt.title('rpm')
+        plt.title(r'$N$ [rpm]')
         ax = plt.gca()
         ax.set_aspect('equal')
 

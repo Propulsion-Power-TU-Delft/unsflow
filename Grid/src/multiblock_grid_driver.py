@@ -84,7 +84,7 @@ class MultiBlockGridDriver:
         
         block.extend_inlet_outlet_curves()
         block.find_intersections()
-        block.bladed_zone_trim()
+        block.internal_zone_trim()
         block.spline_of_hub_shroud()
         block.spline_of_leading_trailing_edge(iblade)
         block.sample_hub_shroud()
@@ -128,11 +128,10 @@ class MultiBlockGridDriver:
             self.blades[iblade].compute_spanline_length()
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].compute_camber_vectors()
-            self.blades[iblade].plot_camber_normal_contour()
             self.blades[iblade].extrapolate_camber()
-            self.blades[iblade].plot_camber_normal_contour()
+            self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
-            self.blades[iblade].show_blade_angles_contour()
+            self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)
@@ -145,6 +144,9 @@ class MultiBlockGridDriver:
         self.multiBlockGrid = MultiBlock(self.config, *self.blocks)
         self.multiBlockGrid.assemble_grid()
         self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
+        if self.driverType=='multiblock':
+            self.multiBlockGrid.plot_blockage(save_filename=self.config.get_machine_name())
+            self.multiBlockGrid.plot_rpm(save_filename=self.config.get_machine_name())
         # self.multiBlockGrid.write_turbobfm_grid_file_2D()
     
     

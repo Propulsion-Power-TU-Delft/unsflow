@@ -21,7 +21,7 @@ class Block:
     this class contains a single block, obtained after trimming the hub and shroud curves where needed.
     """
 
-    def __init__(self, config, iblock, iblade=None):
+    def __init__(self, config, iblock):
         """
         Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
         dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
@@ -33,7 +33,6 @@ class Block:
         self.nstream = self.config.get_streamwise_points()[iblock]
         self.nspan = self.config.get_spanwise_points()
         self.iblock = iblock
-        self.iblade = iblade
         
         inletZ = np.linspace(self.hub.z[0], self.shroud.z[0], self.nspan)
         inletR = np.linspace(self.hub.r[0], self.shroud.r[0], self.nspan)
@@ -223,6 +222,8 @@ class Block:
 
         if self.config.get_verbosity():
             print_banner_begin('GRID GENERATION OF BLOCK %02d' % block_counter)
+            block_type = self.config.get_blocks_trim_type()[self.iblock]
+            print(f"{'Trim type:':<{total_chars_mid}}{block_type:>{total_chars_mid}}")
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
             if self.config.get_mesh_generation_method().lower() == 'elliptic':
                 print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
@@ -358,7 +359,7 @@ class Block:
         point = np.mean(intersection_points, axis=0)
         return point
 
-    def bladed_zone_trim(self):
+    def internal_zone_trim(self):
         """
         Trim the block hub and shroud curves at the found intersections with the inlet and outlet curves.
         :param machine_type: needed to know what kind of cut to apply
