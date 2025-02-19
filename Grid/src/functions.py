@@ -1285,3 +1285,47 @@ def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval
     return z_eval
 
 
+def compute_meridional_streamwise_coordinates(axialGrid: np.ndarray, radialGrid: np.ndarray, normalize: bool = False) -> np.ndarray:
+    """
+    Compute streamwise length on the meridional plane of the machine
+
+    Args:
+        axialGrid (np.ndarray): 2D array of axial grid points
+        radialGrid (np.ndarray): 2D array of radial grid points
+        normalize (bool): if True, every streamline will go from 0 at leading edge to 1 at trailing edge
+    """
+    ni,nj = axialGrid.shape
+    streamLen = np.zeros((ni,nj))
+    for ii in range(1, ni):
+            ds = np.sqrt((axialGrid[ii, :] - axialGrid[ii - 1, :]) ** 2 + (radialGrid[ii, :] - radialGrid[ii - 1, :]) ** 2)
+            streamLen[ii, :] = streamLen[ii - 1, :] + ds
+
+    if normalize:
+        for jj in range(0, nj):
+            streamLen[:, jj] /= streamLen[-1, jj]
+    
+    return streamLen
+
+def compute_meridional_spanwise_coordinates(axialGrid: np.ndarray, radialGrid: np.ndarray, normalize: bool = False) -> np.ndarray:
+    """
+    Compute spanwise length on the meridional plane of the machine
+
+    Args:
+        axialGrid (np.ndarray): 2D array of axial grid points
+        radialGrid (np.ndarray): 2D array of radial grid points
+        normalize (bool): if True, every streamline will go from 0 at leading edge to 1 at trailing edge
+    """
+    ni,nj = axialGrid.shape
+    spanLen = np.zeros((ni,nj))
+    for jj in range(1, nj):
+        ds = np.sqrt((axialGrid[:, jj] - axialGrid[:, jj -1]) ** 2 + (radialGrid[:, jj] - radialGrid[:, jj -1]) ** 2)
+        spanLen[:, jj] = spanLen[:, jj -1] + ds
+
+    if normalize:
+        for ii in range(0, ni):
+            spanLen[ii, :] /= spanLen[ii, -1]
+
+    return spanLen
+        
+
+

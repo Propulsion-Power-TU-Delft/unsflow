@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square, griddata_interpolation_with_nearest_filler
+from Grid.src.functions import clip_negative_values, compute_2dSpline_curve, find_intersection, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square, griddata_interpolation_with_nearest_filler, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 from Grid.src.profile import Profile
 from Utils.styles import *
 from scipy import interpolate
@@ -29,7 +29,7 @@ from scipy.spatial import KDTree
 from Grid.src.surface import Surface
 from scipy.interpolate import bisplev, bisplrep, griddata
 from scipy.interpolate import splprep, splev
-import scipy.ndimage as ndimage
+from scipy.ndimage import gaussian_filter
 
 
 
@@ -302,16 +302,17 @@ class Blade:
         self.pressureSurface.bspline_surface_generation()
         if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
-        self.x_psSurface, self.y_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cartesian')
+        # self.theta_psSurface = gaussian_filter(self.theta_psSurface, sigma=3.0, mode='reflect')
 
         self.suctionSurface.bspline_surface_generation()
         if self.config.get_visual_debug(): self.suctionSurface.plot_bspline_surface()
         self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.suctionSurface.get_global_bspline_surface(method='cylindrical')
-        self.x_ssSurface, self.y_ssSurface, self.z_ssSurface = self.suctionSurface.get_global_bspline_surface(method='cartesian')
-
-
-        # self.thickness_camber = tCamb
-
+        # self.theta_ssSurface = gaussian_filter(self.theta_ssSurface, sigma=3.0, mode='reflect')
+        
+        pSideStreamLength = compute_meridional_streamwise_coordinates(self.z_psSurface, self.r_psSurface)
+        sSideStreamLength = compute_meridional_spanwise_coordinates(self.z_ssSurface, self.r_ssSurface)
+        
+        
         # check the full reconstructed blade
         if self.config.get_visual_debug():
             def cartesian_points(r, t, z):
@@ -319,14 +320,15 @@ class Blade:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
-            ax.plot_surface(*(self.x_psSurface, self.y_psSurface, self.z_psSurface), alpha=0.4)
-            ax.plot_surface(*(self.x_ssSurface, self.y_ssSurface, self.z_ssSurface), alpha=0.4)
-            ax.plot(*(self.x_main, self.y_main, self.z_main), 'o', color='k')
+            ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.6)
+            ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.6)
+            ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=3)
             ax.set_xlabel('x')
             ax.set_ylabel('y')
             ax.set_zlabel('z')      
             ax.set_title('Reconstructed blade')
             ax.set_aspect('equal')
+
     
 
     def compute_meridional_coordinate(self, spline_points):
@@ -690,41 +692,20 @@ class Blade:
         self.z_grid, self.r_grid = zgrid, rgrid
 
 
-    def compute_streamline_length(self, normalize=False):
+    def compute_meridional_coordinates(self, normalize=False):
         """
-        Compute the streamline length (meridional projection) of the streamlines going from leading edge to trailing edge.
-        The leading edge is the starting point.
-        :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
-        :param normalize: if True, normalize every streamline from 0 to 1
+        Compute the meridional streamline and spanline lengths from the given z and r grid of the blade.
+        
+        Parameters
+        ----------
+        normalize : bool, optional
+            If True, the streamline length and spanline length are normalized to lie between 0 and 1.
         """
-        self.streamline_length = np.zeros_like(self.z_grid)
-        for ii in range(1, self.streamline_length.shape[0]):
-            ds = np.sqrt((self.z_grid[ii, :] - self.z_grid[ii - 1, :]) ** 2 + (self.r_grid[ii, :] - self.r_grid[ii - 1, :]) ** 2)
-            self.streamline_length[ii, :] = self.streamline_length[ii - 1, :] + ds
-
-        if normalize:
-            for jj in range(0, self.streamline_length.shape[1]):
-                self.streamline_length[:, jj] /= self.streamline_length[-1, jj]-self.streamline_length[0, jj]
+        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid, self.r_grid, normalize=normalize)
+        self.spanline_length = compute_meridional_spanwise_coordinates(self.z_grid, self.r_grid, normalize=normalize)
 
 
-    def compute_spanline_length(self, normalize=False):
-        """
-        Compute the spanline length (meridional projection) of the streamlines going from leading edge to trailing edge.
-        The leading edge is the starting point.
-        :param projection: if True, the length is calculated as projection on the meridional plane, not the real 3D path.
-        :param normalize: if True, normalize every streamline from 0 to 1
-        """
-        self.spanline_length = np.zeros_like(self.streamline_length)
-        for jj in range(1, self.spanline_length.shape[1]):
-            ds = np.sqrt((self.z_grid[:, jj] - self.z_grid[:, jj -1]) ** 2 + (self.r_grid[:, jj] - self.r_grid[:, jj -1]) ** 2)
-            self.spanline_length[:, jj] = self.spanline_length[:, jj -1] + ds
-
-        if normalize:
-            for ii in range(0, self.spanline_length.shape[0]):
-                self.spanline_length[ii, :] /= self.spanline_length[ii, -1]-self.spanline_length[ii, 0]
-
-
-    def plot_streamline_length_contour(self, save_filename=None):
+    def plot_meridional_coordinates(self, save_filename=None):
         """
         plot the streamline length contour
         """
@@ -732,11 +713,6 @@ class Blade:
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
 
-
-    def plot_spanline_length_contour(self, save_filename=None):
-        """
-        plot the spanline length contour
-        """
         self.contour_template(self.z_grid, self.r_grid, self.spanline_length, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')

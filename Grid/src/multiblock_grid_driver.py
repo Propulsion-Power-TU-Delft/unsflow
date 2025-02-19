@@ -124,14 +124,15 @@ class MultiBlockGridDriver:
             else:
                 iblock = (iblade+1)+iblade
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
-            self.blades[iblade].compute_streamline_length()
-            self.blades[iblade].compute_spanline_length()
+            self.blades[iblade].compute_meridional_coordinates()
+            self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].compute_camber_vectors()
             self.blades[iblade].extrapolate_camber_vector()
             if self.config.get_blade_camber_smoothing_coefficient()>1e-3:
                 self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            plt.show()
             self.blades[iblade].compute_blade_camber_angles()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
