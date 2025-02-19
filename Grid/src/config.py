@@ -59,22 +59,22 @@ class Config:
         return int(self.config_parser.get('CFD PROCESSING', 'BLOCKS_NUMBER'))
 
     def get_streamwise_points(self):
-        value = self.config_parser.get('CFD PROCESSING', 'STREAMWISE_POINTS')
+        value = self.config_parser.get('GRID GENERATION', 'STREAMWISE_POINTS')
         vals = [int(val.strip(',')) for val in value.split()]
         vals = np.array(vals, dtype=int)
         return vals
 
     def get_blocks_type(self):
-        value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TYPE')
+        value = self.config_parser.get('TURBOMACHINERY DATA', 'BLOCKS_TYPE')
         return ast.literal_eval(value)
 
     def get_blocks_topology(self):
-        value = self.config_parser.get('CFD PROCESSING', 'BLOCKS_TOPOLOGY')
+        value = self.config_parser.get('TURBOMACHINERY DATA', 'BLOCKS_TOPOLOGY')
         values = [str(val.strip(',')) for val in value.split()]
         return values
 
     def get_spanwise_points(self):
-        return int(self.config_parser.get('CFD PROCESSING', 'SPANWISE_POINTS'))
+        return int(self.config_parser.get('GRID GENERATION', 'SPANWISE_POINTS'))
 
     def get_cfd_filepath(self):
         return str(self.config_parser.get('CFD PROCESSING', 'CFD_FILEPATH'))
@@ -86,7 +86,10 @@ class Config:
         return float(self.config_parser.get('CFD PROCESSING', 'RHO_REF'))
 
     def get_reference_length(self):
-        return float(self.config_parser.get('CFD PROCESSING', 'X_REF'))
+        try:
+            return float(self.config_parser.get('CFD PROCESSING', 'X_REF'))
+        except:
+            return 1.0
 
     def get_reference_rpm(self):
         return float(self.config_parser.get('CFD PROCESSING', 'RPM_REF'))
@@ -115,12 +118,12 @@ class Config:
         return float(self.config_parser.get('CFD PROCESSING', 'T_REF'))
 
     def get_shaft_rpm(self):
-        values = self.config_parser.get('CFD PROCESSING', 'SHAFT_RPM')
+        values = self.config_parser.get('TURBOMACHINERY DATA', 'SHAFT_RPM')
         values = [float(val.strip(',')) for val in values.split()]
         return values
 
     def get_coordinates_file_units(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'COORDINATES_FILE_UNITS'))
+        return str(self.config_parser.get('GRID GENERATION', 'COORDINATES_FILE_UNITS'))
 
     def get_coordinates_rescaling_factor(self):
         units = self.get_coordinates_file_units()
@@ -137,21 +140,21 @@ class Config:
         return factor
 
     def get_sigmoid_stream_coefficients(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'SIGMOID_STREAM_COEFFICIENTS'))
+        value = str(self.config_parser.get('GRID GENERATION', 'SIGMOID_STREAM_COEFFICIENTS'))
         value = [float(val.strip(',')) for val in value.split()]
         return value
 
     def get_sigmoid_span_coefficient(self):
-        return float(self.config_parser.get('CFD PROCESSING', 'SIGMOID_SPAN_COEFFICIENT'))
+        return float(self.config_parser.get('GRID GENERATION', 'SIGMOID_SPAN_COEFFICIENT'))
 
     def get_hub_curve_filepath(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'HUB_COORDINATES_FILEPATH'))
+        return str(self.config_parser.get('GRID GENERATION', 'HUB_COORDINATES_FILEPATH'))
 
     def get_shroud_curve_filepath(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'SHROUD_COORDINATES_FILEPATH'))
+        return str(self.config_parser.get('GRID GENERATION', 'SHROUD_COORDINATES_FILEPATH'))
 
     def get_blade_curve_filepath(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_COORDINATES_FILEPATH'))
+        value = str(self.config_parser.get('GRID GENERATION', 'BLADE_COORDINATES_FILEPATH'))
         values = [str(val.strip()) for val in value.split(',')]
         return values
     
@@ -160,35 +163,35 @@ class Config:
         return len(filepaths)
 
     def get_blade_inlet_type(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_INLET_TYPE'))
+        value = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADE_INLET_TYPE'))
         value = [i.strip(',') for i in value.split()]
         return value
 
 
     def get_blocks_trim_type(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLOCKS_TRIM_TYPE'))
+        value = str(self.config_parser.get('GRID GENERATION', 'BLOCKS_TRIM_TYPE'))
         value = [str(i.strip(',')) for i in value.split()]
         return value
     
     def get_blade_profiles_spline_order(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_PROFILES_SPLINE_ORDER'))
+        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_PROFILES_SPLINE_ORDER'))
         value = [int(i.strip(',')) for i in value.split()]
         return value
     
     def get_multiblock_driver_type(self):
         try:
-            value = str(self.config_parser.get('CFD PROCESSING', 'MULTIBLOCK_DRIVER_TYPE'))
+            value = str(self.config_parser.get('GENERAL', 'MULTIBLOCK_DRIVER_TYPE'))
             return value
         except:
             return 'multiblock'
 
     def get_blade_outlet_type(self):
-        value = str(self.config_parser.get('CFD PROCESSING', 'BLADE_OUTLET_TYPE'))
+        value = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADE_OUTLET_TYPE'))
         value = [i.strip(',') for i in value.split()]
         return value
 
     def get_verbosity(self):
-        res = self.config_parser.get('CFD PROCESSING', 'VERBOSITY')
+        res = self.config_parser.get('GENERAL', 'VERBOSITY')
         if res.lower() == 'true':
             return True
         else:
@@ -196,7 +199,7 @@ class Config:
     
 
     def get_visual_debug(self):
-        res = self.config_parser.get('CFD PROCESSING', 'VISUAL_DEBUG')
+        res = self.config_parser.get('GENERAL', 'VISUAL_DEBUG')
         if res.lower() == 'true':
             return True
         else:
@@ -239,10 +242,10 @@ class Config:
             return False
 
     def get_mesh_generation_method(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'MESH_GENERATION_METHOD'))
+        return str(self.config_parser.get('GRID GENERATION', 'MESH_GENERATION_METHOD'))
 
     def get_grid_orthogonality(self):
-        return str(self.config_parser.get('CFD PROCESSING', 'GRID_ORTHOGONALITY'))
+        return str(self.config_parser.get('GRID GENERATION', 'GRID_ORTHOGONALITY'))
 
     def get_fluid_gamma(self):
         return float(self.config_parser.get('CFD PROCESSING', 'GAMMA_FLUID'))
@@ -259,7 +262,7 @@ class Config:
 
     def get_pictures_folder_path(self):
         try:
-            return str(self.config_parser.get('CFD PROCESSING', 'PICTURES_FOLDER_PATH'))
+            return str(self.config_parser.get('GENERAL', 'PICTURES_FOLDER_PATH'))
         except:
             return 'Pictures' # default
     
@@ -317,18 +320,18 @@ class Config:
             return False
 
     def get_blades_camber_reconstruction(self):
-        values = str(self.config_parser.get('CFD PROCESSING', 'BLADES_CAMBER_RECONSTRUCTION'))
+        values = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADES_CAMBER_RECONSTRUCTION'))
         values = [str(i.strip(',')) for i in values.split()]
         return values
     
 
     def get_blades_number(self):
-        values = str(self.config_parser.get('BFM DATA', 'BLADES_NUMBER'))
+        values = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADES_NUMBER'))
         blades = [int(i.strip(',')) for i in values.split()]
         return blades
 
     def get_rotation_factors(self):
-        value = str(self.config_parser.get('BFM DATA', 'ROTATION_FACTORS'))
+        value = str(self.config_parser.get('TURBOMACHINERY DATA', 'ROTATION_FACTORS'))
         if len(value.split()) > 1:
             factors = [int(i.strip(',')) for i in value.split()]
         else:
@@ -357,14 +360,14 @@ class Config:
     
     def get_machine_name(self):
         try:
-            return str(self.config_parser.get('BFM DATA', 'MACHINE_NAME'))
+            return str(self.config_parser.get('TURBOMACHINERY DATA', 'MACHINE_NAME'))
         except:
             return 'Machine' # default
     
     
     def get_output_type(self):
         try:
-            values = self.config_parser.get('CFD PROCESSING', 'OUTPUT_TYPE')
+            values = self.config_parser.get('GENERAL', 'OUTPUT_TYPE')
             values = [str(val.strip(',')) for val in values.split()]
             return values
         except:
@@ -373,7 +376,7 @@ class Config:
     
     def get_blade_edges_extrapolation_coefficient(self):
         try:
-            value = self.config_parser.get('CFD PROCESSING', 'BLADE_EDGES_EXTRAPOLATION_COEFFICIENT')
+            value = self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_EDGES_EXTRAPOLATION_COEFFICIENT')
             vals = [float(val.strip(',')) for val in value.split()]
             vals = np.array(vals, dtype=float)
         except:
@@ -384,10 +387,16 @@ class Config:
     
     def get_blade_camber_smoothing_coefficient(self):
         try:
-            value = float(self.config_parser.get('CFD PROCESSING', 'BLADE_CAMBER_SMOOTHING_COEFFICIENT'))
+            value = float(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_CAMBER_SMOOTHING_COEFFICIENT'))
         except:
             value = 0.0
         return value
+    
+    def get_output_data_folder(self):
+        try:
+            return str(self.config_parser.get('GENERAL', 'OUTPUT_DATA_FOLDER'))
+        except:
+            return 'Output' # default
         
 
 
