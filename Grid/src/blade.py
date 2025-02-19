@@ -29,6 +29,7 @@ from scipy.spatial import KDTree
 from Grid.src.surface import Surface
 from scipy.interpolate import bisplev, bisplrep, griddata
 from scipy.interpolate import splprep, splev
+import scipy.ndimage as ndimage
 
 
 
@@ -77,6 +78,7 @@ class Blade:
         print(f"{'Blade outlet type:':<{total_chars_mid}}{self.config.get_blade_outlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
         print(f"{'Blade edges extrapolation coefficient:':<{total_chars_mid}}{self.config.get_blade_edges_extrapolation_coefficient()[self.iblade]:>{total_chars_mid}.3f}")
+        print(f"{'Camber smoothing coefficient:' :<{total_chars_mid}}{self.config.get_blade_camber_smoothing_coefficient():>{total_chars_mid}.3f}")
         print_banner_end()
 
 
@@ -201,18 +203,28 @@ class Blade:
             y = self.y_main[idx]
 
             # spline of the profile in 3D
-            tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0, per=0)
-            u_fine = np.linspace(0, 1, 1000)
+            tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0)
+            u_fine = np.linspace(0, 1, 2500) #2500 points seems like covering good any blade profile
             spline_points = splev(u_fine, tck)
+            
+            # tck, u = splprep([x, y, z], k=3, s=0)
+            # spline_points3 = splev(u_fine, tck)
+            
+            # tck, u = splprep([x, y, z], k=5, s=0)
+            # spline_points5 = splev(u_fine, tck)
+            
             if self.config.get_visual_debug():
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(x, y, z, c='b', marker='o')
-                ax.plot(*spline_points, c='r')
+                ax.scatter(x, y, z, c='C0', marker='o')
+                ax.plot(*spline_points, c='C1', label='k=1')
+                # ax.plot(*spline_points3, c='C1', label='k=3')
+                # ax.plot(*spline_points5, c='C2', label='k=5')
                 ax.set_xlabel('x')
                 ax.set_ylabel('y')
                 ax.set_zlabel('z')
                 ax.set_aspect('equal')            
+                ax.legend()
 
             # obtain the coordinates of the spline in the blade to blade view
             r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
@@ -2447,7 +2459,7 @@ class Blade:
         # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
     
     
-    def extrapolate_camber(self):
+    def extrapolate_camber_vector(self):
         """
         Extrapolate the blade normal camber over the last portion close to leading and trailing edge
         """
@@ -2506,11 +2518,26 @@ class Blade:
         self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        
-        
-        
-                    
+    
 
+    def smooth_camber_vector(self):
+        # Apply a weak Gaussian filter
+        smoothing_coefficient = 2
+        nr = ndimage.gaussian_filter(self.n_camber_r, sigma=smoothing_coefficient)  # sigma controls the smoothing strength
+        nt = ndimage.gaussian_filter(self.n_camber_t, sigma=smoothing_coefficient)
+        nz = ndimage.gaussian_filter(self.n_camber_z, sigma=smoothing_coefficient)
+        
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_r, r"$n_r$ pre")
+        self.contour_template(self.z_grid, self.r_grid, nr, r"$n_r$ post")
+        
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_t, r"$n_{\theta}$ pre")
+        self.contour_template(self.z_grid, self.r_grid, nt, r"$n_{\theta}$ post")
+        
+        self.contour_template(self.z_grid, self.r_grid, self.n_camber_z, r"$n_z$ pre")
+        self.contour_template(self.z_grid, self.r_grid, nz, r"$n_z$ post")
+        plt.show()
+        
+        
 
                 
                 

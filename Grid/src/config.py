@@ -381,5 +381,13 @@ class Config:
             vals = np.zeros(nblades)
             print('Default extrapolation blade coefficient: 0')
         return vals
+    
+    def get_blade_camber_smoothing_coefficient(self):
+        try:
+            value = float(self.config_parser.get('CFD PROCESSING', 'BLADE_CAMBER_SMOOTHING_COEFFICIENT'))
+        except:
+            value = 0.0
+        return value
+        
 
 
