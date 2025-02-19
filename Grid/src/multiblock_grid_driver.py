@@ -132,7 +132,6 @@ class MultiBlockGridDriver:
             if self.config.get_blade_camber_smoothing_coefficient()>1e-3:
                 self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-            plt.show()
             self.blades[iblade].compute_blade_camber_angles()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
@@ -166,7 +165,7 @@ class MultiBlockGridDriver:
         5) meridional_grid: export the meridional grid in csv format for paraview macro writing
         """
         print_banner_begin('MULTIBLOCK GRID OUTPUT')
-        outputFolder = 'Output'
+        outputFolder = self.config.get_output_data_folder()
         os.makedirs(outputFolder, exist_ok=True)
         outputTypes = self.config.get_output_type()
         for outputType in outputTypes:

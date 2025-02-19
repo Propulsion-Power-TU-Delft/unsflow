@@ -2499,19 +2499,22 @@ class Blade:
     def smooth_camber_vector(self):
         # Apply a weak Gaussian filter
         smoothing_coefficient = 2
-        nr = ndimage.gaussian_filter(self.n_camber_r, sigma=smoothing_coefficient)  # sigma controls the smoothing strength
-        nt = ndimage.gaussian_filter(self.n_camber_t, sigma=smoothing_coefficient)
-        nz = ndimage.gaussian_filter(self.n_camber_z, sigma=smoothing_coefficient)
+        nr = gaussian_filter(self.n_camber_r, sigma=smoothing_coefficient)  # sigma controls the smoothing strength
+        nt = gaussian_filter(self.n_camber_t, sigma=smoothing_coefficient)
+        nz = gaussian_filter(self.n_camber_z, sigma=smoothing_coefficient)
         
-        self.contour_template(self.z_grid, self.r_grid, self.n_camber_r, r"$n_r$ pre")
-        self.contour_template(self.z_grid, self.r_grid, nr, r"$n_r$ post")
+        # self.contour_template(self.z_grid, self.r_grid, self.n_camber_r, r"$n_r$ pre")
+        # self.contour_template(self.z_grid, self.r_grid, nr, r"$n_r$ post")
         
-        self.contour_template(self.z_grid, self.r_grid, self.n_camber_t, r"$n_{\theta}$ pre")
-        self.contour_template(self.z_grid, self.r_grid, nt, r"$n_{\theta}$ post")
+        # self.contour_template(self.z_grid, self.r_grid, self.n_camber_t, r"$n_{\theta}$ pre")
+        # self.contour_template(self.z_grid, self.r_grid, nt, r"$n_{\theta}$ post")
         
-        self.contour_template(self.z_grid, self.r_grid, self.n_camber_z, r"$n_z$ pre")
-        self.contour_template(self.z_grid, self.r_grid, nz, r"$n_z$ post")
-        plt.show()
+        # self.contour_template(self.z_grid, self.r_grid, self.n_camber_z, r"$n_z$ pre")
+        # self.contour_template(self.z_grid, self.r_grid, nz, r"$n_z$ post")
+        
+        self.n_camber_r = nr
+        self.n_camber_t = nt
+        self.n_camber_z = nz
         
         
 
