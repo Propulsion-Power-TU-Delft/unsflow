@@ -16,12 +16,12 @@ class Config:
         print(f"{'Configuration file: ':<{total_chars_mid}}{config_file:>{total_chars_mid}}")
         pic_folder = self.get_pictures_folder_path()
         os.makedirs(pic_folder, exist_ok=True)
-        print(f"{'Output folder for the pictures: ':<{total_chars_mid}}{pic_folder:>{total_chars_mid}}")
-        sw_points = self.get_streamwise_points()
-        sp_points = self.get_spanwise_points()
-        print(f"{'Number of streamwise points: ':<{total_chars_mid}}{str(sw_points):>{total_chars_mid}}")
-        print(f"{'Number of spanwise points: ':<{total_chars_mid}}{sp_points:>{total_chars_mid}}")
-        print(f"{'Driver type: ':<{total_chars_mid}}{self.get_multiblock_driver_type():>{total_chars_mid}}")
+        # print(f"{'Output folder for the pictures: ':<{total_chars_mid}}{pic_folder:>{total_chars_mid}}")
+        # sw_points = self.get_streamwise_points()
+        # sp_points = self.get_spanwise_points()
+        # print(f"{'Number of streamwise points: ':<{total_chars_mid}}{str(sw_points):>{total_chars_mid}}")
+        # print(f"{'Number of spanwise points: ':<{total_chars_mid}}{sp_points:>{total_chars_mid}}")
+        # print(f"{'Driver type: ':<{total_chars_mid}}{self.get_multiblock_driver_type():>{total_chars_mid}}")
         print_banner_end('')
         
 
@@ -397,6 +397,19 @@ class Config:
             return str(self.config_parser.get('GENERAL', 'OUTPUT_DATA_FOLDER'))
         except:
             return 'Output' # default
+    
+    def get_circumferential_average_type(self):
+        try:
+            return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE'))
+        except:
+            return 'raw' # default
+
+    def get_paraview_macro_dataset_folderpath(self):
+        return str(self.config_parser.get('BODY FORCE', 'DATASET_PATH'))
+    
+    
+    def cut_body_force_blade_tip_extension(self):
+        return float(self.config_parser.get('BODY FORCE', 'CUT_BLADE_TIP_EXTENSION'))
         
 
 
