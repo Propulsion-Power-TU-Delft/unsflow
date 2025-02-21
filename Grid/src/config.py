@@ -199,7 +199,7 @@ class Config:
 
     def get_verbosity(self):
         res = self.config_parser.get('GENERAL', 'VERBOSITY')
-        if res.lower() == 'true':
+        if res.lower() == 'true' or res.lower() == 'yes':
             return True
         else:
             return False
@@ -207,7 +207,7 @@ class Config:
 
     def get_visual_debug(self):
         res = self.config_parser.get('GENERAL', 'VISUAL_DEBUG')
-        if res.lower() == 'true':
+        if res.lower() == 'true' or res.lower() == 'yes':
             return True
         else:
             return False
