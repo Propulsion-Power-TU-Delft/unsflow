@@ -80,4 +80,4 @@ plt.rc('axes', labelsize=font_labels)       # fontsize of the x and y labels
 plt.rc('xtick', labelsize=font_axes)      # fontsize of the tick labels
 plt.rc('ytick', labelsize=font_axes)      # fontsize of the tick labels
 plt.rc('legend', fontsize=font_legend)      # legend fontsize
-mpl.rcParams['figure.max_open_warning'] = 50
+mpl.rcParams['figure.max_open_warning'] = 150

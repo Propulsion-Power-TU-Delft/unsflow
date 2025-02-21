@@ -40,7 +40,7 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, config, iblock, iblade, poly_degree=3):
+    def __init__(self, config, iblock, iblade):
         """
         Class used to model the blade from the file .curve, which is created during blade generation. The usual format for that file is the one of Ansys.
 
@@ -52,8 +52,6 @@ class Blade:
         `iblock` : grid block counter
         
         `iblade`: blade counter
-
-        `poly_degree`: degree of the polynomial fitting the blade
         """
         print_banner_begin('BLADE %02i' %(iblade))
         self.config = config
@@ -70,7 +68,7 @@ class Blade:
         self.iblock = iblock
         self.iblade = iblade
 
-        self.read_from_curve_file(iblade, iblock, poly_degree)
+        self.read_from_curve_file(iblade, iblock)
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
         print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
@@ -82,7 +80,7 @@ class Blade:
         print_banner_end()
 
 
-    def read_from_curve_file(self, iblade, iblock, poly_degree, camber_stream_points=100):
+    def read_from_curve_file(self, iblade, iblock):
         """
         Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
         
@@ -203,23 +201,16 @@ class Blade:
             y = self.y_main[idx]
 
             # spline of the profile in 3D
-            tck, u = splprep([x, y, z], k=self.config.get_blade_profiles_spline_order()[self.iblade], s=0)
-            u_fine = np.linspace(0, 1, 2500) #2500 points seems like covering good any blade profile
+            splineOrder = self.config.get_blade_profiles_spline_order()[self.iblade]
+            tck, u = splprep([x, y, z], k=splineOrder, s=0)
+            u_fine = np.linspace(0, 1, 5000) #5000 points seems like covering good any blade profile
             spline_points = splev(u_fine, tck)
-            
-            # tck, u = splprep([x, y, z], k=3, s=0)
-            # spline_points3 = splev(u_fine, tck)
-            
-            # tck, u = splprep([x, y, z], k=5, s=0)
-            # spline_points5 = splev(u_fine, tck)
             
             if self.config.get_visual_debug():
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(x, y, z, c='C0', marker='o')
-                ax.plot(*spline_points, c='C1', label='k=1')
-                # ax.plot(*spline_points3, c='C1', label='k=3')
-                # ax.plot(*spline_points5, c='C2', label='k=5')
+                ax.scatter(x, y, z, c='C0', marker='o', label="Points")
+                ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
                 ax.set_xlabel('x')
                 ax.set_ylabel('y')
                 ax.set_zlabel('z')
@@ -227,17 +218,21 @@ class Blade:
                 ax.legend()
 
             # obtain the coordinates of the spline in the blade to blade view
-            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
+            r1,t1,m1,z1, r2,t2,m2,z2 = self.compute_meridional_coordinate(spline_points)
             
             # distinguish the two sides between pressure and suction
-            dum = len(z1)//2
-            if np.mean(t1[0:dum] - t2[0:dum]) * self.config.get_omega_shaft()[iblock] > 0:
+            omegaShaft = self.config.get_omega_shaft()[iblock]
+            if omegaShaft == 0:
+                omegaShaft += 1 # to avoid ambiguous situations of symmetric stator blades
+            
+            if ((np.mean(t1) - np.mean(t2)) * omegaShaft) > 0:
                 z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
                 z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
             else:
                 z_ps, r_ps, theta_ps, m_ps = z2,r2,t2,m2
                 z_ss, r_ss, theta_ss, m_ss = z1,r1,t1,m1
             
+
             # add surface data to dataset
             self.rss_data.append(r_ss)
             self.zss_data.append(z_ss)
@@ -246,24 +241,24 @@ class Blade:
             self.zps_data.append(z_ps)
             self.thetaps_data.append(theta_ps)
 
-            t_norm = self.compute_blade_thickness_normal_to_camber(mc, rc*tc, 
-                                                                    m_ps, r_ps * theta_ps, 
-                                                                    m_ss, r_ss * theta_ss)
+            # t_norm = self.compute_blade_thickness_normal_to_camber(mc, rc*tc, 
+            #                                                         m_ps, r_ps * theta_ps, 
+            #                                                         m_ss, r_ss * theta_ss)
             
-            t_tang = self.compute_blade_thickness_tangential(mc, rc*tc,
-                                                                m_ps, r_ps * theta_ps, 
-                                                                m_ss, r_ss * theta_ss)
+            # t_tang = self.compute_blade_thickness_tangential(mc, rc*tc,
+            #                                                     m_ps, r_ps * theta_ps, 
+            #                                                     m_ss, r_ss * theta_ss)
 
             # append data to dataset
-            self.rc_data.append(rc)
-            self.zc_data.append(zc)
-            self.thetac_data.append(tc)
-            self.thk_data.append(t_tang)
+            # self.rc_data.append(rc)
+            # self.zc_data.append(zc)
+            # self.thetac_data.append(tc)
+            # self.thk_data.append(t_tang)
             
             # if self.config.get_visual_debug():
             #     plt.figure()
-            #     plt.plot(mc, t_norm, label='normal thickness')
-            #     plt.plot(mc, t_tang, label='tangential thickness')
+            #     plt.plot(mc, t_norm, label='normal to camber')
+            #     plt.plot(mc, t_tang, label=r'$\theta$ direction')
             #     plt.grid(alpha=0.2)
             #     plt.legend()
             #     plt.xlabel(r'$s$ [m]')
@@ -300,18 +295,14 @@ class Blade:
             # self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
         self.pressureSurface.bspline_surface_generation()
-        if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
+        # if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
         # self.theta_psSurface = gaussian_filter(self.theta_psSurface, sigma=3.0, mode='reflect')
 
         self.suctionSurface.bspline_surface_generation()
-        if self.config.get_visual_debug(): self.suctionSurface.plot_bspline_surface()
+        # if self.config.get_visual_debug(): self.suctionSurface.plot_bspline_surface()
         self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.suctionSurface.get_global_bspline_surface(method='cylindrical')
         # self.theta_ssSurface = gaussian_filter(self.theta_ssSurface, sigma=3.0, mode='reflect')
-        
-        pSideStreamLength = compute_meridional_streamwise_coordinates(self.z_psSurface, self.r_psSurface)
-        sSideStreamLength = compute_meridional_spanwise_coordinates(self.z_ssSurface, self.r_ssSurface)
-        
         
         # check the full reconstructed blade
         if self.config.get_visual_debug():
@@ -320,8 +311,8 @@ class Blade:
             fig = plt.figure()
             ax = fig.add_subplot(111, projection='3d')
             # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
-            ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.6)
-            ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.6)
+            ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
+            ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
             ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=3)
             ax.set_xlabel('x')
             ax.set_ylabel('y')
@@ -366,6 +357,7 @@ class Blade:
                 return np.flip(xp), np.flip(yp), np.flip(zp)
             else:
                 return xp, yp, zp
+            
         x1,y1,z1 = flip_orders(x1,y1,z1)
         x2,y2,z2 = flip_orders(x2,y2,z2)
 
@@ -385,21 +377,21 @@ class Blade:
         r1,t1,m1 = compute_mprime_coords(x1,y1,z1)
         r2,t2,m2 = compute_mprime_coords(x2,y2,z2)
 
-        rglob = np.concatenate((r1,r2))
-        tglob = np.concatenate((t1,t2))
-        mglob = np.concatenate((m1,m2))
-        zglob = np.concatenate((z1,z2))
+        # rglob = np.concatenate((r1,r2))
+        # tglob = np.concatenate((t1,t2))
+        # mglob = np.concatenate((m1,m2))
+        # zglob = np.concatenate((z1,z2))
 
-        s_camber = np.linspace(0,np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
-        coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
-        rt_camber = np.polyval(coeff, s_camber)
-        coeff = np.polyfit(mglob, rglob, deg=3)  
-        r_camber = np.polyval(coeff, s_camber)
-        theta_camber = rt_camber/r_camber
-        coeff = np.polyfit(mglob, zglob, deg=3)  
-        z_camber = np.polyval(coeff, s_camber)
+        # s_camber = np.linspace(0,np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
+        # coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
+        # rt_camber = np.polyval(coeff, s_camber)
+        # coeff = np.polyfit(mglob, rglob, deg=3)  
+        # r_camber = np.polyval(coeff, s_camber)
+        # theta_camber = rt_camber/r_camber
+        # coeff = np.polyfit(mglob, zglob, deg=3)  
+        # z_camber = np.polyval(coeff, s_camber)
 
-        return r1, t1, m1, z1, r2, t2, m2, z2, r_camber, theta_camber, s_camber, z_camber
+        return r1, t1, m1, z1, r2, t2, m2, z2
 
 
 
@@ -2515,6 +2507,11 @@ class Blade:
         self.n_camber_r = nr
         self.n_camber_t = nt
         self.n_camber_z = nz
+        
+        # renormalize the normal vector
+        self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         
         
 

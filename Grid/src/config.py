@@ -154,7 +154,7 @@ class Config:
         return str(self.config_parser.get('GRID GENERATION', 'SHROUD_COORDINATES_FILEPATH'))
 
     def get_blade_curve_filepath(self):
-        value = str(self.config_parser.get('GRID GENERATION', 'BLADE_COORDINATES_FILEPATH'))
+        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_COORDINATES_FILEPATH'))
         values = [str(val.strip()) for val in value.split(',')]
         return values
     
@@ -176,6 +176,13 @@ class Config:
     def get_blade_profiles_spline_order(self):
         value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_PROFILES_SPLINE_ORDER'))
         value = [int(i.strip(',')) for i in value.split()]
+        return value
+    
+    def get_boundaries_spline_order(self):
+        try:
+            value = int(self.config_parser.get('GRID GENERATION', 'BOUNDARIES_SPLINE_ORDER'))
+        except:
+            value = 3 # default
         return value
     
     def get_multiblock_driver_type(self):
@@ -348,7 +355,7 @@ class Config:
     
     def invert_axial_coordinates(self):
         try:
-            res = self.config_parser.get('CFD PROCESSING', 'INVERT_AXIAL_COORDINATES')
+            res = self.config_parser.get('GENERAL', 'INVERT_AXIAL_COORDINATES')
             if res.lower() == 'yes':
                 return True
             elif res.lower() == 'no':

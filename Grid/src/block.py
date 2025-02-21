@@ -28,8 +28,10 @@ class Block:
         :param config: configuration file
         """
         self.config = config
-        self.hub = Curve(config=config, curve_filepath=config.get_hub_curve_filepath(), degree_spline=1)
-        self.shroud = Curve(config=config, curve_filepath=config.get_shroud_curve_filepath(), degree_spline=1)
+        
+        splineOrder = self.config.get_boundaries_spline_order()
+        self.hub = Curve(config=config, curve_filepath=config.get_hub_curve_filepath(), degree_spline=splineOrder)
+        self.shroud = Curve(config=config, curve_filepath=config.get_shroud_curve_filepath(), degree_spline=splineOrder)
         self.nstream = self.config.get_streamwise_points()[iblock]
         self.nspan = self.config.get_spanwise_points()
         self.iblock = iblock
@@ -227,6 +229,7 @@ class Block:
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
             if self.config.get_mesh_generation_method().lower() == 'elliptic':
                 print(f"{'Orthogonality Constraint:':<{total_chars_mid}}{self.config.get_grid_orthogonality():>{total_chars_mid}}")
+            print(f"{'Boundaries spline order:':<{total_chars_mid}}{self.config.get_boundaries_spline_order():>{total_chars_mid}}")
             print(f"{'X Stretching Coefficient:':<{total_chars_mid}}"
                     f"{stream_coeff:>{total_chars_mid}}")
             print(f"{'Y Stretching Coefficient:':<{total_chars_mid}}"
