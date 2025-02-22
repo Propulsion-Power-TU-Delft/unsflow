@@ -310,7 +310,7 @@ class Block:
         self.inlet_curve.extend()
         self.outlet_curve.extend()
 
-    def find_intersections(self, tol=1e-6):
+    def find_intersections(self, tol=1e-8):
         """
         Having the hub and shroud curves, it looks for the intersections of these curves with the inlet and outlet points
         :param tol: tolerance of the algorithm to find intersection. If too small, it doesn't find the correct intersections

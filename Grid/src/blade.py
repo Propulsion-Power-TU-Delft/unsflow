@@ -206,16 +206,16 @@ class Blade:
             u_fine = np.linspace(0, 1, 5000) #5000 points seems like covering good any blade profile
             spline_points = splev(u_fine, tck)
             
-            if self.config.get_visual_debug():
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(x, y, z, c='C0', marker='o', label="Points")
-                ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
-                ax.set_zlabel('z')
-                ax.set_aspect('equal')            
-                ax.legend()
+            # if self.config.get_visual_debug():
+            #     fig = plt.figure()
+            #     ax = fig.add_subplot(111, projection='3d')
+            #     ax.scatter(x, y, z, c='C0', marker='o', label="Points")
+            #     ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
+            #     ax.set_xlabel('x')
+            #     ax.set_ylabel('y')
+            #     ax.set_zlabel('z')
+            #     ax.set_aspect('equal')            
+            #     ax.legend()
 
             # obtain the coordinates of the spline in the blade to blade view
             r1,t1,m1,z1, r2,t2,m2,z2 = self.compute_meridional_coordinate(spline_points)
@@ -305,20 +305,19 @@ class Blade:
         # self.theta_ssSurface = gaussian_filter(self.theta_ssSurface, sigma=3.0, mode='reflect')
         
         # check the full reconstructed blade
-        if self.config.get_visual_debug():
-            def cartesian_points(r, t, z):
-                return r*np.cos(t), r*np.sin(t), z
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
-            ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
-            ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
-            ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=3)
-            ax.set_xlabel('x')
-            ax.set_ylabel('y')
-            ax.set_zlabel('z')      
-            ax.set_title('Reconstructed blade')
-            ax.set_aspect('equal')
+        def cartesian_points(r, t, z):
+            return r*np.cos(t), r*np.sin(t), z
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
+        ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
+        ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
+        ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=3)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')      
+        ax.set_title('Reconstructed blade')
+        ax.set_aspect('equal')
 
     
 
