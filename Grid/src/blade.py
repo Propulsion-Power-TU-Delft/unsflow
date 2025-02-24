@@ -205,20 +205,21 @@ class Blade:
             tck, u = splprep([x, y, z], k=splineOrder, s=0)
             u_fine = np.linspace(0, 1, 5000) #5000 points seems like covering good any blade profile
             spline_points = splev(u_fine, tck)
-            
-            # if self.config.get_visual_debug():
-            #     fig = plt.figure()
-            #     ax = fig.add_subplot(111, projection='3d')
-            #     ax.scatter(x, y, z, c='C0', marker='o', label="Points")
-            #     ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
-            #     ax.set_xlabel('x')
-            #     ax.set_ylabel('y')
-            #     ax.set_zlabel('z')
-            #     ax.set_aspect('equal')            
-            #     ax.legend()
 
             # obtain the coordinates of the spline in the blade to blade view
-            r1,t1,m1,z1, r2,t2,m2,z2 = self.compute_meridional_coordinate(spline_points)
+            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
+            
+            if self.config.get_visual_debug():
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+                ax.scatter(x, y, z, c='C0', marker='o', label="Points")
+                ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
+                ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
+                ax.set_xlabel('x')
+                ax.set_ylabel('y')
+                ax.set_zlabel('z')
+                ax.set_aspect('equal')            
+                ax.legend()
             
             # distinguish the two sides between pressure and suction
             omegaShaft = self.config.get_omega_shaft()[iblock]
@@ -270,7 +271,7 @@ class Blade:
                 plt.figure()
                 plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
                 plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')
-                # plt.plot(mc, rc*tc, '-o', color='C2', ms=2, label='Camber')
+                plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
                 plt.xlabel(r'$s_{m}$ [m]')
                 plt.ylabel(r'$r \theta$ [m]')
                 plt.legend()
@@ -376,21 +377,21 @@ class Blade:
         r1,t1,m1 = compute_mprime_coords(x1,y1,z1)
         r2,t2,m2 = compute_mprime_coords(x2,y2,z2)
 
-        # rglob = np.concatenate((r1,r2))
-        # tglob = np.concatenate((t1,t2))
-        # mglob = np.concatenate((m1,m2))
-        # zglob = np.concatenate((z1,z2))
+        rglob = np.concatenate((r1,r2))
+        tglob = np.concatenate((t1,t2))
+        mglob = np.concatenate((m1,m2))
+        zglob = np.concatenate((z1,z2))
+        
+        s_camber = np.linspace(0, np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
+        coeff = np.polyfit(mglob, rglob*tglob, deg=7) 
+        rt_camber = np.polyval(coeff, s_camber)
+        coeff = np.polyfit(mglob, rglob, deg=5)  
+        r_camber = np.polyval(coeff, s_camber)
+        theta_camber = rt_camber/r_camber
+        coeff = np.polyfit(mglob, zglob, deg=5)  
+        z_camber = np.polyval(coeff, s_camber)
 
-        # s_camber = np.linspace(0,np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
-        # coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
-        # rt_camber = np.polyval(coeff, s_camber)
-        # coeff = np.polyfit(mglob, rglob, deg=3)  
-        # r_camber = np.polyval(coeff, s_camber)
-        # theta_camber = rt_camber/r_camber
-        # coeff = np.polyfit(mglob, zglob, deg=3)  
-        # z_camber = np.polyval(coeff, s_camber)
-
-        return r1, t1, m1, z1, r2, t2, m2, z2
+        return r1, t1, m1, z1, r2, t2, m2, z2, r_camber, theta_camber, s_camber, z_camber
 
 
 
