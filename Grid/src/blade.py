@@ -64,7 +64,8 @@ class Blade:
         self.leading_edge = []
         self.trailing_edge = []
         self.pressureSurface = Surface('Pressure Surface', config)
-        self.suctionSurface = Surface('Suctions Surface', config)
+        self.suctionSurface = Surface('Suction Surface', config)
+        self.camberSurface = Surface('Camber Surface', config)
         self.iblock = iblock
         self.iblade = iblade
 
@@ -209,17 +210,17 @@ class Blade:
             # obtain the coordinates of the spline in the blade to blade view
             r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
             
-            if self.config.get_visual_debug():
-                fig = plt.figure()
-                ax = fig.add_subplot(111, projection='3d')
-                ax.scatter(x, y, z, c='C0', marker='o', label="Points")
-                ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
-                ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
-                ax.set_xlabel('x')
-                ax.set_ylabel('y')
-                ax.set_zlabel('z')
-                ax.set_aspect('equal')            
-                ax.legend()
+            # if self.config.get_visual_debug():
+            #     fig = plt.figure()
+            #     ax = fig.add_subplot(111, projection='3d')
+            #     ax.scatter(x, y, z, c='C0', marker='o', label="Points")
+            #     ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
+            #     ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
+            #     ax.set_xlabel('x')
+            #     ax.set_ylabel('y')
+            #     ax.set_zlabel('z')
+            #     ax.set_aspect('equal')            
+            #     ax.legend()
             
             # distinguish the two sides between pressure and suction
             omegaShaft = self.config.get_omega_shaft()[iblock]
@@ -283,18 +284,17 @@ class Blade:
             # self.thickness['r'] = r_camber
             # self.thickness['t'] = t_tang
 
-            # self.camberSurf.add_curve(r_camber*np.cos(theta_camber), r_camber*np.sin(theta_camber), z_camber)
+            self.camberSurface.add_curve(rc*np.cos(tc), rc*np.sin(tc), zc)
             self.pressureSurface.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
             self.suctionSurface.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
 
             # tCamb.append(t_tang)
             # kappaCamb.append(metal_angle)
 
-            # self.camberSurf.loft_through_profiles(extension=0.0)
-            # self.camberSurf.bspline_surface_generation()
-            # if self.config.get_visual_debug(): self.camberSurf.plot_bspline_surface()
-            # self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface = self.camberSurf.get_global_bspline_surface(method='cylindrical')
 
+        self.camberSurface.bspline_surface_generation()
+        self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = self.camberSurface.get_global_bspline_surface(method='cylindrical')
+        
         self.pressureSurface.bspline_surface_generation()
         # if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
@@ -310,14 +310,26 @@ class Blade:
             return r*np.cos(t), r*np.sin(t), z
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_surface(*cartesian_points(self.r_cambSurface, self.theta_cambSurface, self.z_cambSurface), alpha=0.1)
         ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
         ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
-        ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=3)
+        # ax.plot_surface(*(cartesian_points(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface)), alpha=0.5)
+        ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=2)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
         ax.set_zlabel('z')      
-        ax.set_title('Reconstructed blade')
+        ax.set_title('Reconstructed blade surfaces')
+        ax.set_aspect('equal')
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        # ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
+        # ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
+        ax.plot_surface(*(cartesian_points(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface)), alpha=0.5)
+        ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=2)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')      
+        ax.set_title('Reconstructed blade camber')
         ax.set_aspect('equal')
 
     
@@ -383,12 +395,12 @@ class Blade:
         zglob = np.concatenate((z1,z2))
         
         s_camber = np.linspace(0, np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
-        coeff = np.polyfit(mglob, rglob*tglob, deg=7) 
+        coeff = np.polyfit(mglob, rglob*tglob, deg=12) 
         rt_camber = np.polyval(coeff, s_camber)
-        coeff = np.polyfit(mglob, rglob, deg=5)  
+        coeff = np.polyfit(mglob, rglob, deg=12)  
         r_camber = np.polyval(coeff, s_camber)
         theta_camber = rt_camber/r_camber
-        coeff = np.polyfit(mglob, zglob, deg=5)  
+        coeff = np.polyfit(mglob, zglob, deg=12)  
         z_camber = np.polyval(coeff, s_camber)
 
         return r1, t1, m1, z1, r2, t2, m2, z2, r_camber, theta_camber, s_camber, z_camber
@@ -659,7 +671,9 @@ class Blade:
         theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
         self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
 
+        # this part evaluates the camber: choose if you want to model the camber as interface between pressure and suction, or like the camber itself reconstructed previously
         self.theta_camber = 0.5*(theta_ps+theta_ss)
+        self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
         self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
         self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
         self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
