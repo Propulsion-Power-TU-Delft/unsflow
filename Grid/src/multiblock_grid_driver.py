@@ -134,7 +134,6 @@ class MultiBlockGridDriver:
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-            
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)
@@ -151,6 +150,7 @@ class MultiBlockGridDriver:
         if self.driverType=='multiblock':
             self.multiBlockGrid.plot_blockage(save_filename=self.config.get_machine_name())
             self.multiBlockGrid.plot_rpm(save_filename=self.config.get_machine_name())
+            self.multiBlockGrid.plot_normal_camber(save_filename=self.config.get_machine_name())
         # self.multiBlockGrid.write_turbobfm_grid_file_2D()
     
     
