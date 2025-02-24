@@ -395,12 +395,12 @@ class Blade:
         zglob = np.concatenate((z1,z2))
         
         s_camber = np.linspace(0, np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
-        coeff = np.polyfit(mglob, rglob*tglob, deg=12) 
+        coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
         rt_camber = np.polyval(coeff, s_camber)
-        coeff = np.polyfit(mglob, rglob, deg=12)  
+        coeff = np.polyfit(mglob, rglob, deg=13)  
         r_camber = np.polyval(coeff, s_camber)
         theta_camber = rt_camber/r_camber
-        coeff = np.polyfit(mglob, zglob, deg=12)  
+        coeff = np.polyfit(mglob, zglob, deg=13)  
         z_camber = np.polyval(coeff, s_camber)
 
         return r1, t1, m1, z1, r2, t2, m2, z2, r_camber, theta_camber, s_camber, z_camber
