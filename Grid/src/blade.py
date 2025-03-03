@@ -193,6 +193,8 @@ class Blade:
         self.rc_data, self.thetac_data, self.zc_data, self.thk_data = [], [], [], []
         self.rss_data, self.thetass_data, self.zss_data = [], [], []
         self.rps_data, self.thetaps_data, self.zps_data = [], [], []
+        
+        profiles_to_plot = [0, int(self.number_profiles/4), int(2*self.number_profiles/4), int(3*self.number_profiles/4), self.number_profiles-1]
         for i in range(self.number_profiles):
             idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
             z = self.z_main[idx]
@@ -268,17 +270,19 @@ class Blade:
 
             # metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
 
-            if self.config.get_visual_debug():
+            if self.config.get_visual_debug() or i in profiles_to_plot:
                 plt.figure()
                 plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
                 plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')
-                plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
+                # plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
                 plt.xlabel(r'$s_{m}$ [m]')
                 plt.ylabel(r'$r \theta$ [m]')
                 plt.legend()
                 plt.title(f'Profile {i+1} of {self.number_profiles}')
                 plt.grid(alpha=grid_opacity)
                 plt.gca().set_aspect('equal', adjustable='box')
+                if i in profiles_to_plot:
+                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_to_blade_profile_%.2f.pdf' %((i+1)/self.number_profiles), bbox_inches='tight')
 
             # self.thickness['z'] = z_camber
             # self.thickness['r'] = r_camber
