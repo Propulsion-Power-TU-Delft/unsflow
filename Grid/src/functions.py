@@ -1204,7 +1204,7 @@ def compute_gradient_least_square(x, y, z):
     return dzdx, dzdy
 
 
-def contour_template(z, r, f, name, vmin=None, vmax=None):
+def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.'):
         """
         Template function to create contours.
 
@@ -1228,17 +1228,24 @@ def contour_template(z, r, f, name, vmin=None, vmax=None):
             minval = np.min(f)
         else:
             minval = vmin
+            
         if vmax == None:
             maxval = np.max(f)
         else:
             maxval = vmax
+        
+        if minval==maxval:
+            maxval += 1e-12
+        
         levels = np.linspace(minval, maxval, N_levels)
         fig, ax = plt.subplots()
         contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
         cbar = fig.colorbar(contour)
-        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
+        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3)
         plt.title(name)
         ax.set_aspect('equal', adjustable='box')
+        if save_filename is not None:
+            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
 
 def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
