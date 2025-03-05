@@ -19,10 +19,11 @@ class BodyForce:
     def CircumferentialAverage(self):
         averageType = self.config.get_circumferential_average_type()
         datasetPath = self.config.get_paraview_macro_dataset_folderpath()
-        self.meridionalFields = self.ProcessParaviewSU2Dataset(folder_path=datasetPath, average_type=averageType)
+        solverType = self.config.get_bladed_CFD_solver_type()
+        self.meridionalFields = self.ProcessParaviewDataset(folder_path=datasetPath, solver_type=solverType, average_type=averageType)
             
     
-    def ProcessParaviewSU2Dataset(self, folder_path, average_type, CP=1005, R=287, TREF=288.15, PREF=101300):
+    def ProcessParaviewDataset(self, folder_path, solver_type, average_type, CP=1005, R=287, TREF=288.15, PREF=101300):
         """
         Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
         Average type distinguish the type of average used, raw for standard circumferential.
@@ -33,7 +34,14 @@ class BodyForce:
         if self.avg_type not in available_avg_types:
             raise ValueError('Not valid average type')
         print('Weighted average type: %s' % self.avg_type)
+        
+        available_solver_names = ['su2', 'luminary']
+        if solver_type.lower() not in available_solver_names:
+            raise ValueError('Not valid solver type')
+        print('Solver type: %s' % solver_type)
 
+        variablesNames = self.get_CFD_variable_names(solver_type)
+        
         def extract_grid_location(file_name):
             print('Elaborating Filename: ' + file_name)
             file_name = file_name.strip('spline_data_')
@@ -48,9 +56,9 @@ class BodyForce:
         files = sorted(files)
 
         # give the name of the fields to average
-        saveFields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature',
+        saveFields = ['Density', 'Mach', 'Pressure', 'Temperature',
                       'Grid_Velocity_Tangential', 'Velocity_Radial', 'Velocity_Tangential',
-                      'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy']
+                      'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy', 'Relative_Flow_Angle']
         
         ni, nj = extract_grid_location(files[-1])
         streamPoints = ni+1
@@ -66,9 +74,9 @@ class BodyForce:
             data_dict = df.to_dict('list')
             data_dict = {key: np.array(value) for key, value in data_dict.items()}
 
-            x = data_dict['Points_0']
-            y = data_dict['Points_1']
-            z = data_dict['Points_2']
+            x = data_dict[variablesNames['X']]
+            y = data_dict[variablesNames['Y']]
+            z = data_dict[variablesNames['Z']]
             r = np.sqrt(x ** 2 + y ** 2)
             theta = np.arctan2(y, x)
             stream_id, span_id = extract_grid_location(file)
@@ -76,30 +84,85 @@ class BodyForce:
             r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
             # Compute additional fields that will be circumferentially averaged 
-            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
+            data_dict['Density'] = data_dict[variablesNames['Density']]
+            
+            data_dict['Mach'] = data_dict[variablesNames['Mach']]
+            
+            data_dict['Pressure'] = data_dict[variablesNames['Pressure']]
+            
+            data_dict['Temperature'] = data_dict[variablesNames['Temperature']]
+            
+            data_dict['Velocity_Radial'] = data_dict[variablesNames['Velocity_X']]*cos(theta)+data_dict[variablesNames['Velocity_Y']]*sin(theta)
 
-            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
+            data_dict['Velocity_Tangential'] = -data_dict[variablesNames['Velocity_X']]*sin(theta)+data_dict[variablesNames['Velocity_Y']]*cos(theta)
 
-            data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
+            data_dict['Grid_Velocity_Tangential'] = -data_dict[variablesNames['Grid_Velocity_X']]*sin(theta)+data_dict[variablesNames['Grid_Velocity_Y']]*cos(theta)
 
             data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
             
-            data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+            data_dict['Velocity_Axial'] = data_dict[variablesNames['Velocity_Z']]
 
-            data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
+            data_dict['Entropy'] = CP*np.log(data_dict[variablesNames['Temperature']]/TREF)-R*np.log(data_dict[variablesNames['Pressure']]/PREF)
 
+            data_dict['Relative_Flow_Angle'] = np.arctan2(data_dict['Velocity_Tangential_Relative'], data_dict['Velocity_Axial'])
+            
             for fieldName in saveFields:
                 f = data_dict[fieldName].copy()
                 if self.avg_type.lower() == 'raw':
                     meridionalFields[fieldName][stream_id, span_id] = np.sum(f) / len(f)
                 elif self.avg_type.lower() == 'density':
-                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
+                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * data_dict[variablesNames['Density']]) / np.sum(data_dict[variablesNames['Density']])
                 elif self.avg_type.lower() == 'axial_momentum':
-                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
+                    axialMomentum = data_dict['Velocity_Axial'] * data_dict[variablesNames['Density']]
+                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * axialMomentum) / np.sum(axialMomentum)
 
         meridionalFields['Axial_Coordinate'] = z_grid
         meridionalFields['Radial_Coordinate'] = r_grid
         return meridionalFields
+    
+    
+    def get_CFD_variable_names(self, solver_type):
+        """Return the dictionary with all the correct variable names depending on the solver employed for the CFD
+
+        Args:
+            solver_type (string): Luminary or SU2
+
+        Returns:
+            dict: dictionary of names
+        """
+        names = {}
+
+        if solver_type.lower() == 'su2':
+            names['X'] = 'Points_0'
+            names['Y'] = 'Points_1'
+            names['Z'] = 'Points_2'
+            names['Density'] = 'Density'
+            names['Velocity_X'] = 'Velocity_0'
+            names['Velocity_Y'] = 'Velocity_1'
+            names['Velocity_Z'] = 'Velocity_2'
+            names['Pressure'] = 'Pressure'
+            names['Temperature'] = 'Temperature'
+            names['Grid_Velocity_X'] = 'Grid_Velocity_0'
+            names['Grid_Velocity_Y'] = 'Grid_Velocity_1'
+            names['Grid_Velocity_Z'] = 'Grid_Velocity_2'
+            names['Mach'] = 'Mach'
+        
+        elif solver_type.lower() == 'luminary':
+            names['X'] = 'Points_0'
+            names['Y'] = 'Points_1'
+            names['Z'] = 'Points_2'
+            names['Density'] = 'Density (kg/m³)'
+            names['Velocity_X'] = 'Velocity (m/s)_0'
+            names['Velocity_Y'] = 'Velocity (m/s)_1'
+            names['Velocity_Z'] = 'Velocity (m/s)_2'
+            names['Pressure'] = 'Absolute Pressure (Pa)'
+            names['Temperature'] = 'Temperature (K)'
+            names['Grid_Velocity_X'] = 'Grid Velocity (m/s)_0'
+            names['Grid_Velocity_Y'] = 'Grid Velocity (m/s)_1'
+            names['Grid_Velocity_Z'] = 'Grid Velocity (m/s)_2'
+            names['Mach'] = 'Mach'
+        
+        return names
     
     
     def PlotMeridionalFields(self):
@@ -136,16 +199,19 @@ class BodyForce:
         
         self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
         # self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.meridional_fields['Force_Inviscid_Tangential'])*np.tan(self.lean_angle)
+        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*0
 
         self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']-(self.bodyForceFields['Force_Tangential']-
                                                 self.bodyForceFields['Force_Viscous_Tangential'])*self.meridionalFields['Velocity_Tangential_Relative']/self.meridionalFields['Velocity_Axial']
         self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Axial']-self.bodyForceFields['Force_Viscous_Axial']
 
-        # self.meridional_fields['Force_Inviscid'] = np.sqrt(self.meridional_fields['Force_Inviscid_Axial']**2+
-        #                                                    self.meridional_fields['Force_Inviscid_Radial']**2+
-        #                                                    self.meridional_fields['Force_Inviscid_Tangential']**2)
+        self.bodyForceFields['Force_Inviscid'] = np.sqrt(self.bodyForceFields['Force_Inviscid_Axial']**2+
+                                                           self.bodyForceFields['Force_Inviscid_Radial']**2+
+                                                           self.bodyForceFields['Force_Inviscid_Tangential']**2)
         
         # self.meridional_fields['Force_Radial'] = self.meridional_fields['Force_Viscous_Radial']+self.meridional_fields['Force_Inviscid_Radial']
+        
+        
     
     
     def ComputeLossForceMarble(self):
