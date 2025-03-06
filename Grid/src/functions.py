@@ -1241,7 +1241,7 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         fig, ax = plt.subplots()
         contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
         cbar = fig.colorbar(contour)
-        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3)
+        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
         plt.title(name)
         ax.set_aspect('equal', adjustable='box')
         if save_filename is not None:
