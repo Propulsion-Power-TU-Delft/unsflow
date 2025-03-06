@@ -2,6 +2,7 @@ from Grid.src.config import Config
 import os
 import numpy as np
 from numpy import sin, cos, tan, arctan2, pi, sqrt
+import matplotlib.pyplot as plt
 import pandas as pd
 from Grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_gradient_least_square, compute_meridional_spanwise_coordinates
 
@@ -194,7 +195,9 @@ class BodyForce:
                 lossVersor[i,j] = -relativeVelocity/np.linalg.norm(relativeVelocity)
 
         self.bodyForceFields['Force_Viscous_Radial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,0]
+        
         self.bodyForceFields['Force_Viscous_Tangential'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,1]
+        
         self.bodyForceFields['Force_Viscous_Axial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,2]
         
         self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
@@ -203,19 +206,23 @@ class BodyForce:
 
         self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']-(self.bodyForceFields['Force_Tangential']-
                                                 self.bodyForceFields['Force_Viscous_Tangential'])*self.meridionalFields['Velocity_Tangential_Relative']/self.meridionalFields['Velocity_Axial']
+        
         self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Axial']-self.bodyForceFields['Force_Viscous_Axial']
 
         self.bodyForceFields['Force_Inviscid'] = np.sqrt(self.bodyForceFields['Force_Inviscid_Axial']**2+
                                                            self.bodyForceFields['Force_Inviscid_Radial']**2+
                                                            self.bodyForceFields['Force_Inviscid_Tangential']**2)
         
+        self.bodyForceFields['Force_Viscous'] = np.sqrt(self.bodyForceFields['Force_Viscous_Axial']**2+
+                                                        self.bodyForceFields['Force_Viscous_Radial']**2+
+                                                        self.bodyForceFields['Force_Viscous_Tangential']**2)
         # self.meridional_fields['Force_Radial'] = self.meridional_fields['Force_Viscous_Radial']+self.meridional_fields['Force_Inviscid_Radial']
         
         
     
     
     def ComputeLossForceMarble(self):
-        """Compute the loss force component according to Marble method
+        """Compute the loss force component according to Marble method, distributing linearly the loss from leading to trailing edge
 
         Returns:
             np.ndarray: 2D array of the loss force
@@ -229,13 +236,16 @@ class BodyForce:
         for j in range(force.shape[1]):
             deltaEntropy = self.meridionalFields['Entropy'][-1,j]-self.meridionalFields['Entropy'][0,j]
             deltaLength = streamLength[-1,j]-streamLength[0,j]
-
             force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
         return force
     
     
     def ComputeTangentialForceMarble(self, method='local'):
         """Compute the tangential force component according to Marble method
+        
+        Args:
+            method (str, optional): Method to compute the tangential force. Defaults to 'local' computes local gradient. If set to 'distributed' 
+            the force is linearly distributed from leading to trailing edge just like the loss component
 
         Returns:
             np.ndarray: 2D array of the tangential force
@@ -275,3 +285,24 @@ class BodyForce:
             cutIndices = np.where(spanLength[i,:]>=1-extension)
             for key in self.bodyForceFields.keys():
                 self.bodyForceFields[key][i,cutIndices] = 0
+    
+    
+    def HubShroudBodyForceExtrapolation(self):
+        """
+        Extrapolate the body force fields in the proximity of hub and shroud, up to a certain span extent
+        """
+        spanLength = compute_meridional_spanwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], normalize=True)
+        
+        def zeroOrderExtrapolation(field, spanwiseCoords, spanExtent):
+            ni,nj = field.shape
+            for i in range(ni):
+                idx = np.where(spanwiseCoords[i,:]<spanExtent)
+                field[i,idx] = field[i, idx[0][-1]+1]
+                
+                idx = np.where(spanwiseCoords[i,:]>1-spanExtent)
+                field[i,idx] = field[i,idx[0][0]-1]                
+            return field
+        
+        for key in self.bodyForceFields.keys():
+            if key != 'Force_Viscous':
+                self.bodyForceFields[key] = zeroOrderExtrapolation(self.bodyForceFields[key], spanLength, self.config.hub_shroud_body_force_extrapolation_span_extent())

@@ -420,6 +420,9 @@ class Config:
     
     def get_bladed_CFD_solver_type(self):
         return str(self.config_parser.get('BODY FORCE', 'BLADED_CFD_SOLVER')).lower()
+    
+    def hub_shroud_body_force_extrapolation_span_extent(self):
+        return float(self.config_parser.get('BODY FORCE', 'HUB_SHROUD_BODY_FORCE_EXTRAPOLATION_SPAN_EXTENT'))
         
 
 
