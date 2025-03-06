@@ -5,6 +5,8 @@ from numpy import sin, cos, tan, arctan2, pi, sqrt
 import matplotlib.pyplot as plt
 import pandas as pd
 from Grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_gradient_least_square, compute_meridional_spanwise_coordinates
+import pickle
+
 
 class BodyForce:
     """
@@ -306,3 +308,11 @@ class BodyForce:
         for key in self.bodyForceFields.keys():
             if key != 'Force_Viscous':
                 self.bodyForceFields[key] = zeroOrderExtrapolation(self.bodyForceFields[key], spanLength, self.config.hub_shroud_body_force_extrapolation_span_extent())
+                
+                
+    def SaveOutput(self):
+        name = self.config.get_body_force_blade_name() + '.pik'
+        with open(name, 'wb') as f:
+            pickle.dump(self, f)
+        print(f"Saved body force fields in file: {name}!")
+        

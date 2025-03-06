@@ -423,6 +423,9 @@ class Config:
     
     def hub_shroud_body_force_extrapolation_span_extent(self):
         return float(self.config_parser.get('BODY FORCE', 'HUB_SHROUD_BODY_FORCE_EXTRAPOLATION_SPAN_EXTENT'))
+    
+    def get_body_force_blade_name(self):
+        return str(self.config_parser.get('BODY FORCE', 'BLADE_NAME'))
         
 
 
