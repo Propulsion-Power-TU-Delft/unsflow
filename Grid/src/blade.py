@@ -14,8 +14,9 @@ from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import clip_negative_values, compute_2dSpline_curve, find_intersection, rotate_cartesian_to_cylindric_tensor, compute_gradient_least_square, griddata_interpolation_with_nearest_filler, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
+from Grid.src.functions import *
 from Grid.src.profile import Profile
+from Grid.src.body_force import BodyForce
 from Utils.styles import *
 from scipy import interpolate
 import math
@@ -2530,6 +2531,23 @@ class Blade:
         self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+    
+    def extract_body_force(self):
+        """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
+        """
+        self.bodyForce = BodyForce(self.config)
+        self.bodyForce.AddMeridionalGrid(self.z_grid, self.r_grid)
+        self.bodyForce.CircumferentialAverage()
+        self.bodyForce.ComputeBodyForceMarble(self.blade_lean_angle)
+        self.bodyForce.HubShroudBodyForceExtrapolation()
+        self.bodyForce.PlotBodyForceFields()
+        
+        
+        
+        
+        
+        
+        
         
         
 

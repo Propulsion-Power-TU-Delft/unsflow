@@ -380,6 +380,11 @@ class Config:
         except:
             return ['none'] # default
     
+    def get_turbo_BFM_mesh_output_fields(self):
+        values = self.config_parser.get('GENERAL', 'TURBO_BFM_MESH_OUTPUT_FIELDS').lower()
+        values = [str(val.strip(',')) for val in values.split()]
+        return values
+    
     
     def get_blade_edges_extrapolation_coefficient(self):
         try:
@@ -405,6 +410,16 @@ class Config:
         except:
             return 'Output' # default
     
+    def perform_body_force_reconstruction(self):
+        try:
+            val = str(self.config_parser.get('GENERAL', 'PERFORM_BODY_FORCE_RECONSTRUCTION')).lower()
+            if val == 'yes' or val == 'true':
+                return True
+            else:
+                return False
+        except:
+            return False # default
+    
     def get_circumferential_average_type(self):
         try:
             return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE'))
@@ -426,6 +441,13 @@ class Config:
     
     def get_body_force_blade_name(self):
         return str(self.config_parser.get('BODY FORCE', 'BLADE_NAME'))
+    
+    def get_extracted_body_forces_path(self):
+        value = self.config_parser.get('BODY FORCE', 'EXTRACTED_BODY_FORCES_PATH')
+        vals = [str(val.strip(',')) for val in value.split()]
+        vals = np.array(vals, dtype=str)
+        return vals
+    
         
 
 

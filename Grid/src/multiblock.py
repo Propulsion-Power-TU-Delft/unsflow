@@ -42,11 +42,9 @@ class MultiBlock:
         self.rpm = self.blocks[0].rpm
         self.streamline_length = self.blocks[0].streamline_length
         self.normal_camber = self.blocks[0].normal_camber
-        self.force_inviscid = self.blocks[0].force_inviscid
-        self.force_viscous = self.blocks[0].force_viscous
-        self.force_axial = self.blocks[0].force_axial
-        self.force_radial = self.blocks[0].force_radial
-        self.force_tangential = self.blocks[0].force_tangential
+        self.force_axial = self.blocks[0].bodyForce['Force_Axial']
+        self.force_radial = self.blocks[0].bodyForce['Force_Radial']
+        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential']
         
 
         for block in self.blocks[1:]:
@@ -56,11 +54,9 @@ class MultiBlock:
             self.rpm = np.concatenate((self.rpm, block.rpm[1:, :]), axis=0)
             self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[1:, :]), axis=0)
             self.normal_camber = np.concatenate((self.normal_camber, block.normal_camber[1:, :, :]), axis=0)
-            self.force_inviscid = np.concatenate((self.force_inviscid, block.force_inviscid[1:, :]), axis=0)
-            self.force_viscous = np.concatenate((self.force_viscous, block.force_viscous[1:, :]), axis=0)
-            self.force_axial = np.concatenate((self.force_axial, block.force_axial[1:, :]), axis=0)
-            self.force_radial = np.concatenate((self.force_radial, block.force_radial[1:, :]), axis=0)
-            self.force_tangential = np.concatenate((self.force_tangential, block.force_tangential[1:, :]), axis=0)
+            self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][1:, :]), axis=0)
+            self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][1:, :]), axis=0)
+            self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][1:, :]), axis=0)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -532,48 +528,42 @@ class MultiBlock:
         print('Written meridional grid csv file to: %s' %(foldername + '/' + filename))
     
 
-    def write_turbobfm_grid_file_2D(self, blockage=True, normal=True, rpm=True, stwl=True, force_inviscid=False, force_viscous=False,
-                                    force_axial=False, force_radial=False, force_tangential=False,
-                                    output_folder = ''):
+    def write_turbobfm_grid_file_2D(self):
         """
         Needed by turboBFM. The dictionnary saved must contain a X and Y for 2D, and X,Y,Z for 3D simulations.
         """
+        outputFields = self.config.get_turbo_BFM_mesh_output_fields()
+        
         X = self.z_grid_points
         Y = self.r_grid_points
 
         ni,nj = X.shape
 
         mesh = {'X': X, 'Y': Y}
-        if blockage:
-            print('Blockage added to the grid file')
+        if 'blockage' in outputFields:
+            print('Blockage grid added to the TurboBFM mesh file')
             mesh['Blockage'] = self.blockage
-        if normal:
-            print('Camber normal added to the grid file')
+            
+        if 'camber' in outputFields:
+            print('Camber normal vector grid added to the TurboBFM mesh file')
             mesh['Normal'] = self.normal_camber
-        if rpm:
-            print('Revs added to the grid file')
+        
+        if 'rpm' in outputFields:
+            print('RPM grid added to the TurboBFM mesh file')
             mesh['RPM'] = self.rpm
-        if stwl:
-            print('Streamwise length added to the grid file')
+        
+        if 'stwl' in outputFields:
+            print('Streamwise length added to the TurboBFM mesh file')
             mesh['StreamwiseLength'] = self.streamline_length
-        if force_inviscid:
-            print('Inviscid force added to the grid file')
-            mesh['ForceInviscid'] = self.force_inviscid
-        if force_viscous:
-            print('Viscous force added to the grid file')
-            mesh['ForceViscous'] = self.force_viscous
-        if force_axial:
-            print('Axial force added to the grid file')
+        
+        if 'frozen_force' in outputFields:
+            print('Frozen forces added to the TurboBFM mesh file')
             mesh['Force_Axial'] = self.force_axial
-        if force_radial:
-            print('Radial force added to the grid file')
             mesh['Force_Radial'] = self.force_radial
-        if force_tangential:
-            print('Tangential force added to the grid file')
             mesh['Force_Tangential'] = self.force_tangential
         
 
-        filepath = output_folder + '/grid_%02i_%02i.pik' % (ni, nj)
+        filepath = self.config.get_output_data_folder() + '/TurboBFM_Mesh_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
-        print(f"TurboBFM pickle grid saved to '{filepath}'")
+        print(f"TurboBFM mesh pickle file saved to {filepath}")

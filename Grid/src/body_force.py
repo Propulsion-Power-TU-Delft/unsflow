@@ -4,7 +4,7 @@ import numpy as np
 from numpy import sin, cos, tan, arctan2, pi, sqrt
 import matplotlib.pyplot as plt
 import pandas as pd
-from Grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_gradient_least_square, compute_meridional_spanwise_coordinates
+from Grid.src.functions import *
 import pickle
 
 
@@ -19,11 +19,29 @@ class BodyForce:
         self.meridionalFields = {} # contaning all the meridional fields
     
     
+    def AddMeridionalGrid(self, axialGrid, radialGrid):
+        """
+        Add the meridional grid to the class, since the grids of the blade object and the one of data extraction from CFD may differ
+        """
+        self.axialGrid = axialGrid
+        self.radialGrid = radialGrid
+    
+    
     def CircumferentialAverage(self):
         averageType = self.config.get_circumferential_average_type()
         datasetPath = self.config.get_paraview_macro_dataset_folderpath()
         solverType = self.config.get_bladed_CFD_solver_type()
         self.meridionalFields = self.ProcessParaviewDataset(folder_path=datasetPath, solver_type=solverType, average_type=averageType)
+        
+        for key in self.meridionalFields.keys():
+            if key!='Axial_Coordinate' and key!='Radial_Coordinate':
+                self.meridionalFields[key] = griddata_interpolation_with_nearest_filler(self.meridionalFields['Axial_Coordinate'], 
+                                                                                        self.meridionalFields['Radial_Coordinate'], 
+                                                                                        self.meridionalFields[key], 
+                                                                                        self.axialGrid, self.radialGrid)
+        self.meridionalFields['Axial_Coordinate'] = self.axialGrid
+        self.meridionalFields['Radial_Coordinate'] = self.radialGrid
+        
             
     
     def ProcessParaviewDataset(self, folder_path, solver_type, average_type, CP=1005, R=287, TREF=288.15, PREF=101300):
@@ -118,7 +136,6 @@ class BodyForce:
                 elif self.avg_type.lower() == 'axial_momentum':
                     axialMomentum = data_dict['Velocity_Axial'] * data_dict[variablesNames['Density']]
                     meridionalFields[fieldName][stream_id, span_id] = np.sum(f * axialMomentum) / np.sum(axialMomentum)
-
         meridionalFields['Axial_Coordinate'] = z_grid
         meridionalFields['Radial_Coordinate'] = r_grid
         return meridionalFields
@@ -178,11 +195,10 @@ class BodyForce:
             contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, name)
     
     
-    def ComputeBodyForceMarble(self):
+    def ComputeBodyForceMarble(self, leanAngle):
         """
         Compute the body force density, using the marble thermodynamic approach based on the circumferentially averaged flow field
         """
-        # ni,nj = self.meridionalFields['Axial_Coordinate'].shape
         
         self.bodyForceFields['Force_Viscous'] = self.ComputeLossForceMarble()
         self.bodyForceFields['Force_Tangential'] = self.ComputeTangentialForceMarble()
@@ -203,8 +219,8 @@ class BodyForce:
         self.bodyForceFields['Force_Viscous_Axial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,2]
         
         self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
-        # self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.meridional_fields['Force_Inviscid_Tangential'])*np.tan(self.lean_angle)
-        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*0
+        
+        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*np.tan(leanAngle)
 
         self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']-(self.bodyForceFields['Force_Tangential']-
                                                 self.bodyForceFields['Force_Viscous_Tangential'])*self.meridionalFields['Velocity_Tangential_Relative']/self.meridionalFields['Velocity_Axial']
@@ -218,7 +234,8 @@ class BodyForce:
         self.bodyForceFields['Force_Viscous'] = np.sqrt(self.bodyForceFields['Force_Viscous_Axial']**2+
                                                         self.bodyForceFields['Force_Viscous_Radial']**2+
                                                         self.bodyForceFields['Force_Viscous_Tangential']**2)
-        # self.meridional_fields['Force_Radial'] = self.meridional_fields['Force_Viscous_Radial']+self.meridional_fields['Force_Inviscid_Radial']
+        
+        self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
         
         
     
@@ -293,6 +310,10 @@ class BodyForce:
         """
         Extrapolate the body force fields in the proximity of hub and shroud, up to a certain span extent
         """
+        spanExtent = self.config.hub_shroud_body_force_extrapolation_span_extent()
+        if spanExtent < 1e-3:
+            return
+        
         spanLength = compute_meridional_spanwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], normalize=True)
         
         def zeroOrderExtrapolation(field, spanwiseCoords, spanExtent):

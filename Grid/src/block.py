@@ -12,6 +12,7 @@ from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_g
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Grid.src.config import Config
+from Grid.src.body_force import BodyForce
 from .area_element import AreaElement
 import pickle
 
@@ -52,11 +53,9 @@ class Block:
         self.normal_camber = np.zeros((self.nstream, self.nspan, 3))
         self.streamline_length = np.zeros((self.nstream, self.nspan))
         self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
-        self.force_inviscid = np.zeros((self.nstream, self.nspan))
-        self.force_viscous = np.zeros((self.nstream, self.nspan))
-        self.force_axial = np.zeros((self.nstream, self.nspan))
-        self.force_radial = np.zeros((self.nstream, self.nspan))
-        self.force_tangential = np.zeros((self.nstream, self.nspan))
+        self.bodyForce = {"Force_Axial": np.zeros((self.nstream, self.nspan)),
+                          "Force_Radial": np.zeros((self.nstream, self.nspan)),
+                          "Force_Tangential": np.zeros((self.nstream, self.nspan))}
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -732,5 +731,10 @@ class Block:
         self.normal_camber[:,:,0] = nz
         self.normal_camber[:,:,1] = nr
         self.normal_camber[:,:,2] = nt
+    
+    def add_body_force_info(self, bodyForceObj):
+        self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
+        self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
+        self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
 
 

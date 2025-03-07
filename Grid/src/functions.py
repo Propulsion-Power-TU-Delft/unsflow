@@ -14,7 +14,7 @@ from Utils.styles import *
 import math
 from scipy.optimize import fsolve
 from scipy.optimize import minimize
-from scipy.interpolate import CubicSpline, griddata
+from scipy.interpolate import CubicSpline, griddata, LinearNDInterpolator
 from scipy import interpolate
 from shapely.geometry import LineString
 
@@ -1259,7 +1259,7 @@ def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
     return M_cyl
 
 
-def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear', filler = 1e10):
+def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear'):
     """
     Interpolation using griddata, but the points lying out of the convex hull are treated with nearest neighbor.
 
@@ -1280,16 +1280,49 @@ def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval
 
     `filler`: value used to fill and recognize points outside the convex hull
     """
-    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method=method, fill_value=filler)
-    
-    ni,nj = z_eval.shape
+    # Perform linear interpolation
+    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method=method, fill_value=np.nan)
+    # z_eval = extrapolate_nan_values(x_eval, y_eval, z_eval)
 
-    for i in range(ni):
-        for j in range(nj):
-            if z_eval[i,j] == filler:
-                z_eval[i,j] = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval[i,j], y_eval[i,j]), method='nearest')
+    # Find NaN values (which were previously fill_value)
+    nan_mask = np.isnan(z_eval)
+
+    # Apply extrapolation only where z_eval is NaN
+    z_eval[nan_mask] = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval[nan_mask], y_eval[nan_mask]), method='nearest')
 
     return z_eval
+
+
+def extrapolate_nan_values(xgrid, ygrid, field):
+    streamGrid = compute_meridional_streamwise_coordinates(xgrid, ygrid)
+    spanGrid = compute_meridional_spanwise_coordinates(xgrid, ygrid)
+    
+    ni,nj = xgrid.shape
+    
+    # extrapolation along the spanwise direction
+    for i in range(ni):
+        for j in range(nj//2, nj):
+            if np.isnan(field[i,j]):
+                field[i,j:] = field[i,j-1] + (field[i,j-1] - field[i,j-2])*(spanGrid[i,j:] - spanGrid[i,j-1])
+                break
+        for j in range(nj//2-1, -1, -1):
+            if np.isnan(field[i,j]):
+                field[i,0:j+1] = field[i,j+1] + (field[i,j+1] - field[i,j+2])*(spanGrid[i,0:j+1] - spanGrid[i,j+1])
+                break
+    
+    # extrapolation along the streamwise direction
+    for j in range(nj):
+        for i in range(ni//2, ni):
+            if np.isnan(field[i,j]):
+                field[i:,j] = field[i-1,j] + (field[i-1,j] - field[i-2,j])*(streamGrid[i:,j] - streamGrid[i-1,j])
+                break
+        for i in range(ni//2-1, -1, -1):
+            if np.isnan(field[i,j]):
+                field[0:i+1,j] = field[i+1,j] + (field[i+1,j] - field[i+2,j])*(streamGrid[0:i+1,j] - streamGrid[i+1,j])
+                break
+    
+    return field
+                
 
 
 def compute_meridional_streamwise_coordinates(axialGrid: np.ndarray, radialGrid: np.ndarray, normalize: bool = False) -> np.ndarray:

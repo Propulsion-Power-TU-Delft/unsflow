@@ -135,10 +135,14 @@ class MultiBlockGridDriver:
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)
             
+            if self.config.perform_body_force_reconstruction():
+                self.blades[iblade].extract_body_force() 
+                self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
     
     
     def AssembleMultiBlockGrid(self):
@@ -174,7 +178,7 @@ class MultiBlockGridDriver:
             if outputType.lower()=='turbobfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type turbobfm is not available for single_blade or full_machine driver configurations.')
-                self.multiBlockGrid.write_turbobfm_grid_file_2D(output_folder = outputFolder)
+                self.multiBlockGrid.write_turbobfm_grid_file_2D()
             
             elif outputType.lower()=='pickle':
                 filePath = os.path.join(outputFolder, self.config.get_machine_name() + '.pik')
