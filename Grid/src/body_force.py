@@ -18,20 +18,20 @@ class BodyForce:
         self.bodyForceFields = {} # contaning the body force fields
         self.meridionalFields = {} # contaning all the meridional fields
     
-    
-    def AddMeridionalGrid(self, axialGrid, radialGrid):
+    def ComputeCircumferentialAveragedFields(self, zgrid, rgrid):
+        """Interpolate the circumferentially averaged fields on the grid used for body force simulations
+
+        Args:
+            zgrid (np.nadarray): 2d array of axial grid coords used in the body force simulation
+            rgrid (np.nadarray): 2d array of radial grid coords used in the body force simulation
         """
-        Add the meridional grid to the class, since the grids of the blade object and the one of data extraction from CFD may differ
-        """
-        self.axialGrid = axialGrid
-        self.radialGrid = radialGrid
-    
-    
-    def CircumferentialAverage(self):
-        averageType = self.config.get_circumferential_average_type()
-        datasetPath = self.config.get_paraview_macro_dataset_folderpath()
+        
+        self.axialGrid = zgrid
+        self.radialGrid = rgrid   
+        
+        filepath = self.config.get_circumferential_average_fields_path()
         solverType = self.config.get_bladed_CFD_solver_type()
-        self.meridionalFields = self.ProcessParaviewDataset(folder_path=datasetPath, solver_type=solverType, average_type=averageType)
+        self.meridionalFields = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)
         
         for key in self.meridionalFields.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
@@ -41,20 +41,14 @@ class BodyForce:
                                                                                         self.axialGrid, self.radialGrid)
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
         self.meridionalFields['Radial_Coordinate'] = self.radialGrid
-        
             
     
-    def ProcessParaviewDataset(self, folder_path, solver_type, average_type, CP=1005, R=287, TREF=288.15, PREF=101300):
+    def ProcessParaviewDataset(self, filepath, solver_type, CP=1005, R=287, TREF=288.15, PREF=101300):
         """
         Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
         Average type distinguish the type of average used, raw for standard circumferential.
         Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
         """
-        available_avg_types = ['raw', 'density', 'axialMomentum']
-        self.avg_type = average_type.lower()
-        if self.avg_type not in available_avg_types:
-            raise ValueError('Not valid average type')
-        print('Weighted average type: %s' % self.avg_type)
         
         available_solver_names = ['su2', 'luminary']
         if solver_type.lower() not in available_solver_names:
@@ -63,86 +57,21 @@ class BodyForce:
 
         variablesNames = self.get_CFD_variable_names(solver_type)
         
-        def extract_grid_location(file_name):
-            print('Elaborating Filename: ' + file_name)
-            file_name = file_name.strip('spline_data_')
-            file_name = file_name.strip('.csv')
-            file_name = file_name.split('_')
-            nz = int(file_name[0])
-            nr = int(file_name[1])
-            return nz, nr
-       
-        data_dir = folder_path
-        files = [f for f in os.listdir(data_dir) if '.csv' in f]
-        files = sorted(files)
-
-        # give the name of the fields to average
-        saveFields = ['Density', 'Mach', 'Pressure', 'Temperature',
-                      'Grid_Velocity_Tangential', 'Velocity_Radial', 'Velocity_Tangential',
-                      'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy', 'Relative_Flow_Angle']
-        
-        ni, nj = extract_grid_location(files[-1])
-        streamPoints = ni+1
-        spanPoints = nj+1
+        with open(filepath, 'rb') as file:
+            averagedDataset = pickle.load(file)
+            
         meridionalFields = {}
-        for field_name in saveFields:
-            meridionalFields[field_name] = np.zeros((streamPoints, spanPoints))
-        z_grid = np.zeros((streamPoints, spanPoints))
-        r_grid = np.zeros((streamPoints, spanPoints))
-
-        for file in files:
-            df = pd.read_csv(data_dir + '/' + file)
-            data_dict = df.to_dict('list')
-            data_dict = {key: np.array(value) for key, value in data_dict.items()}
-
-            x = data_dict[variablesNames['X']]
-            y = data_dict[variablesNames['Y']]
-            z = data_dict[variablesNames['Z']]
-            r = np.sqrt(x ** 2 + y ** 2)
-            theta = np.arctan2(y, x)
-            stream_id, span_id = extract_grid_location(file)
-            z_grid[stream_id, span_id] = np.sum(z) / len(z)
-            r_grid[stream_id, span_id] = np.sum(r) / len(r)
-
-            # Compute additional fields that will be circumferentially averaged 
-            data_dict['Density'] = data_dict[variablesNames['Density']]
+        for key in variablesNames.keys():
+            meridionalFields[key] = averagedDataset[variablesNames[key]]
+        
+        meridionalFields['Entropy'] = CP*np.log(meridionalFields['Temperature']/TREF)-R*np.log(meridionalFields['Pressure']/PREF)
+        meridionalFields['Relative_Flow_Angle'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
             
-            data_dict['Mach'] = data_dict[variablesNames['Mach']]
-            
-            data_dict['Pressure'] = data_dict[variablesNames['Pressure']]
-            
-            data_dict['Temperature'] = data_dict[variablesNames['Temperature']]
-            
-            data_dict['Velocity_Radial'] = data_dict[variablesNames['Velocity_X']]*cos(theta)+data_dict[variablesNames['Velocity_Y']]*sin(theta)
-
-            data_dict['Velocity_Tangential'] = -data_dict[variablesNames['Velocity_X']]*sin(theta)+data_dict[variablesNames['Velocity_Y']]*cos(theta)
-
-            data_dict['Grid_Velocity_Tangential'] = -data_dict[variablesNames['Grid_Velocity_X']]*sin(theta)+data_dict[variablesNames['Grid_Velocity_Y']]*cos(theta)
-
-            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
-            
-            data_dict['Velocity_Axial'] = data_dict[variablesNames['Velocity_Z']]
-
-            data_dict['Entropy'] = CP*np.log(data_dict[variablesNames['Temperature']]/TREF)-R*np.log(data_dict[variablesNames['Pressure']]/PREF)
-
-            data_dict['Relative_Flow_Angle'] = np.arctan2(data_dict['Velocity_Tangential_Relative'], data_dict['Velocity_Axial'])
-            
-            for fieldName in saveFields:
-                f = data_dict[fieldName].copy()
-                if self.avg_type.lower() == 'raw':
-                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f) / len(f)
-                elif self.avg_type.lower() == 'density':
-                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * data_dict[variablesNames['Density']]) / np.sum(data_dict[variablesNames['Density']])
-                elif self.avg_type.lower() == 'axial_momentum':
-                    axialMomentum = data_dict['Velocity_Axial'] * data_dict[variablesNames['Density']]
-                    meridionalFields[fieldName][stream_id, span_id] = np.sum(f * axialMomentum) / np.sum(axialMomentum)
-        meridionalFields['Axial_Coordinate'] = z_grid
-        meridionalFields['Radial_Coordinate'] = r_grid
         return meridionalFields
     
     
     def get_CFD_variable_names(self, solver_type):
-        """Return the dictionary with all the correct variable names depending on the solver employed for the CFD
+        """Return the dictionary with all the correct variable names depending on the solver employed for the CFD. These will be the variable stored in the bfm object
 
         Args:
             solver_type (string): Luminary or SU2
@@ -153,34 +82,34 @@ class BodyForce:
         names = {}
 
         if solver_type.lower() == 'su2':
-            names['X'] = 'Points_0'
-            names['Y'] = 'Points_1'
-            names['Z'] = 'Points_2'
             names['Density'] = 'Density'
-            names['Velocity_X'] = 'Velocity_0'
-            names['Velocity_Y'] = 'Velocity_1'
-            names['Velocity_Z'] = 'Velocity_2'
+            # names['Velocity_X'] = 'Velocity_0'
+            # names['Velocity_Y'] = 'Velocity_1'
+            # names['Velocity_Z'] = 'Velocity_2'
             names['Pressure'] = 'Pressure'
             names['Temperature'] = 'Temperature'
-            names['Grid_Velocity_X'] = 'Grid_Velocity_0'
-            names['Grid_Velocity_Y'] = 'Grid_Velocity_1'
-            names['Grid_Velocity_Z'] = 'Grid_Velocity_2'
-            names['Mach'] = 'Mach'
+            # names['Grid_Velocity_X'] = 'Grid_Velocity_0'
+            # names['Grid_Velocity_Y'] = 'Grid_Velocity_1'
+            # names['Grid_Velocity_Z'] = 'Grid_Velocity_2'
         
         elif solver_type.lower() == 'luminary':
-            names['X'] = 'Points_0'
-            names['Y'] = 'Points_1'
-            names['Z'] = 'Points_2'
             names['Density'] = 'Density (kg/m³)'
-            names['Velocity_X'] = 'Velocity (m/s)_0'
-            names['Velocity_Y'] = 'Velocity (m/s)_1'
-            names['Velocity_Z'] = 'Velocity (m/s)_2'
+            # names['Velocity_X'] = 'Velocity (m/s)_0'
+            # names['Velocity_Y'] = 'Velocity (m/s)_1'
+            # names['Velocity_Z'] = 'Velocity (m/s)_2'
             names['Pressure'] = 'Absolute Pressure (Pa)'
             names['Temperature'] = 'Temperature (K)'
-            names['Grid_Velocity_X'] = 'Grid Velocity (m/s)_0'
-            names['Grid_Velocity_Y'] = 'Grid Velocity (m/s)_1'
-            names['Grid_Velocity_Z'] = 'Grid Velocity (m/s)_2'
-            names['Mach'] = 'Mach'
+            # names['Grid_Velocity_X'] = 'Grid Velocity (m/s)_0'
+            # names['Grid_Velocity_Y'] = 'Grid Velocity (m/s)_1'
+            # names['Grid_Velocity_Z'] = 'Grid Velocity (m/s)_2'
+        
+        names['Mach'] = 'Mach'
+        names['Axial_Coordinate'] = 'Axial_Coordinate'
+        names['Radial_Coordinate'] = 'Radial_Coordinate'
+        names['Velocity_Axial'] = 'Velocity_Axial'
+        names['Velocity_Tangential'] = 'Velocity_Tangential'
+        names['Velocity_Tangential_Relative'] = 'Velocity_Tangential_Relative'
+        names['Velocity_Radial'] = 'Velocity_Radial'
         
         return names
     
@@ -219,6 +148,37 @@ class BodyForce:
                 labels[key] = key
             
         for name, field in self.bodyForceFields.items():
+            contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, 
+                             labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
+    
+    
+    def PlotCircumferentiallyAveragedFields(self, save_filename):
+        labels = {}
+        for key in self.meridionalFields.keys():
+            if key=='Density':
+                labels[key] = r'$\rho \ \rm{[kg/m^3]}$'
+            elif key=='Pressure':
+                labels[key] = r'$p \ \rm{[Pa]}$'
+            elif key=='Temperature':
+                labels[key] = r'$T \ \rm{[K]}$'
+            elif key=='Mach':
+                labels[key] = r'$M \ \rm{[-]}$'
+            elif key=='Velocity_Axial':
+                labels[key] = r'$u_{ax} \ \rm{[m/s]}$'
+            elif key=='Velocity_Tangential':
+                labels[key] = r'$u_{\theta} \ \rm{[m/s]}$'
+            elif key=='Velocity_Tangential_Relative':
+                labels[key] = r'$w_{\theta} \ \rm{[m/s]}$'
+            elif key=='Velocity_Radial':
+                labels[key] = r'$u_{r} \ \rm{[m/s]}$'
+            elif key=='Entropy':
+                labels[key] = r'$s \ \rm{[J/kgK]}$' 
+            elif key=='Relative_Flow_Angle':
+                labels[key] = r'$\beta \ \rm{[rad]}$' 
+            else:
+                labels[key] = key
+            
+        for name, field in self.meridionalFields.items():
             contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, 
                              labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     

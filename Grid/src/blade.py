@@ -1935,104 +1935,104 @@ class Blade:
         self.meridional_fields['R'] = r_grid
 
 
-    def contour_meridional_fields(self):
-        """
-        contour of the fields stored in meridional fields
-        """
-        output_folder = self.config.get_pictures_folder_path()
-        os.makedirs(output_folder, exist_ok=True)
+    # def contour_meridional_fields(self):
+    #     """
+    #     contour of the fields stored in meridional fields
+    #     """
+    #     output_folder = self.config.get_pictures_folder_path()
+    #     os.makedirs(output_folder, exist_ok=True)
 
-        z = self.meridional_fields['Z']
-        r = self.meridional_fields['R']
+    #     z = self.meridional_fields['Z']
+    #     r = self.meridional_fields['R']
 
-        for key, value in self.meridional_fields.items():
-            if key!='Z' and key!='R':
-                try:
-                    self.contour_template(z, r, value, key)
-                    plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
-                except:
-                    plt.close()
-                    pass
+    #     for key, value in self.meridional_fields.items():
+    #         if key!='Z' and key!='R':
+    #             try:
+    #                 self.contour_template(z, r, value, key)
+    #                 plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
+    #             except:
+    #                 plt.close()
+    #                 pass
 
 
-    def compute_additional_meridional_fields(self, CP=1005, R=287, TREF=288.15, PREF=101300):
-        """
-        Compute additional Meridional Fields.
-        WARNING: All these fields are computed using the circumferential averages through some function. For this reason the suffix postAVG is used. 
-        It's probably not mathematically correct, since a function of the average is not the same of the average of a function. If that produces error, these fields should be computed
-        during the reading process
-        """
-        self.meridional_fields['Velocity_Meridional_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Axial']**2+
-                                                                self.meridional_fields['Velocity_Radial']**2)
+    # def compute_additional_meridional_fields(self, CP=1005, R=287, TREF=288.15, PREF=101300):
+    #     """
+    #     Compute additional Meridional Fields.
+    #     WARNING: All these fields are computed using the circumferential averages through some function. For this reason the suffix postAVG is used. 
+    #     It's probably not mathematically correct, since a function of the average is not the same of the average of a function. If that produces error, these fields should be computed
+    #     during the reading process
+    #     """
+    #     self.meridional_fields['Velocity_Meridional_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Axial']**2+
+    #                                                             self.meridional_fields['Velocity_Radial']**2)
         
-        self.meridional_fields['Velocity_Tangential_Relative_postAVG'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.meridional_fields['R']
+    #     self.meridional_fields['Velocity_Tangential_Relative_postAVG'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.meridional_fields['R']
         
-        self.meridional_fields['Absolute_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
-                                                                 self.meridional_fields['Velocity_Axial'])
+    #     self.meridional_fields['Absolute_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
+    #                                                              self.meridional_fields['Velocity_Axial'])
         
-        self.meridional_fields['Relative_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
-                                                                 self.meridional_fields['Velocity_Axial'])
+    #     self.meridional_fields['Relative_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
+    #                                                              self.meridional_fields['Velocity_Axial'])
         
-        self.meridional_fields['Velocity_Magnitude_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
-                                                               self.meridional_fields['Velocity_Tangential']**2 +
-                                                               self.meridional_fields['Velocity_Axial']**2)
+    #     self.meridional_fields['Velocity_Magnitude_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
+    #                                                            self.meridional_fields['Velocity_Tangential']**2 +
+    #                                                            self.meridional_fields['Velocity_Axial']**2)
         
-        self.meridional_fields['Velocity_Magnitude_Relative_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
-                                                                        self.meridional_fields['Velocity_Tangential_Relative'] ** 2 +
-                                                                        self.meridional_fields['Velocity_Axial'] ** 2)
+    #     self.meridional_fields['Velocity_Magnitude_Relative_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
+    #                                                                     self.meridional_fields['Velocity_Tangential_Relative'] ** 2 +
+    #                                                                     self.meridional_fields['Velocity_Axial'] ** 2)
         
-        self.meridional_fields['Mach_Relative_postAVG'] = self.meridional_fields['Velocity_Magnitude_Relative_postAVG']/np.sqrt(
-            1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density'])
+    #     self.meridional_fields['Mach_Relative_postAVG'] = self.meridional_fields['Velocity_Magnitude_Relative_postAVG']/np.sqrt(
+    #         1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density'])
 
-        self.meridional_fields['Entropy_postAVG'] = CP*np.log(self.meridional_fields['Temperature']/TREF)-R*np.log(self.meridional_fields['Pressure']/PREF)
+    #     self.meridional_fields['Entropy_postAVG'] = CP*np.log(self.meridional_fields['Temperature']/TREF)-R*np.log(self.meridional_fields['Pressure']/PREF)
 
 
-    def extract_body_forces(self, f_turn_method='Thermodynamic', f_loss_method='Thermodynamic'):
-        """
-        From the meridional fields, extract the body forces
-        :param f_turn_method: method selected to extract the turning component of the body force
-        :param f_loss_method: method selected to extract the loss component of the body force
-        """
+    # def extract_body_forces(self, f_turn_method='Thermodynamic', f_loss_method='Thermodynamic'):
+    #     """
+    #     From the meridional fields, extract the body forces
+    #     :param f_turn_method: method selected to extract the turning component of the body force
+    #     :param f_loss_method: method selected to extract the loss component of the body force
+    #     """
 
-        # loss component
-        self.meridional_fields['Force_Loss'] = np.zeros_like(self.meridional_fields['Z'])
-        self.meridional_fields['Force_Tangential'] = np.zeros_like(self.meridional_fields['Z'])
+    #     # loss component
+    #     self.meridional_fields['Force_Loss'] = np.zeros_like(self.meridional_fields['Z'])
+    #     self.meridional_fields['Force_Tangential'] = np.zeros_like(self.meridional_fields['Z'])
 
-        if f_loss_method.lower()=='thermodynamic':
-            for jj in range(self.z_camber.shape[1]):
-                self.meridional_fields['Force_Loss'][:, jj] = ((self.meridional_fields['Temperature'][:,jj] * (
-                                 self.meridional_fields['Entropy'][-1,jj]-self.meridional_fields['Entropy'][0,jj])
-                                 / (self.streamline_length[-1,jj]-self.streamline_length[0,jj])) *
-                                 np.cos(self.meridional_fields['Relative_Flow_Angle'][:,jj]))
+    #     if f_loss_method.lower()=='thermodynamic':
+    #         for jj in range(self.z_camber.shape[1]):
+    #             self.meridional_fields['Force_Loss'][:, jj] = ((self.meridional_fields['Temperature'][:,jj] * (
+    #                              self.meridional_fields['Entropy'][-1,jj]-self.meridional_fields['Entropy'][0,jj])
+    #                              / (self.streamline_length[-1,jj]-self.streamline_length[0,jj])) *
+    #                              np.cos(self.meridional_fields['Relative_Flow_Angle'][:,jj]))
 
-        self.meridional_fields['Force_Loss'] = clip_negative_values(self.meridional_fields['Force_Loss'])
-        self.meridional_fields['Force_Loss_Axial'] = -self.meridional_fields['Force_Loss']*self.meridional_fields['Velocity_2']/self.meridional_fields['Velocity_Magnitude_Relative']
-        self.meridional_fields['Force_Loss_Radial'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
-            'Velocity_Radial'] / self.meridional_fields['Velocity_Magnitude_Relative']
-        self.meridional_fields['Force_Loss_Tangential'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
-            'Velocity_Tangential_Relative'] / self.meridional_fields['Velocity_Magnitude_Relative']
-        self.meridional_fields['Force_Loss_Normalized'] = self.meridional_fields['Force_Loss']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
+    #     self.meridional_fields['Force_Loss'] = clip_negative_values(self.meridional_fields['Force_Loss'])
+    #     self.meridional_fields['Force_Loss_Axial'] = -self.meridional_fields['Force_Loss']*self.meridional_fields['Velocity_2']/self.meridional_fields['Velocity_Magnitude_Relative']
+    #     self.meridional_fields['Force_Loss_Radial'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
+    #         'Velocity_Radial'] / self.meridional_fields['Velocity_Magnitude_Relative']
+    #     self.meridional_fields['Force_Loss_Tangential'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
+    #         'Velocity_Tangential_Relative'] / self.meridional_fields['Velocity_Magnitude_Relative']
+    #     self.meridional_fields['Force_Loss_Normalized'] = self.meridional_fields['Force_Loss']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
 
-        if f_turn_method.lower()=='thermodynamic':
-            self.meridional_fields['Specific_Angular_Momentum'] = self.r_camber * self.meridional_fields['Velocity_Tangential']
-            for jj in range(self.z_camber.shape[1]):
-                self.meridional_fields['Force_Tangential'][:, jj] = (self.meridional_fields['Specific_Angular_Momentum'][-1, jj] - self.meridional_fields['Specific_Angular_Momentum'][0, jj]) / (self.streamline_length[-1,jj]-self.streamline_length[0,jj]) * self.meridional_fields['Velocity_Meridional'][:,jj]/self.r_camber[:,jj]
-        self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Loss_Tangential']
-        self.meridional_fields['Force_Turning'] = self.meridional_fields['Force_Turning_Tangential']/self.n_camber_t
-        self.meridional_fields['Force_Turning'] = clip_negative_values(self.meridional_fields['Force_Turning'])
-        self.meridional_fields['Force_Turning_Axial'] = self.meridional_fields['Force_Turning'] * self.n_camber_z
-        self.meridional_fields['Force_Turning_Radial'] = self.meridional_fields['Force_Turning'] * self.n_camber_r
-        self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Turning'] * self.n_camber_t
-        self.meridional_fields['Force_Turning_Normalized'] = self.meridional_fields['Force_Turning']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
-        self.meridional_fields['Total_Force_Magnitude'] = np.sqrt(self.meridional_fields['Force_Loss_Axial']**2+self.meridional_fields['Force_Turning_Axial']**2 +
-                                                                  self.meridional_fields['Force_Loss_Radial']**2+self.meridional_fields['Force_Turning_Radial']**2 +
-                                                                  self.meridional_fields['Force_Loss_Tangential']**2+self.meridional_fields['Force_Turning_Tangential']**2)
-        self.meridional_fields['Total_Force_Radial'] = self.meridional_fields['Force_Loss_Radial'] + self.meridional_fields[
-            'Force_Turning_Radial']
-        self.meridional_fields['Total_Force_Tangential'] = self.meridional_fields['Force_Loss_Tangential'] + self.meridional_fields[
-            'Force_Turning_Tangential']
-        self.meridional_fields['Total_Force_Axial'] = self.meridional_fields['Force_Loss_Axial'] + self.meridional_fields[
-            'Force_Turning_Axial']
+    #     if f_turn_method.lower()=='thermodynamic':
+    #         self.meridional_fields['Specific_Angular_Momentum'] = self.r_camber * self.meridional_fields['Velocity_Tangential']
+    #         for jj in range(self.z_camber.shape[1]):
+    #             self.meridional_fields['Force_Tangential'][:, jj] = (self.meridional_fields['Specific_Angular_Momentum'][-1, jj] - self.meridional_fields['Specific_Angular_Momentum'][0, jj]) / (self.streamline_length[-1,jj]-self.streamline_length[0,jj]) * self.meridional_fields['Velocity_Meridional'][:,jj]/self.r_camber[:,jj]
+    #     self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Loss_Tangential']
+    #     self.meridional_fields['Force_Turning'] = self.meridional_fields['Force_Turning_Tangential']/self.n_camber_t
+    #     self.meridional_fields['Force_Turning'] = clip_negative_values(self.meridional_fields['Force_Turning'])
+    #     self.meridional_fields['Force_Turning_Axial'] = self.meridional_fields['Force_Turning'] * self.n_camber_z
+    #     self.meridional_fields['Force_Turning_Radial'] = self.meridional_fields['Force_Turning'] * self.n_camber_r
+    #     self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Turning'] * self.n_camber_t
+    #     self.meridional_fields['Force_Turning_Normalized'] = self.meridional_fields['Force_Turning']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
+    #     self.meridional_fields['Total_Force_Magnitude'] = np.sqrt(self.meridional_fields['Force_Loss_Axial']**2+self.meridional_fields['Force_Turning_Axial']**2 +
+    #                                                               self.meridional_fields['Force_Loss_Radial']**2+self.meridional_fields['Force_Turning_Radial']**2 +
+    #                                                               self.meridional_fields['Force_Loss_Tangential']**2+self.meridional_fields['Force_Turning_Tangential']**2)
+    #     self.meridional_fields['Total_Force_Radial'] = self.meridional_fields['Force_Loss_Radial'] + self.meridional_fields[
+    #         'Force_Turning_Radial']
+    #     self.meridional_fields['Total_Force_Tangential'] = self.meridional_fields['Force_Loss_Tangential'] + self.meridional_fields[
+    #         'Force_Turning_Tangential']
+    #     self.meridional_fields['Total_Force_Axial'] = self.meridional_fields['Force_Loss_Axial'] + self.meridional_fields[
+    #         'Force_Turning_Axial']
 
 
     def plot_body_forces_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
@@ -2536,8 +2536,7 @@ class Blade:
         """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
         """
         self.bodyForce = BodyForce(self.config)
-        self.bodyForce.AddMeridionalGrid(self.z_grid, self.r_grid)
-        self.bodyForce.CircumferentialAverage()
+        self.bodyForce.ComputeCircumferentialAveragedFields(self.z_grid, self.r_grid)
         self.bodyForce.ComputeBodyForceMarble(self.blade_lean_angle)
         self.bodyForce.HubShroudBodyForceExtrapolation()
         

@@ -142,6 +142,7 @@ class MultiBlockGridDriver:
             
             if self.config.perform_body_force_reconstruction():
                 self.blades[iblade].extract_body_force() 
+                self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
     

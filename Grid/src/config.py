@@ -426,8 +426,8 @@ class Config:
         except:
             return 'raw' # default
 
-    def get_paraview_macro_dataset_folderpath(self):
-        return str(self.config_parser.get('BODY FORCE', 'DATASET_PATH'))
+    def get_circumferential_average_fields_path(self):
+        return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FIELDS_PATH'))
     
     
     def cut_body_force_blade_tip_extension(self):
