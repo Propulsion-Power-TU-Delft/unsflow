@@ -2540,7 +2540,6 @@ class Blade:
         self.bodyForce.CircumferentialAverage()
         self.bodyForce.ComputeBodyForceMarble(self.blade_lean_angle)
         self.bodyForce.HubShroudBodyForceExtrapolation()
-        self.bodyForce.PlotBodyForceFields()
         
         
         

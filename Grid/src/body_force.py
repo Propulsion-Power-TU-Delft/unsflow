@@ -190,9 +190,37 @@ class BodyForce:
             if name != 'Axial_Coordinate' and name!= 'Radial_Coordinate':
                 contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, name)
     
-    def PlotBodyForceFields(self):
+    def PlotBodyForceFields(self, save_filename):
+        labels = {}
+        for key in self.bodyForceFields.keys():
+            if key=='Force_Axial':
+                labels[key] = r'$f_{ax} \ \rm{[N/kg]}$'
+            elif key=='Force_Radial':
+                labels[key] = r'$f_{r} \ \rm{[N/kg]}$'
+            elif key=='Force_Tangential':
+                labels[key] = r'$f_{\theta} \ \rm{[N/kg]}$'
+            elif key=='Force_Inviscid':
+                labels[key] = r'$f_{n} \ \rm{[N/kg]}$'
+            elif key=='Force_Viscous':
+                labels[key] = r'$f_{p} \ \rm{[N/kg]}$'
+            elif key=='Force_Inviscid_Axial':
+                labels[key] = r'$f_{n,ax} \ \rm{[N/kg]}$'
+            elif key=='Force_Inviscid_Radial':
+                labels[key] = r'$f_{n,r} \ \rm{[N/kg]}$' 
+            elif key=='Force_Inviscid_Tangential':
+                labels[key] = r'$f_{n,\theta} \ \rm{[N/kg]}$'
+            elif key=='Force_Viscous_Axial':
+                labels[key] = r'$f_{p,ax} \ \rm{[N/kg]}$'
+            elif key=='Force_Viscous_Radial':
+                labels[key] = r'$f_{p,r} \ \rm{[N/kg]}$'
+            elif key=='Force_Viscous_Tangential':
+                labels[key] = r'$f_{p,\theta} \ \rm{[N/kg]}$'
+            else:
+                labels[key] = key
+            
         for name, field in self.bodyForceFields.items():
-            contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, name)
+            contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], field, 
+                             labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     
     
     def ComputeBodyForceMarble(self, leanAngle):
