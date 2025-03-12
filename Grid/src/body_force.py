@@ -109,12 +109,12 @@ class BodyForce:
         names['Velocity_Radial'] = 'Velocity_Radial'
         
         if self.config.get_body_force_extraction_method()=='kiwada':
-            names['Tau_RR'] = 'tau_rr'
-            names['Tau_RT'] = 'tau_rt'
-            names['Tau_RZ'] = 'tau_rz'
-            names['Tau_TT'] = 'tau_tt'
-            names['Tau_TZ'] = 'tau_tz'
-            names['Tau_ZZ'] = 'tau_zz'
+            names['Kiwada_Term_A1'] = 'Kiwada_Term_A1'
+            names['Kiwada_Term_A2'] = 'Kiwada_Term_A2'
+            names['Kiwada_Term_R2'] = 'Kiwada_Term_R2'
+            names['Kiwada_Term_R3'] = 'Kiwada_Term_R3'
+            names['Kiwada_Term_T1'] = 'Kiwada_Term_T1'
+            names['Kiwada_Term_T2'] = 'Kiwada_Term_T2'
         
         return names
     
@@ -260,13 +260,12 @@ class BodyForce:
         """Use the Kiwada Blade Force Average to extract the BF
         """
         # Compute the terms marked in red in the Kiwada BFA section of thollet thesis
-        A1 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_ZZ']
-        A2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial'] * self.meridionalFields['Velocity_Radial'] - self.meridionalFields['Tau_RZ']
-        R2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_RR']
-        R3 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Tangential']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_TT']
-        T1 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_TZ']
-        T2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_RT']
-        T3 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_RT'] 
+        A1 = self.meridionalFields['Kiwada_Term_A1'] 
+        A2 = self.meridionalFields['Kiwada_Term_A2']
+        R2 = self.meridionalFields['Kiwada_Term_R2']
+        R3 = self.meridionalFields['Kiwada_Term_R3']
+        T1 = self.meridionalFields['Kiwada_Term_T1']
+        T2 = self.meridionalFields['Kiwada_Term_T2'] 
         
         Z = self.meridionalFields['Axial_Coordinate']
         R = self.meridionalFields['Radial_Coordinate']
@@ -280,17 +279,17 @@ class BodyForce:
         dA1dz = compute_gradient_least_square(Z, R, blockage * A1)[0]
         dA2dr = compute_gradient_least_square(Z, R, blockage * R * A2)[1]
         self.bodyForceFields['Force_Axial'] = 1/blockage * dA1dz + 1/blockage/R*dA2dr
-        contour_template(Z, R, self.bodyForceFields['Force_Axial'], r'$Fx$', vmin=0)
+        # contour_template(Z, R, self.bodyForceFields['Force_Axial'], r'$Fx$', vmin=0)
 
         dR1dz = compute_gradient_least_square(Z, R, blockage * A2)[0]
         dR2dr = compute_gradient_least_square(Z, R, blockage * R * R2)[1]
         self.bodyForceFields['Force_Radial'] = 1/blockage*dR1dz+1/blockage/R*dR2dr-R3/R
-        contour_template(Z, R, self.bodyForceFields['Force_Radial'], r'$Fr$')
+        # contour_template(Z, R, self.bodyForceFields['Force_Radial'], r'$Fr$')
 
         dT1dz = compute_gradient_least_square(Z, R, blockage * T1)[0]
         dT2dr = compute_gradient_least_square(Z, R, blockage * R * T2)[1]
-        self.bodyForceFields['Force_Tangential'] = 1/blockage*dT1dz + 1/blockage/R*dT2dr + T3/R
-        contour_template(Z, R, self.bodyForceFields['Force_Tangential'], r'$Ft$', vmin=0)
+        self.bodyForceFields['Force_Tangential'] = 1/blockage*dT1dz + 1/blockage/R*dT2dr + T2/R
+        # contour_template(Z, R, self.bodyForceFields['Force_Tangential'], r'$Ft$', vmin=0)
 
         globalForceMagnitude = np.sqrt(self.bodyForceFields['Force_Radial']**2+
                                        self.bodyForceFields['Force_Tangential']**2+
