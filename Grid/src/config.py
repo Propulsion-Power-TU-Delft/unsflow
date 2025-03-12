@@ -365,6 +365,19 @@ class Config:
         except:
             return False
     
+    def get_extrapolation_method(self):
+        choices = ['nearest', 'linear']
+        
+        try:
+            res = self.config_parser.get('GENERAL', 'EXTRAPOLATION_METHOD').lower()            
+        except:
+            res = 'linear'
+        
+        if res not in choices:
+            raise ValueError(f'Invalid option EXTRAPOLATION_METHOD. Possible options are {choices}.')
+        
+        return res
+    
     def get_machine_name(self):
         try:
             return str(self.config_parser.get('TURBOMACHINERY DATA', 'MACHINE_NAME'))
@@ -421,13 +434,33 @@ class Config:
             return False # default
     
     def get_circumferential_average_type(self):
+        choices = ['raw', 'density']
+        
         try:
-            return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE'))
+            res =  str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE')).lower()
         except:
-            return 'raw' # default
+            res = 'raw' # default
+        
+        if res not in choices:
+            raise ValueError(f'Invalid option CIRCUMFERENTIAL_AVERAGE_TYPE. Possible options are {choices}.')
+        
+        return res
+    
+    def get_body_force_extraction_method(self):
+        choices = ['marble', 'kiwada']
+        
+        try:
+            res =  str(self.config_parser.get('BODY FORCE', 'EXTRACTION_METHOD')).lower()
+        except:
+            res = 'marble' # default
+        
+        if res not in choices:
+            raise ValueError(f'Invalid option EXTRACTION_METHOD. Possible options are {choices}.')
+        
+        return res
 
-    def get_circumferential_average_fields_path(self):
-        return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FIELDS_PATH'))
+    def get_circumferential_average_folder_path(self):
+        return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FOLDER_PATH'))
     
     
     def cut_body_force_blade_tip_extension(self):

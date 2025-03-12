@@ -158,7 +158,6 @@ class MultiBlockGridDriver:
             self.multiBlockGrid.plot_blockage(save_filename=self.config.get_machine_name())
             self.multiBlockGrid.plot_rpm(save_filename=self.config.get_machine_name())
             self.multiBlockGrid.plot_normal_camber(save_filename=self.config.get_machine_name())
-        # self.multiBlockGrid.write_turbobfm_grid_file_2D()
     
     
     def SaveOutput(self):

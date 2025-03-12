@@ -69,6 +69,7 @@ class Blade:
         self.camberSurface = Surface('Camber Surface', config)
         self.iblock = iblock
         self.iblade = iblade
+        self.extrapolationMethod = self.config.get_extrapolation_method()
 
         self.read_from_curve_file(iblade, iblock)
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
@@ -416,9 +417,13 @@ class Blade:
         """
         Compute the blade thickness evaluating theta of the pressure and suction side on the meridional points of the camber surface
         """
-        theta_ps = griddata_interpolation_with_nearest_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
-        theta_ss = griddata_interpolation_with_nearest_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
-        
+        if self.extrapolationMethod == 'linear':
+            theta_ps = griddata_interpolation_with_linear_extrapolation(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ss = griddata_interpolation_with_linear_extrapolation(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
+        else:
+            theta_ps = griddata_interpolation_with_nearest_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ss = griddata_interpolation_with_nearest_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
+            
         self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps - theta_ss)
                 
         if self.config.get_visual_debug():
@@ -545,7 +550,10 @@ class Blade:
             surface_values = np.dot(X_eval, coefficients) + intercept
             theta_eval = surface_values.reshape(z_eval.shape)
         elif method == 'interpolation': # linear interpolation, with nearest-neighbor for the extrapolated points
-            theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
+            if self.extrapolationMethod == 'linear':
+                theta_eval = griddata_interpolation_with_linear_extrapolation(z, r, theta, z_eval, r_eval)
+            else:
+                theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
         else:
             raise ValueError('Unknown method')
 
@@ -1656,283 +1664,283 @@ class Blade:
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
 
-    def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
-        """
-        Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Kiwada Extraction procedure.
-        Average type distinguish the type of average used, raw for standard circumferential.
-        Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
-        """
-        available_avg_types = ['raw', 'density', 'axialMomentum']
-        self.avg_type = average_type
-        if self.avg_type not in available_avg_types:
-            raise ValueError('Not valid average type')
-        print('Weighted average type: %s' % self.avg_type)
+    # def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
+    #     """
+    #     Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Kiwada Extraction procedure.
+    #     Average type distinguish the type of average used, raw for standard circumferential.
+    #     Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
+    #     """
+    #     available_avg_types = ['raw', 'density', 'axialMomentum']
+    #     self.avg_type = average_type
+    #     if self.avg_type not in available_avg_types:
+    #         raise ValueError('Not valid average type')
+    #     print('Weighted average type: %s' % self.avg_type)
 
-        def extract_grid_location(file_name):
-            print('Elaborating Filename: ' + file_name)
-            file_name = file_name.strip('spline_data_')
-            file_name = file_name.strip('.csv')
-            file_name = file_name.split('_')
-            nz = int(file_name[0])
-            nr = int(file_name[1])
-            return nz, nr
+    #     def extract_grid_location(file_name):
+    #         print('Elaborating Filename: ' + file_name)
+    #         file_name = file_name.strip('spline_data_')
+    #         file_name = file_name.strip('.csv')
+    #         file_name = file_name.split('_')
+    #         nz = int(file_name[0])
+    #         nr = int(file_name[1])
+    #         return nz, nr
        
-        data_dir = folder_path
-        files = [f for f in os.listdir(data_dir) if '.csv' in f]
-        files = sorted(files)
+    #     data_dir = folder_path
+    #     files = [f for f in os.listdir(data_dir) if '.csv' in f]
+    #     files = sorted(files)
 
-        # give the name of the fields to average
-        fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
-                    'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy',
-                    'A1', 'A2', 'R2', 'R3', 'T1', 'T2', 'T3',
-                    'Tau_rr', 'Tau_tt', 'Tau_zz', 'Tau_rt', 'Tau_rz', 'Tau_tz']
+    #     # give the name of the fields to average
+    #     fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
+    #                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy',
+    #                 'A1', 'A2', 'R2', 'R3', 'T1', 'T2', 'T3',
+    #                 'Tau_rr', 'Tau_tt', 'Tau_zz', 'Tau_rt', 'Tau_rz', 'Tau_tz']
         
-        nz, nr = extract_grid_location(files[-1])
-        field_grids = {}
-        for field_name in fields:
-            field_grids[field_name] = np.zeros((nz+1, nr+1))
-        z_grid = np.zeros((nz+1, nr+1))
-        r_grid = np.zeros((nz+1, nr+1))
+    #     nz, nr = extract_grid_location(files[-1])
+    #     field_grids = {}
+    #     for field_name in fields:
+    #         field_grids[field_name] = np.zeros((nz+1, nr+1))
+    #     z_grid = np.zeros((nz+1, nr+1))
+    #     r_grid = np.zeros((nz+1, nr+1))
 
-        for file in files:
-            df = pd.read_csv(data_dir + file)
-            data_dict = df.to_dict('list')
-            data_dict = {key: np.array(value) for key, value in data_dict.items()}
+    #     for file in files:
+    #         df = pd.read_csv(data_dir + file)
+    #         data_dict = df.to_dict('list')
+    #         data_dict = {key: np.array(value) for key, value in data_dict.items()}
 
-            x = data_dict['Points_0']
-            y = data_dict['Points_1']
-            z = data_dict['Points_2']
-            r = np.sqrt(x ** 2 + y ** 2)
-            theta = np.arctan2(y, x)
-            stream_id, span_id = extract_grid_location(file)
-            z_grid[stream_id, span_id] = np.sum(z) / len(z)
-            r_grid[stream_id, span_id] = np.sum(r) / len(r)
+    #         x = data_dict['Points_0']
+    #         y = data_dict['Points_1']
+    #         z = data_dict['Points_2']
+    #         r = np.sqrt(x ** 2 + y ** 2)
+    #         theta = np.arctan2(y, x)
+    #         stream_id, span_id = extract_grid_location(file)
+    #         z_grid[stream_id, span_id] = np.sum(z) / len(z)
+    #         r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
-            # Compute additional fields that will be circumferentially averaged 
-            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
+    #         # Compute additional fields that will be circumferentially averaged 
+    #         data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
 
-            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
+    #         data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
 
-            data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
+    #         data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
 
-            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
+    #         data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
             
-            data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+    #         data_dict['Velocity_Axial'] = data_dict['Velocity_2']
 
-            data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
+    #         data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
 
-            duxdx = data_dict['Velocity_X_Grad_0']
-            duxdy = data_dict['Velocity_X_Grad_1']
-            duxdz = data_dict['Velocity_X_Grad_2']
-            duydx = data_dict['Velocity_Y_Grad_0']
-            duydy = data_dict['Velocity_Y_Grad_1']
-            duydz = data_dict['Velocity_Y_Grad_2']
-            duzdx = data_dict['Velocity_Z_Grad_0']
-            duzdy = data_dict['Velocity_Z_Grad_1']
-            duzdz = data_dict['Velocity_Z_Grad_2']
-            div_u = duxdx+duydy+duzdz
-            mu = (data_dict['Laminar_Viscosity']+data_dict['Eddy_Viscosity'])*data_dict['Density']
+    #         duxdx = data_dict['Velocity_X_Grad_0']
+    #         duxdy = data_dict['Velocity_X_Grad_1']
+    #         duxdz = data_dict['Velocity_X_Grad_2']
+    #         duydx = data_dict['Velocity_Y_Grad_0']
+    #         duydy = data_dict['Velocity_Y_Grad_1']
+    #         duydz = data_dict['Velocity_Y_Grad_2']
+    #         duzdx = data_dict['Velocity_Z_Grad_0']
+    #         duzdy = data_dict['Velocity_Z_Grad_1']
+    #         duzdz = data_dict['Velocity_Z_Grad_2']
+    #         div_u = duxdx+duydy+duzdz
+    #         mu = (data_dict['Laminar_Viscosity']+data_dict['Eddy_Viscosity'])*data_dict['Density']
 
-            tauxx = mu*(2*duxdx)-2/3*mu*div_u
-            tauyy = mu*(2*duydy)-2/3*mu*div_u
-            tauzz_cart = mu*(2*duzdz)-2/3*mu*div_u
-            tauxy = mu*(duydx+duxdy)
-            tauyz = mu*(duydz+duzdy)
-            tauxz = mu*(duxdz+duzdx)
-            trace_cart = tauxx+tauyy+tauzz_cart
+    #         tauxx = mu*(2*duxdx)-2/3*mu*div_u
+    #         tauyy = mu*(2*duydy)-2/3*mu*div_u
+    #         tauzz_cart = mu*(2*duzdz)-2/3*mu*div_u
+    #         tauxy = mu*(duydx+duxdy)
+    #         tauyz = mu*(duydz+duzdy)
+    #         tauxz = mu*(duxdz+duzdx)
+    #         trace_cart = tauxx+tauyy+tauzz_cart
 
-            # plt.figure()
-            # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
-            # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
-            # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
-            # plt.plot(theta*180/pi, trace_cart, '.', label=r'$\tau_{xx} + \tau_{yy} + \tau_{zz}$')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'$\tau$ [Pa]')
-            # plt.legend()
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
+    #         # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
+    #         # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
+    #         # plt.plot(theta*180/pi, trace_cart, '.', label=r'$\tau_{xx} + \tau_{yy} + \tau_{zz}$')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'$\tau$ [Pa]')
+    #         # plt.legend()
 
-            # plt.figure()
-            # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
-            # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
-            # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
-            # plt.plot(theta*180/pi, tauxy, '.', label=r'$\tau_{xy}$')
-            # plt.plot(theta*180/pi, tauxz, '.', label=r'$\tau_{xz}$')
-            # plt.plot(theta*180/pi, tauyz, '.', label=r'$\tau_{yz}$')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'$\tau$ [Pa]')
-            # plt.legend()
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
+    #         # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
+    #         # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
+    #         # plt.plot(theta*180/pi, tauxy, '.', label=r'$\tau_{xy}$')
+    #         # plt.plot(theta*180/pi, tauxz, '.', label=r'$\tau_{xz}$')
+    #         # plt.plot(theta*180/pi, tauyz, '.', label=r'$\tau_{yz}$')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'$\tau$ [Pa]')
+    #         # plt.legend()
 
-            taurr = np.zeros_like(tauxx) 
-            tautt = np.zeros_like(tauxx) 
-            tauzz_cyl = np.zeros_like(tauxx) 
-            taurt = np.zeros_like(tauxx) 
-            taurz = np.zeros_like(tauxx) 
-            tautz = np.zeros_like(tauxx) 
-            for i in range(len(tauxz)):
-                TAU = np.zeros((3,3))
-                TAU[0,0] = tauxx[i]
-                TAU[0,1] = tauxy[i]
-                TAU[0,2] = tauxz[i]
-                TAU[1,0] = tauxy[i]
-                TAU[1,1] = tauyy[i]
-                TAU[1,2] = tauyz[i]
-                TAU[2,0] = tauxz[i]
-                TAU[2,1] = tauyz[i]
-                TAU[2,2] = tauzz_cart[i]
-                TAU_cyl = rotate_cartesian_to_cylindric_tensor(theta[i], TAU)
-                taurr[i] = TAU_cyl[0,0]
-                tautt[i] = TAU_cyl[1,1]
-                tauzz_cyl[i] = TAU_cyl[2,2]
-                taurt[i] = TAU_cyl[0,1]
-                taurz[i] = TAU_cyl[0,2]
-                tautz[i] = TAU_cyl[1,2]
-            data_dict['Tau_rr'] = taurr
-            data_dict['Tau_tt'] = tautt
-            data_dict['Tau_zz'] = tauzz_cyl
-            data_dict['Tau_rt'] = taurt
-            data_dict['Tau_rz'] = taurz
-            data_dict['Tau_tz'] = tautz
-            # trace_cyl = taurr+tautt+tauzz_cyl
-            # plt.figure()
-            # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
-            # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
-            # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
-            # plt.plot(theta*180/pi, trace_cyl, '.', label=r'$\tau_{rr} + \tau_{\theta} + \tau_{zz}$')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'$\tau$ [Pa]')
-            # plt.legend()
+    #         taurr = np.zeros_like(tauxx) 
+    #         tautt = np.zeros_like(tauxx) 
+    #         tauzz_cyl = np.zeros_like(tauxx) 
+    #         taurt = np.zeros_like(tauxx) 
+    #         taurz = np.zeros_like(tauxx) 
+    #         tautz = np.zeros_like(tauxx) 
+    #         for i in range(len(tauxz)):
+    #             TAU = np.zeros((3,3))
+    #             TAU[0,0] = tauxx[i]
+    #             TAU[0,1] = tauxy[i]
+    #             TAU[0,2] = tauxz[i]
+    #             TAU[1,0] = tauxy[i]
+    #             TAU[1,1] = tauyy[i]
+    #             TAU[1,2] = tauyz[i]
+    #             TAU[2,0] = tauxz[i]
+    #             TAU[2,1] = tauyz[i]
+    #             TAU[2,2] = tauzz_cart[i]
+    #             TAU_cyl = rotate_cartesian_to_cylindric_tensor(theta[i], TAU)
+    #             taurr[i] = TAU_cyl[0,0]
+    #             tautt[i] = TAU_cyl[1,1]
+    #             tauzz_cyl[i] = TAU_cyl[2,2]
+    #             taurt[i] = TAU_cyl[0,1]
+    #             taurz[i] = TAU_cyl[0,2]
+    #             tautz[i] = TAU_cyl[1,2]
+    #         data_dict['Tau_rr'] = taurr
+    #         data_dict['Tau_tt'] = tautt
+    #         data_dict['Tau_zz'] = tauzz_cyl
+    #         data_dict['Tau_rt'] = taurt
+    #         data_dict['Tau_rz'] = taurz
+    #         data_dict['Tau_tz'] = tautz
+    #         # trace_cyl = taurr+tautt+tauzz_cyl
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
+    #         # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
+    #         # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
+    #         # plt.plot(theta*180/pi, trace_cyl, '.', label=r'$\tau_{rr} + \tau_{\theta} + \tau_{zz}$')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'$\tau$ [Pa]')
+    #         # plt.legend()
 
-            # plt.figure()
-            # plt.plot(theta*180/pi, trace_cart, 'o', mfc='none', label='Cartesian')
-            # plt.plot(theta*180/pi, trace_cyl, 'x', label='Cylindrical')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'Tr$(\tau)$ [Pa]')
-            # plt.legend()
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, trace_cart, 'o', mfc='none', label='Cartesian')
+    #         # plt.plot(theta*180/pi, trace_cyl, 'x', label='Cylindrical')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'Tr$(\tau)$ [Pa]')
+    #         # plt.legend()
 
-            # plt.figure()
-            # plt.plot(theta*180/pi, tauzz_cart, 'o', mfc='none', label='Cartesian')
-            # plt.plot(theta*180/pi, tauzz_cyl, 'x', label='Cylindrical')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'$\tau_{zz}$ [Pa]')
-            # plt.legend()
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, tauzz_cart, 'o', mfc='none', label='Cartesian')
+    #         # plt.plot(theta*180/pi, tauzz_cyl, 'x', label='Cylindrical')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'$\tau_{zz}$ [Pa]')
+    #         # plt.legend()
             
-            # plt.figure()
-            # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
-            # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
-            # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
-            # plt.plot(theta*180/pi, taurt, '.', label=r'$\tau_{r \theta}$')
-            # plt.plot(theta*180/pi, taurz, '.', label=r'$\tau_{r z}$')
-            # plt.plot(theta*180/pi, tautz, '.', label=r'$\tau_{\theta z}$')
-            # plt.xlabel(r'$\theta$ [deg]')
-            # plt.ylabel(r'$\tau$ [Pa]')
-            # plt.legend()
+    #         # plt.figure()
+    #         # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
+    #         # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
+    #         # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
+    #         # plt.plot(theta*180/pi, taurt, '.', label=r'$\tau_{r \theta}$')
+    #         # plt.plot(theta*180/pi, taurz, '.', label=r'$\tau_{r z}$')
+    #         # plt.plot(theta*180/pi, tautz, '.', label=r'$\tau_{\theta z}$')
+    #         # plt.xlabel(r'$\theta$ [deg]')
+    #         # plt.ylabel(r'$\tau$ [Pa]')
+    #         # plt.legend()
 
-            # follow nomenclature page 89 of Magrini
-            if inviscid:
-                taurr *=0
-                tautt *=0
-                tauzz_cyl *= 0
-                tauzz_cart *= 0
-                taurt *= 0
-                taurz *= 0
-                tautz *= 0
+    #         # follow nomenclature page 89 of Magrini
+    #         if inviscid:
+    #             taurr *=0
+    #             tautt *=0
+    #             tauzz_cyl *= 0
+    #             tauzz_cart *= 0
+    #             taurt *= 0
+    #             taurz *= 0
+    #             tautz *= 0
                 
-            data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz_cyl
-            data_dict['A2'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Radial']-taurz
-            data_dict['R2'] = data_dict['Density']*data_dict['Velocity_Radial']**2+data_dict['Pressure']-taurr
-            data_dict['R3'] = data_dict['Density']*data_dict['Velocity_Tangential']**2+data_dict['Pressure']-tautt
-            data_dict['T1'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Tangential']-tautz
-            data_dict['T2'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt
-            data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt 
+    #         data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz_cyl
+    #         data_dict['A2'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Radial']-taurz
+    #         data_dict['R2'] = data_dict['Density']*data_dict['Velocity_Radial']**2+data_dict['Pressure']-taurr
+    #         data_dict['R3'] = data_dict['Density']*data_dict['Velocity_Tangential']**2+data_dict['Pressure']-tautt
+    #         data_dict['T1'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Tangential']-tautz
+    #         data_dict['T2'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt
+    #         data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt 
 
-            for field in fields:
-                f = data_dict[field].copy()
-                if self.avg_type.lower() == 'raw':
-                    field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
-                elif self.avg_type.lower() == 'density':
-                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
-                elif self.avg_type.lower() == 'axialMomentum':
-                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
+    #         for field in fields:
+    #             f = data_dict[field].copy()
+    #             if self.avg_type.lower() == 'raw':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
+    #             elif self.avg_type.lower() == 'density':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
+    #             elif self.avg_type.lower() == 'axialMomentum':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
 
-        self.meridional_fields = field_grids
-        self.meridional_fields['Z'] = z_grid
-        self.meridional_fields['R'] = r_grid
+    #     self.meridional_fields = field_grids
+    #     self.meridional_fields['Z'] = z_grid
+    #     self.meridional_fields['R'] = r_grid
     
 
-    def process_paraview_dataset_marble(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
-        """
-        Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
-        Average type distinguish the type of average used, raw for standard circumferential.
-        Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
-        """
-        available_avg_types = ['raw', 'density', 'axialMomentum']
-        self.avg_type = average_type
-        if self.avg_type not in available_avg_types:
-            raise ValueError('Not valid average type')
-        print('Weighted average type: %s' % self.avg_type)
+    # def process_paraview_dataset_marble(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
+    #     """
+    #     Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
+    #     Average type distinguish the type of average used, raw for standard circumferential.
+    #     Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
+    #     """
+    #     available_avg_types = ['raw', 'density', 'axialMomentum']
+    #     self.avg_type = average_type
+    #     if self.avg_type not in available_avg_types:
+    #         raise ValueError('Not valid average type')
+    #     print('Weighted average type: %s' % self.avg_type)
 
-        def extract_grid_location(file_name):
-            print('Elaborating Filename: ' + file_name)
-            file_name = file_name.strip('spline_data_')
-            file_name = file_name.strip('.csv')
-            file_name = file_name.split('_')
-            nz = int(file_name[0])
-            nr = int(file_name[1])
-            return nz, nr
+    #     def extract_grid_location(file_name):
+    #         print('Elaborating Filename: ' + file_name)
+    #         file_name = file_name.strip('spline_data_')
+    #         file_name = file_name.strip('.csv')
+    #         file_name = file_name.split('_')
+    #         nz = int(file_name[0])
+    #         nr = int(file_name[1])
+    #         return nz, nr
        
-        data_dir = folder_path
-        files = [f for f in os.listdir(data_dir) if '.csv' in f]
-        files = sorted(files)
+    #     data_dir = folder_path
+    #     files = [f for f in os.listdir(data_dir) if '.csv' in f]
+    #     files = sorted(files)
 
-        # give the name of the fields to average
-        fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
-                    'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy']
+    #     # give the name of the fields to average
+    #     fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
+    #                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy']
         
-        nz, nr = extract_grid_location(files[-1])
-        field_grids = {}
-        for field_name in fields:
-            field_grids[field_name] = np.zeros((nz+1, nr+1))
-        z_grid = np.zeros((nz+1, nr+1))
-        r_grid = np.zeros((nz+1, nr+1))
+    #     nz, nr = extract_grid_location(files[-1])
+    #     field_grids = {}
+    #     for field_name in fields:
+    #         field_grids[field_name] = np.zeros((nz+1, nr+1))
+    #     z_grid = np.zeros((nz+1, nr+1))
+    #     r_grid = np.zeros((nz+1, nr+1))
 
-        for file in files:
-            df = pd.read_csv(data_dir + file)
-            data_dict = df.to_dict('list')
-            data_dict = {key: np.array(value) for key, value in data_dict.items()}
+    #     for file in files:
+    #         df = pd.read_csv(data_dir + file)
+    #         data_dict = df.to_dict('list')
+    #         data_dict = {key: np.array(value) for key, value in data_dict.items()}
 
-            x = data_dict['Points_0']
-            y = data_dict['Points_1']
-            z = data_dict['Points_2']
-            r = np.sqrt(x ** 2 + y ** 2)
-            theta = np.arctan2(y, x)
-            stream_id, span_id = extract_grid_location(file)
-            z_grid[stream_id, span_id] = np.sum(z) / len(z)
-            r_grid[stream_id, span_id] = np.sum(r) / len(r)
+    #         x = data_dict['Points_0']
+    #         y = data_dict['Points_1']
+    #         z = data_dict['Points_2']
+    #         r = np.sqrt(x ** 2 + y ** 2)
+    #         theta = np.arctan2(y, x)
+    #         stream_id, span_id = extract_grid_location(file)
+    #         z_grid[stream_id, span_id] = np.sum(z) / len(z)
+    #         r_grid[stream_id, span_id] = np.sum(r) / len(r)
 
-            # Compute additional fields that will be circumferentially averaged 
-            data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
+    #         # Compute additional fields that will be circumferentially averaged 
+    #         data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
 
-            data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
+    #         data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
 
-            data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
+    #         data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
 
-            data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
+    #         data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
             
-            data_dict['Velocity_Axial'] = data_dict['Velocity_2']
+    #         data_dict['Velocity_Axial'] = data_dict['Velocity_2']
 
-            data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
+    #         data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
 
-            for field in fields:
-                f = data_dict[field].copy()
-                if self.avg_type.lower() == 'raw':
-                    field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
-                elif self.avg_type.lower() == 'density':
-                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
-                elif self.avg_type.lower() == 'axialMomentum':
-                    field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
+    #         for field in fields:
+    #             f = data_dict[field].copy()
+    #             if self.avg_type.lower() == 'raw':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
+    #             elif self.avg_type.lower() == 'density':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
+    #             elif self.avg_type.lower() == 'axialMomentum':
+    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
 
-        self.meridional_fields = field_grids
-        self.meridional_fields['Z'] = z_grid
-        self.meridional_fields['R'] = r_grid
+    #     self.meridional_fields = field_grids
+    #     self.meridional_fields['Z'] = z_grid
+    #     self.meridional_fields['R'] = r_grid
 
 
     # def contour_meridional_fields(self):
@@ -2330,23 +2338,23 @@ class Blade:
             plt.savefig(folder + '/' + save_filename + '_%sAvg.pdf' % (self.avg_type), bbox_inches='tight')
     
 
-    def interpolate_body_force_data(self, filepath, fields_name):
-        """
-        Interpolate the body force components stored in filepath onto the blade grid
-        """
-        with open(filepath, 'rb') as file:
-            data = pickle.load(file)
+    # def interpolate_body_force_data(self, filepath, fields_name):
+    #     """
+    #     Interpolate the body force components stored in filepath onto the blade grid
+    #     """
+    #     with open(filepath, 'rb') as file:
+    #         data = pickle.load(file)
 
-        z_data = data['Z']
-        r_data = data['R']
-        return_fields = []
-        for field in fields_name:
-            self.contour_template(z_data, r_data, data[field], field+'_reference')
-            f = griddata_interpolation_with_nearest_filler(z_data, r_data, data[field], self.z_grid, self.r_grid)
-            self.contour_template(z_data, r_data, data[field], field+'_interpolated')
-            return_fields.append(f.copy())
+    #     z_data = data['Z']
+    #     r_data = data['R']
+    #     return_fields = []
+    #     for field in fields_name:
+    #         self.contour_template(z_data, r_data, data[field], field+'_reference')
+    #         f = griddata_interpolation_with_linear_extrapolation(z_data, r_data, data[field], self.z_grid, self.r_grid)
+    #         self.contour_template(z_data, r_data, data[field], field+'_interpolated')
+    #         return_fields.append(f.copy())
 
-        return return_fields
+    #     return return_fields
     
 
     def cut_blade_tip(self, clearance_meters):
@@ -2373,6 +2381,7 @@ class Blade:
         R = self.meridional_fields['R'].copy()
         Z = self.meridional_fields['Z'].copy()
         B = self.blockage.copy()
+        
         dbdz, dbdr = compute_gradient_least_square(Z, R, self.blockage)
 
         self.contour_template(Z, R, B, r'$b$')
@@ -2535,9 +2544,17 @@ class Blade:
     def extract_body_force(self):
         """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
         """
-        self.bodyForce = BodyForce(self.config)
+        self.bodyForce = BodyForce(self.config, self.iblade)
         self.bodyForce.ComputeCircumferentialAveragedFields(self.z_grid, self.r_grid)
-        self.bodyForce.ComputeBodyForceMarble(self.blade_lean_angle)
+        
+        extractionMethod = self.config.get_body_force_extraction_method()
+        if extractionMethod.lower() == 'marble':
+            self.bodyForce.ComputeBodyForceMarble(self.n_camber_r)
+        elif extractionMethod.lower() == 'kiwada':
+            self.bodyForce.ComputeBodyForceKiwada(self.blockage)
+        else:
+            raise ValueError(f"Unknown body force extraction method: {extractionMethod}")
+            
         self.bodyForce.HubShroudBodyForceExtrapolation()
         
         

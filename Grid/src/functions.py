@@ -1051,7 +1051,17 @@ def clip_negative_values(f):
     """
     Remove all the negative values from a numpy array `f`
     """
-    return np.sqrt(f ** 2)
+    mask = np.where(f<0)
+    f[mask] = 0
+    return f
+
+def clip_positive_values(f):
+    """
+    Remove all the positive values from a numpy array `f`
+    """
+    mask = np.where(f>0)
+    f[mask] = 0
+    return f
 
 
 def compute_curvilinear_abscissa(x, y):
@@ -1204,7 +1214,7 @@ def compute_gradient_least_square(x, y, z):
     return dzdx, dzdy
 
 
-def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.'):
+def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False):
         """
         Template function to create contours.
 
@@ -1237,13 +1247,30 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         if minval==maxval:
             maxval += 1e-12
         
+        os.makedirs(folder_name, exist_ok=True)
+        
         levels = np.linspace(minval, maxval, N_levels)
         fig, ax = plt.subplots()
         contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
+        # Move colorbar to the bottom
+        # tick_values = [minval, (minval + maxval) / 2, maxval]
+        # cbar = fig.colorbar(contour, orientation='horizontal', pad=0.15)
         cbar = fig.colorbar(contour)
+        # cbar.set_ticks(tick_values)  # Set custom tick locations
+
+        # cbar = fig.colorbar(contour)
         contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
         plt.title(name)
+        if ticks is not True:
+            ax.set_xticks([])
+            ax.set_yticks([])
         ax.set_aspect('equal', adjustable='box')
+        if white_grid:
+            ni,nj = z.shape
+            for i in range(ni, 3):
+                plt.plot(z[i,:], r[i,:], 'w', linewidth=0.2)
+            for j in range(nj, 3):
+                plt.plot(z[:,j], r[:,j], 'w', linewidth=0.2)
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
@@ -1293,32 +1320,73 @@ def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval
     return z_eval
 
 
-def extrapolate_nan_values(xgrid, ygrid, field):
+def griddata_interpolation_with_linear_extrapolation(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear'):
+    """
+    Interpolation using griddata, but the points lying out of the convex hull are treated with linear extrapolation.
+
+    Parameters
+    -------------------------------
+
+    `xpoints`: 1 or 2D array of x points where data is known
+
+    `ypoints`: 1 or 2D array of y points where data is known
+
+    `zpoints`: 1D array of function values where data is known, related to `xpoints` and `ypoints`
+
+    `x_eval`: 1 or 2D array where evaluating the function
+
+    `y_eval`: 1 or 2D array where evaluating the function
+
+    `method`: linear or cubic usually
+
+    `filler`: value used to fill and recognize points outside the convex hull
+    """
+    # Perform linear interpolation
+    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method=method, fill_value=np.nan)
+    z_eval = linear_extrapolation_nan_values(x_eval, y_eval, z_eval)
+
+    return z_eval
+
+
+def linear_extrapolation_nan_values(xgrid, ygrid, field):
+    """Given an array with nan values on the outer borders, extrapolate the values using linear interpolation along stream and span direction
+
+    Args:
+        xgrid (np.ndarray): stream coords
+        ygrid (np.ndaray): span coords
+        field (np.nd.array): function values
+
+    Returns:
+        np.ndarray: function values with nan values extrapolated
+    """
     streamGrid = compute_meridional_streamwise_coordinates(xgrid, ygrid)
     spanGrid = compute_meridional_spanwise_coordinates(xgrid, ygrid)
-    
     ni,nj = xgrid.shape
     
     # extrapolation along the spanwise direction
     for i in range(ni):
         for j in range(nj//2, nj):
             if np.isnan(field[i,j]):
-                field[i,j:] = field[i,j-1] + (field[i,j-1] - field[i,j-2])*(spanGrid[i,j:] - spanGrid[i,j-1])
+                derivative = (field[i,j-1] - field[i,j-2])/(spanGrid[i,j-1] - spanGrid[i,j-2])
+                field[i,j:] = field[i,j-1] + derivative*(spanGrid[i,j:] - spanGrid[i,j-1])
                 break
         for j in range(nj//2-1, -1, -1):
             if np.isnan(field[i,j]):
-                field[i,0:j+1] = field[i,j+1] + (field[i,j+1] - field[i,j+2])*(spanGrid[i,0:j+1] - spanGrid[i,j+1])
+                derivative = (field[i,j+2] - field[i,j+1])/(spanGrid[i,j+2] - spanGrid[i,j+1])
+                field[i,0:j+1] = field[i,j+1] + derivative * (spanGrid[i,0:j+1] - spanGrid[i,j+1])
                 break
     
     # extrapolation along the streamwise direction
     for j in range(nj):
         for i in range(ni//2, ni):
             if np.isnan(field[i,j]):
-                field[i:,j] = field[i-1,j] + (field[i-1,j] - field[i-2,j])*(streamGrid[i:,j] - streamGrid[i-1,j])
+                derivative = (field[i-1,j] - field[i-2,j])/(streamGrid[i-1,j] - streamGrid[i-2,j])
+                field[i:,j] = field[i-1,j] + derivative * (streamGrid[i:,j] - streamGrid[i-1,j])
                 break
         for i in range(ni//2-1, -1, -1):
             if np.isnan(field[i,j]):
-                field[0:i+1,j] = field[i+1,j] + (field[i+1,j] - field[i+2,j])*(streamGrid[0:i+1,j] - streamGrid[i+1,j])
+                derivative = (field[i+2,j] - field[i+1,j])/(streamGrid[i+2,j] - streamGrid[i+1,j])
+                field[0:i+1,j] = field[i+1,j] + derivative * (streamGrid[0:i+1,j] - streamGrid[i+1,j])
                 break
     
     return field

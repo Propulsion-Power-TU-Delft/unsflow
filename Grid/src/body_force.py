@@ -13,8 +13,9 @@ class BodyForce:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, iblade):
         self.config = config
+        self.iblade = iblade
         self.bodyForceFields = {} # contaning the body force fields
         self.meridionalFields = {} # contaning all the meridional fields
     
@@ -29,16 +30,24 @@ class BodyForce:
         self.axialGrid = zgrid
         self.radialGrid = rgrid   
         
-        filepath = self.config.get_circumferential_average_fields_path()
+        folderpath = self.config.get_circumferential_average_folder_path()
+        averageType = self.config.get_circumferential_average_type()
+        
+        if averageType.lower() == 'raw':
+            filepath = os.path.join(folderpath, 'meridionalFields_thetaAvg.pik')
+        else:
+            filepath = os.path.join(folderpath, 'meridionalFields_densityAvg.pik')
+        
         solverType = self.config.get_bladed_CFD_solver_type()
         self.meridionalFields = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)
-        
+                
         for key in self.meridionalFields.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
-                self.meridionalFields[key] = griddata_interpolation_with_nearest_filler(self.meridionalFields['Axial_Coordinate'], 
-                                                                                        self.meridionalFields['Radial_Coordinate'], 
-                                                                                        self.meridionalFields[key], 
-                                                                                        self.axialGrid, self.radialGrid)
+                self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(self.meridionalFields['Axial_Coordinate'], 
+                                                                                              self.meridionalFields['Radial_Coordinate'], 
+                                                                                              self.meridionalFields[key], 
+                                                                                              self.axialGrid, self.radialGrid)
+        
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
         self.meridionalFields['Radial_Coordinate'] = self.radialGrid
             
@@ -66,7 +75,7 @@ class BodyForce:
         
         meridionalFields['Entropy'] = CP*np.log(meridionalFields['Temperature']/TREF)-R*np.log(meridionalFields['Pressure']/PREF)
         meridionalFields['Relative_Flow_Angle'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
-            
+        
         return meridionalFields
     
     
@@ -83,25 +92,13 @@ class BodyForce:
 
         if solver_type.lower() == 'su2':
             names['Density'] = 'Density'
-            # names['Velocity_X'] = 'Velocity_0'
-            # names['Velocity_Y'] = 'Velocity_1'
-            # names['Velocity_Z'] = 'Velocity_2'
             names['Pressure'] = 'Pressure'
             names['Temperature'] = 'Temperature'
-            # names['Grid_Velocity_X'] = 'Grid_Velocity_0'
-            # names['Grid_Velocity_Y'] = 'Grid_Velocity_1'
-            # names['Grid_Velocity_Z'] = 'Grid_Velocity_2'
         
         elif solver_type.lower() == 'luminary':
             names['Density'] = 'Density (kg/m³)'
-            # names['Velocity_X'] = 'Velocity (m/s)_0'
-            # names['Velocity_Y'] = 'Velocity (m/s)_1'
-            # names['Velocity_Z'] = 'Velocity (m/s)_2'
             names['Pressure'] = 'Absolute Pressure (Pa)'
             names['Temperature'] = 'Temperature (K)'
-            # names['Grid_Velocity_X'] = 'Grid Velocity (m/s)_0'
-            # names['Grid_Velocity_Y'] = 'Grid Velocity (m/s)_1'
-            # names['Grid_Velocity_Z'] = 'Grid Velocity (m/s)_2'
         
         names['Mach'] = 'Mach'
         names['Axial_Coordinate'] = 'Axial_Coordinate'
@@ -110,6 +107,14 @@ class BodyForce:
         names['Velocity_Tangential'] = 'Velocity_Tangential'
         names['Velocity_Tangential_Relative'] = 'Velocity_Tangential_Relative'
         names['Velocity_Radial'] = 'Velocity_Radial'
+        
+        if self.config.get_body_force_extraction_method()=='kiwada':
+            names['Tau_RR'] = 'tau_rr'
+            names['Tau_RT'] = 'tau_rt'
+            names['Tau_RZ'] = 'tau_rz'
+            names['Tau_TT'] = 'tau_tt'
+            names['Tau_TZ'] = 'tau_tz'
+            names['Tau_ZZ'] = 'tau_zz'
         
         return names
     
@@ -175,6 +180,18 @@ class BodyForce:
                 labels[key] = r'$s \ \rm{[J/kgK]}$' 
             elif key=='Relative_Flow_Angle':
                 labels[key] = r'$\beta \ \rm{[rad]}$' 
+            elif key=='Tau_RR':
+                labels[key] = r'$\tau_{rr}^{R} \ \rm{[Pa]}$' 
+            elif key=='Tau_TT':
+                labels[key] = r'$\tau_{\theta \theta}^{R} \ \rm{[Pa]}$' 
+            elif key=='Tau_ZZ':
+                labels[key] = r'$\tau_{zz}^{R} \ \rm{[Pa]}$' 
+            elif key=='Tau_RT':
+                labels[key] = r'$\tau_{r \theta}^{R} \ \rm{[Pa]}$' 
+            elif key=='Tau_RZ':
+                labels[key] = r'$\tau_{r z}^{R} \ \rm{[Pa]}$' 
+            elif key=='Tau_TZ':
+                labels[key] = r'$\tau_{\theta z}^{R} \ \rm{[Pa]}$' 
             else:
                 labels[key] = key
             
@@ -183,7 +200,7 @@ class BodyForce:
                              labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     
     
-    def ComputeBodyForceMarble(self, leanAngle):
+    def ComputeBodyForceMarble(self, n_camber_r):
         """
         Compute the body force density, using the marble thermodynamic approach based on the circumferentially averaged flow field
         """
@@ -208,7 +225,7 @@ class BodyForce:
         
         self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
         
-        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*np.tan(leanAngle)
+        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*np.tan(n_camber_r)
 
         self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']-(self.bodyForceFields['Force_Tangential']-
                                                 self.bodyForceFields['Force_Viscous_Tangential'])*self.meridionalFields['Velocity_Tangential_Relative']/self.meridionalFields['Velocity_Axial']
@@ -224,6 +241,90 @@ class BodyForce:
                                                         self.bodyForceFields['Force_Viscous_Tangential']**2)
         
         self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
+        
+        # clip spurious values of the cartesian force
+        if not self.config.invert_axial_coordinates():
+            clip_negative_values(self.bodyForceFields['Force_Axial'])
+        else:
+            clip_positive_values(self.bodyForceFields['Force_Axial'])
+        
+        if self.config.get_omega_shaft()[self.iblade]>0:
+            clip_negative_values(self.bodyForceFields['Force_Tangential'])
+        elif self.config.get_omega_shaft()[self.iblade]<0:
+            clip_positive_values(self.bodyForceFields['Force_Tangential'])
+        else:
+            pass
+    
+    
+    def ComputeBodyForceKiwada(self, blockage):
+        """Use the Kiwada Blade Force Average to extract the BF
+        """
+        # Compute the terms marked in red in the Kiwada BFA section of thollet thesis
+        A1 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_ZZ']
+        A2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial'] * self.meridionalFields['Velocity_Radial'] - self.meridionalFields['Tau_RZ']
+        R2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_RR']
+        R3 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Tangential']**2 + self.meridionalFields['Pressure'] - self.meridionalFields['Tau_TT']
+        T1 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Axial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_TZ']
+        T2 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_RT']
+        T3 = self.meridionalFields['Density'] * self.meridionalFields['Velocity_Radial'] * self.meridionalFields['Velocity_Tangential'] - self.meridionalFields['Tau_RT'] 
+        
+        Z = self.meridionalFields['Axial_Coordinate']
+        R = self.meridionalFields['Radial_Coordinate']
+        dbdz, dbdr = compute_gradient_least_square(Z, R, blockage)
+
+        contour_template(Z, R, blockage, r'$b$')
+        contour_template(Z, R, dbdz, r'$\partial_z b$')
+        contour_template(Z, R, dbdr, r'$\partial_r b$')
+
+        # axial equation
+        dA1dz = compute_gradient_least_square(Z, R, blockage * A1)[0]
+        dA2dr = compute_gradient_least_square(Z, R, blockage * R * A2)[1]
+        self.bodyForceFields['Force_Axial'] = 1/blockage * dA1dz + 1/blockage/R*dA2dr
+        contour_template(Z, R, self.bodyForceFields['Force_Axial'], r'$Fx$', vmin=0)
+
+        dR1dz = compute_gradient_least_square(Z, R, blockage * A2)[0]
+        dR2dr = compute_gradient_least_square(Z, R, blockage * R * R2)[1]
+        self.bodyForceFields['Force_Radial'] = 1/blockage*dR1dz+1/blockage/R*dR2dr-R3/R
+        contour_template(Z, R, self.bodyForceFields['Force_Radial'], r'$Fr$')
+
+        dT1dz = compute_gradient_least_square(Z, R, blockage * T1)[0]
+        dT2dr = compute_gradient_least_square(Z, R, blockage * R * T2)[1]
+        self.bodyForceFields['Force_Tangential'] = 1/blockage*dT1dz + 1/blockage/R*dT2dr + T3/R
+        contour_template(Z, R, self.bodyForceFields['Force_Tangential'], r'$Ft$', vmin=0)
+
+        globalForceMagnitude = np.sqrt(self.bodyForceFields['Force_Radial']**2+
+                                       self.bodyForceFields['Force_Tangential']**2+
+                                       self.bodyForceFields['Force_Axial']**2)
+
+        ni,nj = R.shape
+        self.bodyForceFields['Force_Viscous_Radial'] = np.zeros((ni,nj))
+        self.bodyForceFields['Force_Viscous_Tangential'] = np.zeros((ni,nj))
+        self.bodyForceFields['Force_Viscous_Axial'] = np.zeros((ni,nj))
+        self.bodyForceFields['Force_Viscous'] = np.zeros((ni,nj))
+        for i in range(ni):
+            for j in range(nj):
+                relVelocity = np.array([self.meridionalFields['Velocity_Radial'][i,j],
+                                        self.meridionalFields['Velocity_Tangential_Relative'][i,j],
+                                        self.meridionalFields['Velocity_Axial'][i,j]])
+                globalForce = np.array([self.bodyForceFields['Force_Radial'][i,j],
+                                        self.bodyForceFields['Force_Tangential'][i,j],
+                                        self.bodyForceFields['Force_Axial'][i,j]])
+                
+                lossVersor = -relVelocity/np.linalg.norm(relVelocity)
+                self.bodyForceFields['Force_Viscous'][i,j] = np.dot(globalForce, lossVersor)
+                self.bodyForceFields['Force_Viscous_Radial'][i,j] = self.bodyForceFields['Force_Viscous'][i,j]*lossVersor[0]
+                self.bodyForceFields['Force_Viscous_Tangential'][i,j] = self.bodyForceFields['Force_Viscous'][i,j]*lossVersor[1]
+                self.bodyForceFields['Force_Viscous_Axial'][i,j] = self.bodyForceFields['Force_Viscous'][i,j]*lossVersor[2]
+                
+        self.bodyForceFields['Force_Inviscid_Radial'] = self.bodyForceFields['Force_Radial']-self.bodyForceFields['Force_Viscous_Radial']
+        self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Axial']-self.bodyForceFields['Force_Viscous_Axial']
+        self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
+        self.bodyForceFields['Force_Inviscid'] = np.sqrt(self.bodyForceFields['Force_Inviscid_Axial']**2+
+                                                         self.bodyForceFields['Force_Inviscid_Radial']**2+
+                                                         self.bodyForceFields['Force_Inviscid_Tangential']**2)
+        
+        
+        
         
         
     
@@ -265,7 +366,7 @@ class BodyForce:
         
         if method=='local':
             drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
-            force = 1/rgrid*(drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])
+            force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])/rgrid
         
         elif method=='distributed':
             force = np.zeros_like(meridionalVelocity)
