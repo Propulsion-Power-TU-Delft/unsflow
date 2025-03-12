@@ -4,6 +4,7 @@ import pickle
 import numpy as np
 from Grid.src.config import Config
 from Grid.src.multiblock_grid_driver import MultiBlockGridDriver
+from Grid.src.functions import contour_template
 
 # SETTINGS
 configuration_file = 'input.ini'
