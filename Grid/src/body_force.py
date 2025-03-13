@@ -34,9 +34,13 @@ class BodyForce:
         averageType = self.config.get_circumferential_average_type()
         
         if averageType.lower() == 'raw':
-            filepath = os.path.join(folderpath, 'meridionalFields_thetaAvg.pik')
-        else:
+            filepath = os.path.join(folderpath, 'meridionalFields_rawAvg.pik')
+        elif averageType.lower() == 'density':
             filepath = os.path.join(folderpath, 'meridionalFields_densityAvg.pik')
+        elif averageType.lower() == 'axial_momentum':
+            filepath = os.path.join(folderpath, 'meridionalFields_axialMomentumAvg.pik')
+        else:
+            raise ValueError('Not valid average type')
         
         solverType = self.config.get_bladed_CFD_solver_type()
         self.meridionalFields = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)

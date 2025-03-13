@@ -28,6 +28,21 @@ def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
     return M_cyl
 
 
+def compute_average(field, weight=None):
+    """Function to compute circumferential average
+
+    Args:
+        field (np.ndarray): 1D array of the field values along an arc, where the points are equidistant in theta (it must be true that integrals=averages)
+        weight (np.ndarray, optional): Weighting function for the average. Defaults to None means no weighting, simple average.
+
+    Returns:
+        np.ndarray: scalar value of the average of the field
+    """
+    if weight is None:
+        weight = np.ones_like(field)
+    return np.sum(field*weight) / np.sum(weight)
+
+
 
 def extract_grid_location(file_name):
     """Given the name of the file, return the indices associated to strem,span location
@@ -66,19 +81,26 @@ def circumferential_average_CFD_dataset(folderpath, extraction_method='kiwada'):
     os.makedirs(output_folder, exist_ok=True)
     
     if extraction_method.lower() == 'kiwada':
-        fields_thetaAvg, fields_densityAvg = kiwada_postprocessing(folderpath, files, nstream, nspan)
+        fields_rawAvg, fields_densityAvg, fields_axialMomentumAvg = kiwada_postprocessing(folderpath, files, nstream, nspan)
     elif extraction_method.lower() == 'marble': 
-        fields_thetaAvg, fields_densityAvg = marble_postprocessing(folderpath, files, nstream, nspan)
+        fields_rawAvg, fields_densityAvg, fields_axialMomentumAvg = marble_postprocessing(folderpath, files, nstream, nspan)
     else:
         raise ValueError('Extraction method not recognized. Please choose between Kiwada and Marble')
     
-    with open(output_folder + '/meridionalFields_thetaAvg.pik', 'wb') as f:
-        pickle.dump(fields_thetaAvg, f)
-        print('Theta Average Fields saved in ' + output_folder + '/meridionalFields_thetaAvg.pik')
+    filename = 'meridionalFields_rawAvg.pik'
+    with open(output_folder + '/' + filename, 'wb') as f:
+        pickle.dump(fields_rawAvg, f)
+        print('Raw Average Fields saved in ' + output_folder + '/' + filename)
         
-    with open(output_folder + '/meridionalFields_densityAvg.pik', 'wb') as f:
+    filename = 'meridionalFields_densityAvg.pik'
+    with open(output_folder + '/' + filename, 'wb') as f:
         pickle.dump(fields_densityAvg, f)
-        print('Density-weighted Average Fields saved in ' + output_folder + '/meridionalFields_densityAvg.pik')
+        print('Density-weighted Average Fields saved in ' + output_folder + '/' + filename)
+        
+    filename = 'meridionalFields_axialMomentumAvg.pik'
+    with open(output_folder + '/' + filename, 'wb') as f:
+        pickle.dump(fields_axialMomentumAvg, f)
+        print('Axial Momentum-weighted Average Fields saved in ' + output_folder + '/' + filename)
         
 
 
@@ -226,15 +248,19 @@ def kiwada_postprocessing(folderpath, files, nstream, nspan, visual_debug=False)
             plt.legend()
 
         if iFile == 0: # initialize the field_grids dictionary
-            fields_thetaAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
+            fields_rawAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
             fields_densityAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
+            fields_axialMomentumAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
             
         for key in splineData.keys():
-            f = splineData[key]
-            fields_thetaAvg[key][stream_id, span_id] = np.sum(f) / len(f)
-            fields_densityAvg[key][stream_id, span_id] = np.sum(f*splineData['Density (kg/m³)']) / np.sum(splineData['Density (kg/m³)'])
+            field = splineData[key]
+            density = splineData['Density (kg/m³)']
+            axialMomentum = splineData['Density (kg/m³)']*splineData['Velocity_Axial']
+            fields_rawAvg[key][stream_id, span_id] = compute_average(field)
+            fields_densityAvg[key][stream_id, span_id] = compute_average(field, density)
+            fields_axialMomentumAvg[key][stream_id, span_id] = compute_average(field, axialMomentum)
         
-    return fields_thetaAvg, fields_densityAvg
+    return fields_rawAvg, fields_densityAvg, fields_axialMomentumAvg
 
 
 
@@ -260,12 +286,16 @@ def marble_postprocessing(folderpath, files, nstream, nspan):
         splineData['Velocity_Axial'] = splineData['Velocity (m/s)_2']
 
         if iFile == 0: # initialize the field_grids dictionary
-            fields_thetaAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
+            fields_rawAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
             fields_densityAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
+            fields_axialMomentumAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}
             
         for key in splineData.keys():
-            f = splineData[key]
-            fields_thetaAvg[key][stream_id, span_id] = np.sum(f) / len(f)
-            fields_densityAvg[key][stream_id, span_id] = np.sum(f*splineData['Density (kg/m³)']) / np.sum(splineData['Density (kg/m³)'])
+            field = splineData[key]
+            density = splineData['Density (kg/m³)']
+            axialMomentum = splineData['Density (kg/m³)']*splineData['Velocity_Axial']
+            fields_rawAvg[key][stream_id, span_id] = compute_average(field)
+            fields_densityAvg[key][stream_id, span_id] = compute_average(field, density)
+            fields_axialMomentumAvg[key][stream_id, span_id] = compute_average(field, axialMomentum)
             
-    return fields_thetaAvg, fields_densityAvg
+    return fields_rawAvg, fields_densityAvg, fields_axialMomentumAvg

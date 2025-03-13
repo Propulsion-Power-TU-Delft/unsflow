@@ -434,7 +434,7 @@ class Config:
             return False # default
     
     def get_circumferential_average_type(self):
-        choices = ['raw', 'density']
+        choices = ['raw', 'density', 'axial_momentum']
         
         try:
             res =  str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE')).lower()
