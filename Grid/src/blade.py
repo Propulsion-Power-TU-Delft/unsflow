@@ -548,6 +548,169 @@ class Blade:
             plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
 
 
+
+    # def obtain_quantities_on_meridional_grid(self, smooth=1):
+    #     """
+    #     Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
+    #     Check the degree of the polynomial if it is ok.
+    #     """
+    #     self.z_camber = self.z_grid
+    #     self.r_camber = self.r_grid
+        
+    #     method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        
+    #     self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #                                                      self.r_cambSurface.flatten(),
+    #                                                      (self.theta_cambSurface).flatten(),
+    #                                                      self.z_grid, self.r_grid,
+    #                                                      method)
+    #     self.x_camber = self.r_grid * np.cos(self.theta_camber)
+    #     self.y_camber = self.r_grid * np.sin(self.theta_camber)
+
+    #     self.blockage = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #                                                  self.r_cambSurface.flatten(),
+    #                                                  self.blockage_cambSurface.flatten(),
+    #                                                  self.z_grid, self.r_grid, method)
+
+    #     self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #                                            self.r_cambSurface.flatten(),
+    #                                            self.n_camber_r.flatten(),
+    #                                            self.z_grid, self.r_grid, method)
+
+    #     self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #                                                self.r_cambSurface.flatten(),
+    #                                                self.n_camber_t.flatten(),
+    #                                                self.z_grid, self.r_grid, method)
+
+    #     self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #                                            self.r_cambSurface.flatten(),
+    #                                            self.n_camber_z.flatten(),
+    #                                            self.z_grid, self.r_grid, method)
+    
+
+    # def obtain_quantities_on_meridional_grid_secondversion(self, smooth=1):
+    #     """
+    #     Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
+    #     Check the degree of the polynomial if it is ok.
+    #     """
+    #     self.z_camber = self.z_grid
+    #     self.r_camber = self.r_grid
+        
+    #     method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        
+    #     def unroll_list_in_nparray(l):
+    #         arr = np.concatenate(l)
+    #         return arr
+        
+    #     z_data = unroll_list_in_nparray(self.zss_data)
+    #     r_data = unroll_list_in_nparray(self.rss_data)
+    #     theta_data = unroll_list_in_nparray(self.thetass_data)
+    #     theta_ss = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
+    #     self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
+
+    #     z_data = unroll_list_in_nparray(self.zps_data)
+    #     r_data = unroll_list_in_nparray(self.rps_data)
+    #     theta_data = unroll_list_in_nparray(self.thetaps_data)
+    #     theta_ps = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
+    #     self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
+
+    #     self.theta_camber = 0.5*(theta_ps+theta_ss)
+    #     self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
+    #     self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
+    #     self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
+
+        
+    #     # z_data = unroll_list_in_nparray(self.zc_data)
+    #     # r_data = unroll_list_in_nparray(self.rc_data)
+    #     # theta_data = unroll_list_in_nparray(self.thetac_data)
+    #     # thk_data = unroll_list_in_nparray(self.thk_data)
+
+    #     # self.theta_camber = self.twoD_function_evaluation(z_data, r_data, (theta_data),
+    #     #                                                  self.z_grid, self.r_grid,
+    #     #                                                  method)
+    #     # self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_c$ [deg]')
+    #     # self.x_camber = self.r_grid * np.cos(self.theta_camber)
+    #     # self.y_camber = self.r_grid * np.sin(self.theta_camber)
+
+    #     # self.thk = self.twoD_function_evaluation(z_data, r_data, (thk_data),
+    #     #                                         self.z_grid, self.r_grid,
+    #     #                                         method)
+    #     # self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
+
+    #     Nb = self.config.get_blades_number()[self.iblade]
+    #     self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
+    #     self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
+
+    #     # self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #     #                                        self.r_cambSurface.flatten(),
+    #     #                                        self.n_camber_r.flatten(),
+    #     #                                        self.z_grid, self.r_grid, method)
+
+    #     # self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #     #                                            self.r_cambSurface.flatten(),
+    #     #                                            self.n_camber_t.flatten(),
+    #     #                                            self.z_grid, self.r_grid, method)
+
+    #     # self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+    #     #                                        self.r_cambSurface.flatten(),
+    #     #                                        self.n_camber_z.flatten(),
+    #     #                                        self.z_grid, self.r_grid, method)
+    
+
+    def obtain_quantities_on_meridional_grid_thirdversion(self):
+        """
+        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
+        Check the degree of the polynomial if it is ok.
+        """
+        self.z_camber = self.z_grid
+        self.r_camber = self.r_grid
+        
+        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        
+        theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
+
+        theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
+
+        # this part evaluates the camber: choose if you want to model the camber as interface between pressure and suction, or like the camber itself reconstructed previously
+        # self.theta_camber = 0.5*(theta_ps+theta_ss)
+        self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
+        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
+        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
+        self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
+
+        Nb = self.config.get_blades_number()[self.iblade]
+        self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
+        self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
+        
+        # self.n_camber_r, self.n_camber_t, self.n_camber_z = self.compute_surface_normal_vectors(self.r_grid, self.theta_camber, self.z_grid, coords='cylindrical')
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_r, r'$n_r$')
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_t, r'$n_{\theta}$')
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_z, r'$n_z$')
+        
+        # interpolate camber normal from the reference surface
+        self.n_camber_r = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
+                                                        self.r_camberSurface.flatten(),
+                                                        self.nr_camberSurface.flatten(),
+                                                        self.z_grid, self.r_grid, method)
+
+        self.n_camber_t = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
+                                                        self.r_camberSurface.flatten(),
+                                                        self.nt_camberSurface.flatten(),
+                                                        self.z_grid, self.r_grid, method)
+
+        self.n_camber_z = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
+                                                        self.r_camberSurface.flatten(),
+                                                        self.nz_camberSurface.flatten(),
+                                                        self.z_grid, self.r_grid, method)
+        
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_r, r'$n_r$')
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_t, r'$n_{\theta}$')
+        # contour_template(self.z_grid, self.r_grid, self.n_camber_z, r'$n_z$')
+        # plt.show()
+    
+    
     def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method):
         """
         Routine to evaluate whatever dataset (here called theta) as a function of the z and r.
@@ -568,15 +731,14 @@ class Blade:
         `method`: regression or interpolation (linear) of the function theta(z,r)
 
         """
-        smooth = 1 # rbf interpolation smoother
-        degree = self.config.get_blade_reconstruction_regression_order()
-
         if method == 'regression': # polynomial regression of order <degree>
+            raise ValueError('Regression method for two2D_function_evaluation not working properly. Please change to interpolation')
+            degree = self.config.get_blade_reconstruction_regression_order()
             poly_features = PolynomialFeatures(degree)  
             X = poly_features.fit_transform(np.column_stack((z, r)))
             model = LinearRegression()
             model.fit(X, theta)
-            coefficients = model.coef_
+            coefficients = model.coef_ 
             intercept = model.intercept_
             X_eval = poly_features.fit_transform(np.column_stack((z_eval.flatten(), r_eval.flatten())))
             surface_values = np.dot(X_eval, coefficients) + intercept
@@ -590,157 +752,6 @@ class Blade:
             raise ValueError('Unknown method')
 
         return theta_eval
-
-
-    def obtain_quantities_on_meridional_grid(self, smooth=1):
-        """
-        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
-        Check the degree of the polynomial if it is ok.
-        """
-        self.z_camber = self.z_grid
-        self.r_camber = self.r_grid
-        
-        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        
-        self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                                         self.r_cambSurface.flatten(),
-                                                         (self.theta_cambSurface).flatten(),
-                                                         self.z_grid, self.r_grid,
-                                                         method)
-        self.x_camber = self.r_grid * np.cos(self.theta_camber)
-        self.y_camber = self.r_grid * np.sin(self.theta_camber)
-
-        self.blockage = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                                     self.r_cambSurface.flatten(),
-                                                     self.blockage_cambSurface.flatten(),
-                                                     self.z_grid, self.r_grid, method)
-
-        self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                               self.r_cambSurface.flatten(),
-                                               self.n_camber_r.flatten(),
-                                               self.z_grid, self.r_grid, method)
-
-        self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                                   self.r_cambSurface.flatten(),
-                                                   self.n_camber_t.flatten(),
-                                                   self.z_grid, self.r_grid, method)
-
-        self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                               self.r_cambSurface.flatten(),
-                                               self.n_camber_z.flatten(),
-                                               self.z_grid, self.r_grid, method)
-    
-
-    def obtain_quantities_on_meridional_grid_secondversion(self, smooth=1):
-        """
-        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
-        Check the degree of the polynomial if it is ok.
-        """
-        self.z_camber = self.z_grid
-        self.r_camber = self.r_grid
-        
-        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        
-        def unroll_list_in_nparray(l):
-            arr = np.concatenate(l)
-            return arr
-        
-        z_data = unroll_list_in_nparray(self.zss_data)
-        r_data = unroll_list_in_nparray(self.rss_data)
-        theta_data = unroll_list_in_nparray(self.thetass_data)
-        theta_ss = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
-        self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
-
-        z_data = unroll_list_in_nparray(self.zps_data)
-        r_data = unroll_list_in_nparray(self.rps_data)
-        theta_data = unroll_list_in_nparray(self.thetaps_data)
-        theta_ps = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
-        self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
-
-        self.theta_camber = 0.5*(theta_ps+theta_ss)
-        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
-        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
-        self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
-
-        
-        # z_data = unroll_list_in_nparray(self.zc_data)
-        # r_data = unroll_list_in_nparray(self.rc_data)
-        # theta_data = unroll_list_in_nparray(self.thetac_data)
-        # thk_data = unroll_list_in_nparray(self.thk_data)
-
-        # self.theta_camber = self.twoD_function_evaluation(z_data, r_data, (theta_data),
-        #                                                  self.z_grid, self.r_grid,
-        #                                                  method)
-        # self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_c$ [deg]')
-        # self.x_camber = self.r_grid * np.cos(self.theta_camber)
-        # self.y_camber = self.r_grid * np.sin(self.theta_camber)
-
-        # self.thk = self.twoD_function_evaluation(z_data, r_data, (thk_data),
-        #                                         self.z_grid, self.r_grid,
-        #                                         method)
-        # self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
-
-        Nb = self.config.get_blades_number()[self.iblade]
-        self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
-        self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
-
-        # self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-        #                                        self.r_cambSurface.flatten(),
-        #                                        self.n_camber_r.flatten(),
-        #                                        self.z_grid, self.r_grid, method)
-
-        # self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-        #                                            self.r_cambSurface.flatten(),
-        #                                            self.n_camber_t.flatten(),
-        #                                            self.z_grid, self.r_grid, method)
-
-        # self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-        #                                        self.r_cambSurface.flatten(),
-        #                                        self.n_camber_z.flatten(),
-        #                                        self.z_grid, self.r_grid, method)
-    
-
-    def obtain_quantities_on_meridional_grid_thirdversion(self, smooth=1):
-        """
-        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
-        Check the degree of the polynomial if it is ok.
-        """
-        self.z_camber = self.z_grid
-        self.r_camber = self.r_grid
-        
-        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        
-        theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
-        self.contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
-
-        theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
-        self.contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
-
-        # this part evaluates the camber: choose if you want to model the camber as interface between pressure and suction, or like the camber itself reconstructed previously
-        self.theta_camber = 0.5*(theta_ps+theta_ss)
-        self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
-        self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
-        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
-        self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
-
-        Nb = self.config.get_blades_number()[self.iblade]
-        self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
-        self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
-        
-        self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                               self.r_cambSurface.flatten(),
-                                               self.n_camber_r.flatten(),
-                                               self.z_grid, self.r_grid, method)
-
-        self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                                   self.r_cambSurface.flatten(),
-                                                   self.n_camber_t.flatten(),
-                                                   self.z_grid, self.r_grid, method)
-
-        self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-                                               self.r_cambSurface.flatten(),
-                                               self.n_camber_z.flatten(),
-                                               self.z_grid, self.r_grid, method)
         
         
 
@@ -1556,9 +1567,9 @@ class Blade:
         :param convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the
         direction of rotation
         """
-        self.gas_path_angle = np.zeros_like(self.x_camber)
-        self.blade_metal_angle = np.zeros_like(self.x_camber)
-        self.blade_lean_angle = np.zeros_like(self.x_camber)
+        self.gas_path_angle = np.zeros_like(self.z_grid)
+        self.blade_metal_angle = np.zeros_like(self.z_grid)
+        self.blade_lean_angle = np.zeros_like(self.z_grid)
 
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
@@ -2497,15 +2508,24 @@ class Blade:
             f[i,j_id:] = f[i,j_id]
         # self.contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
     
-    
     def extrapolate_camber_vector(self):
+        self.n_camber_r = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.n_camber_r, stream=True, span=False)
+        self.n_camber_t = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.n_camber_t, stream=True, span=False)
+        self.n_camber_z = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.n_camber_z, stream=True, span=False)
+        
+        self.n_camber_r /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_t /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        self.n_camber_z /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+    
+    
+    def extrapolate_2dfield_stream_span(self, zgrid, rgrid, field, stream=True, span=False):
         """
-        Extrapolate the blade normal camber over the last portion close to leading and trailing edge
+        Extrapolate the 2d field over the last portion close to leading and trailing edge
         """
+        normalizedStreamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid, normalize=True)
         coefficient = self.config.get_blade_edges_extrapolation_coefficient()[self.iblade]
-        normalizedStreamLength = np.zeros_like(self.streamline_length)
-        for j in range(normalizedStreamLength.shape[1]):
-            normalizedStreamLength[:,j] = self.streamline_length[:,j]/self.streamline_length[-1,j]
+        if coefficient==0:
+            return field
         
         def LinearExtrapolation(x, y, xnew):
             ynew = np.zeros_like(xnew)
@@ -2530,14 +2550,10 @@ class Blade:
                 f[trailingPoints,j] = LinearExtrapolation(normalizedStreamLength[internalPoints,j].flatten(), f[internalPoints,j].flatten(), normalizedStreamLength[trailingPoints,j].flatten())                
             return f
         
-        self.n_camber_r = ExtrapolateDataStream(self.n_camber_r)
-        self.n_camber_t = ExtrapolateDataStream(self.n_camber_t)
-        self.n_camber_z = ExtrapolateDataStream(self.n_camber_z)
+        if stream:
+            newField = ExtrapolateDataStream(field)
         
-        normalizedSpanLength = np.zeros_like(self.spanline_length)
-        for i in range(normalizedSpanLength.shape[0]):
-            normalizedSpanLength[i,:] = self.spanline_length[i,:]/self.spanline_length[i,-1]
-        
+        normalizedSpanLength = compute_meridional_spanwise_coordinates(zgrid, rgrid, normalize=True)
         def ExtrapolateDataSpan(f):
             ni,nj = f.shape
             for i in range(ni):
@@ -2549,14 +2565,12 @@ class Blade:
                 f[i, shroudPoints] = LinearExtrapolation(normalizedSpanLength[i,internalPoints].flatten(), f[i,internalPoints].flatten(), normalizedSpanLength[i,shroudPoints].flatten())
             return f
         
-        self.n_camber_r = ExtrapolateDataSpan(self.n_camber_r)
-        self.n_camber_t = ExtrapolateDataSpan(self.n_camber_t)
-        self.n_camber_z = ExtrapolateDataSpan(self.n_camber_z)
+        if span:
+            newField = ExtrapolateDataSpan(newField)
         
-        # renormalize the camber normal after the extrapolation
-        self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        return newField
+        
+        
     
 
     def smooth_camber_vector(self):

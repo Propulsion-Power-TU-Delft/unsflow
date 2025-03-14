@@ -277,7 +277,7 @@ class Config:
         try:
             return int(self.config_parser.get('CFD PROCESSING', 'BLADE_RECONSTRUCTION_REGRESSION_ORDER'))
         except:
-            return 7 # default
+            return 3 # default
 
     def get_grid_transformation_gradient_routine(self):
         return str(self.config_parser.get('SUN MODEL', 'GRID_TRANSFORMATION_GRADIENT_ROUTINE'))
