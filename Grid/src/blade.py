@@ -284,7 +284,7 @@ class Blade:
                 plt.grid(alpha=grid_opacity)
                 plt.gca().set_aspect('equal', adjustable='box')
                 if i in profiles_to_plot:
-                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_to_blade_profile_%.2f.pdf' %((i+1)/self.number_profiles), bbox_inches='tight')
+                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_%i_b2b-profile_%.2f.pdf' %(self.iblade,(i+1)/self.number_profiles), bbox_inches='tight')
 
             # self.thickness['z'] = z_camber
             # self.thickness['r'] = r_camber
@@ -337,7 +337,39 @@ class Blade:
         ax.set_zlabel('z')      
         ax.set_title('Reconstructed blade camber')
         ax.set_aspect('equal')
-
+        
+        self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface = self.compute_surface_normal_vectors(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, coords='cylindrical')
+        if self.config.get_visual_debug():
+            self.plot_surface_normals(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface, 'Camber Surface Normals')
+    
+    
+    def plot_surface_normals(self, r, t, z, nr, nt, nz, title):
+        def cartesian_points(r, t, z):
+            return r*np.cos(t), r*np.sin(t), z
+        
+        x,y,z = cartesian_points(r, t, z)
+        ni,nj = r.shape
+        nx = np.zeros((ni,nj))
+        ny = np.zeros((ni,nj))
+        for i in range(ni):
+            for j in range(nj):
+                normal_cyl = np.array([nr[i,j], nt[i,j], nz[i,j]])
+                normal_cart = cylindrical_to_cartesian(x[i,j], y[i,j], z[i,j], normal_cyl)
+                nx[i,j] = normal_cart[0]
+                ny[i,j] = normal_cart[1]
+        
+        arrow_len = (np.max(z)-np.min(z))/3
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(x,y,z, alpha=0.5)
+        ax.quiver(x[::10], y[::10], z[::10], nx[::10], ny[::10], nz[::10], length=arrow_len, normalize=True, color='r')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')      
+        ax.set_title(title)
+        ax.set_aspect('equal')
+    
     
 
     def compute_meridional_coordinate(self, spline_points):
@@ -694,6 +726,23 @@ class Blade:
         Nb = self.config.get_blades_number()[self.iblade]
         self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
         self.contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
+        
+        self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                               self.r_cambSurface.flatten(),
+                                               self.n_camber_r.flatten(),
+                                               self.z_grid, self.r_grid, method)
+
+        self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                                   self.r_cambSurface.flatten(),
+                                                   self.n_camber_t.flatten(),
+                                                   self.z_grid, self.r_grid, method)
+
+        self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
+                                               self.r_cambSurface.flatten(),
+                                               self.n_camber_z.flatten(),
+                                               self.z_grid, self.r_grid, method)
+        
+        
 
     
     def compute_thollet_angles(self):
@@ -873,7 +922,7 @@ class Blade:
                 file.write('</data>')
 
 
-    def compute_camber_vector(self, i, j, xgrid, ygrid, zgrid, check=False):
+    def compute_normal_vector_on_point_ij(self, i, j, xgrid, ygrid, zgrid, check=False):
         """
         For a certain point (x,y) on the camber surface z=f(x,y), find the normal vector through vectorial product
         of the vectors connecting streamwise and spanwise points. Preserve the directions to have consistent vectors
@@ -930,8 +979,7 @@ class Blade:
             ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], stream_v[0], stream_v[1], stream_v[2], length=arrow_len, color='red')
             ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], span_v[0], span_v[1], span_v[2], length=arrow_len, color='green')
             ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], normal[0], normal[1], normal[2], length=arrow_len, color='blue')
-            pass
-        return normal, stream_v, span_v
+        return normal
 
 
     def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
@@ -1069,109 +1117,104 @@ class Blade:
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
 
-    def compute_normal_vectors_on_reference_surface(self, visual_debug=True):
+    # def compute_normal_vectors_on_reference_surface(self, visual_debug=True):
+    #     """
+    #     for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
+    #     spanline vector, all in cartesian and cylindrical reference systems.
+    #     """
+    #     self.x_cambSurface = self.r_cambSurface*np.cos(self.theta_cambSurface)
+    #     self.y_cambSurface = self.r_cambSurface * np.sin(self.theta_cambSurface)
+
+    #     # Create 2D NumPy array of empty arrays
+    #     self.normal_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
+
+    #     # compute also the vector in cylindrical cordinates
+    #     self.normal_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
+
+    #     for i in range(0, self.z_cambSurface.shape[0]):
+    #         for j in range(0, self.z_cambSurface.shape[1]):
+    #             self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, check=False)[0]
+
+    #             self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
+    #                                                                      self.y_cambSurface[i, j],
+    #                                                                      self.z_cambSurface[i, j],
+    #                                                                      self.normal_vectors[i, j])
+
+    #     # reorder the vectors in 2d arrays
+    #     self.n_camber_r = np.zeros_like(self.z_cambSurface)
+    #     self.n_camber_t = np.zeros_like(self.z_cambSurface)
+    #     self.n_camber_z = np.zeros_like(self.z_cambSurface)
+    #     for i in range(0, self.z_cambSurface.shape[0]):
+    #         for j in range(0, self.z_cambSurface.shape[1]):
+    #             self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
+    #             self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
+    #             self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
+
+    #     if np.mean(self.n_camber_z)<0:
+    #         self.n_camber_z *= -1
+    #         self.n_camber_r *= -1
+    #         self.n_camber_t *= -1
+
+    #     if visual_debug:
+    #         arrow_len = (np.max(self.z_cambSurface) - np.min(self.z_cambSurface)) / 5
+    #         fig = plt.figure()
+    #         ax = fig.add_subplot(111, projection='3d')
+    #         ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.3)
+    #         ax.set_xlabel(r'$x$')
+    #         ax.set_ylabel(r'$y$')
+    #         ax.set_zlabel(r'$z$')
+    #         ax.set_aspect('equal', adjustable='box')
+    #         for i in range(0, self.z_cambSurface.shape[0], 10):
+    #             for j in range(0, self.z_cambSurface.shape[1], 5):
+    #                 ax.quiver(self.x_cambSurface[i, j], self.y_cambSurface[i, j], self.z_cambSurface[i, j], self.normal_vectors[i,j][0], self.normal_vectors[i,j][1], self.normal_vectors[i,j][2], length=arrow_len, color='blue')
+    #         print()
+
+
+    def compute_surface_normal_vectors(self, x1, x2, x3, coords):
         """
-        for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
-        spanline vector, all in cartesian and cylindrical reference systems.
+        Compute the normal to a surface defined by 2d arrays.
+        
+        coords specify if the input coords are in cylindrical (r,theta,z) or cartesian reference frame (x,y,z)
         """
-        self.x_cambSurface = self.r_cambSurface*np.cos(self.theta_cambSurface)
-        self.y_cambSurface = self.r_cambSurface * np.sin(self.theta_cambSurface)
+        if coords == 'cartesian':
+            xgrid, ygrid, zgrid = x1, x2, x3
+        elif coords == 'cylindrical':
+            xgrid = x1 * np.cos(x2)
+            ygrid = x1 * np.sin(x2)
+            zgrid = x3
+        else:
+            raise ValueError('coords must be cartesian or cylindrical')
 
         # Create 2D NumPy array of empty arrays
-        self.normal_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
+        ni,nj = xgrid.shape
+        cartesianNormals = np.empty(xgrid.shape, dtype=object)
+        cylindricNormals = np.empty(xgrid.shape, dtype=object)
 
-        # compute also the vector in cylindrical cordinates
-        self.normal_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
+        for i in range(ni):
+            for j in range(nj):
+                cartesianNormals[i, j] = self.compute_normal_vector_on_point_ij(i, j, xgrid, ygrid, zgrid, check=False)
 
-        for i in range(0, self.z_cambSurface.shape[0]):
-            for j in range(0, self.z_cambSurface.shape[1]):
-                self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, check=False)[0]
-
-                self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
-                                                                         self.y_cambSurface[i, j],
-                                                                         self.z_cambSurface[i, j],
-                                                                         self.normal_vectors[i, j])
-
+                cylindricNormals[i, j] = cartesian_to_cylindrical(xgrid[i, j],
+                                                                  ygrid[i, j],
+                                                                  zgrid[i, j],
+                                                                  cartesianNormals[i, j])
+        
         # reorder the vectors in 2d arrays
-        self.n_camber_r = np.zeros_like(self.z_cambSurface)
-        self.n_camber_t = np.zeros_like(self.z_cambSurface)
-        self.n_camber_z = np.zeros_like(self.z_cambSurface)
-        for i in range(0, self.z_cambSurface.shape[0]):
-            for j in range(0, self.z_cambSurface.shape[1]):
-                self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
-                self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
-                self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
+        n_camber_r = np.zeros_like(xgrid)
+        n_camber_t = np.zeros_like(xgrid)
+        n_camber_z = np.zeros_like(xgrid)
+        for i in range(ni):
+            for j in range(nj):
+                n_camber_r[i, j] = cylindricNormals[i, j][0]
+                n_camber_t[i, j] = cylindricNormals[i, j][1]
+                n_camber_z[i, j] = cylindricNormals[i, j][2]
 
-        if np.mean(self.n_camber_z)<0:
-            self.n_camber_z *= -1
-            self.n_camber_r *= -1
-            self.n_camber_t *= -1
-
-        if visual_debug:
-            arrow_len = (np.max(self.z_cambSurface) - np.min(self.z_cambSurface)) / 5
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.3)
-            ax.set_xlabel(r'$x$')
-            ax.set_ylabel(r'$y$')
-            ax.set_zlabel(r'$z$')
-            ax.set_aspect('equal', adjustable='box')
-            for i in range(0, self.z_cambSurface.shape[0], 10):
-                for j in range(0, self.z_cambSurface.shape[1], 5):
-                    ax.quiver(self.x_cambSurface[i, j], self.y_cambSurface[i, j], self.z_cambSurface[i, j], self.normal_vectors[i,j][0], self.normal_vectors[i,j][1], self.normal_vectors[i,j][2], length=arrow_len, color='blue')
-            pass
-
-
-    def compute_camber_vectors(self):
-        """
-        for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
-        spanline vector, all in cartesian and cylindrical reference systems.
-        """
-        self.x_camber = self.r_camber * np.cos(self.theta_camber)
-        self.y_camber = self.r_camber * np.sin(self.theta_camber)
-
-        # Create 2D NumPy array of empty arrays
-        self.normal_vectors = np.empty(self.x_camber.shape, dtype=object)
-        self.streamline_vectors = np.empty(self.x_camber.shape, dtype=object)
-        self.spanline_vectors = np.empty(self.x_camber.shape, dtype=object)
-
-        # compute also the vector in cylindrical cordinates
-        self.normal_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
-        self.streamline_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
-        self.spanline_vectors_cyl = np.empty(self.x_camber.shape, dtype=object)
-
-        for i in range(0, self.x_camber.shape[0]):
-            for j in range(0, self.x_camber.shape[1]):
-                self.normal_vectors[i, j], self.streamline_vectors[i, j], self.spanline_vectors[
-                    i, j] = self.compute_camber_vector(i, j, self.x_camber, self.y_camber, self.z_camber, check=False)
-
-                self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                                                                         self.y_camber[i, j],
-                                                                         self.z_camber[i, j],
-                                                                         self.normal_vectors[i, j])
-                self.streamline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                                                                             self.y_camber[i, j],
-                                                                             self.z_camber[i, j],
-                                                                             self.streamline_vectors[i, j])
-                self.spanline_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_camber[i, j],
-                                                                           self.y_camber[i, j],
-                                                                           self.z_camber[i, j],
-                                                                           self.spanline_vectors[i, j])
-
-        # reorder the vectors in 2d arrays
-        self.n_camber_r = np.zeros_like(self.x_camber)
-        self.n_camber_t = np.zeros_like(self.x_camber)
-        self.n_camber_z = np.zeros_like(self.x_camber)
-        for i in range(0, self.x_camber.shape[0]):
-            for j in range(0, self.x_camber.shape[1]):
-                self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
-                self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
-                self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
-
-        if np.mean(self.n_camber_z)<0:
-            self.n_camber_z *= -1
-            self.n_camber_r *= -1
-            self.n_camber_t *= -1
+        if np.mean(n_camber_z)<0: # orient the normal to point towards positive axial coordinates (useful for blades)
+            n_camber_z *= -1
+            n_camber_r *= -1
+            n_camber_t *= -1
+        
+        return n_camber_r, n_camber_t, n_camber_z
 
 
     def show_normal_vectors(self, save_filename=None, folder_name=None):

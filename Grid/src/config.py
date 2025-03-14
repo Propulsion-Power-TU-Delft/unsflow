@@ -425,7 +425,7 @@ class Config:
     
     def perform_body_force_reconstruction(self):
         try:
-            val = str(self.config_parser.get('GENERAL', 'PERFORM_BODY_FORCE_RECONSTRUCTION')).lower()
+            val = str(self.config_parser.get('BODY FORCE', 'PERFORM_BODY_FORCE_RECONSTRUCTION')).lower()
             if val == 'yes' or val == 'true':
                 return True
             else:

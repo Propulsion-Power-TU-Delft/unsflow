@@ -116,6 +116,18 @@ def cartesian_to_cylindrical(x, y, z, v):
     v_cylindrical = np.dot(M, v)
     return v_cylindrical
 
+def cylindrical_to_cartesian(x, y, z, v):
+    """
+    Pass from the components in cylindrical to cartesian cordinate.
+    :param x: x cordinate
+    :param y: y cordinate
+    :param z: z cordinate
+    :param v: vector in cyl components
+    """
+    M = cartesian_to_cylindrical_matrix(x, y).T
+    v_cartesian = np.dot(M, v)
+    return v_cartesian
+
 
 def cartesian_to_cylindrical_matrix(x, y):
     """
