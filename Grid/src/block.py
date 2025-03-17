@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
+from Grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Grid.src.config import Config
@@ -43,6 +43,7 @@ class Block:
         outletR = np.linspace(self.hub.r[-1], self.shroud.r[-1], self.nspan)
         self.inletLine = np.stack((inletZ, inletR), axis=1)
         self.outletLine = np.stack((outletZ, outletR), axis=1)
+        self.theta_camber = np.zeros((self.nstream, self.nspan))
         self.add_bfm_file_arrays()
     
     def add_bfm_file_arrays(self):
@@ -50,12 +51,17 @@ class Block:
         When the BFM file must be written, generate also the data needed for it
         """
         self.blockage = np.ones((self.nstream, self.nspan))
-        self.normal_camber = np.zeros((self.nstream, self.nspan, 3))
+        self.normal_camber = {}
+        self.normal_camber['Axial'] = np.zeros((self.nstream, self.nspan))
+        self.normal_camber['Radial'] = np.zeros((self.nstream, self.nspan))
+        self.normal_camber['Tangential'] = np.zeros((self.nstream, self.nspan))
         self.streamline_length = np.zeros((self.nstream, self.nspan))
         self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
+        self.nBlades = np.zeros((self.nstream, self.nspan))
         self.bodyForce = {"Force_Axial": np.zeros((self.nstream, self.nspan)),
                           "Force_Radial": np.zeros((self.nstream, self.nspan)),
                           "Force_Tangential": np.zeros((self.nstream, self.nspan))}
+        self.bladePresent = np.zeros_like(self.blockage)
 
     def trim_inlet(self, z_trim='span', r_trim='span'):
         """
@@ -706,11 +712,23 @@ class Block:
         self.blockage = blockage_grid
     
 
-    def add_streamline_length_grid(self, stream):
+    def add_streamline_length_grid(self, zgrid, rgrid):
         """
         Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
         """
-        self.streamline_length = stream
+        streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
+        self.streamline_length = streamLength
+    
+    
+    def add_number_of_blades(self, Nblades):
+        nbladeGrid = np.zeros_like(self.z_grid_points)+Nblades
+        self.nBlades = nbladeGrid
+    
+    def add_blade_is_present(self, f):
+        self.bladePresent = f
+    
+    def add_theta_camber(self, f):
+        self.theta_camber = f
     
 
     def add_body_force_cylindric(self, f_axial, f_radial, f_tangential):
@@ -728,9 +746,10 @@ class Block:
         """
         assert nz.shape[0] == self.z_grid_points.shape[0], 'The camnber normal must have the same dimensions of the background grid'
         assert nz.shape[1] == self.z_grid_points.shape[1], 'The camber normal must have the same dimensions of the background grid'
-        self.normal_camber[:,:,0] = nz
-        self.normal_camber[:,:,1] = nr
-        self.normal_camber[:,:,2] = nt
+        self.normal_camber = {}
+        self.normal_camber['Axial'] = nz
+        self.normal_camber['Radial'] = nr
+        self.normal_camber['Tangential'] = nt
     
     def add_body_force_info(self, bodyForceObj):
         self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]

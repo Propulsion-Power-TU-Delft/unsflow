@@ -8,13 +8,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
+from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
 import pickle
 import os
+from scipy.ndimage import gaussian_filter
+
 
 class MultiBlock:
     """
@@ -36,15 +38,23 @@ class MultiBlock:
         """
         Put together all the fields of the blocks needed for later
         """
+        self.fix_theta_camber_grids()
+        
         self.z_grid_cg = self.blocks[0].z_grid_cg
         self.r_grid_cg = self.blocks[0].r_grid_cg
         self.blockage = self.blocks[0].blockage
         self.rpm = self.blocks[0].rpm
         self.streamline_length = self.blocks[0].streamline_length
-        self.normal_camber = self.blocks[0].normal_camber
+        self.normal_camber = {}
+        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial']
+        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial']
+        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential']
         self.force_axial = self.blocks[0].bodyForce['Force_Axial']
         self.force_radial = self.blocks[0].bodyForce['Force_Radial']
         self.force_tangential = self.blocks[0].bodyForce['Force_Tangential']
+        self.nBlades = self.blocks[0].nBlades
+        self.bladePresent = self.blocks[0].bladePresent
+        self.theta_camber = self.blocks[0].theta_camber
         
 
         for block in self.blocks[1:]:
@@ -53,10 +63,18 @@ class MultiBlock:
             self.blockage = np.concatenate((self.blockage, block.blockage[1:, :]), axis=0)
             self.rpm = np.concatenate((self.rpm, block.rpm[1:, :]), axis=0)
             self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[1:, :]), axis=0)
-            self.normal_camber = np.concatenate((self.normal_camber, block.normal_camber[1:, :, :]), axis=0)
+            self.normal_camber['Axial'] = np.concatenate((self.normal_camber['Axial'], block.normal_camber['Axial'][1:, :]), axis=0)
+            self.normal_camber['Radial'] = np.concatenate((self.normal_camber['Radial'], block.normal_camber['Radial'][1:, :]), axis=0)
+            self.normal_camber['Tangential'] = np.concatenate((self.normal_camber['Tangential'], block.normal_camber['Tangential'][1:, :]), axis=0)
             self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][1:, :]), axis=0)
             self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][1:, :]), axis=0)
             self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][1:, :]), axis=0)
+            self.nBlades = np.concatenate((self.nBlades, block.nBlades[1:, :]), axis=0)
+            self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[1:, :]), axis=0)
+            self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[1:, :]), axis=0)
+        
+        self.theta_camber =gaussian_filter(self.theta_camber, sigma=3)
+
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -152,135 +170,6 @@ class MultiBlock:
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_meridional_grid.pdf', bbox_inches='tight')
     
-
-    def plot_blockage(self, save_filename=None, save_foldername=None):
-        """
-        Plot the full machine blockage.
-        """
-        plt.figure()
-
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.blockage, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$b$ [-]')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blockage.pdf', bbox_inches='tight')
-    
-
-    def plot_rpm(self, save_filename=None, save_foldername=None):
-        """
-        Plot the full rpm.
-        """
-        plt.figure()
-
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.rpm, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title(r'$N$ [rpm]')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_rpm.pdf', bbox_inches='tight')
-
-    
-    def plot_streamline_length(self, save_filename=None, save_foldername=None):
-        """
-        Plot the full rpm.
-        """
-        plt.figure()
-
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.streamline_length, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title('stwl')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_stwl.pdf', bbox_inches='tight')
-    
-    def plot_body_force_cylindric(self, save_filename=None, save_foldername=None):
-        """
-        Plot the full forces.
-        """
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_axial, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title('f_axial')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_fax.pdf', bbox_inches='tight')
-        
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_radial, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title('f_radial')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_frad.pdf', bbox_inches='tight')
-        
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.force_tangential, levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        plt.title('f_tangential')
-        ax = plt.gca()
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_ftan.pdf', bbox_inches='tight')
-
-    
-    def plot_normal_camber(self, save_filename=None, save_foldername=None):
-        """
-        Plot the full machine normal camber.
-        """
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,0], levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        plt.title('nz')
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-ax.pdf', bbox_inches='tight')
-        
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,1], levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        plt.title('nr')
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-rad.pdf', bbox_inches='tight')
-        
-        plt.figure()
-        plt.contourf(self.z_grid_points, self.r_grid_points, self.normal_camber[:,:,2], levels=N_levels, cmap=color_map)
-        plt.colorbar()
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        plt.title('nt')
-        ax.set_aspect('equal')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_n-tan.pdf', bbox_inches='tight')
-
 
     def compute_average_dtheta(self):
         """
@@ -527,6 +416,39 @@ class MultiBlock:
                                  z[istream, ispan]))
         print('Written meridional grid csv file to: %s' %(foldername + '/' + filename))
     
+    
+    def write_thetaWrapped_hub_shroud_curves(self, filename='machine', foldername='Grid'):
+
+        rHub = self.r_grid_points[:,0]
+        zHub = self.z_grid_points[:,0]
+
+        rShroud = self.r_grid_points[:,-1]
+        zShroud = self.z_grid_points[:,-1]
+        
+        thetaHub = self.theta_camber[:,0]
+        thetaShroud = self.theta_camber[:,-1]
+        
+        xHub = rHub * np.cos(thetaHub)
+        yHub = rHub * np.sin(thetaHub)
+        xShroud = rShroud * np.cos(thetaShroud)
+        yShroud = rShroud * np.sin(thetaShroud)
+        
+        if self.config.invert_axial_coordinates():
+            zHub *= -1
+            zShroud *= -1
+        
+        
+        os.makedirs(foldername, exist_ok=True)
+        with open(foldername + '/' + filename + '_hub.txt', 'w') as file:
+            for iPoint in range(len(xHub)):
+                file.write('%.9f\t%.9f\t%.9f\n' %(xHub[iPoint], yHub[iPoint], zHub[iPoint]))
+        
+        with open(foldername + '/' + filename + '_shroud.txt', 'w') as file:
+            for iPoint in range(len(xHub)):
+                file.write('%.9f\t%.9f\t%.9f\n' %(xShroud[iPoint], yShroud[iPoint], zShroud[iPoint]))
+        
+        
+    
 
     def write_turbobfm_grid_file_2D(self):
         """
@@ -556,6 +478,14 @@ class MultiBlock:
             print('Streamwise length added to the TurboBFM mesh file')
             mesh['StreamwiseLength'] = self.streamline_length
         
+        if 'blade_present' in outputFields:
+            print('Blade presence grid added to the TurboBFM mesh file')
+            mesh['BladePresent'] = self.bladePresent
+        
+        if 'number_blades' in outputFields:
+            print('Number of blades grid added to the TurboBFM mesh file')
+            mesh['NumberBlades'] = self.nBlades
+        
         if 'frozen_force' in outputFields:
             print('Frozen forces added to the TurboBFM mesh file')
             mesh['Force_Axial'] = self.force_axial
@@ -567,3 +497,56 @@ class MultiBlock:
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
         print(f"TurboBFM mesh pickle file saved to {filepath}")
+    
+    def plot_all_relevant_contours(self):
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.blockage, r'$b \ \rm{[-]}$', save_filename='multiblock_blockage', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.rpm, r'$\Omega \ \rm{[rpm]}$', save_filename='multiblock_rpm', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.streamline_length, r'$s_{stwl} \ \rm{[m]}$', save_filename='multiblock_stwl', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Axial'], r'$n_z \ \rm{[-]}$', save_filename='multiblock_normalAxial', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Radial'], r'$n_r \ \rm{[-]}$', save_filename='multiblock_normalRadial', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Tangential'], r'$n_{\theta} \ \rm{[-]}$', save_filename='multiblock_normalTangential', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.nBlades, r'$N_{blades} \ \rm{[-]}$', save_filename='multiblock_numberBlades', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.bladePresent, r'Blade is present', save_filename='multiblock_bladeIsPresent', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.theta_camber*180/np.pi, r'Theta Camber [deg]', save_filename='thetCamberCAD', folder_name=self.config.get_pictures_folder_path())
+        
+        total_stream = compute_meridional_streamwise_coordinates(self.z_grid_cg, self.r_grid_cg)
+        contour_template(self.z_grid_cg, self.r_grid_cg, total_stream, r'Streamwise Coord [m]', save_filename='multiblock_totalStreamLength', folder_name=self.config.get_pictures_folder_path())
+        total_span = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg)
+        contour_template(self.z_grid_cg, self.r_grid_cg, total_span, r'Spanwise Coord [m]', save_filename='multiblock_totalSpanLength', folder_name=self.config.get_pictures_folder_path())
+
+        
+    def fix_theta_camber_grids(self):
+        """For all blocks, try a good compromise with the theta camber. If theta camber is not present, copy the info from the previous block
+        """
+        if len( self.blocks )== 1:
+            self.theta_camber = self.blocks[0].theta_camber
+        else:
+            
+            for iBlock, block in enumerate(self.blocks):
+                contour_template(block.z_grid_points, block.r_grid_points, block.theta_camber, r'$\theta_{c}$ [deg]')
+                
+                if np.mean(np.abs(block.theta_camber))<1e-3: # this is the case when we don't have a blade camber -> unbladed block
+                    ni,nj = block.theta_camber.shape
+                    
+                    if iBlock == 0: # if the block is the first, simply take the camber from the next one
+                        for j in range(nj):
+                            block.theta_camber[:,j] = self.blocks[iBlock+1].theta_camber[0,j]
+                    elif iBlock == len(self.blocks)-1:  # if the block is the last, simply take the camber from the previous one
+                        for j in range(nj):
+                            block.theta_camber[:,j] = self.blocks[iBlock-1].theta_camber[-1,j]
+                    else: # if the block is in the middle, interpolate linearly between the two bladed-blocks on the side
+                        theta_previous = self.blocks[iBlock-1].theta_camber[-1,:]
+                        theta_next = self.blocks[iBlock+1].theta_camber[0,:]
+                        normStreamLength = compute_meridional_streamwise_coordinates(block.z_grid_points, block.r_grid_points, normalize=True)
+                        theta_camber = np.zeros_like(normStreamLength)
+                        theta_camber[0,:] = theta_previous
+                        theta_camber[-1,:] = theta_next
+                        for i in range(1,theta_camber.shape[0]-1):
+                            theta_camber[i,:] = theta_camber[0,:] + normStreamLength[i,:] * (theta_camber[-1,:]-theta_camber[0,:])
+                        block.theta_camber = theta_camber
+            
+                contour_template(block.z_grid_points, block.r_grid_points, block.theta_camber, r'$\theta_{c}$ [deg]')
+        
+        
+        
+        

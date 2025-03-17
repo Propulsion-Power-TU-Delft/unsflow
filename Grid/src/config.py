@@ -433,6 +433,25 @@ class Config:
         except:
             return False # default
     
+    
+    def get_blade_tip_gap(self):
+        try:
+            value = self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_TIP_GAP')
+            vals = [float(val.strip(',')) for val in value.split()]
+        except:
+            nblades = self.get_blade_rows_number()
+            vals = np.zeros(nblades)
+        return vals
+    
+    def get_blade_hub_gap(self):
+        try:
+            value = self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_HUB_GAP')
+            vals = [float(val.strip(',')) for val in value.split()]
+        except:
+            nblades = self.get_blade_rows_number()
+            vals = np.zeros(nblades)
+        return vals
+    
     def get_circumferential_average_type(self):
         choices = ['raw', 'density', 'axial_momentum']
         

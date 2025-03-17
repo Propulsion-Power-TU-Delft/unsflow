@@ -9,6 +9,7 @@ from Grid.src.multiblock import MultiBlock
 from Grid.src.su2_mesh_generator import generate_SU2mesh
 from Grid.src.bfm_writer import BFM_Writer
 from Sun.src.general_functions import print_banner_begin, print_banner_end
+from Grid.src.functions import contour_template
 
 
 class MultiBlockGridDriver:
@@ -128,15 +129,21 @@ class MultiBlockGridDriver:
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].plot_blockage_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-            self.blades[iblade].extrapolate_camber_vector()
+            if  self.config.get_blade_edges_extrapolation_coefficient()[iblade] > 1e-3:
+                self.blades[iblade].extrapolate_camber_vector()
             if self.config.get_blade_camber_smoothing_coefficient()>1e-3:
                 self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            self.blades[iblade].compute_endwalls_gaps()
             # self.blades[iblade].compute_blade_camber_angles()
             # self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
-            self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].streamline_length)
+            self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].z_grid, self.blades[iblade].r_grid)
+            self.blocks[iblock].add_number_of_blades(self.config.get_blades_number()[iblade])
+            self.blocks[iblock].add_blade_is_present(self.blades[iblade].bladePresent)
+            self.blocks[iblock].add_theta_camber(self.blades[iblade].theta_camber)
             
             if self.config.perform_body_force_reconstruction():
                 self.blades[iblade].extract_body_force() 
@@ -153,9 +160,7 @@ class MultiBlockGridDriver:
         self.multiBlockGrid.assemble_grid()
         self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
         if self.driverType=='multiblock':
-            self.multiBlockGrid.plot_blockage(save_filename=self.config.get_machine_name())
-            self.multiBlockGrid.plot_rpm(save_filename=self.config.get_machine_name())
-            self.multiBlockGrid.plot_normal_camber(save_filename=self.config.get_machine_name())
+            self.multiBlockGrid.plot_all_relevant_contours()
     
     
     def SaveOutput(self):
@@ -216,6 +221,9 @@ class MultiBlockGridDriver:
                     with open(filePath, 'wb') as file:
                         pickle.dump(blade, file)
                     print(f'Saved Blade object pickle {i} in: {filePath}.')
+            
+            elif outputType=='luminary_cad':
+                self.multiBlockGrid.write_thetaWrapped_hub_shroud_curves(foldername=outputFolder, filename='tud-glra')
             
             else:
                 print('Output type %s not recognized, therefore ignored.' %(outputType))

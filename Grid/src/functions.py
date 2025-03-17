@@ -17,6 +17,8 @@ from scipy.optimize import minimize
 from scipy.interpolate import CubicSpline, griddata, LinearNDInterpolator
 from scipy import interpolate
 from shapely.geometry import LineString
+from matplotlib.ticker import FormatStrFormatter
+
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -1264,13 +1266,14 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         levels = np.linspace(minval, maxval, N_levels)
         fig, ax = plt.subplots()
         contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
-        # Move colorbar to the bottom
-        # tick_values = [minval, (minval + maxval) / 2, maxval]
-        # cbar = fig.colorbar(contour, orientation='horizontal', pad=0.15)
+        
+        # Colorbar options
         cbar = fig.colorbar(contour)
+        # cbar = fig.colorbar(contour, orientation='horizontal', pad=0.05)
+        # tick_values = [minval, (minval + maxval) / 2, maxval]
+        # cbar.ax.xaxis.set_major_formatter(FormatStrFormatter('%.2e'))
         # cbar.set_ticks(tick_values)  # Set custom tick locations
 
-        # cbar = fig.colorbar(contour)
         contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
         plt.title(name)
         if ticks is not True:
