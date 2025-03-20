@@ -46,6 +46,50 @@ class Block:
         self.theta_camber = np.zeros((self.nstream, self.nspan))
         self.add_bfm_file_arrays()
     
+    
+    def trim_inlet(self):
+        trim_inlet = self.config.trim_inlet()
+        if trim_inlet is False:
+            return
+        else:
+            trim_type = self.config.get_blocks_trim_type()[self.iblock]
+            if trim_type == 'axial' or trim_type == 'axial-radial':
+                self.hub.trim_inlet_curve(z_trim=trim_inlet)
+                self.shroud.trim_inlet_curve(z_trim=trim_inlet)
+            else:
+                self.hub.trim_inlet_curve(r_trim=trim_inlet)
+                self.shroud.trim_inlet_curve(r_trim=trim_inlet)
+            inletZ = np.linspace(self.hub.z[0], self.shroud.z[0], self.nspan)
+            inletR = np.linspace(self.hub.r[0], self.shroud.r[0], self.nspan)
+            outletZ = np.linspace(self.hub.z[-1], self.shroud.z[-1], self.nspan)
+            outletR = np.linspace(self.hub.r[-1], self.shroud.r[-1], self.nspan)
+            self.inletLine = np.stack((inletZ, inletR), axis=1)
+            self.outletLine = np.stack((outletZ, outletR), axis=1)
+    
+    
+    def trim_outlet(self):
+        trim_outlet = self.config.trim_outlet()
+        if trim_outlet is False:
+            return
+        else:
+            trim_type = self.config.get_blocks_trim_type()[self.iblock]
+            if trim_type == 'radial' or trim_type == 'axial-radial':
+                self.hub.trim_outlet_curve(r_trim=trim_outlet)
+                self.shroud.trim_outlet_curve(r_trim=trim_outlet)
+            else:
+                self.hub.trim_outlet_curve(z_trim=trim_outlet)
+                self.shroud.trim_outlet_curve(z_trim=trim_outlet)
+            inletZ = np.linspace(self.hub.z[0], self.shroud.z[0], self.nspan)
+            inletR = np.linspace(self.hub.r[0], self.shroud.r[0], self.nspan)
+            outletZ = np.linspace(self.hub.z[-1], self.shroud.z[-1], self.nspan)
+            outletR = np.linspace(self.hub.r[-1], self.shroud.r[-1], self.nspan)
+            self.inletLine = np.stack((inletZ, inletR), axis=1)
+            self.outletLine = np.stack((outletZ, outletR), axis=1)
+            
+        
+        
+            
+    
     def add_bfm_file_arrays(self):
         """
         When the BFM file must be written, generate also the data needed for it
@@ -63,7 +107,7 @@ class Block:
                           "Force_Tangential": np.zeros((self.nstream, self.nspan))}
         self.bladePresent = np.zeros_like(self.blockage)
 
-    def trim_inlet(self, z_trim='span', r_trim='span'):
+    def trim_inlet_curve(self, z_trim='span', r_trim='span'):
         """
         Trim the inlet at a certain location.
         :param z_trim: z cordinate of trim
@@ -72,7 +116,7 @@ class Block:
         self.hub.trim_inlet(z_trim, r_trim)
         self.shroud.trim_inlet(z_trim, r_trim)
 
-    def trim_outlet(self, z_trim='span', r_trim='span'):
+    def trim_outlet_curve(self, z_trim='span', r_trim='span'):
         """
         Trim the outlet at a certain location.
         :param z_trim: z cordinate of trim
@@ -374,25 +418,25 @@ class Block:
         """
         block_type = self.config.get_blocks_trim_type()[self.iblock]
         if block_type.lower() == 'axial-radial':
-            self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
-            self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])
-            self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
-            self.shroud.trim_outlet(r_trim=self.point_shroud_outlet[1])
+            self.hub.trim_inlet_curve(z_trim=self.point_hub_inlet[0])
+            self.hub.trim_outlet_curve(r_trim=self.point_hub_outlet[1])
+            self.shroud.trim_inlet_curve(z_trim=self.point_shroud_inlet[0])
+            self.shroud.trim_outlet_curve(r_trim=self.point_shroud_outlet[1])
         elif block_type.lower() == 'radial-axial':
-            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
-            self.hub.trim_outlet(z_trim=self.point_hub_outlet[0])
-            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
-            self.shroud.trim_outlet(z_trim=self.point_shroud_outlet[0])
+            self.hub.trim_inlet_curve(r_trim=self.point_hub_inlet[1])
+            self.hub.trim_outlet_curve(z_trim=self.point_hub_outlet[0])
+            self.shroud.trim_inlet_curve(r_trim=self.point_shroud_inlet[1])
+            self.shroud.trim_outlet_curve(z_trim=self.point_shroud_outlet[0])
         elif block_type.lower() == 'axial':
-            self.hub.trim_inlet(z_trim=self.point_hub_inlet[0])
-            self.hub.trim_outlet(z_trim=self.point_hub_outlet[0])
-            self.shroud.trim_inlet(z_trim=self.point_shroud_inlet[0])
-            self.shroud.trim_outlet(z_trim=self.point_shroud_outlet[0])
+            self.hub.trim_inlet_curve(z_trim=self.point_hub_inlet[0])
+            self.hub.trim_outlet_curve(z_trim=self.point_hub_outlet[0])
+            self.shroud.trim_inlet_curve(z_trim=self.point_shroud_inlet[0])
+            self.shroud.trim_outlet_curve(z_trim=self.point_shroud_outlet[0])
         elif block_type.lower() == 'radial':
-            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
-            self.hub.trim_outlet(r_trim=self.point_hub_outlet[1])
-            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
-            self.shroud.trim_outlet(r_trim=self.point_shroud_outlet[1])
+            self.hub.trim_inlet_curve(r_trim=self.point_hub_inlet[1])
+            self.hub.trim_outlet_curve(r_trim=self.point_hub_outlet[1])
+            self.shroud.trim_inlet_curve(r_trim=self.point_shroud_inlet[1])
+            self.shroud.trim_outlet_curve(r_trim=self.point_shroud_outlet[1])
         else:
             raise ValueError('Insert a valid machine type')
 

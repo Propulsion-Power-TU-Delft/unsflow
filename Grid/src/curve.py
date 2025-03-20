@@ -81,7 +81,7 @@ class Curve:
         u_spline_ext = np.linspace(u_min, u_max, num_points)  # parametrization of the spline. increase points if needed
         self.r_spline_ext, self.z_spline_ext = self.compute_spline(u_eval=u_spline_ext, degree_spline=degree_spline)
 
-    def trim_inlet(self, z_trim='span', r_trim='span'):
+    def trim_inlet_curve(self, z_trim='span', r_trim='span'):
         """
         it deletes the points from the original spline before a certain inlet position point. 
         The trim plane can be horizontal or vertical depending on which trim cordinate has been given. 
@@ -98,7 +98,7 @@ class Curve:
         self.z_spline = self.z_spline[idx]
         self.r_spline = self.r_spline[idx]
 
-    def trim_outlet(self, z_trim='span', r_trim='span'):
+    def trim_outlet_curve(self, z_trim='span', r_trim='span'):
         """
         Similar considerations of the trim_inlet, but deletes everything that comes after, not before.
         :param z_trim: z-location of the trim

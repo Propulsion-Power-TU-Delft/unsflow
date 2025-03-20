@@ -68,9 +68,11 @@ class MultiBlockGridDriver:
         if self.driverType=='multiblock':
             if iblock==0:
                 # the block is the first one
+                block.trim_inlet()
                 block.add_inlet_outlet_curves(block.inletLine, self.blades[iblade].inlet)
             elif iblock==self.numberBlocks-1:
                 # the block is the last one
+                block.trim_outlet()
                 block.add_inlet_outlet_curves(self.blades[iblade].outlet, block.outletLine)
             elif (iblock-1)%2==0:
                 # the block corresponds the blade iblade

@@ -152,7 +152,24 @@ class Config:
 
     def get_shroud_curve_filepath(self):
         return str(self.config_parser.get('GRID GENERATION', 'SHROUD_COORDINATES_FILEPATH'))
+    
+    def trim_inlet(self):
+        try:
+            return float(self.config_parser.get('GRID GENERATION', 'TRIM_INLET_METERS'))
+        except:
+            False
+    
+    def trim_outlet(self):
+        try:
+            return float(self.config_parser.get('GRID GENERATION', 'TRIM_OUTLET_METERS'))
+        except:
+            False
 
+    def get_blade_turning_direction(self):
+        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_TURNING_DIRECTION'))
+        values = [str(val.strip()) for val in value.split(',')]
+        return values
+    
     def get_blade_curve_filepath(self):
         value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_COORDINATES_FILEPATH'))
         values = [str(val.strip()) for val in value.split(',')]
