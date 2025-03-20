@@ -227,16 +227,24 @@ class Blade:
             #     ax.legend()
             
             # distinguish the two sides between pressure and suction
-            omegaShaft = self.config.get_omega_shaft()[iblock]
-            if omegaShaft == 0:
-                omegaShaft += 1 # to avoid ambiguous situations of symmetric stator blades
+            turningDirection = self.config.get_blade_turning_direction()[iblade]
+            deltaTheta = np.mean(t1) - np.mean(t2)
             
-            if ((np.mean(t1) - np.mean(t2)) * omegaShaft) > 0:
+            if deltaTheta > 0 and turningDirection == 'positive':
+                z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
+                z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
+            elif deltaTheta > 0 and turningDirection == 'negative':
+                z_ps, r_ps, theta_ps, m_ps = z2,r2,t2,m2
+                z_ss, r_ss, theta_ss, m_ss = z1,r1,t1,m1
+            elif deltaTheta < 0 and turningDirection == 'positive':
+                z_ps, r_ps, theta_ps, m_ps = z2,r2,t2,m2
+                z_ss, r_ss, theta_ss, m_ss = z1,r1,t1,m1
+            elif deltaTheta < 0 and turningDirection == 'negative':
                 z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
                 z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
             else:
-                z_ps, r_ps, theta_ps, m_ps = z2,r2,t2,m2
-                z_ss, r_ss, theta_ss, m_ss = z1,r1,t1,m1
+                raise ValueError('Unknown turning direction for blade pressure side detection')
+                
             
 
             # add surface data to dataset
@@ -339,6 +347,19 @@ class Blade:
         ax.set_aspect('equal')
         
         self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface = self.compute_surface_normal_vectors(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, coords='cylindrical')
+        
+        turningDirection = self.config.get_blade_turning_direction()[iblade]
+        avgValue = np.mean(self.nt_camberSurface)
+        
+        if avgValue > 0 and turningDirection == 'positive':
+            pass
+        elif avgValue < 0 and turningDirection == 'negative':
+            pass
+        else:
+            self.nt_camberSurface = -self.nt_camberSurface
+            self.nr_camberSurface = -self.nr_camberSurface
+            self.nz_camberSurface = -self.nz_camberSurface
+        
         if self.config.get_visual_debug():
             self.plot_surface_normals(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface, 'Camber Surface Normals')
     
