@@ -157,13 +157,13 @@ class Config:
         try:
             return float(self.config_parser.get('GRID GENERATION', 'TRIM_INLET_METERS'))
         except:
-            False
+            return False
     
     def trim_outlet(self):
         try:
             return float(self.config_parser.get('GRID GENERATION', 'TRIM_OUTLET_METERS'))
         except:
-            False
+            return False
 
     def get_blade_turning_direction(self):
         value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_TURNING_DIRECTION'))
