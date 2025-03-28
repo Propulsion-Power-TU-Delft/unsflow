@@ -41,7 +41,7 @@ class Blade:
     class that stores the information regarding the blade topology.
     """
 
-    def __init__(self, config, iblock, iblade):
+    def __init__(self, config, iblock, iblade, bladeType):
         """
         Class used to model the blade from the file .curve, which is created during blade generation. The usual format for that file is the one of Ansys.
 
@@ -54,7 +54,7 @@ class Blade:
         
         `iblade`: blade counter
         """
-        print_banner_begin('BLADE %02i' %(iblade))
+        print_banner_begin('BLADE %02i %s' %(iblade, bladeType))
         self.config = config
         self.x = []
         self.y = []
@@ -69,6 +69,7 @@ class Blade:
         self.camberSurface = Surface('Camber Surface', config)
         self.iblock = iblock
         self.iblade = iblade
+        self.bladeType = bladeType
         self.extrapolationMethod = self.config.get_extrapolation_method()
 
         self.read_from_curve_file(iblade, iblock)
@@ -102,8 +103,12 @@ class Blade:
 
         `camber_stream_points`: points in the streamwise direction to obtain the curvilinear absicssa for each profile
         """
-        blade_type = 'MAIN'
-        filepath = self.config.get_blade_curve_filepath()[iblade]
+        blade_type = 'MAIN' # this is just used to read the cords
+        if self.bladeType == 'main':
+            filepath = self.config.get_blade_curve_filepath()[iblade]
+        elif self.bladeType == 'splitter':
+            filepath = self.config.get_splitter_blade_curve_filepath()[iblade]
+            
         print(f"{'Blade coordinate file:':<{total_chars_mid}}{filepath:>{total_chars_mid}}")
 
         with open(filepath) as f:
@@ -292,7 +297,7 @@ class Blade:
                 plt.grid(alpha=grid_opacity)
                 plt.gca().set_aspect('equal', adjustable='box')
                 if i in profiles_to_plot:
-                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_%i_b2b-profile_%.2f.pdf' %(self.iblade,(i+1)/self.number_profiles), bbox_inches='tight')
+                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' %(self.iblade, self.bladeType,(i+1)/self.number_profiles), bbox_inches='tight')
 
             # self.thickness['z'] = z_camber
             # self.thickness['r'] = r_camber
@@ -699,6 +704,10 @@ class Blade:
         self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
         self.contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
         self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
+        try:
+            self.thk += self.splitterThickness
+        except:
+            pass
         self.contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
 
         Nb = self.config.get_blades_number()[self.iblade]
@@ -2640,8 +2649,34 @@ class Blade:
             self.bladePresent[i,mask] = 0
         
         contour_template(self.z_grid, self.r_grid, self.bladePresent, 'bladePresent')
+    
+    
+    def compute_splitter_thickness(self, pressSide, suctSide):
+        r_eval = self.r_grid
+        z_eval = self.z_grid
+        
+        def splitter_interpolation(xpoints, ypoints, zpoints, x_evaluation, y_evaluation, filler, method='linear'):
+            z_evaluation = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_evaluation, y_evaluation), method=method, fill_value=np.nan)
+            ni,nj = z_evaluation.shape
+            for i in range(ni):
+                if np.isnan(z_evaluation[i,0]):
+                    z_evaluation[i,0] = z_evaluation[i,1]
+                if np.isnan(z_evaluation[i,-1]):
+                    z_evaluation[i,-1] = z_evaluation[i,-2]
+            
+            nan_mask = np.isnan(z_evaluation)
+            z_evaluation[nan_mask] = filler
+            return z_evaluation
         
         
+        thetaPS = splitter_interpolation(pressSide[0], pressSide[1], pressSide[2], z_eval, r_eval, filler=0)
+        thetaSS = splitter_interpolation(suctSide[0], suctSide[1], suctSide[2], z_eval, r_eval, filler=0)
+        self.splitterThickness = self.r_grid*(np.abs(thetaPS-thetaSS))
+        
+        # contour_template(self.z_grid, self.r_grid, thetaPS, 'ps')
+        # contour_template(self.z_grid, self.r_grid, thetaSS, 'ss')
+        # contour_template(self.z_grid, self.r_grid, self.splitterThickness, 'splitter thickness')
+
         
         
         

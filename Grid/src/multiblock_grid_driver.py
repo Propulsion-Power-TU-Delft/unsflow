@@ -20,6 +20,7 @@ class MultiBlockGridDriver:
     def __init__(self, config):
         self.config = config
         self.numberBlades = self.config.get_blade_rows_number()
+        self.numberSplitterBlades = self.config.get_splitter_blade_rows_number()
         
         self.driverType = self.config.get_multiblock_driver_type()
         if self.driverType=='multiblock':
@@ -29,6 +30,7 @@ class MultiBlockGridDriver:
         else:
             raise ValueError('Multiblock driver type not recognized. Possible options are (multiblock, full_machine, single_blade)')
         self.blades = []
+        self.splitter_blades = []
         self.blocks = []
             
     
@@ -45,7 +47,13 @@ class MultiBlockGridDriver:
                     iblock = 0
                 blade = self.ReconstructBlade(iblade, iblock)
                 self.blades.append(blade)
-        
+                
+                if self.config.is_splitter_blade_present(iblade):
+                    splitterBlade = self.ReconstructBlade(iblade, iblock, bladeType='splitter')
+                    self.splitter_blades.append(splitterBlade)
+                    
+                
+                
         for iblock in range(self.numberBlocks):
             block = self.ReconstructBlock(iblock)
             self.blocks.append(block)
@@ -96,7 +104,7 @@ class MultiBlockGridDriver:
         return block
         
     
-    def ReconstructBlade(self, iblade, iblock):
+    def ReconstructBlade(self, iblade, iblock, bladeType='main'):
         """
         Reconstructs a blade of the turbomachine and returns it as a Blade
         object. It adds inlet and outlet points to the blade and performs
@@ -107,7 +115,7 @@ class MultiBlockGridDriver:
         :param iblock: Index of the block to which the blade belongs.
         :return: A configured Blade object.
         """
-        blade = Blade(self.config, iblock=iblock, iblade=iblade)
+        blade = Blade(self.config, iblock=iblock, iblade=iblade, bladeType=bladeType)
         blade.find_inlet_points()
         blade.find_outlet_points()
         return blade        
@@ -129,6 +137,18 @@ class MultiBlockGridDriver:
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
             self.blades[iblade].compute_meridional_coordinates()
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            
+            iSplitter = 0
+            if self.config.is_splitter_blade_present(iblade):
+                zSplitterPS = self.splitter_blades[iSplitter].z_psSurface
+                rSplitterPS = self.splitter_blades[iSplitter].r_psSurface
+                thetaSplitterPS = self.splitter_blades[iSplitter].theta_psSurface
+                zSplitterSS = self.splitter_blades[iSplitter].z_ssSurface
+                rSplitterSS = self.splitter_blades[iSplitter].r_ssSurface
+                thetaSplitterSS = self.splitter_blades[iSplitter].theta_ssSurface
+                self.blades[iblade].compute_splitter_thickness((zSplitterPS, rSplitterPS, thetaSplitterPS), (zSplitterSS, rSplitterSS, thetaSplitterSS))
+                iSplitter += 1
+                
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].plot_blockage_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             if  self.config.get_blade_edges_extrapolation_coefficient()[iblade] > 1e-3:

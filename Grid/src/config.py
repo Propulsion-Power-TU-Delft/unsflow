@@ -175,8 +175,23 @@ class Config:
         values = [str(val.strip()) for val in value.split(',')]
         return values
     
+    def get_splitter_blade_curve_filepath(self):
+        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'SPLITTER_BLADES_COORDINATES_FILEPATH'))
+        values = [str(val.strip()) for val in value.split(',')]
+        return values
+    
+    def is_splitter_blade_present(self, iblade):
+        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'SPLITTER_BLADE_PRESENT'))
+        values = [str(val.strip()) for val in value.split(',')]
+        return values[iblade]
+        
+    
     def get_blade_rows_number(self):
         filepaths = self.get_blade_curve_filepath()
+        return len(filepaths)
+    
+    def get_splitter_blade_rows_number(self):
+        filepaths = self.get_splitter_blade_curve_filepath()
         return len(filepaths)
 
     def get_blade_inlet_type(self):

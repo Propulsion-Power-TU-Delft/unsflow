@@ -1334,6 +1334,38 @@ def griddata_interpolation_with_nearest_filler(xpoints, ypoints, zpoints, x_eval
 
     return z_eval
 
+def griddata_interpolation_with_specified_filler(xpoints, ypoints, zpoints, x_eval, y_eval, filler, method='linear'):
+    """
+    Interpolation using griddata, but the points lying out of the convex hull are treated with nearest neighbor.
+
+    Parameters
+    -------------------------------
+
+    `xpoints`: 1 or 2D array of x points where data is known
+
+    `ypoints`: 1 or 2D array of y points where data is known
+
+    `zpoints`: 1D array of function values where data is known, related to `xpoints` and `ypoints`
+
+    `x_eval`: 1 or 2D array where evaluating the function
+
+    `y_eval`: 1 or 2D array where evaluating the function
+
+    `method`: linear or cubic usually
+
+    `filler`: value used to fill and recognize points outside the convex hull
+    """
+    # Perform linear interpolation
+    z_eval = griddata((xpoints.flatten(), ypoints.flatten()), zpoints.flatten(), (x_eval, y_eval), method=method, fill_value=np.nan)
+
+    # Find NaN values (which were previously fill_value)
+    nan_mask = np.isnan(z_eval)
+
+    # Apply extrapolation only where z_eval is NaN
+    z_eval[nan_mask] = filler
+
+    return z_eval
+
 
 def griddata_interpolation_with_linear_extrapolation(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear'):
     """
