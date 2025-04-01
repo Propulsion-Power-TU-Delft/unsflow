@@ -157,7 +157,7 @@ class MultiBlockGridDriver:
                 self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_endwalls_gaps()
-            # self.blades[iblade].compute_blade_camber_angles()
+            self.blades[iblade].compute_blade_camber_angles()
             # self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
@@ -168,9 +168,10 @@ class MultiBlockGridDriver:
             self.blocks[iblock].add_theta_camber(self.blades[iblade].theta_camber)
             
             if self.config.perform_body_force_reconstruction():
-                self.blades[iblade].extract_body_force() 
+                self.blades[iblade].extract_body_force(self.blades[iblade].blade_metal_angle) 
                 self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+                self.blades[iblade].bodyForce.PlotCalibrationCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
     
     

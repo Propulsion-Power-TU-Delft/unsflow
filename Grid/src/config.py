@@ -181,9 +181,14 @@ class Config:
         return values
     
     def is_splitter_blade_present(self, iblade):
-        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'SPLITTER_BLADE_PRESENT'))
-        values = [str(val.strip()) for val in value.split(',')]
-        return values[iblade]
+        try:
+            value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'SPLITTER_BLADE_PRESENT'))
+            values = [str(val.strip()) for val in value.split(',')]
+            return values[iblade]
+        except:
+            nBlades = self.get_blade_rows_number()
+            values = [False for i in range(nBlades)]
+            return values[iblade]
         
     
     def get_blade_rows_number(self):
@@ -191,8 +196,11 @@ class Config:
         return len(filepaths)
     
     def get_splitter_blade_rows_number(self):
-        filepaths = self.get_splitter_blade_curve_filepath()
-        return len(filepaths)
+        try:
+            filepaths = self.get_splitter_blade_curve_filepath()
+            return len(filepaths)
+        except:
+            return 0
 
     def get_blade_inlet_type(self):
         value = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADE_INLET_TYPE'))
@@ -507,6 +515,19 @@ class Config:
         
         if res not in choices:
             raise ValueError(f'Invalid option EXTRACTION_METHOD. Possible options are {choices}.')
+        
+        return res
+    
+    def get_body_force_calibration_method(self):
+        choices = ['lift/drag']
+        
+        try:
+            res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
+        except:
+            res = choices[0] # default
+        
+        if res not in choices:
+            raise ValueError(f'Invalid option CALIBRATION_METHOD. Possible options are {choices}.')
         
         return res
 

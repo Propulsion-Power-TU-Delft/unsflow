@@ -161,6 +161,14 @@ class BodyForce:
                              labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     
     
+    def PlotCalibrationCoefficients(self, save_filename):
+        labels = {}
+        for key in self.calibrationCoefficients.keys():
+            if key.lower()!='model':
+                contour_template(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], self.calibrationCoefficients[key], 
+                                key, save_filename=save_filename + '_' + key, folder_name=self.config.get_pictures_folder_path())
+    
+    
     def PlotCircumferentiallyAveragedFields(self, save_filename):
         labels = {}
         for key in self.meridionalFields.keys():
@@ -327,11 +335,6 @@ class BodyForce:
                                                          self.bodyForceFields['Force_Inviscid_Tangential']**2)
         
         
-        
-        
-        
-    
-    
     def ComputeLossForceMarble(self):
         """Compute the loss force component according to Marble method, distributing linearly the loss from leading to trailing edge
 
@@ -428,4 +431,51 @@ class BodyForce:
         with open(name, 'wb') as f:
             pickle.dump(self, f)
         print(f"Saved body force fields in file: {name}!")
+    
+    
+    def ComputeCalibrationCoefficients(self, calibration_method, metal_angle):
+        if calibration_method.lower()=='lift/drag':
+            self.ComputeLiftDragCalibrationCoefficients(metal_angle)
+    
+    
+    def ComputeLiftDragCalibrationCoefficients(self, metal_angle):
+        nBlades = self.config.get_blades_number()[self.iblade]
+        circumferentialPitch = 2 * np.pi * self.radialGrid / nBlades
+        h_parameter = circumferentialPitch * np.abs(np.cos(metal_angle))
+        streamLength = compute_meridional_streamwise_coordinates(self.axialGrid, self.radialGrid)
+        solidity = np.zeros_like(streamLength)
+        for i in range(solidity.shape[0]):
+            solidity[i,:] = streamLength[-1,:] / circumferentialPitch[i,:]
         
+        contour_template(self.axialGrid, self.radialGrid, circumferentialPitch, 'circumferential_pitch')
+        contour_template(self.axialGrid, self.radialGrid, metal_angle*180/np.pi, 'metal_angle [deg]')
+        contour_template(self.axialGrid, self.radialGrid, h_parameter, 'h_parameter')
+        contour_template(self.axialGrid, self.radialGrid, solidity, 'solidity')
+        contour_template(self.axialGrid, self.radialGrid, self.meridionalFields["Relative_Flow_Angle"]*180/np.pi, 'relative flow angle [deg]')
+        
+        relVelMag = np.sqrt(self.meridionalFields["Velocity_Radial"]**2 + self.meridionalFields["Velocity_Axial"]**2 + self.meridionalFields["Velocity_Tangential_Relative"]**2)
+        beta_flow = np.zeros_like(relVelMag)
+        for i in range(beta_flow.shape[0]):
+            for j in range(beta_flow.shape[1]):
+                axialVel = self.meridionalFields["Velocity_Axial"][i,j]
+                radialVel = self.meridionalFields["Velocity_Radial"][i,j]
+                tangRelVel = self.meridionalFields["Velocity_Tangential_Relative"][i,j]
+                velocity_meridional_cylindricFrame = np.array([axialVel, radialVel, 0])
+                velocity_relative_cylindricFrame = np.array([axialVel, radialVel, tangRelVel])
+                beta_flow[i,j] = np.arccos(np.dot(velocity_meridional_cylindricFrame, velocity_relative_cylindricFrame) / 
+                                           (np.linalg.norm(velocity_meridional_cylindricFrame) * np.linalg.norm(velocity_relative_cylindricFrame)))
+        beta_0 = beta_flow - self.bodyForceFields["Force_Inviscid"] * circumferentialPitch / (2*np.pi*solidity*relVelMag**2)
+        kp_etaMax = circumferentialPitch * self.bodyForceFields["Force_Viscous"] / (relVelMag**2)
+        beta_etaMax = beta_flow
+        
+        contour_template(self.axialGrid, self.radialGrid, beta_0*180/np.pi, 'beta_0 [deg]')
+        contour_template(self.axialGrid, self.radialGrid, kp_etaMax, 'kp_etaMax')
+        contour_template(self.axialGrid, self.radialGrid, beta_etaMax*180/np.pi, 'beta_etaMax [deg]')
+        
+        self.calibrationCoefficients = {}
+        self.calibrationCoefficients["Model"] = 'lift/drag'
+        self.calibrationCoefficients["beta_0"] = beta_0
+        self.calibrationCoefficients["kp_etaMax"] = kp_etaMax
+        self.calibrationCoefficients["beta_etaMax"] = beta_etaMax
+        self.calibrationCoefficients["solidity"] = solidity
+        self.calibrationCoefficients["h_parameter"] = circumferentialPitch # for the moment use this

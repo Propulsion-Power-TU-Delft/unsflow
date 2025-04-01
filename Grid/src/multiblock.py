@@ -52,6 +52,7 @@ class MultiBlock:
         self.force_axial = self.blocks[0].bodyForce['Force_Axial']
         self.force_radial = self.blocks[0].bodyForce['Force_Radial']
         self.force_tangential = self.blocks[0].bodyForce['Force_Tangential']
+        self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients
         self.nBlades = self.blocks[0].nBlades
         self.bladePresent = self.blocks[0].bladePresent
         self.theta_camber = self.blocks[0].theta_camber
@@ -72,6 +73,10 @@ class MultiBlock:
             self.nBlades = np.concatenate((self.nBlades, block.nBlades[1:, :]), axis=0)
             self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[1:, :]), axis=0)
             self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[1:, :]), axis=0)
+            
+            for key in self.BFCalibrationCoefficients.keys():
+                if key.lower()!='model':
+                    self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][1:, :]), axis=0)
         
         self.theta_camber =gaussian_filter(self.theta_camber, sigma=3)
 
@@ -492,6 +497,11 @@ class MultiBlock:
             mesh['Force_Radial'] = self.force_radial
             mesh['Force_Tangential'] = self.force_tangential
         
+        if 'calibration_coefficients' in outputFields:
+            bf_model = self.config.get_body_force_calibration_method()
+            print(f"Calibration coefficients for model {bf_model} added to the TurboBFM mesh file")
+            mesh['Calibration_Coefficients'] = self.BFCalibrationCoefficients
+        
 
         filepath = self.config.get_output_data_folder() + '/TurboBFM_Mesh_%02i_%02i.pik' % (ni, nj)
         with open(filepath, 'wb') as f:
@@ -513,6 +523,10 @@ class MultiBlock:
         contour_template(self.z_grid_cg, self.r_grid_cg, total_stream, r'Streamwise Coord [m]', save_filename='multiblock_totalStreamLength', folder_name=self.config.get_pictures_folder_path())
         total_span = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg)
         contour_template(self.z_grid_cg, self.r_grid_cg, total_span, r'Spanwise Coord [m]', save_filename='multiblock_totalSpanLength', folder_name=self.config.get_pictures_folder_path())
+        
+        for key in self.BFCalibrationCoefficients.keys():
+            if key.lower()!='model':
+                contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
 
         
     def fix_theta_camber_grids(self):

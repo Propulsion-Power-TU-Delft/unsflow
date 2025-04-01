@@ -105,6 +105,15 @@ class Block:
         self.bodyForce = {"Force_Axial": np.zeros((self.nstream, self.nspan)),
                           "Force_Radial": np.zeros((self.nstream, self.nspan)),
                           "Force_Tangential": np.zeros((self.nstream, self.nspan))}
+        if self.config.get_body_force_calibration_method()=='lift/drag':
+            self.BFCalibrationCoefficients = {'Model': 'lift/drag',
+                                              'beta_0': np.zeros((self.nstream, self.nspan)),
+                                              'kp_etaMax': np.zeros((self.nstream, self.nspan)),
+                                              'beta_etaMax': np.zeros((self.nstream, self.nspan)),
+                                              'solidity': np.zeros((self.nstream, self.nspan)),
+                                              'h_parameter': np.zeros((self.nstream, self.nspan))}
+        else:
+            raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)
 
     def trim_inlet_curve(self, z_trim='span', r_trim='span'):
@@ -799,5 +808,6 @@ class Block:
         self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
         self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
         self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
+        self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
 
 

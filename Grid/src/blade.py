@@ -1601,9 +1601,9 @@ class Blade:
         self.blade_metal_angle = np.zeros_like(self.z_grid)
         self.blade_lean_angle = np.zeros_like(self.z_grid)
 
-        for i in range(0, self.x_camber.shape[0]):
-            for j in range(0, self.x_camber.shape[1]):
-                self.gas_path_angle[i, j] = np.arctan2(self.streamline_vectors_cyl[i, j][0] , self.streamline_vectors_cyl[i, j][2])
+        # for i in range(0, self.x_camber.shape[0]):
+        #     for j in range(0, self.x_camber.shape[1]):
+        #         self.gas_path_angle[i, j] = np.arctan2(self.streamline_vectors_cyl[i, j][0] , self.streamline_vectors_cyl[i, j][2])
 
                 # meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
                 # meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
@@ -1620,7 +1620,7 @@ class Blade:
                 # else:
                 #     raise ValueError('Choose a convention for the angles')
         
-        self.blade_metal_angle = np.arctan2(self.n_camber_t, self.n_camber_z)
+        self.blade_metal_angle = np.arctan2(self.n_camber_t, self.n_camber_z) # this must be fixes
         self.blade_lean_angle = np.arctan2(self.n_camber_r, np.sqrt(self.n_camber_t**2+self.n_camber_z**2))
 
 
@@ -2614,7 +2614,7 @@ class Blade:
         self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
     
-    def extract_body_force(self):
+    def extract_body_force(self, metal_angle):
         """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
         """
         self.bodyForce = BodyForce(self.config, self.iblade)
@@ -2629,6 +2629,9 @@ class Blade:
             raise ValueError(f"Unknown body force extraction method: {extractionMethod}")
             
         self.bodyForce.HubShroudBodyForceExtrapolation()
+        
+        calibrationMethod = self.config.get_body_force_calibration_method()
+        self.bodyForce.ComputeCalibrationCoefficients(calibrationMethod, metal_angle)
     
     def compute_endwalls_gaps(self):
         tip_gap = self.config.get_blade_tip_gap()[self.iblade]
