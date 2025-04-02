@@ -1481,6 +1481,95 @@ def compute_meridional_spanwise_coordinates(axialGrid: np.ndarray, radialGrid: n
             spanLen[ii, :] /= spanLen[ii, -1]
 
     return spanLen
+
+def ComputeStreamwiseVectorsToSurface(xSurface, ySurface, zSurface):
+    ni,nj = xSurface.shape
+    streamwiseVectors = np.zeros((ni,nj,3)) # x,y,z components are the last dimension
+    for i in range(ni):
+        for j in range(nj):
+            im,ip,jm,jp = getStepIndices2ndOrderCentral(i,j,ni,nj)
+            deltaX = xSurface[i+ip,j] - xSurface[i+im, j]
+            deltaY = ySurface[i+ip,j] - ySurface[i+im, j]
+            deltaZ = zSurface[i+ip,j] - zSurface[i+im, j]
+            deltaL = np.sqrt(deltaX**2 + deltaY**2 + deltaZ**2)
+            streamwiseVectors[i,j,0] = deltaX/deltaL
+            streamwiseVectors[i,j,1] = deltaY/deltaL
+            streamwiseVectors[i,j,2] = deltaZ/deltaL
+    return streamwiseVectors
+
+
+def ComputeSpanwiseVectorsToSurface(xSurface, ySurface, zSurface):
+    ni,nj = xSurface.shape
+    spanwiseVectors = np.zeros((ni,nj,3)) # x,y,z components are the last dimension
+    for i in range(ni):
+        for j in range(nj):
+            im,ip,jm,jp = getStepIndices2ndOrderCentral(i,j,ni,nj)
+            deltaX = xSurface[i, j+jp] - xSurface[i, j+jm]
+            deltaY = ySurface[i, j+jp] - ySurface[i, j+jm]
+            deltaZ = zSurface[i, j+jp] - zSurface[i, j+jm]
+            deltaL = np.sqrt(deltaX**2 + deltaY**2 + deltaZ**2)
+            spanwiseVectors[i,j,0] = deltaX/deltaL
+            spanwiseVectors[i,j,1] = deltaY/deltaL
+            spanwiseVectors[i,j,2] = deltaZ/deltaL
+    return spanwiseVectors
+            
+
+def getStepIndices2ndOrderCentral(i,j,ni,nj):
+    """Get the 2nd order finite difference steps in i and j depending on the size of the array (ni,nj)
+
+    Args:
+        i (int): current i index
+        j (int): current j index
+        ni (int): size of the array along i
+        nj (int): size of the array along j
+    """
+    if i==0 and j==0:
+        im = 0
+        ip = 1
+        jm = 0
+        jp = 1
+    elif i==ni-1 and j==0:
+        im = -1
+        ip = 0
+        jm = 0
+        jp = 1
+    elif i==ni-1 and j==nj-1:
+        im = -1
+        ip = 0
+        jm = -1
+        jp = 0
+    elif i==0 and j==nj-1:
+        im = 0
+        ip = 1
+        jm = -1
+        jp = 0
+    elif i==0:
+        im = 0
+        ip = 1
+        jm = -1
+        jp = +1
+    elif i==ni-1:
+        im = -1
+        ip = 0
+        jm = -1
+        jp = 1
+    elif j==0:
+        im = -1
+        ip = 1
+        jm = 0
+        jp = 1
+    elif j==nj-1:
+        im = -1
+        ip = 1
+        jm = -1
+        jp = 0
+    else:
+        im = -1
+        ip = 1
+        jm = -1
+        jp = 1
+    return im,ip,jm,jp
+        
         
 
 

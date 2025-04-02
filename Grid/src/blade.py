@@ -366,23 +366,27 @@ class Blade:
             self.nz_camberSurface = -self.nz_camberSurface
         
         if self.config.get_visual_debug():
-            self.plot_surface_normals(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface, 'Camber Surface Normals')
+            self.plot_surface_normals(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface, 'cylindric', 'Camber Surface Normals')
     
     
-    def plot_surface_normals(self, r, t, z, nr, nt, nz, title):
+    def plot_surface_normals(self, x1, x2, x3, nx1, nx2, nx3, coordsFrame, title, interval=10):
         def cartesian_points(r, t, z):
             return r*np.cos(t), r*np.sin(t), z
         
-        x,y,z = cartesian_points(r, t, z)
-        ni,nj = r.shape
-        nx = np.zeros((ni,nj))
-        ny = np.zeros((ni,nj))
-        for i in range(ni):
-            for j in range(nj):
-                normal_cyl = np.array([nr[i,j], nt[i,j], nz[i,j]])
-                normal_cart = cylindrical_to_cartesian(x[i,j], y[i,j], z[i,j], normal_cyl)
-                nx[i,j] = normal_cart[0]
-                ny[i,j] = normal_cart[1]
+        if coordsFrame.lower()=='cylindric':
+            x,y,z = cartesian_points(x1, x2, x3)
+            ni,nj = x.shape
+            nx = np.zeros((ni,nj))
+            ny = np.zeros((ni,nj))
+            for i in range(ni):
+                for j in range(nj):
+                    normal_cyl = np.array([nx1[i,j], nx2[i,j], nx3[i,j]])
+                    normal_cart = cylindrical_to_cartesian(x[i,j], y[i,j], z[i,j], normal_cyl)
+                    nx[i,j] = normal_cart[0]
+                    ny[i,j] = normal_cart[1]
+        else:
+            x,y,z = x1, x2, x3
+            nx,ny,nz = nx1, nx2, nx3
         
         arrow_len = (np.max(z)-np.min(z))/3
         
@@ -1597,32 +1601,35 @@ class Blade:
         :param convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the
         direction of rotation
         """
+        # First compute the vectors oriented along streamwise and spanwise directions of the blade
+        def getCartesianCoords(r,t,z):
+            return r*np.cos(t), r*np.sin(t), z
+        
+        xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
+        streamwiseVectors = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        spanwiseVectors = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
+
+        if self.config.get_visual_debug():
+            self.plot_surface_normals(xCamber, yCamber, zCamber, streamwiseVectors[:,:,0], streamwiseVectors[:,:,1], streamwiseVectors[:,:,2], 'cartesian', 'Streamwise Vectors')
+            self.plot_surface_normals(xCamber, yCamber, zCamber, spanwiseVectors[:,:,0], spanwiseVectors[:,:,1], spanwiseVectors[:,:,2], 'cartesian', 'Spanwise Vectors')
+        
+        ni,nj = self.z_grid.shape
         self.gas_path_angle = np.zeros_like(self.z_grid)
         self.blade_metal_angle = np.zeros_like(self.z_grid)
         self.blade_lean_angle = np.zeros_like(self.z_grid)
-
-        # for i in range(0, self.x_camber.shape[0]):
-        #     for j in range(0, self.x_camber.shape[1]):
-        #         self.gas_path_angle[i, j] = np.arctan2(self.streamline_vectors_cyl[i, j][0] , self.streamline_vectors_cyl[i, j][2])
-
-                # meridional_sl_vec = np.array([self.streamline_vectors_cyl[i, j][0], 0, self.streamline_vectors_cyl[i, j][2]])
-                # meridional_sl_vec /= np.linalg.norm(meridional_sl_vec)
-
-                # meridional_sp_vec = np.array([self.spanline_vectors_cyl[i, j][0], 0, self.spanline_vectors_cyl[i, j][2]])
-                # meridional_sp_vec /= np.linalg.norm(meridional_sp_vec)
-
-                # if convention == 'neutral':
-                #     self.blade_metal_angle[i, j] = np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
-                #     self.blade_lean_angle[i, j] = np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
-                # elif convention == 'rotation-wise':
-                #     self.blade_metal_angle[i, j] = -np.arccos(np.dot(self.streamline_vectors_cyl[i, j], meridional_sl_vec))
-                #     self.blade_lean_angle[i, j] = -np.arccos(np.dot(self.spanline_vectors_cyl[i, j], meridional_sp_vec))
-                # else:
-                #     raise ValueError('Choose a convention for the angles')
+        for i in range(ni):
+            for j in range(nj):
+                streamVecCyl = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], streamwiseVectors[i,j,:])
+                spanVecCyl = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], spanwiseVectors[i,j,:])
+                
+                self.gas_path_angle[i, j] = np.arctan(streamVecCyl[0] / streamVecCyl[2])
+                self.blade_metal_angle[i, j] = np.arctan(streamVecCyl[1] / streamVecCyl[2])
+                self.blade_lean_angle[i, j] = np.arctan(spanVecCyl[1] / spanVecCyl[0])
         
-        self.blade_metal_angle = np.arctan2(self.n_camber_t, self.n_camber_z) # this must be fixes
-        self.blade_lean_angle = np.arctan2(self.n_camber_r, np.sqrt(self.n_camber_t**2+self.n_camber_z**2))
-
+        # contour_template(self.z_grid, self.r_grid, self.gas_path_angle*180/np.pi, 'Gas Path Angle [deg]')
+        # contour_template(self.z_grid, self.r_grid, self.blade_metal_angle*180/np.pi, 'Blade Metal Angle [deg]')
+        # contour_template(self.z_grid, self.r_grid, self.blade_lean_angle*180/np.pi, 'Blade Lean Angle [deg]')
+        
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
         """
@@ -2546,6 +2553,8 @@ class Blade:
         self.n_camber_r /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_t /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_z /= np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        
+        self.blade_metal_angle = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.blade_metal_angle, stream=True, span=False)
     
     
     def extrapolate_2dfield_stream_span(self, zgrid, rgrid, field, stream=True, span=False):
@@ -2613,6 +2622,8 @@ class Blade:
         self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
         self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
+        
+        self.blade_metal_angle = gaussian_filter(self.blade_metal_angle, sigma=smoothing_coefficient)
     
     def extract_body_force(self, metal_angle):
         """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields

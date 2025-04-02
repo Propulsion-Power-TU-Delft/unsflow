@@ -43,13 +43,13 @@ class BodyForce:
             raise ValueError('Not valid average type')
         
         solverType = self.config.get_bladed_CFD_solver_type()
-        self.meridionalFields = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)
+        dataset = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)
                 
-        for key in self.meridionalFields.keys():
+        for key in dataset.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
-                self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(self.meridionalFields['Axial_Coordinate'], 
-                                                                                              self.meridionalFields['Radial_Coordinate'], 
-                                                                                              self.meridionalFields[key], 
+                self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(dataset['Axial_Coordinate'], 
+                                                                                              dataset['Radial_Coordinate'], 
+                                                                                              dataset[key], 
                                                                                               self.axialGrid, self.radialGrid)
         
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
@@ -78,7 +78,32 @@ class BodyForce:
             meridionalFields[key] = averagedDataset[variablesNames[key]]
         
         meridionalFields['Entropy'] = CP*np.log(meridionalFields['Temperature']/TREF)-R*np.log(meridionalFields['Pressure']/PREF)
-        meridionalFields['Relative_Flow_Angle'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
+        meridionalFields['Velocity_Meridional'] = np.sqrt(meridionalFields['Velocity_Axial']**2 + meridionalFields['Velocity_Radial']**2)
+        
+        # for the relative flow angle, use of simple arctan because we want it to be defined between [-pi/2,pi/2], where positive is the positive theta direction
+        meridionalFields['Relative_Flow_Angle_arctan2'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
+        meridionalFields['Relative_Flow_Angle'] = np.arctan(meridionalFields['Velocity_Tangential_Relative']/ meridionalFields['Velocity_Axial'])
+        
+        # the 3D relative flow vector, which is generalized to radial geometries. Angle between relative velocity vector and meridional velocity vector
+        meridionalFields['Relative_Flow_Angle_3D'] = np.zeros_like(meridionalFields['Relative_Flow_Angle'])
+        ni,nj = meridionalFields['Relative_Flow_Angle_3D'].shape
+        for i in range(ni):
+            for j in range(nj):
+                velAx = meridionalFields['Velocity_Axial'][i,j]
+                velRad = meridionalFields['Velocity_Radial'][i,j]
+                velTanRel = meridionalFields['Velocity_Tangential_Relative'][i,j]
+                relVelVector = np.array([velAx, velRad, velTanRel])
+                meridionalVel = np.array([velAx, velRad, 0])
+                
+                # need to distinguish between positive and negative angles, since arccos gives angle between [0,pi] by reference, but we want between [-pi/2, pi/2]
+                if velTanRel>=0:
+                    meridionalFields['Relative_Flow_Angle_3D'][i,j] = np.arccos((np.dot(relVelVector, meridionalVel)) / (np.linalg.norm(relVelVector) * np.linalg.norm(meridionalVel)))
+                else:
+                    meridionalFields['Relative_Flow_Angle_3D'][i,j] = -np.arccos((np.dot(relVelVector, meridionalVel)) / (np.linalg.norm(relVelVector) * np.linalg.norm(meridionalVel)))
+        
+        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_arctan2']*180/np.pi, 'beta arctan2', vmin=-70, vmax=25)
+        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle']*180/np.pi, 'beta arctan', vmin=-70, vmax=25)
+        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_3D']*180/np.pi, 'beta 3D', vmin=-70, vmax=25)
         
         return meridionalFields
     
@@ -441,7 +466,7 @@ class BodyForce:
     def ComputeLiftDragCalibrationCoefficients(self, metal_angle):
         nBlades = self.config.get_blades_number()[self.iblade]
         circumferentialPitch = 2 * np.pi * self.radialGrid / nBlades
-        h_parameter = circumferentialPitch * np.abs(np.cos(metal_angle))
+        h_parameter = circumferentialPitch * np.cos(metal_angle)
         streamLength = compute_meridional_streamwise_coordinates(self.axialGrid, self.radialGrid)
         solidity = np.zeros_like(streamLength)
         for i in range(solidity.shape[0]):
@@ -451,21 +476,12 @@ class BodyForce:
         contour_template(self.axialGrid, self.radialGrid, metal_angle*180/np.pi, 'metal_angle [deg]')
         contour_template(self.axialGrid, self.radialGrid, h_parameter, 'h_parameter')
         contour_template(self.axialGrid, self.radialGrid, solidity, 'solidity')
-        contour_template(self.axialGrid, self.radialGrid, self.meridionalFields["Relative_Flow_Angle"]*180/np.pi, 'relative flow angle [deg]')
+        contour_template(self.axialGrid, self.radialGrid, self.meridionalFields["Relative_Flow_Angle_3D"]*180/np.pi, 'relative flow angle [deg]')
         
-        relVelMag = np.sqrt(self.meridionalFields["Velocity_Radial"]**2 + self.meridionalFields["Velocity_Axial"]**2 + self.meridionalFields["Velocity_Tangential_Relative"]**2)
-        beta_flow = np.zeros_like(relVelMag)
-        for i in range(beta_flow.shape[0]):
-            for j in range(beta_flow.shape[1]):
-                axialVel = self.meridionalFields["Velocity_Axial"][i,j]
-                radialVel = self.meridionalFields["Velocity_Radial"][i,j]
-                tangRelVel = self.meridionalFields["Velocity_Tangential_Relative"][i,j]
-                velocity_meridional_cylindricFrame = np.array([axialVel, radialVel, 0])
-                velocity_relative_cylindricFrame = np.array([axialVel, radialVel, tangRelVel])
-                beta_flow[i,j] = np.arccos(np.dot(velocity_meridional_cylindricFrame, velocity_relative_cylindricFrame) / 
-                                           (np.linalg.norm(velocity_meridional_cylindricFrame) * np.linalg.norm(velocity_relative_cylindricFrame)))
-        beta_0 = beta_flow - self.bodyForceFields["Force_Inviscid"] * circumferentialPitch / (2*np.pi*solidity*relVelMag**2)
-        kp_etaMax = circumferentialPitch * self.bodyForceFields["Force_Viscous"] / (relVelMag**2)
+        beta_flow = self.meridionalFields['Relative_Flow_Angle_3D']
+        relVelMag = np.sqrt(self.meridionalFields["Velocity_Axial"]**2 + self.meridionalFields["Velocity_Radial"]**2 + self.meridionalFields["Velocity_Tangential_Relative"]**2)
+        beta_0 = beta_flow - self.bodyForceFields["Force_Inviscid"] * h_parameter / (2*np.pi*solidity*relVelMag**2)
+        kp_etaMax = h_parameter * self.bodyForceFields["Force_Viscous"] / (relVelMag**2)
         beta_etaMax = beta_flow
         
         contour_template(self.axialGrid, self.radialGrid, beta_0*180/np.pi, 'beta_0 [deg]')
@@ -478,4 +494,4 @@ class BodyForce:
         self.calibrationCoefficients["kp_etaMax"] = kp_etaMax
         self.calibrationCoefficients["beta_etaMax"] = beta_etaMax
         self.calibrationCoefficients["solidity"] = solidity
-        self.calibrationCoefficients["h_parameter"] = circumferentialPitch # for the moment use this
+        self.calibrationCoefficients["h_parameter"] = h_parameter # try to understand if it makes sense, or if it is better to use the circumferential pitch
