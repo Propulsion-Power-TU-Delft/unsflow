@@ -384,6 +384,7 @@ class Blade:
                     normal_cart = cylindrical_to_cartesian(x[i,j], y[i,j], z[i,j], normal_cyl)
                     nx[i,j] = normal_cart[0]
                     ny[i,j] = normal_cart[1]
+            nz = nx3
         else:
             x,y,z = x1, x2, x3
             nx,ny,nz = nx1, nx2, nx3
