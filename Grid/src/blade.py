@@ -235,7 +235,10 @@ class Blade:
             turningDirection = self.config.get_blade_turning_direction()[iblade]
             deltaTheta = np.mean(t1) - np.mean(t2)
             
-            if deltaTheta > 0 and turningDirection == 'positive':
+            if turningDirection == 'not_relevant':
+                z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
+                z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
+            elif deltaTheta > 0 and turningDirection == 'positive':
                 z_ps, r_ps, theta_ps, m_ps = z1,r1,t1,m1
                 z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
             elif deltaTheta > 0 and turningDirection == 'negative':

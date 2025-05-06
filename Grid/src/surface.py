@@ -189,10 +189,13 @@ class Surface:
         # generate the spline in the spanwise direction
         crs_splx, crs_sply, crs_splz = [], [], []
         for key, values in self.cross_coords.items():
-            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
-            crs_splx.append(xint)
-            crs_sply.append(yint)
-            crs_splz.append(zint)
+            try:
+                xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
+                crs_splx.append(xint)
+                crs_sply.append(yint)
+                crs_splz.append(zint)
+            except:
+                pass
 
         
         # if self.config.get_visual_debug():
@@ -203,11 +206,14 @@ class Surface:
         #     for i in range(len(crs_splx)):
         #         ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
 
-        #     ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
+            # ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
 
-        self.Xg, self.Yg, self.Zg = np.zeros((len(t), len(s))), np.zeros((len(t), len(s))), np.zeros((len(t), len(s)))
-        for ii in range(len(t)):
-            for jj in range(len(s)):
+        streamPoints = len(crs_splx)
+        spanPoints = len(crs_splx[0])
+        
+        self.Xg, self.Yg, self.Zg = np.zeros((streamPoints, spanPoints)), np.zeros((streamPoints, spanPoints)), np.zeros((streamPoints, spanPoints))
+        for ii in range(streamPoints):
+            for jj in range(spanPoints):
                 self.Xg[ii, jj] = crs_splx[ii][jj]
                 self.Yg[ii, jj] = crs_sply[ii][jj]
                 self.Zg[ii, jj] = crs_splz[ii][jj]
