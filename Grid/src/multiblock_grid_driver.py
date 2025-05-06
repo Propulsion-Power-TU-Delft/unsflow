@@ -208,6 +208,11 @@ class MultiBlockGridDriver:
                     raise ValueError('The output type turbobfm is not available for single_blade or full_machine driver configurations.')
                 self.multiBlockGrid.write_turbobfm_grid_file_2D()
             
+            elif outputType.lower()=='cturbobfm':
+                if self.driverType=='single_blade' or self.driverType=='full_machine':
+                    raise ValueError('The output type cturbobfm is not available for single_blade or full_machine driver configurations.')
+                self.multiBlockGrid.write_cturbobfm_grid_file_2D()
+            
             elif outputType.lower()=='pickle':
                 filePath = os.path.join(outputFolder, self.config.get_machine_name() + '.pik')
                 with open(filePath, 'wb') as f:
