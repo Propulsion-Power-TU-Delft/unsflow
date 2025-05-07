@@ -1091,61 +1091,47 @@ def compute_curvilinear_abscissa(x, y):
         return np.flip(s)
 
 
+def remove_duplicate_points(x, y, z):
+    """
+    Remove duplicate points from three arrays of points in a 3D space, needed for spline reconstruction
+
+    Parameters
+    ----------
+    x, y, z : array_like
+        Arrays of x, y and z coordinates of the points
+
+    Returns
+    -------
+    x_unique, y_unique, z_unique : array_like
+        Arrays of x, y and z coordinates of the points with duplicate points removed
+    """
+    points = np.stack((x, y, z), axis=-1)
+    
+    # Use np.unique with return_index to preserve order
+    _, idx = np.unique(points, axis=0, return_index=True)
+    
+    # Sort indices to maintain first-occurrence order
+    idx_sorted = np.sort(idx)
+    unique_points = points[idx_sorted]
+    
+    x_unique, y_unique, z_unique = unique_points[:, 0], unique_points[:, 1], unique_points[:, 2]
+    
+    return x_unique, y_unique, z_unique
+
+
 def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
-    numberPoints = len(x)
-    uniquePointsX = np.unique(x)
-    uniquePointsY = np.unique(y)
-    uniquePointsZ = np.unique(z)
-    
-    if numberPoints != uniquePointsX.size or numberPoints != uniquePointsY.size or numberPoints != uniquePointsZ.size:
-        uniqueIndicesX = np.unique(x, return_index=True)[1]
-        uniqueIndicesY = np.unique(y, return_index=True)[1]
-        uniqueIndicesZ = np.unique(z, return_index=True)[1]
-        
-        
-        if len(uniqueIndicesX)==1:
-            if len(uniquePointsY)<len(uniquePointsZ):
-                x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
-            else:
-                x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
-        
-        elif len(uniqueIndicesY)==1:
-            if len(uniquePointsX)<len(uniquePointsZ):
-                x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
-            else:   
-                x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
-        
-        elif len(uniqueIndicesZ)==1:
-            if len(uniquePointsX)<len(uniquePointsY):
-                x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
-            else:
-                x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
-        
-        elif len(uniqueIndicesX)<len(uniqueIndicesY) or len(uniqueIndicesX)<len(uniqueIndicesZ):
-            x, y, z = x[np.sort(uniqueIndicesX)], y[np.sort(uniqueIndicesX)], z[np.sort(uniqueIndicesX)]
-        
-        elif len(uniqueIndicesY)<len(uniqueIndicesX) or len(uniqueIndicesY)<len(uniqueIndicesZ):
-            x, y, z = x[np.sort(uniqueIndicesY)], y[np.sort(uniqueIndicesY)], z[np.sort(uniqueIndicesY)]
-        
-        else:
-            x, y, z = x[np.sort(uniqueIndicesZ)], y[np.sort(uniqueIndicesZ)], z[np.sort(uniqueIndicesZ)]
+    xUnique, yUnique, zUnique = remove_duplicate_points(x, y, z)
 
-    tck, u = interpolate.splprep([x, y, z], s=0, k=3)
+    tck, u = interpolate.splprep([xUnique, yUnique, zUnique], s=0, k=3)
     u_fine = np.linspace(0, 1, num_points)
     if u_param is not None:
         u_fine = u_param
     if spacing is not None:
         u_fine = eriksson_stretching_function_both(u_fine, spacing)
     xnew, ynew, znew = interpolate.splev(u_fine, tck)
-    
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.plot(x, y, z, '-o', label='sample points filtered')
-    # ax.plot(xnew, ynew, znew, '-o', label='spline')
-    # ax.legend()    
     
     return xnew, ynew, znew
 

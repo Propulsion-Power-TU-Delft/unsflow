@@ -181,20 +181,6 @@ class Blade:
         main_profiles = np.unique(self.profile)
         main_profiles = [int(prof) for prof in main_profiles]
         main_profiles.sort()
-
-        # create a list of profiles, which store information of the pressure and suction side
-        profiles = []
-        zss = []
-        rss = []
-        thetass = []
-        zps = []
-        rps = []
-        thetaps = []
-        zcamb = []
-        rcamb = []
-        thetacamb = []
-        tCamb = []
-        kappaCamb = []
         
         self.thickness = {}
         self.rc_data, self.thetac_data, self.zc_data, self.thk_data = [], [], [], []
@@ -270,12 +256,6 @@ class Blade:
             # t_tang = self.compute_blade_thickness_tangential(mc, rc*tc,
             #                                                     m_ps, r_ps * theta_ps, 
             #                                                     m_ss, r_ss * theta_ss)
-
-            # append data to dataset
-            # self.rc_data.append(rc)
-            # self.zc_data.append(zc)
-            # self.thetac_data.append(tc)
-            # self.thk_data.append(t_tang)
             
             # if self.config.get_visual_debug():
             #     plt.figure()
@@ -315,12 +295,13 @@ class Blade:
 
 
         self.camberSurface.bspline_surface_generation()
+        # if self.config.get_visual_debug(): self.camberSurface.plot_bspline_surface()
         self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = self.camberSurface.get_global_bspline_surface(method='cylindrical')
         
         self.pressureSurface.bspline_surface_generation()
         # if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
-        # self.theta_psSurface = gaussian_filter(self.theta_psSurface, sigma=3.0, mode='reflect')
+        self.theta_psSurface = gaussian_filter(self.theta_psSurface, sigma=3.0, mode='reflect')
 
         self.suctionSurface.bspline_surface_generation()
         # if self.config.get_visual_debug(): self.suctionSurface.plot_bspline_surface()

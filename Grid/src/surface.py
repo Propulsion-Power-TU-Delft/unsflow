@@ -105,7 +105,7 @@ class Surface:
         
 
 
-    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=40, extension=0, order='linear'):
+    def loft_through_profiles(self, points_along_profile=100, points_between_profiles=20, extension=0.001, order='linear'):
         """
         Use interpolation between 2 profiles to assemble the overall surface of the camber.
         The camber is extended at the borders for 10% in order to cope for following griddata interpolation.
@@ -149,74 +149,80 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=30):
+    def bspline_surface_generation(self, extension=1E-3, stream_resolution=250, span_resolution=40):
         """
         Generation of surface by bi-variate spline
         """
-        t = np.linspace(0-extension, 1+extension, stream_resolution)
-        s = np.linspace(0-extension, 1+extension, span_resolution)
+        streamKnots = np.linspace(0-extension, 1+extension, stream_resolution)
+        spanKnots = np.linspace(0-extension, 1+extension, span_resolution)
 
-        t = eriksson_stretching_function_both(t, 1)
+        streamKnots = eriksson_stretching_function_both(streamKnots, 2) # cluster points at leading and trailing edge
 
-        # generate the spline along the profile (streamwise)
-        prf_splx, prf_sply, prf_splz = [], [], []
+        # generate the spline along the streamwise directions
+        streamSplineX, streamSplineY, streamSplineZ = [], [], []
         for i, (key, values) in enumerate(self.coords.items()):
-            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=t)
+            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=streamKnots)
             # fig = plt.figure()
             # ax = fig.add_subplot(111, projection='3d')
             # ax.plot(values['x'], values['y'], values['z'], '-o', label='1d-Bspline-Points')
             # ax.plot(xint, yint, zint, ms=1, label='B-spline')
             # ax.legend()    
             # ax.set_title('Profile %i' % i)
-            prf_splx.append(xint)
-            prf_sply.append(yint)
-            prf_splz.append(zint)
+            streamSplineX.append(xint)
+            streamSplineY.append(yint)
+            streamSplineZ.append(zint)
         
-        # generate the dataset across the profiles (spanwise)
-        self.cross_coords = {}
-        for i in range(len(t)):
-            self.cross_coords[i] = {}
+        # assemble the dataset along the spanwise direction the profiles (spanwise)
+        spanCoords = {}
+        for iStream in range(len(streamKnots)):
+            spanCoords[iStream] = {}
             xtmp, ytmp, ztmp = [], [], []
-            for iProf in range(len(prf_splx)):
-                xtmp.append(prf_splx[iProf][i])
-                ytmp.append(prf_sply[iProf][i])
-                ztmp.append(prf_splz[iProf][i])
+            for iSpan in range(len(streamSplineX)):
+                xtmp.append(streamSplineX[iSpan][iStream])
+                ytmp.append(streamSplineY[iSpan][iStream])
+                ztmp.append(streamSplineZ[iSpan][iStream])
             x, y, z = np.array(xtmp), np.array(ytmp), np.array(ztmp)
-            self.cross_coords[i]['x'] = x
-            self.cross_coords[i]['y'] = y
-            self.cross_coords[i]['z'] = z
+            spanCoords[iStream]['x'] = x
+            spanCoords[iStream]['y'] = y
+            spanCoords[iStream]['z'] = z
 
         # generate the spline in the spanwise direction
-        crs_splx, crs_sply, crs_splz = [], [], []
-        for key, values in self.cross_coords.items():
-            try:
-                xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
-                crs_splx.append(xint)
-                crs_sply.append(yint)
-                crs_splz.append(zint)
-            except:
-                pass
-
+        spanSplineX, spanSplineY, spanSplineZ = [], [], []
+        for key, values in spanCoords.items():
+            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=spanKnots)
+            spanSplineX.append(xint)
+            spanSplineY.append(yint)
+            spanSplineZ.append(zint)
         
+        # robust version (needed?)
+        # for key, values in self.cross_coords.items():
+        #     try:
+        #         xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
+        #         crs_splx.append(xint)
+        #         crs_sply.append(yint)
+        #         crs_splz.append(zint)
+        #     except:
+        #         pass
+
+        # plot the splines that form the surface
         # if self.config.get_visual_debug():
         #     fig = plt.figure()
         #     ax = fig.add_subplot(111, projection='3d')
-        #     for i in range(len(prf_splx)):
-        #         ax.plot(prf_splx[i], prf_sply[i], prf_splz[i], 'C0o', ms=1, label='streamwise', lw=0.5)
-        #     for i in range(len(crs_splx)):
-        #         ax.plot(crs_splx[i], crs_sply[i], crs_splz[i], 'C1', label='spanwise', lw=0.5)
+        #     for i in range(len(streamSplineX)):
+        #         ax.plot(streamSplineX[i], streamSplineY[i], streamSplineZ[i], 'o', ms=1, label='profile %i' % i, lw=0.5)
+        #     ax.legend()
+        #     for j in range(len(spanSplineX)):
+        #         ax.plot(spanSplineX[j], spanSplineY[j], spanSplineZ[j], 'k', label='spanwise', lw=0.5)
 
-            # ax.scatter(*self.get_global_points('cartesian'), s=20, alpha=0.3)
-
-        streamPoints = len(crs_splx)
-        spanPoints = len(crs_splx[0])
-        
+        # assign coordinates to the surface data
+        streamPoints = stream_resolution
+        spanPoints = span_resolution
         self.Xg, self.Yg, self.Zg = np.zeros((streamPoints, spanPoints)), np.zeros((streamPoints, spanPoints)), np.zeros((streamPoints, spanPoints))
         for ii in range(streamPoints):
             for jj in range(spanPoints):
-                self.Xg[ii, jj] = crs_splx[ii][jj]
-                self.Yg[ii, jj] = crs_sply[ii][jj]
-                self.Zg[ii, jj] = crs_splz[ii][jj]
+                self.Xg[ii, jj] = spanSplineX[ii][jj]
+                self.Yg[ii, jj] = spanSplineY[ii][jj]
+                self.Zg[ii, jj] = spanSplineZ[ii][jj]
 
 
 
