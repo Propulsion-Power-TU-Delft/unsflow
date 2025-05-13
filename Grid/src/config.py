@@ -231,6 +231,21 @@ class Config:
             return value
         except:
             return 'multiblock'
+        
+    def get_mesh_output_topology(self):
+        try:
+            value = str(self.config_parser.get('GENERAL', 'OUTPUT_TOPOLOGY'))
+            return value
+        except:
+            return 'axisymmetric'
+    
+    def get_mesh_periodic_number_points(self):
+        value = int(self.config_parser.get('GENERAL', 'PERIODIC_NUMBER_POINTS'))
+        return value
+    
+    def get_mesh_periodicity_theta(self):
+        value = float(self.config_parser.get('GENERAL', 'PERIODICITY_THETA'))
+        return value*np.pi/180
 
     def get_blade_outlet_type(self):
         value = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADE_OUTLET_TYPE'))

@@ -510,7 +510,7 @@ class MultiBlock:
     
     
     
-    def write_cturbobfm_grid_file_2D(self):
+    def write_cturbobfm_grid_file(self):
         """
         Needed by CTurboBFM. Save a CSV file with all the specified grids.
         """
@@ -562,8 +562,17 @@ class MultiBlock:
         #     print(f"Calibration coefficients for model {bf_model} added to the TurboBFM mesh file")
         #     mesh['Calibration_Coefficients'] = self.BFCalibrationCoefficients
         
-
-        filepath = self.config.get_output_data_folder() + '/TurboBFM_Mesh_%02i_%02i.csv' % (ni, nj)
+        outputTopology = self.config.get_mesh_output_topology()
+        
+        if outputTopology.lower() == 'axisymmetric':
+            self.write_axisymmetric_csv_grid_file(mesh)
+        elif outputTopology.lower() == 'periodic' or outputTopology.lower() == 'full_annulus':
+            self.write_3D_csv_grid_file(mesh)
+        
+    
+    def write_axisymmetric_csv_grid_file(self, mesh):
+        ni,nj = mesh['x'].shape
+        filepath = self.config.get_output_data_folder() + '/CTurboBFM_Mesh_%02i_%02i.csv' % (ni, nj)
         with open(filepath, 'w') as f:
             f.write('NI=%i\n' % ni)
             f.write('NJ=%i\n' % nj)
@@ -578,15 +587,69 @@ class MultiBlock:
                 for j in range(nj):
                     for key, values in mesh.items():
                         if key == 'x':
-                            f.write('%.6f' % values[i,j])
+                            f.write('%.6e' % values[i,j])
                         else:
-                            f.write(',%.6f' % values[i,j])
+                            f.write(',%.6e' % values[i,j])
                     f.write('\n')
             
-        print(f"CTurboBFM mesh pickle file saved to {filepath}")
+        print(f"CTurboBFM axisymmetric mesh pickle file saved to {filepath}")
+    
+    def write_3D_csv_grid_file(self, mesh):
+        ni, nj = mesh['x'].shape
+        nk = self.config.get_mesh_periodic_number_points()
         
+        if self.config.get_mesh_output_topology().lower() == 'periodic':
+            periodicityTheta = self.config.get_mesh_periodicity_theta()
+            theta = np.linspace(0, periodicityTheta, nk)
+        elif self.config.get_mesh_output_topology().lower() == 'full_annulus':
+            theta = np.linspace(0, 2*np.pi, nk)
+        else:
+            raise ValueError('Unknown mesh output topology: %s' % self.config.get_mesh_output_topology())
         
+        xgrid = np.zeros((ni,nj,nk))
+        ygrid = np.zeros((ni,nj,nk))
+        zgrid = np.zeros((ni,nj,nk))
+        for i in range(ni):
+            for j in range(nj):
+                for k in range(nk):
+                    xPoint = mesh['x'][i,j]
+                    rPoint = mesh['y'][i,j]
+                    yPoint = rPoint * np.cos(theta[k])
+                    zPoint = rPoint * np.sin(theta[k])
+                    xgrid[i,j,k] = xPoint
+                    ygrid[i,j,k] = yPoint
+                    zgrid[i,j,k] = zPoint
         
+        mesh['x'] = xgrid
+        mesh['y'] = ygrid
+        mesh['z'] = zgrid
+        
+        filepath = self.config.get_output_data_folder() + '/CTurboBFM_Mesh_%02i_%02i_%02i.csv' % (ni, nj, nk)
+        with open(filepath, 'w') as f:
+            f.write('NI=%i\n' % ni)
+            f.write('NJ=%i\n' % nj)
+            f.write('NK=%i\n' % nk)
+            for key in mesh.keys():
+                if key == 'x':
+                    f.write('%s' % key)
+                else:
+                    f.write(',%s' % key)
+            f.write('\n')
+            for i in range(ni):
+                for j in range(nj):
+                    for k in range(nk):
+                        for key, values in mesh.items():
+                            if key == 'x':
+                                f.write('%.6e' % values[i,j,k])
+                            elif key == 'y' or key == 'z':
+                                f.write(',%.6e' % values[i,j,k])
+                            else:
+                                f.write(',%.6e' % values[i,j])
+                        f.write('\n')
+                    
+                    
+        
+    
     
     def plot_all_relevant_contours(self):
         contour_template(self.z_grid_cg, self.r_grid_cg, self.blockage, r'$b \ \rm{[-]}$', save_filename='multiblock_blockage', folder_name=self.config.get_pictures_folder_path())
