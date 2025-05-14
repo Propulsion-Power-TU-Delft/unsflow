@@ -568,6 +568,15 @@ class Config:
         vals = np.array(vals, dtype=str)
         return vals
     
+    def convert_blockage_to_normal(self):
+        res = self.config_parser.get('BLADE RECONSTRUCTION', 'CONVERT_BLOCKAGE_TO_NORMAL')
+        try:
+            if res.lower() == 'true' or res.lower() == 'yes':
+                return True
+            else:
+                return False
+        except:
+            return False
         
 
 
