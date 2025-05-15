@@ -295,18 +295,13 @@ class Blade:
 
 
         self.camberSurface.bspline_surface_generation()
-        # if self.config.get_visual_debug(): self.camberSurface.plot_bspline_surface()
         self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = self.camberSurface.get_global_bspline_surface(method='cylindrical')
         
         self.pressureSurface.bspline_surface_generation()
-        # if self.config.get_visual_debug(): self.pressureSurface.plot_bspline_surface()
         self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
-        self.theta_psSurface = gaussian_filter(self.theta_psSurface, sigma=3.0, mode='reflect')
 
         self.suctionSurface.bspline_surface_generation()
-        # if self.config.get_visual_debug(): self.suctionSurface.plot_bspline_surface()
         self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.suctionSurface.get_global_bspline_surface(method='cylindrical')
-        # self.theta_ssSurface = gaussian_filter(self.theta_ssSurface, sigma=3.0, mode='reflect')
         
         # check the full reconstructed blade
         def cartesian_points(r, t, z):

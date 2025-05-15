@@ -557,10 +557,12 @@ class MultiBlock:
         #     mesh['radialForce'] = self.force_radial
         #     mesh['tangentialForce'] = self.force_tangential
         
-        # if 'calibration_coefficients' in outputFields:
-        #     bf_model = self.config.get_body_force_calibration_method()
-        #     print(f"Calibration coefficients for model {bf_model} added to the TurboBFM mesh file")
-        #     mesh['Calibration_Coefficients'] = self.BFCalibrationCoefficients
+        if 'calibration_coefficients' in outputFields:
+            bf_model = self.config.get_body_force_calibration_method()
+            print(f"Calibration coefficients for model {bf_model} added to the CTurboBFM mesh file")
+            for key in self.BFCalibrationCoefficients.keys():
+                if isinstance(self.BFCalibrationCoefficients[key], np.ndarray):
+                    mesh[key] = self.BFCalibrationCoefficients[key]
         
         outputTopology = self.config.get_mesh_output_topology()
         

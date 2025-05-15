@@ -441,7 +441,7 @@ class BodyForce:
             for i in range(ni):
                 idx = np.where(spanwiseCoords[i,:]<spanExtent)
                 field[i,idx] = field[i, idx[0][-1]+1]
-                
+
                 idx = np.where(spanwiseCoords[i,:]>1-spanExtent)
                 field[i,idx] = field[i,idx[0][0]-1]                
             return field
@@ -489,7 +489,7 @@ class BodyForce:
         contour_template(self.axialGrid, self.radialGrid, beta_etaMax*180/np.pi, 'beta_etaMax [deg]')
         
         self.calibrationCoefficients = {}
-        self.calibrationCoefficients["Model"] = 'lift/drag'
+        # self.calibrationCoefficients["Model"] = 'lift/drag'
         self.calibrationCoefficients["beta_0"] = beta_0
         self.calibrationCoefficients["kp_etaMax"] = kp_etaMax
         self.calibrationCoefficients["beta_etaMax"] = beta_etaMax

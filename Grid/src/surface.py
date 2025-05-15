@@ -149,14 +149,14 @@ class Surface:
 
             self.surface['Loft %i' % iSurf] = {'X': X, 'Y': Y, 'Z': Z}
 
-    def bspline_surface_generation(self, extension=1E-3, stream_resolution=250, span_resolution=40):
+    def bspline_surface_generation(self, extension=0, stream_resolution=250, span_resolution=50):
         """
         Generation of surface by bi-variate spline
         """
         streamKnots = np.linspace(0-extension, 1+extension, stream_resolution)
         spanKnots = np.linspace(0-extension, 1+extension, span_resolution)
 
-        streamKnots = eriksson_stretching_function_both(streamKnots, 2) # cluster points at leading and trailing edge
+        streamKnots = eriksson_stretching_function_both(streamKnots, 3) # cluster points at leading and trailing edge
 
         # generate the spline along the streamwise directions
         streamSplineX, streamSplineY, streamSplineZ = [], [], []
