@@ -551,11 +551,11 @@ class MultiBlock:
             print('Number of blades grid added to the CTurboBFM mesh file')
             mesh['numberBlades'] = self.nBlades
         
-        # if 'frozen_force' in outputFields:
-        #     print('Frozen forces added to the TurboBFM mesh file')
-        #     mesh['axialForce'] = self.force_axial
-        #     mesh['radialForce'] = self.force_radial
-        #     mesh['tangentialForce'] = self.force_tangential
+        if 'frozen_force' in outputFields:
+            print('Frozen forces added to the TurboBFM mesh file')
+            mesh['axialForce'] = self.force_axial
+            mesh['radialForce'] = self.force_radial
+            mesh['tangentialForce'] = self.force_tangential
         
         if 'calibration_coefficients' in outputFields:
             bf_model = self.config.get_body_force_calibration_method()
