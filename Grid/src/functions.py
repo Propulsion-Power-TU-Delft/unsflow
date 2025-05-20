@@ -1244,8 +1244,8 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         else:
             maxval = vmax
         
-        if minval==maxval:
-            maxval += 1e-12
+        if np.abs(minval-maxval)<1e-6:
+            maxval += 1e-6
         
         os.makedirs(folder_name, exist_ok=True)
         

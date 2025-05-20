@@ -47,7 +47,11 @@ class BodyForce:
                 
         for key in dataset.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
-                self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(dataset['Axial_Coordinate'], 
+                # self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(dataset['Axial_Coordinate'], 
+                #                                                                               dataset['Radial_Coordinate'], 
+                #                                                                               dataset[key], 
+                #                                                                               self.axialGrid, self.radialGrid)
+                self.meridionalFields[key] = griddata_interpolation_with_nearest_filler(dataset['Axial_Coordinate'], 
                                                                                               dataset['Radial_Coordinate'], 
                                                                                               dataset[key], 
                                                                                               self.axialGrid, self.radialGrid)
@@ -279,18 +283,18 @@ class BodyForce:
         
         self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
         
-        # clip spurious values of the cartesian force
-        if not self.config.invert_axial_coordinates():
-            clip_negative_values(self.bodyForceFields['Force_Axial'])
-        else:
-            clip_positive_values(self.bodyForceFields['Force_Axial'])
+        # # clip spurious values of the cartesian force
+        # if not self.config.invert_axial_coordinates():
+        #     clip_negative_values(self.bodyForceFields['Force_Axial'])
+        # else:
+        #     clip_positive_values(self.bodyForceFields['Force_Axial'])
         
-        if self.config.get_omega_shaft()[self.iblade]>0:
-            clip_negative_values(self.bodyForceFields['Force_Tangential'])
-        elif self.config.get_omega_shaft()[self.iblade]<0:
-            clip_positive_values(self.bodyForceFields['Force_Tangential'])
-        else:
-            pass
+        # if self.config.get_omega_shaft()[self.iblade]>0:
+        #     clip_negative_values(self.bodyForceFields['Force_Tangential'])
+        # elif self.config.get_omega_shaft()[self.iblade]<0:
+        #     clip_positive_values(self.bodyForceFields['Force_Tangential'])
+        # else:
+        #     pass
     
     
     def ComputeBodyForceKiwada(self, blockage):
@@ -379,7 +383,7 @@ class BodyForce:
         return force
     
     
-    def ComputeTangentialForceMarble(self, method='local'):
+    def ComputeTangentialForceMarble(self, method='distributed'):
         """Compute the tangential force component according to Marble method
         
         Args:
