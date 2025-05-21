@@ -376,14 +376,19 @@ class BodyForce:
         meridionalVelocity = np.sqrt(self.meridionalFields['Velocity_Axial']**2 + self.meridionalFields['Velocity_Radial']**2)
         streamLength = compute_meridional_streamwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'])
 
+        entropyMeridionalDerivative = np.zeros_like(self.meridionalFields['Axial_Coordinate'])
         for j in range(force.shape[1]):
             deltaEntropy = self.meridionalFields['Entropy'][-1,j]-self.meridionalFields['Entropy'][0,j]
             deltaLength = streamLength[-1,j]-streamLength[0,j]
+            entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
             force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
+        
+        self.meridionalFields['EntropyDerivative'] = entropyMeridionalDerivative
+        
         return force
     
     
-    def ComputeTangentialForceMarble(self, method='distributed'):
+    def ComputeTangentialForceMarble(self, method='local'):
         """Compute the tangential force component according to Marble method
         
         Args:
@@ -409,9 +414,10 @@ class BodyForce:
                 deltaForce = rgrid[-1,j]*tangentialVelocity[-1,j] - rgrid[0,j]*tangentialVelocity[0,j]
                 deltaLength = streamLength[-1,j]-streamLength[0,j]
                 force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaForce/deltaLength
-        
         else:
             raise ValueError('Method unknown')
+
+        self.meridionalFields['AngularMomentumDerivative'] = force  * self.meridionalFields['Radial_Coordinate'] / self.meridionalFields['Velocity_Meridional']
         
         return force
     

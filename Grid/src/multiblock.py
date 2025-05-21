@@ -52,6 +52,8 @@ class MultiBlock:
         self.force_axial = self.blocks[0].bodyForce['Force_Axial']
         self.force_radial = self.blocks[0].bodyForce['Force_Radial']
         self.force_tangential = self.blocks[0].bodyForce['Force_Tangential']
+        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative']
+        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative']
         self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients
         self.nBlades = self.blocks[0].nBlades
         self.bladePresent = self.blocks[0].bladePresent
@@ -70,6 +72,8 @@ class MultiBlock:
             self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][1:, :]), axis=0)
             self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][1:, :]), axis=0)
             self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][1:, :]), axis=0)
+            self.angular_momentum_derivative = np.concatenate((self.angular_momentum_derivative, block.bodyForce['AngularMomentumDerivative'][1:, :]), axis=0)
+            self.entropy_derivative = np.concatenate((self.entropy_derivative, block.bodyForce['EntropyDerivative'][1:, :]), axis=0)
             self.nBlades = np.concatenate((self.nBlades, block.nBlades[1:, :]), axis=0)
             self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[1:, :]), axis=0)
             self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[1:, :]), axis=0)
@@ -557,6 +561,11 @@ class MultiBlock:
             mesh['radialForce'] = self.force_radial
             mesh['tangentialForce'] = self.force_tangential
         
+        if 'frozen_gradient' in outputFields:
+            print('Frozen gradients added to the CTurboBFM mesh file')
+            mesh['angularMomentumDerivative'] = self.angular_momentum_derivative
+            mesh['entropyDerivative'] = self.entropy_derivative
+        
         if 'calibration_coefficients' in outputFields:
             bf_model = self.config.get_body_force_calibration_method()
             print(f"Calibration coefficients for model {bf_model} added to the CTurboBFM mesh file")
@@ -673,6 +682,14 @@ class MultiBlock:
             if key.lower()!='model':
                 contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
 
+
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.force_axial, r'$f_{ax} \ \rm{[N/kg]}$', save_filename='multiblock_forceAxial', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.force_radial, r'$f_{r} \ \rm{[N/kg]}$', save_filename='multiblock_forceRadial', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.force_tangential, r'$f_{\theta} \ \rm{[N/kg]}$', save_filename='multiblock_forceTangential', folder_name=self.config.get_pictures_folder_path())
+
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.angular_momentum_derivative, r'$\partial (r u_{\theta}) / \partial m \ \rm{[m/s]}$', save_filename='multiblock_angularMomentumDerivative', folder_name=self.config.get_pictures_folder_path())
+        contour_template(self.z_grid_cg, self.r_grid_cg, self.entropy_derivative, r'$\partial (s) / \partial m \ \rm{[J/kgKm]}$', save_filename='multiblock_entropyDerivative', folder_name=self.config.get_pictures_folder_path())
+        
         
     def fix_theta_camber_grids(self):
         """For all blocks, try a good compromise with the theta camber. If theta camber is not present, copy the info from the previous block

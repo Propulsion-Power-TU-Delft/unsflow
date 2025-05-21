@@ -104,7 +104,9 @@ class Block:
         self.nBlades = np.zeros((self.nstream, self.nspan))
         self.bodyForce = {"Force_Axial": np.zeros((self.nstream, self.nspan)),
                           "Force_Radial": np.zeros((self.nstream, self.nspan)),
-                          "Force_Tangential": np.zeros((self.nstream, self.nspan))}
+                          "Force_Tangential": np.zeros((self.nstream, self.nspan)),
+                          "AngularMomentumDerivative": np.zeros((self.nstream, self.nspan)),
+                          "EntropyDerivative": np.zeros((self.nstream, self.nspan))}
         if self.config.get_body_force_calibration_method()=='lift/drag':
             self.BFCalibrationCoefficients = {'Model': 'lift/drag',
                                               'beta_0': np.zeros((self.nstream, self.nspan)),
@@ -808,6 +810,8 @@ class Block:
         self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
         self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
         self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
+        self.bodyForce["AngularMomentumDerivative"] = bodyForceObj.meridionalFields["AngularMomentumDerivative"]
+        self.bodyForce["EntropyDerivative"] = bodyForceObj.meridionalFields["EntropyDerivative"]
         self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
 
 
