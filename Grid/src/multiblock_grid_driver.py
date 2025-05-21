@@ -185,7 +185,7 @@ class MultiBlockGridDriver:
         """
         Assemble the grid of the different blocks in a single one.
         """
-        self.multiBlockGrid = MultiBlock(self.config, *self.blocks)
+        self.multiBlockGrid = MultiBlock(self.config, self.blocks, self.blades)
         self.multiBlockGrid.assemble_grid()
         self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
         if self.driverType=='multiblock':
@@ -245,6 +245,9 @@ class MultiBlockGridDriver:
             
             elif outputType.lower()=='meridional_grid':
                 self.multiBlockGrid.write_paraview_grid_file(foldername=outputFolder, filename='meridional_grid.csv')
+            
+            elif outputType.lower()=='spanwise_profiles':
+                self.multiBlockGrid.write_spanwise_splines(foldername=outputFolder)
             
             elif outputType=='none':
                 print('No output type specified, therefore no output saved.')

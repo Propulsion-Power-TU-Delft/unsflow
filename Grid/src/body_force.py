@@ -64,7 +64,7 @@ class BodyForce:
         """
         Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
         Average type distinguish the type of average used, raw for standard circumferential.
-        Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
+        Inviscid=True sets the viscous stresses to zero, leading to inviscid force ion.
         """
         
         available_solver_names = ['su2', 'luminary']
@@ -388,7 +388,7 @@ class BodyForce:
         return force
     
     
-    def ComputeTangentialForceMarble(self, method='local'):
+    def ComputeTangentialForceMarble(self, method='distributed'):
         """Compute the tangential force component according to Marble method
         
         Args:

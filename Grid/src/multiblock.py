@@ -23,7 +23,7 @@ class MultiBlock:
     this class contains a multiblock meridional grid
     """
 
-    def __init__(self, config, *blocks):
+    def __init__(self, config, blocks, blades):
         """
         Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
         dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
@@ -33,6 +33,7 @@ class MultiBlock:
         """
         self.config = config
         self.blocks = blocks
+        self.blades = blades
 
     def assemble_grid(self):
         """
@@ -424,6 +425,42 @@ class MultiBlock:
                                  y[istream, ispan], 
                                  z[istream, ispan]))
         print('Written meridional grid csv file to: %s' %(foldername + '/' + filename))
+    
+    def write_spanwise_splines(self, foldername='Grid'):
+        """
+        Write the spanwise splines file required by Paraview Macro to run the radial profiles needee upstream and downstream of the blades
+        """
+        os.makedirs(foldername, exist_ok=True)
+        offsetGridLines = 3
+        
+        nBlades = len(self.blades)
+        nBlocks = len(self.blocks)
+        
+        if nBlocks == 1:
+            return
+        
+        for iblade in range(nBlades):
+            iBlock = iblade * 2 + 1  
+            
+            zcoordUp = self.blocks[iBlock-1].z_grid_cg[-offsetGridLines,:]
+            rcoordUp = self.blocks[iBlock-1].r_grid_cg[-offsetGridLines,:]
+            
+            with open(foldername + '/spanwise_spline_inlet_blade_%i.csv' % iblade, 'w') as f:
+                for i in range(len(zcoordUp)):
+                    f.write('%.9f,%.9f\n' % (zcoordUp[i], rcoordUp[i]))
+            
+            zcoordDown = self.blocks[iBlock+1].z_grid_cg[offsetGridLines,:]
+            rcoordDown = self.blocks[iBlock+1].r_grid_cg[offsetGridLines,:]
+            
+            with open(foldername + '/spanwise_spline_outlet_blade_%i.csv' % iblade, 'w') as f:
+                for i in range(len(zcoordUp)):
+                    f.write('%.9f,%.9f\n' % (zcoordDown[i], rcoordDown[i]))
+            
+            print('Written spanwise splines for blade %i' % iblade)
+            
+            
+
+        
     
     
     def write_thetaWrapped_hub_shroud_curves(self, filename='machine', foldername='Grid'):
