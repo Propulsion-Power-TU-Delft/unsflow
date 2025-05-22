@@ -452,11 +452,28 @@ class MultiBlock:
             zcoordDown = self.blocks[iBlock+1].z_grid_cg[offsetGridLines,:]
             rcoordDown = self.blocks[iBlock+1].r_grid_cg[offsetGridLines,:]
             
-            with open(foldername + '/spanwise_spline_outlet_blade_%i.csv' % iblade, 'w') as f:
-                for i in range(len(zcoordUp)):
-                    f.write('%.9f,%.9f\n' % (zcoordDown[i], rcoordDown[i]))
+            ni = 1
+            nj = len(zcoordDown)
             
-            print('Written spanwise splines for blade %i' % iblade)
+            filename = 'spanwise_spline_inlet_blade_%i.csv' % iblade
+            with open(foldername + '/' + filename, 'w') as file:
+                for istream in range(ni):
+                    for ispan in range(nj):
+                        file.write('%i,%i,%.9f,%.9f,%.9f\n'
+                                %(istream, ispan,
+                                    rcoordUp[ispan], 
+                                    0, 
+                                    zcoordUp[ispan]))
+            
+            filename = 'spanwise_spline_outlet_blade_%i.csv' % iblade
+            with open(foldername + '/' + filename, 'w') as file:
+                for istream in range(ni):
+                    for ispan in range(nj):
+                        file.write('%i,%i,%.9f,%.9f,%.9f\n'
+                                %(istream, ispan,
+                                    rcoordDown[ispan], 
+                                    0, 
+                                    zcoordDown[ispan]))
             
             
 
