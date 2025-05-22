@@ -1456,7 +1456,12 @@ def compute_meridional_spanwise_coordinates(axialGrid: np.ndarray, radialGrid: n
         radialGrid (np.ndarray): 2D array of radial grid points
         normalize (bool): if True, every streamline will go from 0 at leading edge to 1 at trailing edge
     """
+    if len(axialGrid.shape) == 1:
+        axialGrid = np.reshape(axialGrid, (1, len(axialGrid)))
+        radialGrid = np.reshape(radialGrid, (1, len(radialGrid)))
+    
     ni,nj = axialGrid.shape
+    
     spanLen = np.zeros((ni,nj))
     for jj in range(1, nj):
         ds = np.sqrt((axialGrid[:, jj] - axialGrid[:, jj -1]) ** 2 + (radialGrid[:, jj] - radialGrid[:, jj -1]) ** 2)

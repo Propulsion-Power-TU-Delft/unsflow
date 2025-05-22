@@ -251,6 +251,11 @@ class Config:
         value = str(self.config_parser.get('TURBOMACHINERY DATA', 'BLADE_OUTLET_TYPE'))
         value = [i.strip(',') for i in value.split()]
         return value
+    
+    def get_spanwise_profiles_paths(self, iblade):
+        value = str(self.config_parser.get('BODY FORCE', 'SPANWISE_PROFILES_PATH'))
+        value = [i.strip(',') for i in value.split()]
+        return value[iblade*2:(iblade+1)*2]
 
     def get_verbosity(self):
         res = self.config_parser.get('GENERAL', 'VERBOSITY')
