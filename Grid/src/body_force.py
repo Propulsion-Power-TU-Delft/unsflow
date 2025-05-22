@@ -377,9 +377,10 @@ class BodyForce:
         streamLength = compute_meridional_streamwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'])
 
         entropyMeridionalDerivative = np.zeros_like(self.meridionalFields['Axial_Coordinate'])
+        offset = 1
         for j in range(force.shape[1]):
-            deltaEntropy = self.meridionalFields['Entropy'][-1,j]-self.meridionalFields['Entropy'][0,j]
-            deltaLength = streamLength[-1,j]-streamLength[0,j]
+            deltaEntropy = self.meridionalFields['Entropy'][-offset,j]-self.meridionalFields['Entropy'][offset,j]
+            deltaLength = streamLength[-offset,j]-streamLength[offset,j]
             entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
             force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
         
@@ -403,7 +404,8 @@ class BodyForce:
         rgrid = self.meridionalFields['Radial_Coordinate']
         zgrid = self.meridionalFields['Axial_Coordinate']
         streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
-        
+        offset = 1
+
         if method=='local':
             drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
             force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])/rgrid
@@ -411,14 +413,14 @@ class BodyForce:
         elif method=='distributed':
             force = np.zeros_like(meridionalVelocity)
             for j in range(meridionalVelocity.shape[1]):
-                deltaForce = rgrid[-1,j]*tangentialVelocity[-1,j] - rgrid[0,j]*tangentialVelocity[0,j]
-                deltaLength = streamLength[-1,j]-streamLength[0,j]
+                deltaForce = rgrid[-offset,j]*tangentialVelocity[-offset,j] - rgrid[offset,j]*tangentialVelocity[offset,j]
+                deltaLength = streamLength[-offset,j]-streamLength[offset,j]
                 force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaForce/deltaLength
         else:
             raise ValueError('Method unknown')
 
-        self.meridionalFields['AngularMomentumDerivative'] = force  * self.meridionalFields['Radial_Coordinate'] / self.meridionalFields['Velocity_Meridional']
-        
+        self.meridionalFields['AngularMomentumDerivative'] = force  * rgrid / meridionalVelocity
+                
         return force
     
     
@@ -457,9 +459,12 @@ class BodyForce:
             return field
         
         for key in self.bodyForceFields.keys():
-            if key != 'Force_Viscous':
-                self.bodyForceFields[key] = zeroOrderExtrapolation(self.bodyForceFields[key], spanLength, self.config.hub_shroud_body_force_extrapolation_span_extent())
-                
+            self.bodyForceFields[key] = zeroOrderExtrapolation(self.bodyForceFields[key], spanLength, self.config.hub_shroud_body_force_extrapolation_span_extent())
+        
+        for key in self.meridionalFields.keys():
+            if key!='Radial_Coordinate' and key!="Axial_Coordinate":
+                self.meridionalFields[key] = zeroOrderExtrapolation(self.meridionalFields[key], spanLength, self.config.hub_shroud_body_force_extrapolation_span_extent())
+
                 
     def SaveOutput(self):
         name = self.config.get_body_force_blade_name() + '.pik'
