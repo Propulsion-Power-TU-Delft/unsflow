@@ -430,8 +430,10 @@ class MultiBlock:
         """
         Write the spanwise splines file required by Paraview Macro to run the radial profiles needee upstream and downstream of the blades
         """
+        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid_cg, self.r_grid_cg)
+        
         os.makedirs(foldername, exist_ok=True)
-        offsetGridLines = 3
+        offsetGridLines = self.config.get_offset_blade_grid_lines()
         
         nBlades = len(self.blades)
         nBlocks = len(self.blocks)
@@ -439,41 +441,57 @@ class MultiBlock:
         if nBlocks == 1:
             return
         
+        nstream = 0
         for iblade in range(nBlades):
             iBlock = iblade * 2 + 1  
             
-            zcoordUp = self.blocks[iBlock-1].z_grid_cg[-offsetGridLines,:]
-            rcoordUp = self.blocks[iBlock-1].r_grid_cg[-offsetGridLines,:]
+            nstreamInitial = self.blocks[iBlock-1].nstream
+            nstreamFinal = nstreamInitial + self.blocks[iBlock].nstream-1
+            
+            # zcoordUp = self.blocks[iBlock-1].z_grid_cg[-1-offsetGridLines,:]
+            # rcoordUp = self.blocks[iBlock-1].r_grid_cg[-1-offsetGridLines,:]
+            
+            zcoordUp = self.z_grid_cg[nstreamInitial-1-offsetGridLines,:]
+            rcoordUp = self.r_grid_cg[nstreamInitial-1-offsetGridLines,:]
+            stwLenUp = self.streamline_length[nstreamInitial-1-offsetGridLines,:]
             
             with open(foldername + '/spanwise_spline_inlet_blade_%i.csv' % iblade, 'w') as f:
                 for i in range(len(zcoordUp)):
                     f.write('%.9f,%.9f\n' % (zcoordUp[i], rcoordUp[i]))
             
-            zcoordDown = self.blocks[iBlock+1].z_grid_cg[offsetGridLines,:]
-            rcoordDown = self.blocks[iBlock+1].r_grid_cg[offsetGridLines,:]
+            # zcoordDown = self.blocks[iBlock+1].z_grid_cg[offsetGridLines,:]
+            # rcoordDown = self.blocks[iBlock+1].r_grid_cg[offsetGridLines,:]
+            
+            zcoordDown = self.z_grid_cg[nstreamFinal-1+offsetGridLines,:]
+            rcoordDown = self.r_grid_cg[nstreamFinal-1+offsetGridLines,:]
+            stwLenDown = self.streamline_length[nstreamFinal-1+offsetGridLines,:]
             
             ni = 1
             nj = len(zcoordDown)
             
             filename = 'spanwise_spline_inlet_blade_%i.csv' % iblade
             with open(foldername + '/' + filename, 'w') as file:
+                file.write('indexStream,indexSpan,coordX,coordY,coordZ,streamlineLength\n')
                 for istream in range(ni):
                     for ispan in range(nj):
-                        file.write('%i,%i,%.9f,%.9f,%.9f\n'
+                        file.write('%i,%i,%.9f,%.9f,%.9f,%.9f\n'
                                 %(istream, ispan,
                                     rcoordUp[ispan], 
                                     0, 
-                                    zcoordUp[ispan]))
+                                    zcoordUp[ispan],
+                                    stwLenUp[ispan]))
             
             filename = 'spanwise_spline_outlet_blade_%i.csv' % iblade
             with open(foldername + '/' + filename, 'w') as file:
+                file.write('indexStream,indexSpan,coordX,coordY,coordZ,streamlineLength\n')
                 for istream in range(ni):
                     for ispan in range(nj):
-                        file.write('%i,%i,%.9f,%.9f,%.9f\n'
+                        file.write('%i,%i,%.9f,%.9f,%.9f,%.9f\n'
                                 %(istream, ispan,
                                     rcoordDown[ispan], 
                                     0, 
-                                    zcoordDown[ispan]))
+                                    zcoordDown[ispan],
+                                    stwLenDown[ispan]))
             
             
 

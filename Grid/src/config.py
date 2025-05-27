@@ -558,6 +558,9 @@ class Config:
     def cut_body_force_blade_tip_extension(self):
         return float(self.config_parser.get('BODY FORCE', 'CUT_BLADE_TIP_EXTENSION'))
     
+    def get_offset_blade_grid_lines(self):
+        return int(self.config_parser.get('BODY FORCE', 'OFFSET_BLADE_GRID_LINES'))
+    
     def get_bladed_CFD_solver_type(self):
         return str(self.config_parser.get('BODY FORCE', 'BLADED_CFD_SOLVER')).lower()
     
