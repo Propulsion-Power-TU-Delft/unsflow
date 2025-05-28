@@ -135,14 +135,19 @@ class MultiBlockGridDriver:
             return
         
         for iblade in range(self.numberBlades):
+            
+            # compute the right counter for the blade and block objects
             if self.driverType=='single_blade':
                 iblock = 0
             else:
                 iblock = (iblade+1)+iblade
+            
+            # compute the meridional grid
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
             self.blades[iblade].compute_meridional_coordinates()
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
+            # compute the thickness of eventual splitter blades (for centrifigual machines)
             iSplitter = 0
             if self.config.is_splitter_blade_present(iblade):
                 zSplitterPS = self.splitter_blades[iSplitter].z_psSurface
@@ -153,19 +158,20 @@ class MultiBlockGridDriver:
                 thetaSplitterSS = self.splitter_blades[iSplitter].theta_ssSurface
                 self.blades[iblade].compute_splitter_thickness((zSplitterPS, rSplitterPS, thetaSplitterPS), (zSplitterSS, rSplitterSS, thetaSplitterSS))
                 iSplitter += 1
-                
+            
+            # interpolate and compute geometrical factors on the meridional grid
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].plot_blockage_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
-            if  self.config.get_blade_edges_extrapolation_coefficient()[iblade] > 1e-3:
+            if  self.config.get_blade_edges_extrapolation_coefficient()[iblade] > 1e-4:
                 self.blades[iblade].extrapolate_camber_vector()
-            if self.config.get_blade_camber_smoothing_coefficient()>1e-3:
+            if self.config.get_blade_camber_smoothing_coefficient()>1e-4:
                 self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_endwalls_gaps()
+            self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
-            # self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-            
+            # copy quantities to the block objects for later use
             self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
             self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
             self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].z_grid, self.blades[iblade].r_grid)
@@ -173,12 +179,15 @@ class MultiBlockGridDriver:
             self.blocks[iblock].add_blade_is_present(self.blades[iblade].bladePresent)
             self.blocks[iblock].add_theta_camber(self.blades[iblade].theta_camber)
             
+            # if required, compute the body force fields
             if self.config.perform_body_force_reconstruction():
                 self.blades[iblade].extract_body_force(self.blades[iblade].blade_metal_angle) 
                 self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotCalibrationCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
+            
+            
     
     
     def AssembleMultiBlockGrid(self):

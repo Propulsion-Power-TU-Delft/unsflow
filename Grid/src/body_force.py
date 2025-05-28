@@ -129,7 +129,7 @@ class BodyForce:
         meridionalFields['Relative_Flow_Angle_arctan2'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
         meridionalFields['Relative_Flow_Angle'] = np.arctan(meridionalFields['Velocity_Tangential_Relative']/ meridionalFields['Velocity_Axial'])
         
-        # the 3D relative flow vector, which is generalized to radial geometries. Angle between relative velocity vector and meridional velocity vector
+        # compute the 3D relative flow vector, which is generalized to radial geometries. Angle between relative velocity vector and meridional velocity vector
         meridionalFields['Relative_Flow_Angle_3D'] = np.zeros_like(meridionalFields['Relative_Flow_Angle'])
         ni,nj = meridionalFields['Relative_Flow_Angle_3D'].shape
         for i in range(ni):
@@ -146,8 +146,9 @@ class BodyForce:
                 else:
                     meridionalFields['Relative_Flow_Angle_3D'][i,j] = -np.arccos((np.dot(relVelVector, meridionalVel)) / (np.linalg.norm(relVelVector) * np.linalg.norm(meridionalVel)))
         
-        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_arctan2']*180/np.pi, 'beta arctan2', vmin=-70, vmax=25)
-        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle']*180/np.pi, 'beta arctan', vmin=-70, vmax=25)
+        # verify that the three angles are the same. If not, there is a problem somewhere
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_arctan2']*180/np.pi, 'beta arctan2', vmin=-70, vmax=25)
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle']*180/np.pi, 'beta arctan', vmin=-70, vmax=25)
         contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_3D']*180/np.pi, 'beta 3D', vmin=-70, vmax=25)
         
         return meridionalFields
@@ -415,28 +416,36 @@ class BodyForce:
         temperature = self.meridionalFields['Temperature']
         relativeVelocity = sqrt(self.meridionalFields['Velocity_Axial']**2 + self.meridionalFields['Velocity_Radial']**2 + self.meridionalFields['Velocity_Tangential_Relative']**2)
         meridionalVelocity = np.sqrt(self.meridionalFields['Velocity_Axial']**2 + self.meridionalFields['Velocity_Radial']**2)
-        streamLength = compute_meridional_streamwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'])
+        streamCoords = compute_meridional_streamwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'])
         normalizedSpan = compute_meridional_spanwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], normalize=True)
 
         entropyMeridionalDerivative = np.zeros_like(self.meridionalFields['Axial_Coordinate'])
         
         # first implementation
         offset = 1
-        # for j in range(force.shape[1]):
-        #     deltaEntropy = self.meridionalFields['Entropy'][-offset,j]-self.meridionalFields['Entropy'][offset,j]
-        #     deltaLength = streamLength[-offset,j]-streamLength[offset,j]
-        #     entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
-        #     force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
-        
-        # profiles implementation
         for j in range(force.shape[1]):
-            entropyIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Entropy'])
-            entropyOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Entropy'])
-            streamCoordIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Streamwise_Coordinate'])
-            streamCoordOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Streamwise_Coordinate'])
-            streamLength = streamCoordOut-streamCoordIn
-            entropyMeridionalDerivative[:,j] = (entropyOut-entropyIn)/streamLength
-            force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*entropyMeridionalDerivative[:,j]
+            deltaEntropy = self.meridionalFields['Entropy'][-offset,j]-self.meridionalFields['Entropy'][offset,j]
+            deltaLength = streamCoords[-offset,j]-streamCoords[offset,j]
+            entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
+            force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
+        self.meridionalFields['EntropyDerivative'] = entropyMeridionalDerivative
+        
+        # # profiles implementation
+        # for j in range(force.shape[1]):
+        #     entropyIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Entropy'])
+        #     entropyOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Entropy'])
+            
+        #     # length of the streamline according to where data was extracted for the spanwise profiles
+        #     streamCoordIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Streamwise_Coordinate'])
+        #     streamCoordOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Streamwise_Coordinate'])
+        #     streamLength = streamCoordOut-streamCoordIn
+            
+        #     # length according to the blade only, as if the previous change should be applied only on the blade
+        #     streamLength2 = streamCoords[-1,j]-streamCoords[0,j]
+            
+        #     # compute the entropy derivative and the force
+        #     entropyMeridionalDerivative[:,j] = (entropyOut-entropyIn)/streamLength2
+        #     force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*entropyMeridionalDerivative[:,j]
         
         self.meridionalFields['EntropyDerivative'] = entropyMeridionalDerivative
         
@@ -457,38 +466,45 @@ class BodyForce:
         tangentialVelocity = self.meridionalFields['Velocity_Tangential']
         rgrid = self.meridionalFields['Radial_Coordinate']
         zgrid = self.meridionalFields['Axial_Coordinate']
-        streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
-        offset = 2
+        streamCoords = compute_meridional_streamwise_coordinates(zgrid, rgrid)
+        offset = 1
 
-        # first implementation type
-        # if method=='local':
-        #     drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
-        #     force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])/rgrid
+        # first implementation type based on meridional fields extracted from CFD
+        if method=='local':
+            drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
+            force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])/rgrid
         
-        # elif method=='distributed':
-        #     force = np.zeros_like(meridionalVelocity)
-        #     for j in range(meridionalVelocity.shape[1]):
-        #         deltaForce = rgrid[-offset,j]*tangentialVelocity[-offset,j] - rgrid[offset,j]*tangentialVelocity[offset,j]
-        #         deltaLength = streamLength[-offset,j]-streamLength[offset,j]
-        #         force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaForce/deltaLength
-        # else:
-        #     raise ValueError('Method unknown')
+        elif method=='distributed':
+            force = np.zeros_like(meridionalVelocity)
+            for j in range(meridionalVelocity.shape[1]):
+                deltaForce = rgrid[-offset,j]*tangentialVelocity[-offset,j] - rgrid[offset,j]*tangentialVelocity[offset,j]
+                deltaLength = streamCoords[-offset,j]-streamCoords[offset,j]
+                force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaForce/deltaLength
+        else:
+            raise ValueError('Method unknown')
         
-        # self.meridionalFields['AngularMomentumDerivative'] = force*rgrid/meridionalVelocity
+        self.meridionalFields['AngularMomentumDerivative'] = force*rgrid/meridionalVelocity
         
         # second implementation based on profiles
-        self.meridionalFields['AngularMomentumDerivative'] = np.zeros_like(self.meridionalFields['Axial_Coordinate'])
-        normalizedSpan = compute_meridional_spanwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], normalize=True)
-        force = np.zeros_like(meridionalVelocity)
-        for j in range(meridionalVelocity.shape[1]):
-            angularMomentumIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['AngularMomentum'])
-            angularMomentumOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['AngularMomentum'])
-            streamCoordIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Streamwise_Coordinate'])
-            streamCoordOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Streamwise_Coordinate'])
-            deltaMomentum = angularMomentumOut-angularMomentumIn
-            deltaLength = streamCoordOut-streamCoordIn
-            force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaMomentum/deltaLength
-            self.meridionalFields['AngularMomentumDerivative'][:,j] = deltaMomentum/deltaLength
+        # self.meridionalFields['AngularMomentumDerivative'] = np.zeros_like(self.meridionalFields['Axial_Coordinate'])
+        # normalizedSpan = compute_meridional_spanwise_coordinates(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], normalize=True)
+        # force = np.zeros_like(meridionalVelocity)
+        # for j in range(meridionalVelocity.shape[1]):
+        #     angularMomentumIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['AngularMomentum'])
+        #     angularMomentumOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['AngularMomentum'])
+        #     deltaMomentum = angularMomentumOut-angularMomentumIn
+            
+        #     # length according the extraction spanwise profiles
+        #     streamCoordIn = np.interp(normalizedSpan[0,j], self.spanwiseProfiles[0]['NormalizedSpan'], self.spanwiseProfiles[0]['Streamwise_Coordinate'])
+        #     streamCoordOut = np.interp(normalizedSpan[-1,j], self.spanwiseProfiles[1]['NormalizedSpan'], self.spanwiseProfiles[1]['Streamwise_Coordinate'])
+        #     deltaLength = streamCoordOut-streamCoordIn
+            
+        #     # length according to the blade only grid
+        #     deltaLength2 = streamCoords[-1,j]-streamCoords[0,j]
+            
+        #     # compute the force and the angular momentum derivative
+        #     force[:,j] = meridionalVelocity[:,j]/rgrid[:,j]*deltaMomentum/deltaLength2
+        #     self.meridionalFields['AngularMomentumDerivative'][:,j] = deltaMomentum/deltaLength
                 
         return force
     
