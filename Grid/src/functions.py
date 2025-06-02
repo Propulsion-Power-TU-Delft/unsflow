@@ -18,7 +18,8 @@ from scipy.interpolate import CubicSpline, griddata, LinearNDInterpolator
 from scipy import interpolate
 from shapely.geometry import LineString
 from matplotlib.ticker import FormatStrFormatter
-
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -1564,3 +1565,18 @@ def getStepIndices2ndOrderCentral(i,j,ni,nj):
         
 
 
+def computeTwoDimensionalRegression(degree, xData, yData, zData, xEval, yEval):
+    poly_features = PolynomialFeatures(degree)
+    
+    # Fit polynomial model
+    X = poly_features.fit_transform(np.column_stack((xData.flatten(), yData.flatten())))
+    model = LinearRegression()
+    model.fit(X, zData.flatten())
+    
+    # Evaluate on new grid
+    original_shape = xEval.shape
+    X_eval = poly_features.transform(np.column_stack((xEval.flatten(), yEval.flatten())))
+    surface_values = model.predict(X_eval)
+    zEval = surface_values.reshape(original_shape)
+    
+    return zEval
