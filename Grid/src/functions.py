@@ -1580,3 +1580,63 @@ def computeTwoDimensionalRegression(degree, xData, yData, zData, xEval, yEval):
     zEval = surface_values.reshape(original_shape)
     
     return zEval
+
+
+def robust_griddata_interpolation_with_linear_filler(xpoints, ypoints, zpoints, x_eval, y_eval, method='linear'):
+    """
+    Interpolation using griddata, but the data domain is enlarged before interpolating.  
+    The points lying still outside of the convex hull are treated with linear extrapolation.
+
+    Parameters
+    -------------------------------
+
+    `xpoints`: 1 or 2D array of x points where data is known
+
+    `ypoints`: 1 or 2D array of y points where data is known
+
+    `zpoints`: 1D array of function values where data is known, related to `xpoints` and `ypoints`
+
+    `x_eval`: 1 or 2D array where evaluating the function
+
+    `y_eval`: 1 or 2D array where evaluating the function
+
+    `method`: linear or cubic usually
+
+    `filler`: value used to fill and recognize points outside the convex hull
+    """    
+    # x and y points are enlarged
+    xpointsNew = enlarge_domain_array(xpoints)
+    ypointsNew = enlarge_domain_array(ypoints)
+    zpointsNew = enlarge_domain_array(zpoints)
+    
+    # Perform linear interpolation
+    z_eval = griddata((xpointsNew.flatten(), ypointsNew.flatten()), zpointsNew.flatten(), (x_eval, y_eval), method=method, fill_value=np.nan)
+    z_eval = linear_extrapolation_nan_values(x_eval, y_eval, z_eval)
+
+    return z_eval
+
+
+def enlarge_domain_array(array):
+    """Linearly enlarge a 2D array
+    """
+    if array.ndim != 2:
+        raise ValueError('The array must be 2D')
+    
+    arrayNew = np.zeros((array.shape[0]+2, array.shape[1]+2))
+    
+    # copy the internal points
+    arrayNew[1:-1,1:-1] = array
+    
+    # fill the edges
+    arrayNew[0,:] = arrayNew[1,:] - (arrayNew[2,:]-arrayNew[1,:])
+    arrayNew[-1,:] = arrayNew[-2,:] + (arrayNew[-2,:]-arrayNew[-3,:])
+    arrayNew[:,0] = arrayNew[:,1] - (arrayNew[:,2]-arrayNew[:,1])
+    arrayNew[:,-1] = arrayNew[:,-2] + (arrayNew[:,-2]-arrayNew[:,-3])
+    
+    # fill the corners
+    arrayNew[0,0] = arrayNew[1,1] - (arrayNew[2,2]-arrayNew[1,1])
+    arrayNew[0,-1] = arrayNew[1,-2] + (arrayNew[1,-2]-arrayNew[2,-3])
+    arrayNew[-1,0] = arrayNew[-2,1] - (arrayNew[-3,2]-arrayNew[-2,1])
+    arrayNew[-1,-1] = arrayNew[-2,-2] + (arrayNew[-2,-2]-arrayNew[-3,-3])
+    
+    return arrayNew

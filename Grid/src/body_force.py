@@ -406,7 +406,7 @@ class BodyForce:
                                                          self.bodyForceFields['Force_Inviscid_Tangential']**2)
         
         
-    def ComputeLossForceMarble(self):
+    def ComputeLossForceMarble(self, method='distributed'):
         """Compute the loss force component according to Marble method, distributing linearly the loss from leading to trailing edge
 
         Returns:
@@ -423,11 +423,17 @@ class BodyForce:
         
         # first implementation
         offset = 1
-        for j in range(force.shape[1]):
-            deltaEntropy = self.meridionalFields['Entropy'][-offset,j]-self.meridionalFields['Entropy'][offset,j]
-            deltaLength = streamCoords[-offset,j]-streamCoords[offset,j]
-            entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
-            force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
+        
+        if method=='distributed':
+            for j in range(force.shape[1]):
+                deltaEntropy = self.meridionalFields['Entropy'][-offset,j]-self.meridionalFields['Entropy'][offset,j]
+                deltaLength = streamCoords[-offset,j]-streamCoords[offset,j]
+                entropyMeridionalDerivative[:,j] = deltaEntropy/deltaLength
+                force[:,j] = temperature[:,j]*meridionalVelocity[:,j]/relativeVelocity[:,j]*deltaEntropy/deltaLength
+        else:
+            ds_dz, ds_dr = compute_gradient_least_square(self.meridionalFields['Axial_Coordinate'], self.meridionalFields['Radial_Coordinate'], self.meridionalFields['Entropy'])
+            entropyMeridionalDerivative = ds_dz*self.meridionalFields['Velocity_Axial']+ds_dr*self.meridionalFields['Velocity_Radial']
+            force = temperature/relativeVelocity*entropyMeridionalDerivative
         self.meridionalFields['EntropyDerivative'] = entropyMeridionalDerivative
         
         # # profiles implementation
@@ -452,7 +458,7 @@ class BodyForce:
         return force
     
     
-    def ComputeTangentialForceMarble(self, method='distributed'):
+    def ComputeTangentialForceMarble(self, method='local'):
         """Compute the tangential force component according to Marble method
         
         Args:
@@ -472,7 +478,7 @@ class BodyForce:
         # first implementation type based on meridional fields extracted from CFD
         if method=='local':
             drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
-            force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial'])/rgrid
+            force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial']) / rgrid
         
         elif method=='distributed':
             force = np.zeros_like(meridionalVelocity)
