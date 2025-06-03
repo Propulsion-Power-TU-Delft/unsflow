@@ -16,6 +16,7 @@ from scipy.interpolate import CubicSpline
 import pickle
 import os
 from scipy.ndimage import gaussian_filter
+from Grid.src.functions import enlarge_domain_array
 
 
 class MultiBlock:
@@ -380,7 +381,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.1):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.5, enlargeLoops = 3):
         """
         Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
         The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid
@@ -403,12 +404,17 @@ class MultiBlock:
 
         zgrid = move_hub_shroud_points(self.z_grid_points.copy())
         rgrid = move_hub_shroud_points(self.r_grid_points.copy())
-
-        # plt.figure()
-        # plt.plot(self.z_grid_points, self.r_grid_points, 'C0o', mfc='none')
-        # plt.plot(zgrid, rgrid, 'C1x')
-        # ax = plt.gca()
-        # ax.set_aspect('equal')
+        
+        enlargerCounter = 1
+        while enlargerCounter < enlargeLoops:
+            zgrid = enlarge_domain_array(zgrid)
+            rgrid = enlarge_domain_array(rgrid)
+            
+            # remove the spanwise enlargements
+            zgrid = zgrid[:, 1:-1]
+            rgrid = rgrid[:, 1:-1]
+            
+            enlargerCounter += 1
 
         x = rgrid
         y = np.zeros_like(x)
