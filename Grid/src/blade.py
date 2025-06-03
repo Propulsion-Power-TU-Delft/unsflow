@@ -460,11 +460,11 @@ class Blade:
         Compute the blade thickness evaluating theta of the pressure and suction side on the meridional points of the camber surface
         """
         if self.extrapolationMethod == 'linear':
-            theta_ps = griddata_interpolation_with_linear_extrapolation(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
-            theta_ss = griddata_interpolation_with_linear_extrapolation(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ps = robust_griddata_interpolation_with_linear_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ss = robust_griddata_interpolation_with_linear_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
         else:
-            theta_ps = griddata_interpolation_with_nearest_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
-            theta_ss = griddata_interpolation_with_nearest_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ps = robust_griddata_interpolation_with_linear_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
+            theta_ss = robust_griddata_interpolation_with_linear_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
             
         self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps - theta_ss)
                 
@@ -704,19 +704,19 @@ class Blade:
         # contour_template(self.z_grid, self.r_grid, self.n_camber_z, r'$n_z$')
         
         # interpolate camber normal from the reference surface
-        self.n_camber_r = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
-                                                        self.r_camberSurface.flatten(),
-                                                        self.nr_camberSurface.flatten(),
+        self.n_camber_r = self.twoD_function_evaluation(self.z_camberSurface,
+                                                        self.r_camberSurface,
+                                                        self.nr_camberSurface,
                                                         self.z_grid, self.r_grid, method)
 
-        self.n_camber_t = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
-                                                        self.r_camberSurface.flatten(),
-                                                        self.nt_camberSurface.flatten(),
+        self.n_camber_t = self.twoD_function_evaluation(self.z_camberSurface,
+                                                        self.r_camberSurface,
+                                                        self.nt_camberSurface,
                                                         self.z_grid, self.r_grid, method)
 
-        self.n_camber_z = self.twoD_function_evaluation(self.z_camberSurface.flatten(),
-                                                        self.r_camberSurface.flatten(),
-                                                        self.nz_camberSurface.flatten(),
+        self.n_camber_z = self.twoD_function_evaluation(self.z_camberSurface,
+                                                        self.r_camberSurface,
+                                                        self.nz_camberSurface,
                                                         self.z_grid, self.r_grid, method)
         
         # contour_template(self.z_grid, self.r_grid, self.n_camber_r, r'$n_r$')
@@ -758,10 +758,11 @@ class Blade:
             surface_values = np.dot(X_eval, coefficients) + intercept
             theta_eval = surface_values.reshape(z_eval.shape)
         elif method == 'interpolation': # linear interpolation, with nearest-neighbor for the extrapolated points
-            if self.extrapolationMethod == 'linear':
-                theta_eval = griddata_interpolation_with_linear_extrapolation(z, r, theta, z_eval, r_eval)
-            else:
-                theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
+            # if self.extrapolationMethod == 'linear':
+            #     theta_eval = griddata_interpolation_with_linear_extrapolation(z, r, theta, z_eval, r_eval)
+            # else:
+            #     theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
+            theta_eval = robust_griddata_interpolation_with_linear_filler(z, r, theta, z_eval, r_eval)
         else:
             raise ValueError('Unknown method')
 

@@ -92,7 +92,7 @@ class BodyForce:
                 #                                                                               dataset['Radial_Coordinate'], 
                 #                                                                               dataset[key], 
                 #                                                                               self.axialGrid, self.radialGrid)
-                self.meridionalFields[key] = griddata_interpolation_with_nearest_filler(dataset['Axial_Coordinate'], 
+                self.meridionalFields[key] = robust_griddata_interpolation_with_linear_filler(dataset['Axial_Coordinate'], 
                                                                                               dataset['Radial_Coordinate'], 
                                                                                               dataset[key], 
                                                                                               self.axialGrid, self.radialGrid)
