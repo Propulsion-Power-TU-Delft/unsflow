@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from Grid.src.functions import *
 import pickle
 
-with open('NASAGER4.pik', 'rb') as file:
+with open('../data/NASA_LSCC_data.pik', 'rb') as file:
     data = pickle.load(file)
 
 x = data.multiBlockGrid.z_grid_points

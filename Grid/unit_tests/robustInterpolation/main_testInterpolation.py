@@ -4,18 +4,22 @@ from Grid.src.functions import *
 import pickle
 
 #### test 2d function to compare results
-def functionTest(x,y):
-    return np.sin(4*x)*np.cos(3*y**2)/(x**2+y**2)
+# def functionTest(x,y):
+#     return np.sin(4*x)*np.cos(3*y**2)/(x**2+y**2)
+
+def functionTest(x, y):
+    f = np.exp(-x**2 - y**2) * np.sin(2*np.pi*x) * np.cos(2*np.pi*y)
+    return f
 
 #### Test Data, basic data onto which things are interpolated
-with open('NASA_LSCC_data.pik', 'rb') as file:
+with open('../data/NASA_LSCC_data.pik', 'rb') as file:
     data = pickle.load(file)
 xData = data.multiBlockGrid.z_grid_points
 yData = data.multiBlockGrid.r_grid_points
 zData = functionTest(xData,yData)
 
 ### Evaluation Data
-with open('NASA_LSCC_eval.pik', 'rb') as file:
+with open('../data/NASA_LSCC_eval.pik', 'rb') as file:
     data = pickle.load(file)
 xEval = data.multiBlockGrid.z_grid_points
 yEval = data.multiBlockGrid.r_grid_points

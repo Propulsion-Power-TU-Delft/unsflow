@@ -1162,7 +1162,7 @@ def find_intersection(x1, y1, x2, y2):
         return 0, 0
 
 
-def compute_gradient_least_square(x, y, z):
+def compute_gradient_least_square(x, y, z, enlargeDomain = True):
     """
     Compute the gradient of z with respect to x and y using the least squares method.
 
@@ -1170,10 +1170,16 @@ def compute_gradient_least_square(x, y, z):
         x (numpy.ndarray): 2D array of x-coordinates.
         y (numpy.ndarray): 2D array of y-coordinates.
         z (numpy.ndarray): 2D array of z-values, a function of x and y.
+        enlargedDomain (bool): Flag to indicate if the domain should be enlarged, and the gradient computed accordingly
 
     Returns:
         Gradients dz/dx and dz/dy.
     """
+    if enlargeDomain:
+        x = enlarge_domain_array(x)
+        y = enlarge_domain_array(y)
+        z = enlarge_domain_array(z)
+
     ni,nj = x.shape
     dzdx = np.zeros((ni,nj))
     dzdy = np.zeros((ni,nj))
@@ -1212,7 +1218,10 @@ def compute_gradient_least_square(x, y, z):
             grad = np.linalg.inv(A.T@A) @A.T@b
             dzdx[i,j] = grad[0,0]
             dzdy[i,j] = grad[1,0]
-    return dzdx, dzdy
+    if enlargeDomain:
+        return dzdx[1:-1, 1:-1], dzdy[1:-1, 1:-1]
+    else:
+        return dzdx, dzdy
 
 
 def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False):
