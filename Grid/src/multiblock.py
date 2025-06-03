@@ -42,48 +42,62 @@ class MultiBlock:
         """
         self.fix_theta_camber_grids()
         
-        self.z_grid_cg = self.blocks[0].z_grid_cg
-        self.r_grid_cg = self.blocks[0].r_grid_cg
-        self.blockage = self.blocks[0].blockage
-        self.rpm = self.blocks[0].rpm
-        self.streamline_length = self.blocks[0].streamline_length
+        self.z_grid_cg = self.blocks[0].z_grid_cg[:-1, :]
+        self.r_grid_cg = self.blocks[0].r_grid_cg[:-1, :]
+        self.blockage = self.blocks[0].blockage[:-1, :]
+        self.rpm = self.blocks[0].rpm[:-1, :]
+        self.streamline_length = self.blocks[0].streamline_length[:-1, :]
         self.normal_camber = {}
-        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial']
-        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial']
-        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential']
-        self.force_axial = self.blocks[0].bodyForce['Force_Axial']
-        self.force_radial = self.blocks[0].bodyForce['Force_Radial']
-        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential']
-        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative']
-        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative']
+        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial'][:-1, :]
+        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial'][:-1, :]
+        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential'][:-1, :]
+        self.force_axial = self.blocks[0].bodyForce['Force_Axial'][:-1, :]
+        self.force_radial = self.blocks[0].bodyForce['Force_Radial'][:-1, :]
+        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential'][:-1, :]
+        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative'][:-1, :]
+        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative'][:-1, :]
         self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients
-        self.nBlades = self.blocks[0].nBlades
-        self.bladePresent = self.blocks[0].bladePresent
-        self.theta_camber = self.blocks[0].theta_camber
+        for key in self.BFCalibrationCoefficients.keys():
+                if key.lower()!='model':
+                    self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][:-1, :]
+        self.nBlades = self.blocks[0].nBlades[:-1, :]
+        self.bladePresent = self.blocks[0].bladePresent[:-1, :]
+        self.theta_camber = self.blocks[0].theta_camber[:-1, :]
         
-
-        for block in self.blocks[1:]:
-            self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[1:, :]), axis=0)
-            self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[1:, :]), axis=0)
-            self.blockage = np.concatenate((self.blockage, block.blockage[1:, :]), axis=0)
-            self.rpm = np.concatenate((self.rpm, block.rpm[1:, :]), axis=0)
-            self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[1:, :]), axis=0)
-            self.normal_camber['Axial'] = np.concatenate((self.normal_camber['Axial'], block.normal_camber['Axial'][1:, :]), axis=0)
-            self.normal_camber['Radial'] = np.concatenate((self.normal_camber['Radial'], block.normal_camber['Radial'][1:, :]), axis=0)
-            self.normal_camber['Tangential'] = np.concatenate((self.normal_camber['Tangential'], block.normal_camber['Tangential'][1:, :]), axis=0)
-            self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][1:, :]), axis=0)
-            self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][1:, :]), axis=0)
-            self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][1:, :]), axis=0)
-            self.angular_momentum_derivative = np.concatenate((self.angular_momentum_derivative, block.bodyForce['AngularMomentumDerivative'][1:, :]), axis=0)
-            self.entropy_derivative = np.concatenate((self.entropy_derivative, block.bodyForce['EntropyDerivative'][1:, :]), axis=0)
-            self.nBlades = np.concatenate((self.nBlades, block.nBlades[1:, :]), axis=0)
-            self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[1:, :]), axis=0)
-            self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[1:, :]), axis=0)
+        bladeFlag = 1
+        numberBlocks = len(self.blocks[1:])
+        for iBlock, block in enumerate(self.blocks[1:]):
+                           
+            if bladeFlag > 0: # this is a blade block
+                streamSlice = slice(None)
+            elif iBlock == numberBlocks-1: # is the last block
+                streamSlice = slice(1, None)
+            else:
+                streamSlice = slice(1, -1)
+            
+            self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[streamSlice, :]), axis=0)
+            self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[streamSlice, :]), axis=0)
+            self.blockage = np.concatenate((self.blockage, block.blockage[streamSlice, :]), axis=0)
+            self.rpm = np.concatenate((self.rpm, block.rpm[streamSlice, :]), axis=0)
+            self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[streamSlice, :]), axis=0)
+            self.normal_camber['Axial'] = np.concatenate((self.normal_camber['Axial'], block.normal_camber['Axial'][streamSlice, :]), axis=0)
+            self.normal_camber['Radial'] = np.concatenate((self.normal_camber['Radial'], block.normal_camber['Radial'][streamSlice, :]), axis=0)
+            self.normal_camber['Tangential'] = np.concatenate((self.normal_camber['Tangential'], block.normal_camber['Tangential'][streamSlice, :]), axis=0)
+            self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][streamSlice, :]), axis=0)
+            self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][streamSlice, :]), axis=0)
+            self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][streamSlice, :]), axis=0)
+            self.angular_momentum_derivative = np.concatenate((self.angular_momentum_derivative, block.bodyForce['AngularMomentumDerivative'][streamSlice, :]), axis=0)
+            self.entropy_derivative = np.concatenate((self.entropy_derivative, block.bodyForce['EntropyDerivative'][streamSlice, :]), axis=0)
+            self.nBlades = np.concatenate((self.nBlades, block.nBlades[streamSlice, :]), axis=0)
+            self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[streamSlice, :]), axis=0)
+            self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[streamSlice, :]), axis=0)
             
             for key in self.BFCalibrationCoefficients.keys():
                 if key.lower()!='model':
-                    self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][1:, :]), axis=0)
-        
+                    self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][streamSlice, :]), axis=0)
+            
+            bladeFlag *= -1 # the next block will be unbladed
+            
         self.theta_camber =gaussian_filter(self.theta_camber, sigma=3)
 
 
