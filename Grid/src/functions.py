@@ -258,10 +258,9 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     # WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
     # scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
     # tol *= scale  # scale the tolerance threshold
-    pic_size_blank, pic_size_contour = compute_picture_size(X, Y)
 
     if show:
-        plt.figure(figsize=pic_size_blank)
+        plt.figure()
 
     if save_animation:
         X_animation = np.zeros((nx, ny, maxit))
@@ -491,8 +490,7 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             print('convergence not reached')
 
     if save_filename is not None:
-        pic_size, pic_size_contour = compute_picture_size(X, Y)
-        plt.figure(figsize=pic_size)
+        plt.figure()
         for ii in range(nx):
             plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
         for jj in range(ny):
