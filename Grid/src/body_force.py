@@ -509,6 +509,7 @@ class BodyForce:
         contour_template(self.axialGrid, self.radialGrid, self.meridionalFields["Relative_Flow_Angle_3D"]*180/np.pi, 'relative flow angle [deg]')
         
         beta_flow = self.meridionalFields['Relative_Flow_Angle_3D']
+        
         relVelMag = np.sqrt(self.meridionalFields["Velocity_Axial"]**2 + self.meridionalFields["Velocity_Radial"]**2 + self.meridionalFields["Velocity_Tangential_Relative"]**2)
         beta_0 = beta_flow - self.bodyForceFields["Force_Inviscid"] * h_parameter / (2*np.pi*solidity*relVelMag**2)
         kp_etaMax = h_parameter * self.bodyForceFields["Force_Viscous"] / (relVelMag**2)
@@ -525,3 +526,10 @@ class BodyForce:
         self.calibrationCoefficients["beta_etaMax"] = beta_etaMax
         self.calibrationCoefficients["solidity"] = solidity
         self.calibrationCoefficients["h_parameter"] = h_parameter # try to understand if it makes sense, or if it is better to use the circumferential pitch
+        
+        deviation = beta_flow - metal_angle
+        contour_template(self.axialGrid, self.radialGrid, deviation*180/np.pi, 'deviation [deg]', vmin=-5, vmax=5)
+        self.calibrationCoefficients["kn_turning"] = self.bodyForceFields["Force_Inviscid"] * h_parameter / (relVelMag**2 * np.abs(deviation))
+        contour_template(self.axialGrid, self.radialGrid, self.calibrationCoefficients["kn_turning"], 'kn_turning')
+    
+    

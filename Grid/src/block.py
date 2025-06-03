@@ -113,7 +113,8 @@ class Block:
                                               'kp_etaMax': np.zeros((self.nstream, self.nspan)),
                                               'beta_etaMax': np.zeros((self.nstream, self.nspan)),
                                               'solidity': np.zeros((self.nstream, self.nspan)),
-                                              'h_parameter': np.zeros((self.nstream, self.nspan))}
+                                              'h_parameter': np.zeros((self.nstream, self.nspan)),
+                                              'kn_turning': np.zeros((self.nstream, self.nspan))}
         else:
             raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)
