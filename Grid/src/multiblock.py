@@ -42,33 +42,43 @@ class MultiBlock:
         """
         self.fix_theta_camber_grids()
         
-        self.z_grid_cg = self.blocks[0].z_grid_cg[:-1, :]
-        self.r_grid_cg = self.blocks[0].r_grid_cg[:-1, :]
-        self.blockage = self.blocks[0].blockage[:-1, :]
-        self.rpm = self.blocks[0].rpm[:-1, :]
-        self.streamline_length = self.blocks[0].streamline_length[:-1, :]
+        # Flag: if True, include the last point (slice is [:]), else exclude the last point (slice is [:-1])
+        numberBlocks = len(self.blocks)
+        if numberBlocks == 1:
+            row_slice = slice(None)
+        else:
+            row_slice = slice(None, -1)
+
+        self.z_grid_cg = self.blocks[0].z_grid_cg[row_slice, :]
+        self.r_grid_cg = self.blocks[0].r_grid_cg[row_slice, :]
+        self.blockage = self.blocks[0].blockage[row_slice, :]
+        self.rpm = self.blocks[0].rpm[row_slice, :]
+        self.streamline_length = self.blocks[0].streamline_length[row_slice, :]
+
         self.normal_camber = {}
-        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial'][:-1, :]
-        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial'][:-1, :]
-        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential'][:-1, :]
-        self.force_axial = self.blocks[0].bodyForce['Force_Axial'][:-1, :]
-        self.force_radial = self.blocks[0].bodyForce['Force_Radial'][:-1, :]
-        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential'][:-1, :]
-        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative'][:-1, :]
-        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative'][:-1, :]
-        self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients
-        for key in self.BFCalibrationCoefficients.keys():
-                if key.lower()!='model':
-                    self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][:-1, :]
-        self.nBlades = self.blocks[0].nBlades[:-1, :]
-        self.bladePresent = self.blocks[0].bladePresent[:-1, :]
-        self.theta_camber = self.blocks[0].theta_camber[:-1, :]
+        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial'][row_slice, :]
+        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial'][row_slice, :]
+        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential'][row_slice, :]
+
+        self.force_axial = self.blocks[0].bodyForce['Force_Axial'][row_slice, :]
+        self.force_radial = self.blocks[0].bodyForce['Force_Radial'][row_slice, :]
+        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential'][row_slice, :]
+        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative'][row_slice, :]
+        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative'][row_slice, :]
+
+        self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients.copy()
+        for key in self.BFCalibrationCoefficients:
+            if key.lower() != 'model':
+                self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][row_slice, :]
+
+        self.nBlades = self.blocks[0].nBlades[row_slice, :]
+        self.bladePresent = self.blocks[0].bladePresent[row_slice, :]
+        self.theta_camber = self.blocks[0].theta_camber[row_slice, :]
         
         bladeFlag = 1
-        numberBlocks = len(self.blocks[1:])
         for iBlock, block in enumerate(self.blocks[1:]):
                            
-            if bladeFlag > 0: # this is a blade block
+            if bladeFlag > 0: # this is a blade block, or there is only one block
                 streamSlice = slice(None)
             elif iBlock == numberBlocks-1: # is the last block
                 streamSlice = slice(1, None)

@@ -2610,7 +2610,7 @@ class Blade:
         """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
         """
         self.bodyForce = BodyForce(self.config, self.iblade)
-        self.bodyForce.ComputeCircumferentialAveragedFields(self.z_grid, self.r_grid)
+        self.bodyForce.InterpolateCircumferentialAveragedFields(self.z_grid, self.r_grid)
         
         extractionMethod = self.config.get_body_force_extraction_method()
         if extractionMethod.lower() == 'marble':
@@ -2624,6 +2624,41 @@ class Blade:
         
         calibrationMethod = self.config.get_body_force_calibration_method()
         self.bodyForce.ComputeCalibrationCoefficients(calibrationMethod, metal_angle)
+        
+    
+    def interpolate_body_force(self):
+        """interpolate the body force fields
+        """
+        self.bodyForce = BodyForce(self.config, self.iblade)
+        
+        filepath = self.config.get_blade_body_force_filepath(self.iblade)
+        with open(filepath, 'rb') as f:
+            blade = pickle.load(f)
+        
+        # build the three dictionnaries needed
+        self.bodyForce.meridionalFields = {}
+        self.bodyForce.bodyForceFields = {}
+        self.bodyForce.calibrationCoefficients = {}
+        
+        for key in blade.bodyForce.meridionalFields.keys():
+            self.bodyForce.meridionalFields[key] = robust_griddata_interpolation_with_linear_filler(blade.bodyForce.meridionalFields["Axial_Coordinate"], 
+                                                                                                    blade.bodyForce.meridionalFields["Radial_Coordinate"], 
+                                                                                                    blade.bodyForce.meridionalFields[key], 
+                                                                                                    self.z_grid, self.r_grid)
+        
+        for key in blade.bodyForce.bodyForceFields.keys():
+            self.bodyForce.bodyForceFields[key] = robust_griddata_interpolation_with_linear_filler(blade.bodyForce.meridionalFields["Axial_Coordinate"], 
+                                                                                                    blade.bodyForce.meridionalFields["Radial_Coordinate"], 
+                                                                                                    blade.bodyForce.bodyForceFields[key], 
+                                                                                                    self.z_grid, self.r_grid)
+        
+        for key in blade.bodyForce.calibrationCoefficients.keys():
+            self.bodyForce.calibrationCoefficients[key] = robust_griddata_interpolation_with_linear_filler(blade.bodyForce.meridionalFields["Axial_Coordinate"], 
+                                                                                                        blade.bodyForce.meridionalFields["Radial_Coordinate"], 
+                                                                                                        blade.bodyForce.calibrationCoefficients[key], 
+                                                                                                        self.z_grid, self.r_grid)
+        
+    
     
     def compute_endwalls_gaps(self):
         tip_gap = self.config.get_blade_tip_gap()[self.iblade]

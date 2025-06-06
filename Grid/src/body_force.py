@@ -22,7 +22,7 @@ class BodyForce:
         
         
     
-    def ComputeCircumferentialAveragedFields(self, zgrid, rgrid):
+    def InterpolateCircumferentialAveragedFields(self, zgrid, rgrid):
         """Interpolate the circumferentially averaged fields on the grid used for body force simulations
 
         Args:
@@ -85,12 +85,20 @@ class BodyForce:
             meridionalFields[key] = averagedDataset[variablesNames[key]]
         
         meridionalFields['Entropy'] = CP*np.log(meridionalFields['Temperature']/TREF)-R*np.log(meridionalFields['Pressure']/PREF)
+        meridionalFields['dEntropy_dz'], meridionalFields['dEntropy_dr'] = compute_gradient_least_square(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Entropy'])
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['dEntropy_dz'], 'dEntropy_dz')
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['dEntropy_dr'], 'dEntropy_dr')
+
         meridionalFields['Velocity_Meridional'] = np.sqrt(meridionalFields['Velocity_Axial']**2 + meridionalFields['Velocity_Radial']**2)
         
         # for the relative flow angle, use of simple arctan because we want it to be defined between [-pi/2,pi/2], where positive is the positive theta direction
         meridionalFields['Relative_Flow_Angle_arctan2'] = np.arctan2(meridionalFields['Velocity_Tangential_Relative'], meridionalFields['Velocity_Axial'])
         meridionalFields['Relative_Flow_Angle'] = np.arctan(meridionalFields['Velocity_Tangential_Relative']/ meridionalFields['Velocity_Axial'])
         
+        meridionalFields['drUtheta_dz'], meridionalFields['drUtheta_dr'] = compute_gradient_least_square(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Velocity_Tangential']*meridionalFields['Radial_Coordinate'])
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['drUtheta_dz'], 'drUtheta_dz')
+        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['drUtheta_dr'], 'drUtheta_dr')
+
         # compute the 3D relative flow vector, which is generalized to radial geometries. Angle between relative velocity vector and meridional velocity vector
         meridionalFields['Relative_Flow_Angle_3D'] = np.zeros_like(meridionalFields['Relative_Flow_Angle'])
         ni,nj = meridionalFields['Relative_Flow_Angle_3D'].shape
@@ -409,7 +417,7 @@ class BodyForce:
 
         # first implementation type based on meridional fields extracted from CFD
         if method=='local':
-            drut_dz, drut_dr = compute_gradient_least_square(zgrid, rgrid, rgrid*tangentialVelocity)
+            drut_dz, drut_dr = self.meridionalFields['drUtheta_dz'], self.meridionalFields['drUtheta_dr']
             force = (drut_dz*self.meridionalFields['Velocity_Axial']+drut_dr*self.meridionalFields['Velocity_Radial']) / rgrid
         
         elif method=='distributed':

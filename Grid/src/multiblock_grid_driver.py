@@ -179,13 +179,24 @@ class MultiBlockGridDriver:
             self.blocks[iblock].add_blade_is_present(self.blades[iblade].bladePresent)
             self.blocks[iblock].add_theta_camber(self.blades[iblade].theta_camber)
             
+            
             # if required, compute the body force fields
-            if self.config.perform_body_force_reconstruction():
+            if self.config.perform_body_force_reconstruction(): # compute it from circumferential averages
                 self.blades[iblade].extract_body_force(self.blades[iblade].blade_metal_angle) 
+            elif self.config.perform_body_force_interpolation(): # interpolate from another file
+                self.blades[iblade].interpolate_body_force()
+            else:
+                print("No body force reconstruction requested.")
+            
+            try:
                 self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blades[iblade].bodyForce.PlotCalibrationCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
                 self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
+            except:
+                pass
+            
+                
             
             
     
@@ -232,6 +243,13 @@ class MultiBlockGridDriver:
                 with open(filePath, 'wb') as f:
                     pickle.dump(self, f)
                 print('Object saved in %s' %(filePath))
+            
+            elif outputType.lower()=='pickle_blades':
+                for i,blade in enumerate(self.blades):
+                    filePath = os.path.join(outputFolder, self.config.get_machine_name() + '_blade_%02i.pkl' % i)
+                    with open(filePath, 'wb') as f:
+                        pickle.dump(blade, f)
+                    print('Blade %02i pkl saved in %s' %(i, filePath))
             
             elif outputType.lower()=='su2mesh':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
