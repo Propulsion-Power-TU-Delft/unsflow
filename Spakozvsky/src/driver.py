@@ -171,7 +171,6 @@ class Driver:
         plt.legend()
         plt.xlabel(r'$\sigma_{n}$')
         plt.ylabel(r'$j \omega_{n}$')
-        plt.title('Root locus')
         plt.grid(alpha=0.2)
         if save_filename is not None:
             plt.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches = 'tight')

@@ -286,19 +286,6 @@ class BodyForce:
                                                         self.bodyForceFields['Force_Viscous_Tangential']**2)
         
         self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
-        
-        # # clip spurious values of the cartesian force
-        # if not self.config.invert_axial_coordinates():
-        #     clip_negative_values(self.bodyForceFields['Force_Axial'])
-        # else:
-        #     clip_positive_values(self.bodyForceFields['Force_Axial'])
-        
-        # if self.config.get_omega_shaft()[self.iblade]>0:
-        #     clip_negative_values(self.bodyForceFields['Force_Tangential'])
-        # elif self.config.get_omega_shaft()[self.iblade]<0:
-        #     clip_positive_values(self.bodyForceFields['Force_Tangential'])
-        # else:
-        #     pass
     
     
     def ComputeBodyForceKiwada(self, blockage):

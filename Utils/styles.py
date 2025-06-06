@@ -68,12 +68,18 @@ total_chars = 100
 total_chars_mid = total_chars//2
 
 
-# Set font size for different elements
+"""
+Uncomment the following to have latex output
+"""
+# Set font size for different elements 
 # font_family = 'serif'
 # font_name = 'Computer Modern'
 # plt.rc('text', usetex=True)
 # plt.rc('font', family=font_family)
 # plt.rc('font', serif=font_name)
+
+
+
 plt.rc('font', size=font_text)            # controls default text sizes
 plt.rc('axes', titlesize=font_title)       # fontsize of the axes title
 plt.rc('axes', labelsize=font_labels)       # fontsize of the x and y labels
