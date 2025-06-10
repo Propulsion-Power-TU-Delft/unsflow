@@ -1647,3 +1647,57 @@ def enlarge_domain_array(array):
     arrayNew[-1,-1] = arrayNew[-2,-2] + (arrayNew[-2,-2]-arrayNew[-3,-3])
     
     return arrayNew
+
+
+def compute_dual_grid(zgrid, rgrid):
+    """
+    Compute and return the secondary vertex centered (dual) grid
+    """
+    nstream, nspan = zgrid.shape
+    
+    z_grid_dual = np.zeros((nstream + 1, nspan + 1))
+    r_grid_dual = np.zeros((nstream + 1, nspan + 1))
+
+    # internal points
+    for istream in range(1, nstream):
+        for ispan in range(1, nspan):
+            z_grid_dual[istream, ispan] = 0.25 * (zgrid[istream, ispan] + zgrid[istream - 1, ispan] + 
+                                                    zgrid[istream, ispan - 1] + zgrid[istream - 1, ispan - 1])
+            r_grid_dual[istream, ispan] = 0.25 * (rgrid[istream, ispan] + rgrid[istream - 1, ispan] + 
+                                                    rgrid[istream, ispan - 1] + rgrid[istream - 1, ispan - 1])
+
+    # fix the vertices
+    z_grid_dual[0, 0] = zgrid[0, 0]
+    r_grid_dual[0, 0] = rgrid[0, 0]
+    z_grid_dual[0, -1] = zgrid[0, -1]
+    r_grid_dual[0, -1] = rgrid[0, -1]
+    z_grid_dual[-1, -1] = zgrid[-1, -1]
+    r_grid_dual[-1, -1] = rgrid[-1, -1]
+    z_grid_dual[-1, 0] = zgrid[-1, 0]
+    r_grid_dual[-1, 0] = rgrid[-1, 0]
+
+    # istream = 0 border
+    for istream in range(0, 1):
+        for ispan in range(1, nspan):
+            z_grid_dual[istream, ispan] = 0.5 * (zgrid[istream, ispan] + zgrid[istream, ispan - 1])
+            r_grid_dual[istream, ispan] = 0.5 * (rgrid[istream, ispan] + rgrid[istream, ispan - 1])
+
+    # istream = -1 border
+    for istream in range(nstream, nstream + 1):
+        for ispan in range(1, nspan):
+            z_grid_dual[istream, ispan] = 0.5 * (zgrid[istream - 1, ispan] + zgrid[istream - 1, ispan - 1])
+            r_grid_dual[istream, ispan] = 0.5 * (rgrid[istream - 1, ispan] + rgrid[istream - 1, ispan - 1])
+
+    # ispan = 0 border
+    for istream in range(1, nstream):
+        for ispan in range(0, 1):
+            z_grid_dual[istream, ispan] = 0.5 * (zgrid[istream, ispan] + zgrid[istream - 1, ispan])
+            r_grid_dual[istream, ispan] = 0.5 * (rgrid[istream, ispan] + rgrid[istream - 1, ispan])
+
+    # ispan = -1 border
+    for istream in range(1, nstream):
+        for ispan in range(nspan, nspan + 1):
+            z_grid_dual[istream, ispan] = 0.5 * (zgrid[istream, ispan - 1] + zgrid[istream - 1, ispan - 1])
+            r_grid_dual[istream, ispan] = 0.5 * (rgrid[istream, ispan - 1] + rgrid[istream - 1, ispan - 1])
+
+    return z_grid_dual, r_grid_dual

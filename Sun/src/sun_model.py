@@ -1183,7 +1183,10 @@ class SunModel:
         Compute the L0 matrix, defined as L0 = Z_g(1+j*m*Omega*tau)+S_g
         :param block_i: number of the current block
         """
-        block_type = self.config.get_blocks_type()[block_i]
+        try:
+            block_type = self.config.get_blocks_type()[block_i]
+        except:
+            block_type = 'unbladed'
         m = self.config.get_circumferential_harmonic_order()
 
         if block_type == 'unbladed':

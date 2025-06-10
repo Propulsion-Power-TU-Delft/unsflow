@@ -42,6 +42,8 @@ class BodyForce:
             filepath = os.path.join(folderpath, 'meridionalFields_densityAvg.pik')
         elif averageType.lower() == 'axial_momentum':
             filepath = os.path.join(folderpath, 'meridionalFields_axialMomentumAvg.pik')
+        elif averageType.lower() == 'mass_flow':
+            filepath = os.path.join(folderpath, 'meridionalFields_massFlowAvg.pik')
         else:
             raise ValueError('Not valid average type')
         

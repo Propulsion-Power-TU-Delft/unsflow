@@ -20,7 +20,7 @@ from Utils.styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
-from Grid.src.functions import compute_picture_size, create_folder
+from Grid.src.functions import create_folder
 import os
 
 

@@ -302,10 +302,13 @@ class Config:
             return False
 
     def get_disable_body_force(self):
-        res = self.config_parser.get('SUN MODEL', 'DISABLE_BODY_FORCE')
-        if res.lower() == 'true':
-            return True
-        else:
+        try:
+            res = self.config_parser.get('SUN MODEL', 'DISABLE_BODY_FORCE')
+            if res.lower() == 'true':
+                return True
+            else:
+                return False
+        except:
             return False
 
     def get_mesh_generation_method(self):
@@ -528,7 +531,7 @@ class Config:
         return vals
     
     def get_circumferential_average_type(self):
-        choices = ['raw', 'density', 'axial_momentum']
+        choices = ['raw', 'density', 'axial_momentum', 'mass_flow']
         
         try:
             res =  str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_TYPE')).lower()
