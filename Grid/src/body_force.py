@@ -35,6 +35,7 @@ class BodyForce:
         
         folderpath = self.config.get_circumferential_average_folder_path()
         averageType = self.config.get_circumferential_average_type()
+        print("Circufemferential average type: " + averageType)
         
         if averageType.lower() == 'raw':
             filepath = os.path.join(folderpath, 'meridionalFields_rawAvg.pik')
@@ -48,24 +49,22 @@ class BodyForce:
             raise ValueError('Not valid average type')
         
         solverType = self.config.get_bladed_CFD_solver_type()
-        dataset = self.ProcessParaviewDataset(filepath=filepath, solver_type=solverType)
-                
+        dataset = self.preprocessProcessParaviewDataset(filepath=filepath, solver_type=solverType)
+        
+        # interpolate the dataset on the body force grid
         for key in dataset.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
-                # self.meridionalFields[key] = griddata_interpolation_with_linear_extrapolation(dataset['Axial_Coordinate'], 
-                #                                                                               dataset['Radial_Coordinate'], 
-                #                                                                               dataset[key], 
-                #                                                                               self.axialGrid, self.radialGrid)
                 self.meridionalFields[key] = robust_griddata_interpolation_with_linear_filler(dataset['Axial_Coordinate'], 
                                                                                               dataset['Radial_Coordinate'], 
                                                                                               dataset[key], 
                                                                                               self.axialGrid, self.radialGrid)
         
+        # now also update the grid in the dataset to be same of the body force
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
         self.meridionalFields['Radial_Coordinate'] = self.radialGrid
             
     
-    def ProcessParaviewDataset(self, filepath, solver_type, CP=1005, R=287, TREF=288.15, PREF=101300):
+    def preprocessProcessParaviewDataset(self, filepath, solver_type, CP=1005, R=287, TREF=288.15, PREF=101300):
         """
         Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
         Average type distinguish the type of average used, raw for standard circumferential.
@@ -77,6 +76,7 @@ class BodyForce:
             raise ValueError('Not valid solver type')
         print('Solver type: %s' % solver_type)
 
+        # corresponding variable names between the CFD solver and Unsflow
         variablesNames = self.get_CFD_variable_names(solver_type)
         
         with open(filepath, 'rb') as file:
@@ -88,8 +88,6 @@ class BodyForce:
         
         meridionalFields['Entropy'] = CP*np.log(meridionalFields['Temperature']/TREF)-R*np.log(meridionalFields['Pressure']/PREF)
         meridionalFields['dEntropy_dz'], meridionalFields['dEntropy_dr'] = compute_gradient_least_square(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Entropy'])
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['dEntropy_dz'], 'dEntropy_dz')
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['dEntropy_dr'], 'dEntropy_dr')
 
         meridionalFields['Velocity_Meridional'] = np.sqrt(meridionalFields['Velocity_Axial']**2 + meridionalFields['Velocity_Radial']**2)
         
@@ -98,8 +96,6 @@ class BodyForce:
         meridionalFields['Relative_Flow_Angle'] = np.arctan(meridionalFields['Velocity_Tangential_Relative']/ meridionalFields['Velocity_Axial'])
         
         meridionalFields['drUtheta_dz'], meridionalFields['drUtheta_dr'] = compute_gradient_least_square(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Velocity_Tangential']*meridionalFields['Radial_Coordinate'])
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['drUtheta_dz'], 'drUtheta_dz')
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['drUtheta_dr'], 'drUtheta_dr')
 
         # compute the 3D relative flow vector, which is generalized to radial geometries. Angle between relative velocity vector and meridional velocity vector
         meridionalFields['Relative_Flow_Angle_3D'] = np.zeros_like(meridionalFields['Relative_Flow_Angle'])
@@ -117,12 +113,7 @@ class BodyForce:
                     meridionalFields['Relative_Flow_Angle_3D'][i,j] = np.arccos((np.dot(relVelVector, meridionalVel)) / (np.linalg.norm(relVelVector) * np.linalg.norm(meridionalVel)))
                 else:
                     meridionalFields['Relative_Flow_Angle_3D'][i,j] = -np.arccos((np.dot(relVelVector, meridionalVel)) / (np.linalg.norm(relVelVector) * np.linalg.norm(meridionalVel)))
-        
-        # verify that the three angles are the same. If not, there is a problem somewhere
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_arctan2']*180/np.pi, 'beta arctan2', vmin=-70, vmax=25)
-        # contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle']*180/np.pi, 'beta arctan', vmin=-70, vmax=25)
-        contour_template(meridionalFields['Axial_Coordinate'], meridionalFields['Radial_Coordinate'], meridionalFields['Relative_Flow_Angle_3D']*180/np.pi, 'beta 3D', vmin=-70, vmax=25)
-        
+                
         return meridionalFields
     
     
@@ -255,6 +246,52 @@ class BodyForce:
                              labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     
     
+    def computeLossVersor(self, velRad, relVelTang, velAx):
+        """Computhe the array (ni,nj,3) of loss component versors, where the components are ordered as [axial, radial, tangential]
+
+        Args:
+            velRad (np.array 2D): radial velocity
+            relVelTang (np.array 2D): relative tang. velocity
+            velAx (np.array 2D): axial velocity
+        """
+        ni,nj = velRad.shape        
+        lossVersor = np.zeros((ni,nj,3))
+        for i in range(ni):
+            for j in range(nj):
+                relativeVelocity = np.array([velAx[i,j],
+                                             velRad[i,j],
+                                             relVelTang[i,j]])
+                lossVersor[i,j] = -relativeVelocity/np.linalg.norm(relativeVelocity)
+        return lossVersor
+    
+    
+    def computeTurningVersor(self, velRad, relVelTang, velAx,  n_camber_r, n_camber_t, n_camber_z):
+        """Computhe the array (ni,nj,3) of turning component versors, where the components are ordered as [axial, radial, tangential]
+
+        Args:
+            velRad (np.array 2D): radial velocity
+            relVelTang (np.array 2D): relative tang. velocity
+            velAx (np.array 2D): axial velocity
+            n_camber_r (np.array 2D): camber versor radial component
+            n_camber_t (np.array 2D): camber versor tangential component
+            n_camber_z (np.array 2D): camber versor axial component
+        """
+        ni,nj = velRad.shape        
+        turnVersor = np.zeros((ni,nj,3))
+        for i in range(ni):
+            for j in range(nj):
+                relativeVelocity = np.array([velAx[i,j],
+                                             velRad[i,j],
+                                             relVelTang[i,j]])
+                
+                camberNormal = np.array([n_camber_z[i,j], 
+                                         n_camber_r[i,j], 
+                                         n_camber_t[i,j]])
+                
+                turnVersor[i,j] = self.computeInviscidForceDirection(relativeVelocity, camberNormal)
+        return turnVersor
+    
+    
     def ComputeBodyForceMarble(self, n_camber_z, n_camber_r, n_camber_t):
         """
         Compute the body force density, using the marble thermodynamic approach based on the circumferentially averaged flow field
@@ -265,45 +302,35 @@ class BodyForce:
         self.bodyForceFields['Force_Tangential'] = self.ComputeTangentialForceMarble()
         
         # loss component versor, opposite to the relative velocity
-        ni,nj = self.bodyForceFields['Force_Viscous'].shape        
-        lossVersor = np.zeros((ni,nj,3))
-        for i in range(ni):
-            for j in range(nj):
-                relativeVelocity = np.array([self.meridionalFields['Velocity_Radial'][i,j],
-                                             self.meridionalFields['Velocity_Tangential_Relative'][i,j],
-                                             self.meridionalFields['Velocity_Axial'][i,j]])
-                lossVersor[i,j] = -relativeVelocity/np.linalg.norm(relativeVelocity)
+        lossVersor = self.computeLossVersor(self.meridionalFields['Velocity_Radial'], 
+                                            self.meridionalFields['Velocity_Tangential_Relative'], 
+                                            self.meridionalFields['Velocity_Axial'])
         
         # turning component versor, orthogonal to relative velocity
-        turnVersor = np.zeros((ni,nj,3))
-        for i in range(ni):
-            for j in range(nj):
-                relativeVelocity = np.array([self.meridionalFields['Velocity_Axial'][i,j],
-                                             self.meridionalFields['Velocity_Radial'][i,j],
-                                             self.meridionalFields['Velocity_Tangential_Relative'][i,j]])
-                camberNormal = np.array([n_camber_z[i,j], 
-                                         n_camber_r[i,j], 
-                                         n_camber_t[i,j]])
-                turnVersor[i,j] = self.computeInviscidForceDirection(relativeVelocity, camberNormal, True)
+        turnVersor = self.computeTurningVersor(self.meridionalFields['Velocity_Radial'], 
+                                               self.meridionalFields['Velocity_Tangential_Relative'], 
+                                               self.meridionalFields['Velocity_Axial'], 
+                                               n_camber_r, n_camber_t, n_camber_z)
 
         # viscous force cartesian components
-        self.bodyForceFields['Force_Viscous_Radial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,0]
-        self.bodyForceFields['Force_Viscous_Tangential'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,1]
-        self.bodyForceFields['Force_Viscous_Axial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,2]
-        self.bodyForceFields['Force_Viscous'] = np.sqrt(self.bodyForceFields['Force_Viscous_Axial']**2+
-                                                        self.bodyForceFields['Force_Viscous_Radial']**2+
-                                                        self.bodyForceFields['Force_Viscous_Tangential']**2)
+        self.bodyForceFields['Force_Viscous_Radial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,1]
+        self.bodyForceFields['Force_Viscous_Tangential'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,2]
+        self.bodyForceFields['Force_Viscous_Axial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,0]
         
         self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
-        self.bodyForceFields['Force_Inviscid'] = self.bodyForceFields['Force_Inviscid_Tangential'] / turnVersor[:,:,2]
+        self.bodyForceFields['Force_Inviscid'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'] / turnVersor[:,:,2])
         self.bodyForceFields['Force_Inviscid_Radial'] = self.bodyForceFields['Force_Inviscid'] * turnVersor[:,:,1]
         self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Inviscid'] * turnVersor[:,:,0]
-
-        
-        
         
         self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
-    
+        self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']+self.bodyForceFields['Force_Inviscid_Axial']
+        
+        # make plots to the check the correct orientation
+        offset = 10
+        for key in self.bodyForceFields.keys():
+            contour_template(self.axialGrid[:,offset:-1-offset], self.radialGrid[:,offset:-1-offset], self.bodyForceFields[key][:,offset:-1-offset], key, save_filename=key, folder_name='forceDirections')
+
+        print()
     
     def ComputeBodyForceKiwada(self, blockage):
         """Use the Kiwada Blade Force Average to extract the BF
@@ -492,14 +519,23 @@ class BodyForce:
         print(f"Saved body force fields in file: {name}!")
     
     
-    def ComputeCalibrationCoefficients(self, calibration_method, metal_angle):
+    def ComputeCalibrationCoefficients(self, calibration_method, n_camber_z, n_camber_r, n_camber_t):
+        metal_angle = np.arctan(np.sqrt(n_camber_r**2+n_camber_z**2) / n_camber_t)
+        
         if calibration_method.lower()=='lift/drag':
             self.ComputeLiftDragCalibrationCoefficients(metal_angle)
     
     
     def ComputeLiftDragCalibrationCoefficients(self, metal_angle):
+        """Computhe the lift/drag calibration coefficients
+
+        Args:
+            metal_angle (np.array 2D): metal angle of the blade
+        """
         nBlades = self.config.get_blades_number()[self.iblade]
         circumferentialPitch = 2 * np.pi * self.radialGrid / nBlades
+        
+        contour_template(self.axialGrid, self.radialGrid, metal_angle*180/np.pi, 'metal_angle [deg]')
         h_parameter = circumferentialPitch * np.cos(metal_angle)
         streamLength = compute_meridional_streamwise_coordinates(self.axialGrid, self.radialGrid)
         solidity = np.zeros_like(streamLength)
@@ -537,7 +573,7 @@ class BodyForce:
         contour_template(self.axialGrid, self.radialGrid, self.calibrationCoefficients["kn_turning"], 'kn_turning')
     
     
-    def computeInviscidForceDirection(self, w, n, tangentialComponentPositive):
+    def computeInviscidForceDirection(self, w, n, tangentialComponentPositive=True):
         w += 1e-9 # to cope with anormal cases
         w_dir = w/np.linalg.norm(w) 
         n_dir = n/np.linalg.norm(n)
