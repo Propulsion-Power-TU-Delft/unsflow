@@ -1,0 +1,3 @@
+from Grid.src.circumferential_average import circumferential_average_CFD_dataset
+
+circumferential_average_CFD_dataset(folderpath='generateData/Dataset', extraction_method='Kiwada')
