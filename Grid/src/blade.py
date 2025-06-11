@@ -2614,7 +2614,7 @@ class Blade:
         
         extractionMethod = self.config.get_body_force_extraction_method()
         if extractionMethod.lower() == 'marble':
-            self.bodyForce.ComputeBodyForceMarble(self.n_camber_r)
+            self.bodyForce.ComputeBodyForceMarble(self.n_camber_z, self.n_camber_r, self.n_camber_t)
         elif extractionMethod.lower() == 'kiwada':
             self.bodyForce.ComputeBodyForceKiwada(self.blockage)
         else:

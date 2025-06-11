@@ -255,15 +255,17 @@ class BodyForce:
                              labels[name], save_filename=save_filename + '_' + name, folder_name=self.config.get_pictures_folder_path())
     
     
-    def ComputeBodyForceMarble(self, n_camber_r):
+    def ComputeBodyForceMarble(self, n_camber_z, n_camber_r, n_camber_t):
         """
         Compute the body force density, using the marble thermodynamic approach based on the circumferentially averaged flow field
         """
         
+        # compute the basic ingredients from Marble decomposition
         self.bodyForceFields['Force_Viscous'] = self.ComputeLossForceMarble()
         self.bodyForceFields['Force_Tangential'] = self.ComputeTangentialForceMarble()
-
-        ni,nj = self.bodyForceFields['Force_Viscous'].shape
+        
+        # loss component versor, opposite to the relative velocity
+        ni,nj = self.bodyForceFields['Force_Viscous'].shape        
         lossVersor = np.zeros((ni,nj,3))
         for i in range(ni):
             for j in range(nj):
@@ -271,29 +273,34 @@ class BodyForce:
                                              self.meridionalFields['Velocity_Tangential_Relative'][i,j],
                                              self.meridionalFields['Velocity_Axial'][i,j]])
                 lossVersor[i,j] = -relativeVelocity/np.linalg.norm(relativeVelocity)
+        
+        # turning component versor, orthogonal to relative velocity
+        turnVersor = np.zeros((ni,nj,3))
+        for i in range(ni):
+            for j in range(nj):
+                relativeVelocity = np.array([self.meridionalFields['Velocity_Axial'][i,j],
+                                             self.meridionalFields['Velocity_Radial'][i,j],
+                                             self.meridionalFields['Velocity_Tangential_Relative'][i,j]])
+                camberNormal = np.array([n_camber_z[i,j], 
+                                         n_camber_r[i,j], 
+                                         n_camber_t[i,j]])
+                turnVersor[i,j] = self.computeInviscidForceDirection(relativeVelocity, camberNormal, True)
 
+        # viscous force cartesian components
         self.bodyForceFields['Force_Viscous_Radial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,0]
-        
         self.bodyForceFields['Force_Viscous_Tangential'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,1]
-        
         self.bodyForceFields['Force_Viscous_Axial'] = self.bodyForceFields['Force_Viscous']*lossVersor[:,:,2]
-        
-        self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
-        
-        self.bodyForceFields['Force_Inviscid_Radial'] = np.abs(self.bodyForceFields['Force_Inviscid_Tangential'])*np.tan(n_camber_r)
-
-        self.bodyForceFields['Force_Axial'] = self.bodyForceFields['Force_Viscous_Axial']-(self.bodyForceFields['Force_Tangential']-
-                                                self.bodyForceFields['Force_Viscous_Tangential'])*self.meridionalFields['Velocity_Tangential_Relative']/self.meridionalFields['Velocity_Axial']
-        
-        self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Axial']-self.bodyForceFields['Force_Viscous_Axial']
-
-        self.bodyForceFields['Force_Inviscid'] = np.sqrt(self.bodyForceFields['Force_Inviscid_Axial']**2+
-                                                           self.bodyForceFields['Force_Inviscid_Radial']**2+
-                                                           self.bodyForceFields['Force_Inviscid_Tangential']**2)
-        
         self.bodyForceFields['Force_Viscous'] = np.sqrt(self.bodyForceFields['Force_Viscous_Axial']**2+
                                                         self.bodyForceFields['Force_Viscous_Radial']**2+
                                                         self.bodyForceFields['Force_Viscous_Tangential']**2)
+        
+        self.bodyForceFields['Force_Inviscid_Tangential'] = self.bodyForceFields['Force_Tangential']-self.bodyForceFields['Force_Viscous_Tangential']
+        self.bodyForceFields['Force_Inviscid'] = self.bodyForceFields['Force_Inviscid_Tangential'] / turnVersor[:,:,2]
+        self.bodyForceFields['Force_Inviscid_Radial'] = self.bodyForceFields['Force_Inviscid'] * turnVersor[:,:,1]
+        self.bodyForceFields['Force_Inviscid_Axial'] = self.bodyForceFields['Force_Inviscid'] * turnVersor[:,:,0]
+
+        
+        
         
         self.bodyForceFields['Force_Radial'] = self.bodyForceFields['Force_Viscous_Radial']+self.bodyForceFields['Force_Inviscid_Radial']
     
@@ -530,3 +537,59 @@ class BodyForce:
         contour_template(self.axialGrid, self.radialGrid, self.calibrationCoefficients["kn_turning"], 'kn_turning')
     
     
+    def computeInviscidForceDirection(self, w, n, tangentialComponentPositive):
+        w += 1e-9 # to cope with anormal cases
+        w_dir = w/np.linalg.norm(w) 
+        n_dir = n/np.linalg.norm(n)
+        w_ax = w_dir[0]
+        w_rad = w_dir[1]
+        w_tan = w_dir[2]
+        n_ax = n_dir[0]
+        n_rad = n_dir[1]
+        n_tan = n_dir[2]
+        A = w_tan**2 + w_ax**2
+        B = 2 * w_rad * w_ax * n_rad
+        C = (w_tan**2 * n_rad**2) + (w_rad**2 * n_rad**2) - w_tan**2 
+        deltaEquation = B**2-4*A*C
+        
+        if deltaEquation < 0:
+            print('Delta quadratic equation negative')
+        
+        fAxial_1 = (-B + np.sqrt(deltaEquation))/2/A
+        fAxial_2 = (-B - np.sqrt(deltaEquation))/2/A
+        
+        def compute_tangential(fax):
+            ftan = (-w_ax*fax - w_rad*n_rad)/w_tan
+            return ftan
+        
+        fTangential_1 = compute_tangential(fAxial_1)
+        fTangential_2 = compute_tangential(fAxial_2)
+        
+        fRadial_1 = n_rad
+        fRadial_2 = n_rad
+        
+        fn_versor_1 = np.array([fAxial_1, fRadial_1, fTangential_1])
+        fn_versor_2 = np.array([fAxial_2, fRadial_2, fTangential_2])
+        
+        if np.dot(fn_versor_1, n) > 0:
+            fn_dir = fn_versor_1
+        else:
+            fn_dir = fn_versor_2
+        
+        # choose the versor based on the tangential component being positive or negative
+        # if tangentialComponentPositive:
+        #     if fn_versor_1[2]>=0:
+        #         fn_dir = fn_versor_1
+        #     else:
+        #         fn_dir = fn_versor_2
+        # else:
+        #     if fn_versor_1[2]<=0:
+        #         fn_dir = fn_versor_1
+        #     else:
+        #         fn_dir = fn_versor_2
+        
+        if any(math.isnan(x) for x in fn_dir):
+            print("NaN found during calculation of inviscid force direction. Radial component set to zero.")
+            fn_dir = np.array([-w_dir[2], 0, w_dir[0]])
+
+        return fn_dir
