@@ -108,3 +108,9 @@ class Config:
         W =  float(self.config_parser.get('COMPRESSOR', 'W_CHAR'))
         psi_c_0 =  float(self.config_parser.get('COMPRESSOR', 'PSI_C_0_CHAR'))
         return H, W, psi_c_0
+    
+    def get_moore_greitzer_time_lag(self):
+        return  float(self.config_parser.get('MOORE GREITZER', 'A_LAG'))
+    
+    def get_moore_greitzer_m_param(self):
+        return  float(self.config_parser.get('MOORE GREITZER', 'M_PARAM'))
