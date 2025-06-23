@@ -5,6 +5,7 @@ import pickle
 from Greitzer.src.config import Config
 from scipy.optimize import fsolve
 import os
+from scipy.integrate import odeint
 
 PICS_FOLDER = 'pics'
 RESULT_FOLDER = 'results'
@@ -117,7 +118,7 @@ class Greitzer:
         At = self.config.get_throttle_duct_area()
         Ac = self.config.get_inlet_duct_area()
         
-        B_real = 0.3*(U_ref/(2*a))*np.sqrt(Vp/(Ac*Lc))  
+        B_real = (U_ref/(2*a))*np.sqrt(Vp/(Ac*Lc))  
         G_real = Lt*Ac/(Lc*At)                      
         
         return B_real, G_real
@@ -131,3 +132,112 @@ class Greitzer:
         print()
         print('Results saved in file: ' + RESULT_FOLDER + '/' + save_filename + '.pkl')
         print()
+    
+    
+    def solveGreitzerSystem(self):
+        self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
+        self.phi = np.linspace(0,1,1000)
+        self.psi_c = self.unstalled_characteristic(self.phi, self.H_param, self.W_param, self.psi_c_0_param)
+        
+        k_valve = self.config.get_valve_coefficient()
+        self.psi_v = k_valve*self.phi**2
+        
+        def func_work_coefficient(phi):
+            """
+            Function needed by fsolve in order to find the intersection between unstalled
+            compressor curve and throttle line
+            """
+            return self.unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param) - k_valve*phi**2
+
+        initial_phi_guess = self.phi.min() + (self.phi.max()-self.phi.min())*0.5 
+        phi_eq = fsolve(func_work_coefficient,initial_phi_guess) 
+        psi_eq = k_valve*phi_eq**2 
+        
+        #time span
+        t = np.linspace(0,self.config.get_max_time(),2500)
+        a = self.config.get_sound_speed()
+        Ac = self.config.get_inlet_duct_area()
+        Vp = self.config.get_plenum_volume()
+        Lc = self.config.get_inlet_duct_length()
+        self.xi = t*a*np.sqrt(Ac/(Vp*Lc))
+        
+        #initial conditions
+        perturbation = 1e-2
+        y0 = [phi_eq[0]*(1-perturbation), 
+            phi_eq[0]*(1+perturbation), 
+            psi_eq[0]*(1-0.5*perturbation)] 
+        
+        self.B_system, self.G_system = self.compute_B_G_params()
+        
+        self.solutionGreitzer = odeint(self.greitzer3DSystem, y0, self.xi, args=(self.B_system, self.G_system, k_valve))
+        
+
+    def greitzer3DSystem(self, y, xi, B, G, k_valve):
+        """
+        Defines the differential equations for the Greitzer model
+        (as found in the thesis of Sündstrom).
+
+        Arguments:
+            y :  vector of the state variables
+            xi : non dimensional time
+            B :  B parameter
+            G :  G parameter
+            
+        State variables:
+            x1 : compressor flow coefficient
+            x2 : throttle flow coefficient
+            x3 : compressor work coefficient
+        """
+        x1, x2, x3 = y
+        dydt = [B * (self.unstalled_characteristic(x1, self.H_param, self.W_param, self.psi_c_0_param) - x3),
+                (x3 - k_valve*x2**2) * B/G,
+                (x1-x2)/B]
+        return dydt
+            
+    
+    def unstalled_characteristic(self, phi, H, W, psi_c_0):
+            """
+            It computes the unstalled characteristic of the compressor using the cubic model defined in literature
+
+            Arguments:
+                phi :  flow coefficient
+                H : H parameter
+                W : W parameter
+                psi_c_0 : performance at zero flow coefficient
+            """
+            return psi_c_0 + H * (1 + 1.5*(phi/W - 1) - 0.5*(phi/W -1)**3)
+    
+    def plotTemporalEvolutionGreitzer(self, save_filename):
+        os.makedirs(PICS_FOLDER, exist_ok=True)
+        
+        fig, axes = plt.subplots(3,1, figsize=(10,7))
+        axes[0].set_ylabel(r'$\Phi_{c}$')
+        axes[0].plot(self.xi, self.solutionGreitzer[:,0])
+        axes[1].set_ylabel(r'$\Phi_{t}$')
+        axes[1].plot(self.xi, self.solutionGreitzer[:,1])
+        axes[2].set_ylabel(r'$\Psi_p$')
+        axes[2].plot(self.xi, self.solutionGreitzer[:,2])
+        axes[2].set_xlabel(r'$\xi $')
+        for axx in axes:
+            axx.grid(alpha=grid_opacity)
+        for axx in axes[0:-1]:
+            axx.set_xticklabels([])
+        if save_filename is not None:
+            plt.savefig(PICS_FOLDER+'/'+save_filename+'_temporal_evolution.pdf', bbox_inches='tight')
+    
+    
+    def plotTrajectoryGreitzer(self, save_filename):
+        os.makedirs(PICS_FOLDER, exist_ok=True)
+        
+        plt.figure()
+        plt.plot(self.phi, self.psi_c,linewidth=2.0,label='Compressor')
+        plt.plot(self.phi, self.psi_v,linewidth=2.0,label='Throttle')
+        plt.plot(self.solutionGreitzer[:,0], self.solutionGreitzer[:,2],'--k',linewidth=1.0, label = 'Transient')
+        plt.plot(self.solutionGreitzer[0,0], self.solutionGreitzer[0,2], 'ko')
+        plt.ylabel(r'$\Psi$')
+        plt.xlabel(r'$\Phi_c$')
+        plt.legend()
+        plt.grid(alpha=grid_opacity)
+        if save_filename is not None:
+            plt.savefig(PICS_FOLDER+'/'+save_filename+'_trajectory.pdf', bbox_inches='tight')
+        

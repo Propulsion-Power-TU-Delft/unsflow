@@ -81,6 +81,9 @@ class Config:
     def get_throttle_duct_length(self):
         return float(self.config_parser.get('COMPRESSION SYSTEM', 'THROTTLE_DUCT_LENGTH'))
     
+    def get_max_time(self):
+        return float(self.config_parser.get('SIMULATION', 'MAX_TIME'))
+    
     def get_valve_coefficient(self):
         return float(self.config_parser.get('COMPRESSION SYSTEM', 'K_VALVE'))
 
@@ -99,3 +102,9 @@ class Config:
         omega = self.get_omega()
         r_ref = self.get_reference_radius()
         return omega*r_ref
+
+    def get_unstalled_characteristic_params(self):
+        H =  float(self.config_parser.get('COMPRESSOR', 'H_CHAR'))
+        W =  float(self.config_parser.get('COMPRESSOR', 'W_CHAR'))
+        psi_c_0 =  float(self.config_parser.get('COMPRESSOR', 'PSI_C_0_CHAR'))
+        return H, W, psi_c_0
