@@ -62,6 +62,8 @@ class BodyForce:
         # now also update the grid in the dataset to be same of the body force
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
         self.meridionalFields['Radial_Coordinate'] = self.radialGrid
+        
+        
             
     
     def preprocessProcessParaviewDataset(self, filepath, solver_type, CP=1005, R=287, TREF=288.15, PREF=101300):
@@ -519,11 +521,13 @@ class BodyForce:
         print(f"Saved body force fields in file: {name}!")
     
     
-    def ComputeCalibrationCoefficients(self, calibration_method, n_camber_z, n_camber_r, n_camber_t):
+    def ComputeCalibrationCoefficients(self, calibration_method, n_camber_z, n_camber_r, n_camber_t, blockage):
         metal_angle = np.arctan(np.sqrt(n_camber_r**2+n_camber_z**2) / n_camber_t)
         
         if calibration_method.lower()=='lift/drag':
             self.ComputeLiftDragCalibrationCoefficients(metal_angle)
+        elif calibration_method.lower()=='hall-thollet':
+            self.ComputeHallTholletCalibrationCoefficients(n_camber_z, n_camber_r, n_camber_t, blockage)
     
     
     def ComputeLiftDragCalibrationCoefficients(self, metal_angle):
@@ -572,6 +576,46 @@ class BodyForce:
         self.calibrationCoefficients["kn_turning"] = self.bodyForceFields["Force_Inviscid"] * h_parameter / (relVelMag**2 * np.abs(deviation))
         contour_template(self.axialGrid, self.radialGrid, self.calibrationCoefficients["kn_turning"], 'kn_turning')
     
+    
+    def ComputeHallTholletCalibrationCoefficients(self, n_camber_z, n_camber_r, n_camber_t, blockage):
+        """Computhe the hall/thollet calibration coefficients
+        """
+        nBlades = self.config.get_blades_number()[self.iblade]
+        circumferentialPitch = 2 * np.pi * self.radialGrid / nBlades
+        
+        
+        deviationAngle = np.zeros_like(self.axialGrid)
+        for i in range(deviationAngle.shape[0]):
+            for j in range(deviationAngle.shape[1]):
+                Wn = self.meridionalFields['Velocity_Axial'][i,j] * n_camber_z[i,j] + self.meridionalFields['Velocity_Radial'][i,j] * n_camber_r[i,j] + self.meridionalFields['Velocity_Tangential_Relative'][i,j] * n_camber_t[i,j]
+                Wmag = np.sqrt(self.meridionalFields['Velocity_Axial'][i,j]**2 + self.meridionalFields['Velocity_Radial'][i,j]**2 + self.meridionalFields['Velocity_Tangential_Relative'][i,j]**2)
+                deviationAngle[i,j] = -np.arcsin(Wn/Wmag)
+        
+        contour_template(self.axialGrid, self.radialGrid, deviationAngle*180/np.pi, 'deviation angle [deg]', vmin=4, vmax=4)
+        
+        fnThollet = np.zeros_like(self.bodyForceFields["Force_Inviscid"])
+        for i in range(fnThollet.shape[0]):
+            for j in range(fnThollet.shape[1]):
+                wmag = np.sqrt(self.meridionalFields['Velocity_Axial'][i,j]**2 + self.meridionalFields['Velocity_Radial'][i,j]**2 + self.meridionalFields['Velocity_Tangential_Relative'][i,j]**2)
+                b = blockage[i,j]
+                s = circumferentialPitch[i,j]
+                nt = n_camber_t[i,j]
+                delta = deviationAngle[i,j]
+                relMach = wmag / np.sqrt(1.4*self.meridionalFields['Pressure'][i,j]/self.meridionalFields['Density'][i,j])
+                kmach = self.computeKmach(relMach)
+                fnThollet[i,j] = wmag**2 / 2 / s / b / np.abs(nt) * 2 * np.pi * np.abs(delta) * kmach
+        
+        contour_template(self.axialGrid, self.radialGrid, fnThollet, 'fnThollet')
+                
+        print()
+    
+    
+    def computeKmach(self, relMach):
+        if relMach<=1:
+            k = np.minimum(1/np.sqrt(1-relMach**2), 3)
+        else:
+            k = np.minimum(4/2/np.pi/np.sqrt(relMach**2-1), 3)
+        return k
     
     def computeInviscidForceDirection(self, w, n, tangentialComponentPositive=True):
         w += 1e-9 # to cope with anormal cases

@@ -557,12 +557,9 @@ class Config:
         return res
     
     def get_body_force_calibration_method(self):
-        choices = ['lift/drag']
+        choices = ['lift/drag', 'hall-thollet']
         
-        try:
-            res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
-        except:
-            res = choices[0] # default
+        res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
         
         if res not in choices:
             raise ValueError(f'Invalid option CALIBRATION_METHOD. Possible options are {choices}.')

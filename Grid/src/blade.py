@@ -2623,7 +2623,7 @@ class Blade:
         self.bodyForce.HubShroudBodyForceExtrapolation()
         
         calibrationMethod = self.config.get_body_force_calibration_method()
-        self.bodyForce.ComputeCalibrationCoefficients(calibrationMethod, self.n_camber_z, self.n_camber_r, self.n_camber_t)
+        self.bodyForce.ComputeCalibrationCoefficients(calibrationMethod, self.n_camber_z, self.n_camber_r, self.n_camber_t, self.blockage)
         
     
     def interpolate_body_force(self):

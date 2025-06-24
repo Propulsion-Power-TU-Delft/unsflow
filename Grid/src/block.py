@@ -115,6 +115,11 @@ class Block:
                                               'solidity': np.zeros((self.nstream, self.nspan)),
                                               'h_parameter': np.zeros((self.nstream, self.nspan)),
                                               'kn_turning': np.zeros((self.nstream, self.nspan))}
+        elif self.config.get_body_force_calibration_method()=='hall-thollet':
+            self.BFCalibrationCoefficients = {'Model': 'hall-thollet',
+                                              'Kn': np.zeros((self.nstream, self.nspan)),
+                                              'Kf': np.zeros((self.nstream, self.nspan)),
+                                              'Kd': np.zeros((self.nstream, self.nspan))}
         else:
             raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)
