@@ -557,14 +557,17 @@ class Config:
         return res
     
     def get_body_force_calibration_method(self):
-        choices = ['lift/drag', 'hall-thollet']
-        
-        res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
-        
-        if res not in choices:
-            raise ValueError(f'Invalid option CALIBRATION_METHOD. Possible options are {choices}.')
-        
-        return res
+        try:
+            choices = ['lift/drag', 'hall-thollet']
+            
+            res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
+            
+            if res not in choices:
+                raise ValueError(f'Invalid option CALIBRATION_METHOD. Possible options are {choices}.')
+            
+            return res
+        except:
+            return 'lift/drag'
 
     def get_circumferential_average_folder_path(self):
         return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FOLDER_PATH'))

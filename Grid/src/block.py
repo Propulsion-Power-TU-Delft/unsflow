@@ -107,19 +107,20 @@ class Block:
                           "Force_Tangential": np.zeros((self.nstream, self.nspan)),
                           "AngularMomentumDerivative": np.zeros((self.nstream, self.nspan)),
                           "EntropyDerivative": np.zeros((self.nstream, self.nspan))}
+        
         if self.config.get_body_force_calibration_method()=='lift/drag':
             self.BFCalibrationCoefficients = {'Model': 'lift/drag',
-                                              'beta_0': np.zeros((self.nstream, self.nspan)),
-                                              'kp_etaMax': np.zeros((self.nstream, self.nspan)),
-                                              'beta_etaMax': np.zeros((self.nstream, self.nspan)),
-                                              'solidity': np.zeros((self.nstream, self.nspan)),
-                                              'h_parameter': np.zeros((self.nstream, self.nspan)),
-                                              'kn_turning': np.zeros((self.nstream, self.nspan))}
+                                            'beta_0': np.zeros((self.nstream, self.nspan)),
+                                            'kp_etaMax': np.zeros((self.nstream, self.nspan)),
+                                            'beta_etaMax': np.zeros((self.nstream, self.nspan)),
+                                            'solidity': np.zeros((self.nstream, self.nspan)),
+                                            'h_parameter': np.zeros((self.nstream, self.nspan)),
+                                            'kn_turning': np.zeros((self.nstream, self.nspan))}
         elif self.config.get_body_force_calibration_method()=='hall-thollet':
             self.BFCalibrationCoefficients = {'Model': 'hall-thollet',
-                                              'Kn': np.zeros((self.nstream, self.nspan)),
-                                              'Kf': np.zeros((self.nstream, self.nspan)),
-                                              'Kd': np.zeros((self.nstream, self.nspan))}
+                                            'Kn': np.zeros((self.nstream, self.nspan)),
+                                            'Kf': np.zeros((self.nstream, self.nspan)),
+                                            'Kd': np.zeros((self.nstream, self.nspan))}
         else:
             raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)
