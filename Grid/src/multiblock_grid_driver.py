@@ -9,7 +9,7 @@ from Grid.src.multiblock import MultiBlock
 from Grid.src.su2_mesh_generator import generate_SU2mesh
 from Grid.src.bfm_writer import BFM_Writer
 from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.functions import contour_template
+from Grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 
 
 class MultiBlockGridDriver:
@@ -106,6 +106,8 @@ class MultiBlockGridDriver:
         block.sample_hub_shroud()
         block.sample_inlet_outlet()
         block.compute_grid_points()
+        block.streamwise_normalized_grid = compute_meridional_streamwise_coordinates(block.z_grid_cg, block.r_grid_cg, normalize=True)
+        block.spanwise_normalized_grid = compute_meridional_spanwise_coordinates(block.z_grid_cg, block.r_grid_cg, normalize=True)
         return block
         
     
@@ -144,6 +146,8 @@ class MultiBlockGridDriver:
             
             # compute the meridional grid
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
+            self.blades[iblade].streamwise_normalized_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
+            self.blades[iblade].spanwise_normalized_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
             self.blades[iblade].compute_meridional_coordinates()
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
