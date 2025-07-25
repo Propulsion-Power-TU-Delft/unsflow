@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from Utils.styles import *
-from Grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates
+from Grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
 from .curve import Curve
 from Sun.src.general_functions import print_banner_begin, print_banner_end
 from Grid.src.config import Config
@@ -121,6 +121,17 @@ class Block:
                                             'Kn': np.zeros((self.nstream, self.nspan)),
                                             'Kf': np.zeros((self.nstream, self.nspan)),
                                             'Kd': np.zeros((self.nstream, self.nspan))}
+        elif self.config.get_body_force_calibration_method()=='inference':
+            inferencePolyOrder = 3 # for now this is hard coded for a cubic inference
+            self.inferenceCoefficients = {"fn_3": np.zeros((self.nstream, self.nspan)),
+                                          "fn_2": np.zeros((self.nstream, self.nspan)),
+                                          "fn_1": np.zeros((self.nstream, self.nspan)),
+                                          "fn_0": np.zeros((self.nstream, self.nspan)),
+                                          "fp_3": np.zeros((self.nstream, self.nspan)),
+                                          "fp_2": np.zeros((self.nstream, self.nspan)),
+                                          "fp_1": np.zeros((self.nstream, self.nspan)),
+                                          "fp_0": np.zeros((self.nstream, self.nspan))}
+        
         else:
             raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)
@@ -820,5 +831,24 @@ class Block:
         self.bodyForce["AngularMomentumDerivative"] = bodyForceObj.meridionalFields["AngularMomentumDerivative"]
         self.bodyForce["EntropyDerivative"] = bodyForceObj.meridionalFields["EntropyDerivative"]
         self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
-
+    
+    def add_inference_info(self, fnCoeffs, fpCoeffs):
+        assert fnCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
+        assert fpCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
+        
+        # the coefficients are ordered in descending order of polynomial power
+        self.inferenceCoefficients["fn_3"] = fnCoeffs[:, :, 0]
+        self.inferenceCoefficients["fn_2"] = fnCoeffs[:, :, 1]
+        self.inferenceCoefficients["fn_1"] = fnCoeffs[:, :, 2]
+        self.inferenceCoefficients["fn_0"] = fnCoeffs[:, :, 3]
+        
+        self.inferenceCoefficients["fp_3"] = fpCoeffs[:, :, 0]
+        self.inferenceCoefficients["fp_2"] = fpCoeffs[:, :, 1]
+        self.inferenceCoefficients["fp_1"] = fpCoeffs[:, :, 2]
+        self.inferenceCoefficients["fp_0"] = fpCoeffs[:, :, 3]
+    
+    def PlotInferenceCoefficients(self, save_filename):
+        for key in self.inferenceCoefficients.keys():
+            contour_template(self.z_grid_cg, self.r_grid_cg, self.inferenceCoefficients[key], 
+                            key, save_filename=save_filename + '_inference_' + key, folder_name=self.config.get_pictures_folder_path())
 

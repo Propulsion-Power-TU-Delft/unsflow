@@ -66,11 +66,15 @@ class MultiBlock:
         self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative'][row_slice, :]
         self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative'][row_slice, :]
 
-        self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients.copy()
-        for key in self.BFCalibrationCoefficients:
-            if key.lower() != 'model':
-                self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][row_slice, :]
-
+        # self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients.copy()
+        # for key in self.BFCalibrationCoefficients:
+        #     if key.lower() != 'model':
+        #         self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][row_slice, :]
+        
+        self.inferenceCoefficients = self.blocks[0].inferenceCoefficients.copy()
+        for key in self.inferenceCoefficients:
+            self.inferenceCoefficients[key] = self.inferenceCoefficients[key][row_slice, :]
+        
         self.nBlades = self.blocks[0].nBlades[row_slice, :]
         self.bladePresent = self.blocks[0].bladePresent[row_slice, :]
         self.theta_camber = self.blocks[0].theta_camber[row_slice, :]
@@ -102,13 +106,16 @@ class MultiBlock:
             self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[streamSlice, :]), axis=0)
             self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[streamSlice, :]), axis=0)
             
-            for key in self.BFCalibrationCoefficients.keys():
-                if key.lower()!='model':
-                    self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][streamSlice, :]), axis=0)
+            # for key in self.BFCalibrationCoefficients.keys():
+            #     if key.lower()!='model':
+            #         self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][streamSlice, :]), axis=0)
+            
+            for key in self.inferenceCoefficients.keys():
+                self.inferenceCoefficients[key] = np.concatenate((self.inferenceCoefficients[key], block.inferenceCoefficients[key][streamSlice, :]), axis=0)
             
             bladeFlag *= -1 # the next block will be unbladed
             
-        self.theta_camber =gaussian_filter(self.theta_camber, sigma=3)
+        self.theta_camber = gaussian_filter(self.theta_camber, sigma=3)
 
 
         self.z_grid_points = self.z_grid_cg
@@ -675,6 +682,12 @@ class MultiBlock:
                 if isinstance(self.BFCalibrationCoefficients[key], np.ndarray):
                     mesh[key] = self.BFCalibrationCoefficients[key]
         
+        if 'inference_coefficients' in outputFields:
+            print(f"Inference coefficients for Neri model added to the CTurboBFM mesh file")
+            for key in self.inferenceCoefficients.keys():
+                if isinstance(self.inferenceCoefficients[key], np.ndarray):
+                    mesh[key] = self.inferenceCoefficients[key]
+        
         outputTopology = self.config.get_mesh_output_topology()
         
         if outputTopology.lower() == 'axisymmetric':
@@ -780,10 +793,18 @@ class MultiBlock:
         total_span = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg)
         contour_template(self.z_grid_cg, self.r_grid_cg, total_span, r'Spanwise Coord [m]', save_filename='multiblock_totalSpanLength', folder_name=self.config.get_pictures_folder_path())
         
-        for key in self.BFCalibrationCoefficients.keys():
-            if key.lower()!='model':
-                contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
-
+        try:
+            for key in self.BFCalibrationCoefficients.keys():
+                if key.lower()!='model':
+                    contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
+        except:
+            pass
+        
+        try:
+            for key in self.inferenceCoefficients.keys():
+                contour_template(self.z_grid_cg, self.r_grid_cg, self.inferenceCoefficients[key], 'inferenceCoefficients %s' %key, save_filename='multiblock_inference_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
+        except:
+            pass
 
         contour_template(self.z_grid_cg, self.r_grid_cg, self.force_axial, r'$f_{ax} \ \rm{[N/kg]}$', save_filename='multiblock_forceAxial', folder_name=self.config.get_pictures_folder_path())
         contour_template(self.z_grid_cg, self.r_grid_cg, self.force_radial, r'$f_{r} \ \rm{[N/kg]}$', save_filename='multiblock_forceRadial', folder_name=self.config.get_pictures_folder_path())

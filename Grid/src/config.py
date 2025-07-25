@@ -496,6 +496,16 @@ class Config:
         except:
             return False # default
     
+    def perform_body_force_inference(self):
+        try:
+            val = str(self.config_parser.get('BODY FORCE', 'PERFORM_BODY_FORCE_INFERENCE')).lower()
+            if val == 'yes' or val == 'true':
+                return True
+            else:
+                return False
+        except:
+            return False # default
+    
     def perform_body_force_interpolation(self):
         try:
             val = str(self.config_parser.get('BODY FORCE', 'PERFORM_BODY_FORCE_INTERPOLATION')).lower()
@@ -508,6 +518,12 @@ class Config:
     
     def get_blade_body_force_filepath(self, iblade):
         value = str(self.config_parser.get('BODY FORCE', 'BLADE_BODY_FORCE_PATH'))
+        values = [str(val.strip()) for val in value.split(',')]
+        return values[iblade]
+    
+    
+    def get_body_force_inference_path(self, iblade):
+        value = str(self.config_parser.get('BODY FORCE', 'BLADES_BODY_FORCE_INFERENCE_PATH'))
         values = [str(val.strip()) for val in value.split(',')]
         return values[iblade]
     
@@ -558,7 +574,7 @@ class Config:
     
     def get_body_force_calibration_method(self):
         try:
-            choices = ['lift/drag', 'hall-thollet']
+            choices = ['lift/drag', 'hall-thollet', 'inference']
             
             res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
             
@@ -567,7 +583,7 @@ class Config:
             
             return res
         except:
-            return 'lift/drag'
+            return 'inference'
 
     def get_circumferential_average_folder_path(self):
         return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FOLDER_PATH'))

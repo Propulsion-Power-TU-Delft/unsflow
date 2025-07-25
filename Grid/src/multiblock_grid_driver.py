@@ -189,16 +189,20 @@ class MultiBlockGridDriver:
                 self.blades[iblade].extract_body_force(self.blades[iblade].blade_metal_angle) 
             elif self.config.perform_body_force_interpolation(): # interpolate from another file
                 self.blades[iblade].interpolate_body_force()
+            elif self.config.perform_body_force_inference():
+                self.blades[iblade].infer_body_force()
+                self.blocks[iblock].add_inference_info(self.blades[iblade].inviscidForceInference, self.blades[iblade].viscousForceInference)
             else:
                 print("No body force reconstruction requested.")
             
-            try:
-                self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-                self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-                self.blades[iblade].bodyForce.PlotCalibrationCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
-                self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
-            except:
-                pass
+            # try:
+            #     # self.blades[iblade].bodyForce.PlotCircumferentiallyAveragedFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            #     # self.blades[iblade].bodyForce.PlotBodyForceFields(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            #     # self.blades[iblade].bodyForce.PlotCalibrationCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            #     # self.blocks[iblock].PlotInferenceCoefficients(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
+            #     # self.blocks[iblock].add_body_force_info(self.blades[iblade].bodyForce)
+            # except:
+            #     pass
             
                 
             
