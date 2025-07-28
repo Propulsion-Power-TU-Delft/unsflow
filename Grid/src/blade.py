@@ -2722,10 +2722,10 @@ class Blade:
         self.inviscidForceInference, self.viscousForceInference = self.inferBodyForcePolynomials(coeffMatrixInference, (streamwiseCoord, spanwiseCoord))
         
         # now pad the coefficients for those points out of the limits of robust interpolation
-        hubLimit = 0.035
-        shroudLimit = 0.95
-        leLimit = 0.02
-        teLimit = 0.98
+        hubLimit = 0.10
+        shroudLimit = 0.9
+        leLimit = 0.05
+        teLimit = 0.95
         ni, nj = streamwiseCoord.shape
         
         # stream direction padding
@@ -2756,6 +2756,35 @@ class Blade:
                 self.inviscidForceInference[i, idxOut, :] = self.inviscidForceInference[i, idxRef, :]
                 self.viscousForceInference[i, idxOut, :] = self.viscousForceInference[i, idxRef, :]
         
+        
+        # # stream direction padding
+        # for j in range(nj):
+        #     idxOut = np.where(streamwiseCoord[:,j] < leLimit)
+        #     if idxOut[0].size > 0:
+        #         idxRef = idxOut[0].max()+1
+        #         self.inviscidForceInference[idxOut, j, :] = 0
+        #         self.viscousForceInference[idxOut, j, :] = 0
+            
+        #     idxOut = np.where(streamwiseCoord[:,j] > teLimit)
+        #     if idxOut[0].size > 0:
+        #         idxRef = idxOut[0].min()-1
+        #         self.inviscidForceInference[idxOut, j, :] = 0
+        #         self.viscousForceInference[idxOut, j, :] = 0
+        
+        # # span direction padding
+        # for i in range(ni):
+        #     idxOut = np.where(spanwiseCoord[i,:] < hubLimit)
+        #     if idxOut[0].size > 0:
+        #         idxRef = idxOut[0].max()+1
+        #         self.inviscidForceInference[i, idxOut, :] = 0
+        #         self.viscousForceInference[i, idxOut, :] = 0
+            
+        #     idxOut = np.where(spanwiseCoord[i,:] > shroudLimit)
+        #     if idxOut[0].size > 0:
+        #         idxRef = idxOut[0].min()-1
+        #         self.inviscidForceInference[i, idxOut, :] = 0
+        #         self.viscousForceInference[i, idxOut, :] = 0
+        
 
         
     def inferBodyForcePolynomials(self, coeffMatrixInference, features):
@@ -2763,45 +2792,61 @@ class Blade:
         spanwiseData = coeffMatrixInference['Spanwise']
         coeffMatrixInviscid = coeffMatrixInference['coeffMatrixInviscid']
         coeffMatrixViscous = coeffMatrixInference['coeffMatrixViscous']
+        
+        stream_min_max = coeffMatrixInference['Streamwise_min_max']
+        span_min_max = coeffMatrixInference['Spanwise_min_max']
+        
 
         streamwiseEval = features[0]
         spanwiseEval = features[1]
         
         ni,nj = streamwiseEval.shape
-        nk = coeffMatrixInviscid.shape[2]
+        nk = coeffMatrixInviscid.shape[1]
         
         inviscidCoeff = np.zeros((ni,nj,nk))
         viscousCoeff = np.zeros((ni,nj,nk))
         
-        for i in range(ni):
-            for j in range(nj):
-                st = streamwiseEval[i,j]
-                sp = spanwiseEval[i,j]
+        # linear interpolation manual
+        # for i in range(ni):
+        #     for j in range(nj):
+        #         st = streamwiseEval[i,j]
+        #         sp = spanwiseEval[i,j]
                 
-                # Compute squared Euclidean distance from each grid point to the target
-                distSquared = (streamwiseData - st)**2 + (spanwiseData - sp)**2
+        #         # Compute squared Euclidean distance from each grid point to the target
+        #         distSquared = (streamwiseData - st)**2 + (spanwiseData - sp)**2
                 
-                # Get indices of N nearest neighbors
-                N = 4
-                distances = distSquared.ravel()
-                nearest_indices_flat = np.argpartition(distances, N)[:N]
-                nearest_indices_2d = np.array(np.unravel_index(nearest_indices_flat, streamwiseData.shape)).T
+        #         # Get indices of N nearest neighbors
+        #         N = 4
+        #         distances = distSquared.ravel()
+        #         nearest_indices_flat = np.argpartition(distances, N)[:N]
+        #         nearest_indices_2d = np.array(np.unravel_index(nearest_indices_flat, streamwiseData.shape)).T
                 
-                distSquaredNeighbors = distances[nearest_indices_flat]
-                distSquaredNeighbors += np.finfo(float).eps # regularization
+        #         distSquaredNeighbors = distances[nearest_indices_flat]
+        #         distSquaredNeighbors += np.finfo(float).eps # regularization
                 
-                denominator = np.sum(1 / distSquaredNeighbors) # denominator of interpolation
-                for iPoint in range(N):
-                    d2 = distSquaredNeighbors[iPoint]
+        #         denominator = np.sum(1 / distSquaredNeighbors) # denominator of interpolation
+        #         for iPoint in range(N):
+        #             d2 = distSquaredNeighbors[iPoint]
             
-                    idxI = nearest_indices_2d[iPoint][0]
-                    idxJ = nearest_indices_2d[iPoint][1]
+        #             idxI = nearest_indices_2d[iPoint][0]
+        #             idxJ = nearest_indices_2d[iPoint][1]
                     
-                    inviscidCoeff[i,j] += coeffMatrixInviscid[idxI, idxJ] / d2
-                    viscousCoeff[i,j] += coeffMatrixViscous[idxI, idxJ] / d2
+        #             inviscidCoeff[i,j] += coeffMatrixInviscid[idxI, idxJ] / d2
+        #             viscousCoeff[i,j] += coeffMatrixViscous[idxI, idxJ] / d2
                 
-                inviscidCoeff[i,j] /= denominator
-                viscousCoeff[i,j] /= denominator
+        #         inviscidCoeff[i,j] /= denominator
+        #         viscousCoeff[i,j] /= denominator
+                
+        #automatic
+        for k in range(nk):
+            inviscidCoeff[:,:,k] = griddata_interpolation_with_nearest_filler(inverse_rescaling_minmax(streamwiseData, stream_min_max), 
+                                                                              inverse_rescaling_minmax(spanwiseData, span_min_max), 
+                                                                              coeffMatrixInviscid[:,k], 
+                                                                              streamwiseEval, spanwiseEval)
+            viscousCoeff[:,:,k] = griddata_interpolation_with_nearest_filler(inverse_rescaling_minmax(streamwiseData, stream_min_max), 
+                                                                              inverse_rescaling_minmax(spanwiseData, span_min_max), 
+                                                                              coeffMatrixViscous[:,k], 
+                                                                              streamwiseEval, spanwiseEval)
                 
         return inviscidCoeff, viscousCoeff
     

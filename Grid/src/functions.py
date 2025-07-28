@@ -1701,3 +1701,16 @@ def compute_dual_grid(zgrid, rgrid):
             r_grid_dual[istream, ispan] = 0.5 * (rgrid[istream, ispan - 1] + rgrid[istream - 1, ispan - 1])
 
     return z_grid_dual, r_grid_dual
+
+
+def inverse_rescaling_minmax(array, min_max):
+    min = min_max[0]
+    max = min_max[1]
+    result = min + (max - min) * array
+    return result
+
+def rescale_min_max(array):
+    min = array.min()
+    max = array.max()
+    result = (array - min) / (max - min)
+    return result, min, max
