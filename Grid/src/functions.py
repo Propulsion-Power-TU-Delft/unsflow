@@ -20,6 +20,8 @@ from shapely.geometry import LineString
 from matplotlib.ticker import FormatStrFormatter
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
+import plotly.graph_objects as go
+import plotly.io as pio
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -1222,7 +1224,7 @@ def compute_gradient_least_square(x, y, z, enlargeDomain = True):
         return dzdx, dzdy
 
 
-def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False):
+def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False, contour_levels=True):
         """
         Template function to create contours.
 
@@ -1267,8 +1269,10 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         # tick_values = [minval, (minval + maxval) / 2, maxval]
         # cbar.ax.xaxis.set_major_formatter(FormatStrFormatter('%.2e'))
         # cbar.set_ticks(tick_values)  # Set custom tick locations
-
-        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
+        
+        if contour_levels:
+            contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
+        
         plt.title(name)
         if ticks is not True:
             ax.set_xticks([])
@@ -1277,9 +1281,9 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         if white_grid:
             ni,nj = z.shape
             for i in range(ni, 3):
-                plt.plot(z[i,:], r[i,:], 'w', linewidth=0.2)
+                plt.plot(z[i,:], r[i,:], 'w', linewidth=2.5)
             for j in range(nj, 3):
-                plt.plot(z[:,j], r[:,j], 'w', linewidth=0.2)
+                plt.plot(z[:,j], r[:,j], 'w', linewidth=2.5)
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
 
@@ -1714,3 +1718,133 @@ def rescale_min_max(array):
     max = array.max()
     result = (array - min) / (max - min)
     return result, min, max
+
+
+def scatter3d_template_plotly(x, y, z, c, xname, yname, zname, fieldname,
+                               save_filename=None, colorbar=True):
+
+    scatter = go.Scatter3d(
+        x=x, y=y, z=z,
+        mode='markers',
+        marker=dict(
+            size=5,
+            color=c,
+            colorscale='Jet',
+            colorbar=dict(title=fieldname) if colorbar else None,
+            showscale=colorbar
+        )
+    )
+
+    layout = go.Layout(
+    scene=dict(
+        xaxis_title=xname,
+        yaxis_title=yname,
+        zaxis_title=zname,
+        aspectmode='data',  # or 'cube', 'manual'
+        # Optional: set manual aspect ratio if needed
+        # aspectratio=dict(x=1, y=1, z=1)
+    ),
+    margin=dict(l=0, r=0, b=0, t=0)
+    )
+
+    fig = go.Figure(data=[scatter], layout=layout)
+
+    fig.show()
+
+
+
+
+
+# template function for the scatter plots
+def scatter_template(x, y, z, xname='Streamwise', yname='Spanwise', zname='Z', save_filename = None, colorbar=True, true_aspect_ratio=True):
+    fig, ax = plt.subplots()
+    sc = ax.scatter(x, y, c=z, cmap=color_map, s=10)
+    ax.set_xlabel(xname)
+    ax.set_ylabel(yname)
+    if colorbar:
+        plt.colorbar(sc)
+    if true_aspect_ratio:
+        ax.set_aspect('equal')
+    plt.title(zname)
+    if save_filename is not None:
+        plt.savefig(save_filename, bbox_inches='tight')
+
+
+# template function for the triangulate contour of scatter plots
+def tricontour_template(x, y, z, xname='Streamwise', yname='Spanwise', zname='Z', save_filename = None, colorbar=True):
+    plt.figure()
+    contour = plt.tricontourf(x, y, z, levels=N_levels, cmap=color_map)
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.axis('equal')
+    if colorbar:
+        plt.colorbar(contour)
+    plt.title(zname)
+    if save_filename is not None:
+        plt.savefig(save_filename, bbox_inches='tight')
+
+
+
+
+
+# 3D scatter plot with color as 4th dimension
+def scatter3d_template(x, y, z, c, xname, yname, zname, fieldname, save_filename=None, colorbar=True):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    sc = ax.scatter(x, y, z, c=c, cmap=color_map, s=10)
+
+    ax.set_xlabel(xname)
+    ax.set_ylabel(yname)
+    ax.set_zlabel(zname)
+
+    if colorbar:
+        cbar = plt.colorbar(sc, ax=ax, shrink=0.6)
+        cbar.set_label(fieldname)
+
+    if save_filename is not None:
+        plt.savefig(save_filename, bbox_inches='tight')
+
+
+# statistics plot
+def statistic_plot_template(reference, inferred, nameLabel, save_filename=None):
+
+    # Flatten and clean the data
+    inferred = inferred.flatten()
+    reference = reference.flatten()
+
+    # Error (residual)
+    error = (inferred - reference)/(np.max(reference)-np.min(reference))
+
+    # R²
+    r = np.corrcoef(reference, inferred)[0, 1]
+    r_squared = r**2
+
+    # Plot
+    fig, axs = plt.subplots(1, 2, figsize=(16, 6))
+
+    # === 1:1 Comparison Plot ===
+    lims = [min(reference.min(), inferred.min()), max(reference.max(), inferred.max())]
+    axs[0].plot(lims, lims, '--k', lw=3)
+    axs[0].scatter(reference, inferred, c='C0', alpha=0.7, edgecolors='blue')
+    axs[0].set_xlabel(fr'{nameLabel} Reference')
+    axs[0].set_ylabel(fr'{nameLabel} Inferred')
+    axs[0].set_title(rf'$R^2$ = {r_squared:.3f}')
+    axs[0].grid(alpha=0.3)
+    axs[0].axis('equal')
+    # axs[0].set_xlim(lims)
+    # axs[0].set_ylim(lims)
+
+    # === Error Histogram (Normalized Fraction) ===
+    weights = np.ones_like(error) / len(error) 
+
+    axs[1].hist(error, bins=50, weights=weights, color='red', edgecolor='black', alpha=0.7)
+
+    axs[1].set_xlabel('Normalized Error')
+    axs[1].set_ylabel('Fraction of Total Points')
+    # axs[1].set_title('Histogram of Normalized Error')
+    axs[1].grid(True, alpha=0.3)
+    axs[1].set_title(r'$N_{points} = %i$' %(len(error)))
+
+    if save_filename is not None:
+        plt.savefig(save_filename+'.pdf', bbox_inches='tight')
