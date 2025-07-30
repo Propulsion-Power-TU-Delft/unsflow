@@ -803,11 +803,11 @@ class Blade:
         """
         plot the streamline length contour
         """
-        self.contour_template(self.z_grid, self.r_grid, self.streamline_length, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
+        self.contour_template(self.z_grid, self.r_grid, self.streamwise_coord, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
 
-        self.contour_template(self.z_grid, self.r_grid, self.spanline_length, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
+        self.contour_template(self.z_grid, self.r_grid, self.spanwise_coord, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
 

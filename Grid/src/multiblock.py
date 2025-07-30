@@ -116,7 +116,7 @@ class MultiBlock:
             bladeFlag *= -1 # the next block will be unbladed
             
         self.theta_camber = gaussian_filter(self.theta_camber, sigma=3)
-
+        self.spanline_length_normalized = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg, normalize=True)
 
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
@@ -655,6 +655,10 @@ class MultiBlock:
         if 'stwl' in outputFields:
             print('Streamwise length added to the CTurboBFM mesh file')
             mesh['streamwiseLength'] = self.streamline_length
+        
+        if 'spwl' in outputFields:
+            print('Spanwise length added to the CTurboBFM mesh file')
+            mesh['spanwiseLength'] = self.spanline_length_normalized
         
         if 'blade_present' in outputFields:
             print('Blade presence grid added to the CTurboBFM mesh file')

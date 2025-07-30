@@ -148,7 +148,8 @@ class MultiBlockGridDriver:
             self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
             self.blades[iblade].streamwise_normalized_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
             self.blades[iblade].spanwise_normalized_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
-            self.blades[iblade].compute_meridional_coordinates()
+            self.blades[iblade].streamwise_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=False)
+            self.blades[iblade].spanwise_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=False)
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
             # compute the thickness of eventual splitter blades (for centrifigual machines)

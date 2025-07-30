@@ -1807,7 +1807,7 @@ def scatter3d_template(x, y, z, c, xname, yname, zname, fieldname, save_filename
 
 
 # statistics plot
-def statistic_plot_template(reference, inferred, nameLabel, save_filename=None):
+def statistic_plot_template(reference, inferred, nameLabel, referenceName='Reference', inferredName='Inferred', save_filename=None):
 
     # Flatten and clean the data
     inferred = inferred.flatten()
@@ -1827,8 +1827,8 @@ def statistic_plot_template(reference, inferred, nameLabel, save_filename=None):
     lims = [min(reference.min(), inferred.min()), max(reference.max(), inferred.max())]
     axs[0].plot(lims, lims, '--k', lw=3)
     axs[0].scatter(reference, inferred, c='C0', alpha=0.7, edgecolors='blue')
-    axs[0].set_xlabel(fr'{nameLabel} Reference')
-    axs[0].set_ylabel(fr'{nameLabel} Inferred')
+    axs[0].set_xlabel(fr'{nameLabel} {referenceName}')
+    axs[0].set_ylabel(fr'{nameLabel} {inferredName}')
     axs[0].set_title(rf'$R^2$ = {r_squared:.3f}')
     axs[0].grid(alpha=0.3)
     axs[0].axis('equal')
