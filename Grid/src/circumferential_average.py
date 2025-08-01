@@ -323,9 +323,9 @@ def marble_postprocessing(folderpath, files, nstream, nspan):
         zgrid[stream_id, span_id] = np.mean(z)
         rgrid[stream_id, span_id] = np.mean(r)
     
-    plt.figure()
-    plt.scatter(zgrid, rgrid, 'b.')
-    plt.show()
+    # plt.figure()
+    # plt.scatter(zgrid, rgrid, 'b.')
+    # plt.show()
         
     for iFile, file in enumerate(files):
         df = pd.read_csv(folderpath + '/' + file)

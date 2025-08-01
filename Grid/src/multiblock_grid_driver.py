@@ -96,6 +96,8 @@ class MultiBlockGridDriver:
             block.add_inlet_outlet_curves(self.blades[iblade].inlet, self.blades[iblade].outlet)
         
         elif self.driverType=='full_machine':
+            block.trim_inlet()
+            block.trim_outlet()
             block.add_inlet_outlet_curves(block.inletLine, block.outletLine)
         
         block.extend_inlet_outlet_curves()

@@ -436,16 +436,24 @@ class MultiBlock:
         zgrid = move_hub_shroud_points(self.z_grid_points.copy())
         rgrid = move_hub_shroud_points(self.r_grid_points.copy())
         
-        enlargerCounter = 1
-        while enlargerCounter < enlargeLoops:
-            zgrid = enlarge_domain_array(zgrid)
-            rgrid = enlarge_domain_array(rgrid)
+        # inlet_cut_type = 'axial'
+        # outlet_cut_type = 'radial'
+        # coord_cutIn = -0.03
+        # coord_cutOut = 0.23
+        # zgrid, rgrid = self.cut_meridional_grid(zgrid, rgrid, 
+        #                                         inlet_cut_type, outlet_cut_type, 
+        #                                         coord_cutIn, coord_cutOut)
+        
+        # enlargerCounter = 1
+        # while enlargerCounter < enlargeLoops:
+        #     zgrid = enlarge_domain_array(zgrid)
+        #     rgrid = enlarge_domain_array(rgrid)
             
-            # remove the spanwise enlargements
-            zgrid = zgrid[:, 1:-1]
-            rgrid = rgrid[:, 1:-1]
+        #     # remove the spanwise enlargements
+        #     zgrid = zgrid[:, 1:-1]
+        #     rgrid = rgrid[:, 1:-1]
             
-            enlargerCounter += 1
+        #     enlargerCounter += 1
 
         x = rgrid
         y = np.zeros_like(x)
@@ -852,4 +860,25 @@ class MultiBlock:
         
         
         
+
+    def cut_meridional_grid(self, zgrid, rgrid, inlet_cut_type, outlet_cut_type, coord_cutIn, coord_cutOut):
         
+        # pointer to reference grids
+        if inlet_cut_type.lower()=='axial':
+            gridIn = zgrid
+        elif inlet_cut_type.lower()=='radial':
+            gridIn = rgrid
+        
+        if outlet_cut_type.lower()=='axial':
+            gridOut = zgrid
+        elif outlet_cut_type.lower()=='radial':
+            gridOut = rgrid
+            
+        # the cut is given depending on the coordinate of the hub
+        idxIN = np.argmin(np.abs(gridIn[:,0] - coord_cutIn))
+        idxOUT = np.argmin(np.abs(gridOut[:,-1] - coord_cutOut))
+        
+        zgridCut = zgrid[idxIN:idxOUT,:]
+        rgridCut = rgrid[idxIN:idxOUT,:]
+        
+        return zgridCut, rgridCut

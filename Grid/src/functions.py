@@ -1848,3 +1848,23 @@ def statistic_plot_template(reference, inferred, nameLabel, referenceName='Refer
 
     if save_filename is not None:
         plt.savefig(save_filename+'.pdf', bbox_inches='tight')
+        
+
+
+
+def plot_line_template(x_tuple, y_tuple, labels=None, xname=r'$x$', yname=r'$y$', save_filename=None):
+    plt.figure()
+    
+    if len(x_tuple)==1:
+        plt.plot(x_tuple[0], y_tuple[0])
+    else:
+        assert len(labels)==len(x_tuple), 'you must assing labels to the different plots'
+        for i in range(len(x_tuple)):
+            plt.plot(x_tuple[i], y_tuple[i], label=labels[i])
+            plt.legend()
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.grid(alpha=0.3)
+
+    if save_filename is not None:
+        plt.savefig(save_filename, bbox_inches='tight')
