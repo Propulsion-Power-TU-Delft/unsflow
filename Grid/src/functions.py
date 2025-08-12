@@ -1125,7 +1125,7 @@ def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None):
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
     xUnique, yUnique, zUnique = remove_duplicate_points(x, y, z)
-
+    
     tck, u = interpolate.splprep([xUnique, yUnique, zUnique], s=0, k=3)
     u_fine = np.linspace(0, 1, num_points)
     if u_param is not None:

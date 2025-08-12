@@ -268,7 +268,7 @@ class Blade:
 
             # metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
 
-            if self.config.get_visual_debug() and i in profiles_to_plot:
+            if i in profiles_to_plot:
                 plt.figure()
                 plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
                 plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')

@@ -214,9 +214,14 @@ class Config:
         return value
     
     def get_blade_profiles_spline_order(self):
-        value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_PROFILES_SPLINE_ORDER'))
-        value = [int(i.strip(',')) for i in value.split()]
-        return value
+        try:
+            value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'BLADE_PROFILES_SPLINE_ORDER'))
+            value = [int(i.strip(',')) for i in value.split()]
+            return value
+        except:
+            nBlades = self.get_blade_rows_number()
+            values = [1 for i in range(nBlades)]
+            return values
     
     def get_boundaries_spline_order(self):
         try:
