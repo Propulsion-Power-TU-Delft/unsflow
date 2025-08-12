@@ -412,7 +412,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.5, enlargeLoops = 3):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.75, enlargeLoops = 3):
         """
         Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
         The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid

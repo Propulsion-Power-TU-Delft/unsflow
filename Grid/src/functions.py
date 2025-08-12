@@ -1224,7 +1224,7 @@ def compute_gradient_least_square(x, y, z, enlargeDomain = True):
         return dzdx, dzdy
 
 
-def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False, contour_levels=True):
+def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False, contour_levels=False):
         """
         Template function to create contours.
 
@@ -1852,16 +1852,22 @@ def statistic_plot_template(reference, inferred, nameLabel, referenceName='Refer
 
 
 
-def plot_line_template(x_tuple, y_tuple, labels=None, xname=r'$x$', yname=r'$y$', save_filename=None):
+def plot_line_template(x_tuple, y_tuple, labels=None, xname=r'$x$', yname=r'$y$', markers=None, save_filename=None):
+    assert len(x_tuple)==len(y_tuple), 'x and y must have the same length'
+
     plt.figure()
     
-    if len(x_tuple)==1:
-        plt.plot(x_tuple[0], y_tuple[0])
-    else:
-        assert len(labels)==len(x_tuple), 'you must assing labels to the different plots'
-        for i in range(len(x_tuple)):
-            plt.plot(x_tuple[i], y_tuple[i], label=labels[i])
-            plt.legend()
+    if markers is not None:
+        assert len(markers)==len(x_tuple), 'you must assing as many markers as the number of plots'
+        markers = markers
+        
+        if len(x_tuple)==1:
+            plt.plot(x_tuple[0], y_tuple[0], markers[0])
+        else:
+            assert len(labels)==len(x_tuple), 'you must assing labels to the different plots'
+            for i in range(len(x_tuple)):
+                plt.plot(x_tuple[i], y_tuple[i], markers[i], label=labels[i])
+                plt.legend()
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.grid(alpha=0.3)

@@ -54,10 +54,10 @@ class BodyForce:
         # interpolate the dataset on the body force grid
         for key in dataset.keys():
             if key!='Axial_Coordinate' and key!='Radial_Coordinate':
-                self.meridionalFields[key] = robust_griddata_interpolation_with_linear_filler(dataset['Axial_Coordinate'], 
+                self.meridionalFields[key] = griddata_interpolation_with_specified_filler(dataset['Axial_Coordinate'], 
                                                                                               dataset['Radial_Coordinate'], 
                                                                                               dataset[key], 
-                                                                                              self.axialGrid, self.radialGrid)
+                                                                                              self.axialGrid, self.radialGrid, filler=np.nan)
         
         # now also update the grid in the dataset to be same of the body force
         self.meridionalFields['Axial_Coordinate'] = self.axialGrid
