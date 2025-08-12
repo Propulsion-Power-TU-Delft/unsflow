@@ -131,7 +131,8 @@ class Block:
                                           "fp_2": np.zeros((self.nstream, self.nspan)),
                                           "fp_1": np.zeros((self.nstream, self.nspan)),
                                           "fp_0": np.zeros((self.nstream, self.nspan))}
-        
+        elif self.config.get_body_force_calibration_method()=='none':
+            pass
         else:
             raise ValueError('No other method implemented at the moment')
         self.bladePresent = np.zeros_like(self.blockage)

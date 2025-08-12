@@ -574,7 +574,7 @@ class Config:
     
     def get_body_force_calibration_method(self):
         try:
-            choices = ['lift/drag', 'hall-thollet', 'inference']
+            choices = ['lift/drag', 'hall-thollet', 'inference', 'none']
             
             res =  str(self.config_parser.get('BODY FORCE', 'CALIBRATION_METHOD')).lower()
             
@@ -583,7 +583,7 @@ class Config:
             
             return res
         except:
-            return 'inference'
+            return 'none'
 
     def get_circumferential_average_folder_path(self):
         return str(self.config_parser.get('BODY FORCE', 'CIRCUMFERENTIAL_AVERAGE_FOLDER_PATH'))
