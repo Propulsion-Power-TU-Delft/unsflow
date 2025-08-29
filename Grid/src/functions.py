@@ -111,26 +111,26 @@ def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, 
 
 def cartesian_to_cylindrical(x, y, z, v):
     """
-    Pass from the cordinates in cartesian to cylindrical cordinate.
+    Pass from the cordinates in cartesian (x,y,z) to cylindrical cordinate (r,t,z).
     :param x: x cordinate
     :param y: y cordinate
     :param z: z cordinate
-    :param v: vector in cartesian components
+    :param v: vector in cartesian components (x,y,z)
     """
     M = cartesian_to_cylindrical_matrix(x, y)
-    v_cylindrical = np.dot(M, v)
+    v_cylindrical = M @ v
     return v_cylindrical
 
 def cylindrical_to_cartesian(x, y, z, v):
     """
-    Pass from the components in cylindrical to cartesian cordinate.
+    Pass from the components in cylindrical (r,t,z) to cartesian cordinate (x,y,z).
     :param x: x cordinate
     :param y: y cordinate
     :param z: z cordinate
-    :param v: vector in cyl components
+    :param v: vector in cyl components (r,t,z)
     """
     M = cartesian_to_cylindrical_matrix(x, y).T
-    v_cartesian = np.dot(M, v)
+    v_cartesian = M @ v
     return v_cartesian
 
 
@@ -1120,13 +1120,13 @@ def remove_duplicate_points(x, y, z):
     return x_unique, y_unique, z_unique
 
 
-def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None):
+def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None, degree=3):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """
     xUnique, yUnique, zUnique = remove_duplicate_points(x, y, z)
     
-    tck, u = interpolate.splprep([xUnique, yUnique, zUnique], s=0, k=3)
+    tck, u = interpolate.splprep([xUnique, yUnique, zUnique], s=0, k=degree)
     u_fine = np.linspace(0, 1, num_points)
     if u_param is not None:
         u_fine = u_param
@@ -1515,7 +1515,36 @@ def ComputeSpanwiseVectorsToSurface(xSurface, ySurface, zSurface):
             spanwiseVectors[i,j,1] = deltaY/deltaL
             spanwiseVectors[i,j,2] = deltaZ/deltaL
     return spanwiseVectors
-            
+
+def ComputeMeridionalVectors(zgrid, rgrid):
+    ni,nj = zgrid.shape
+    streamwiseVectors = np.zeros((ni,nj,3)) # x,y,z components are the last dimension
+    for i in range(ni):
+        for j in range(nj):
+            im,ip,jm,jp = getStepIndices2ndOrderCentral(i,j,ni,nj)
+            deltaZ = zgrid[i+ip,j] - zgrid[i+im, j]
+            deltaR = rgrid[i+ip,j] - rgrid[i+im, j]
+            deltaL = np.sqrt(deltaZ**2 + deltaR**2)
+            streamwiseVectors[i,j,0] = deltaR/deltaL
+            streamwiseVectors[i,j,1] = 0.0
+            streamwiseVectors[i,j,2] = deltaZ/deltaL
+    return streamwiseVectors
+
+def ComputeAngleBetweenVectors(v1, v2):
+    """Compute the angle between two vectors in radians
+
+    Args:
+        v1 (np.ndarray): first vector
+        v2 (np.ndarray): second vector
+    """
+    dot_product = np.dot(v1, v2)
+    norm_v1 = np.linalg.norm(v1)
+    norm_v2 = np.linalg.norm(v2)
+    cos_theta = dot_product / (norm_v1 * norm_v2)
+    # # Clamp the value to the valid range for arccos to avoid numerical issues
+    # cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    angle = np.arccos(cos_theta)
+    return angle
 
 def getStepIndices2ndOrderCentral(i,j,ni,nj):
     """Get the 2nd order finite difference steps in i and j depending on the size of the array (ni,nj)

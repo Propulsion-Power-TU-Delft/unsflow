@@ -205,17 +205,16 @@ class Blade:
             # obtain the coordinates of the spline in the blade to blade view
             r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
             
-            # if self.config.get_visual_debug():
-            #     fig = plt.figure()
-            #     ax = fig.add_subplot(111, projection='3d')
-            #     ax.scatter(x, y, z, c='C0', marker='o', label="Points")
-            #     ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
-            #     ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
-            #     ax.set_xlabel('x')
-            #     ax.set_ylabel('y')
-            #     ax.set_zlabel('z')
-            #     ax.set_aspect('equal')            
-            #     ax.legend()
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111, projection='3d')
+            # ax.scatter(x, y, z, c='C0', marker='o', label="Points")
+            # ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
+            # ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
+            # ax.set_xlabel('x')
+            # ax.set_ylabel('y')
+            # ax.set_zlabel('z')
+            # ax.set_aspect('equal')            
+            # ax.legend()
             
             # distinguish the two sides between pressure and suction
             turningDirection = self.config.get_blade_turning_direction()[iblade]
@@ -240,7 +239,6 @@ class Blade:
                 raise ValueError('Unknown turning direction for blade pressure side detection')
                 
             
-
             # add surface data to dataset
             self.rss_data.append(r_ss)
             self.zss_data.append(z_ss)
@@ -272,7 +270,7 @@ class Blade:
                 plt.figure()
                 plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
                 plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')
-                # plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
+                plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
                 plt.xlabel(r'$s_{m}$ [m]')
                 plt.ylabel(r'$r \theta$ [m]')
                 plt.legend()
@@ -450,9 +448,55 @@ class Blade:
         theta_camber = rt_camber/r_camber
         coeff = np.polyfit(mglob, zglob, deg=13)  
         z_camber = np.polyval(coeff, s_camber)
+        
+        # fix the extremes
+        r_camber_new, theta_camber_new, z_camber_new, s_camber_new = self.fix_camberline_extremes(r_camber, theta_camber, z_camber, s_camber)
+        
+        # plt.figure()
+        # plt.plot(m1, r1*t1, '-', color='C0', label='Pressure Side')
+        # plt.plot(m2, r2*t2, '-', color='C1', label='Suction Side')
+        # plt.plot(s_camber, r_camber*theta_camber, '-', color='C2', ms=2, label='Camber')
+        # plt.plot(s_camber_new, r_camber_new*theta_camber_new, '--', color='C3', ms=2, label='Camber Fixed Extremes')
+        # plt.xlabel(r'$s_{m}$ [m]')
+        # plt.ylabel(r'$r \theta$ [m]')
+        # plt.legend()
+        # plt.gca().set_aspect('equal', adjustable='box')
 
-        return r1, t1, m1, z1, r2, t2, m2, z2, r_camber, theta_camber, s_camber, z_camber
+        return r1, t1, m1, z1, r2, t2, m2, z2, r_camber_new, theta_camber_new, s_camber_new, z_camber_new
+    
+    def fix_camberline_extremes(self, rc, tc, zc, sc):
+        """Approximate the theta of the camber line with a polynomial fitted on a portion of points close to the edges
 
+        """
+        npoints = len(rc)
+        portion = npoints//35 # 10% of the points
+        nportions = 1
+        degree = 3
+        
+        
+        # LE
+        sle = sc[0:portion]
+        coeffs = np.polyfit(sc[portion:portion+nportions*portion], tc[portion:portion+nportions*portion], deg=degree)
+        tle = np.polyval(coeffs, sle)
+        snew = np.concatenate((sle, sc[portion:]))
+        tnew = np.concatenate((tle, tc[portion:]))
+        
+        # TE 
+        ste = snew[-portion:]
+        coeffs = np.polyfit(snew[-portion-nportions*portion:-portion], tc[-portion-nportions*portion:-portion], deg=degree)
+        tte = np.polyval(coeffs, ste)
+        snew = np.concatenate((snew[0:-portion], ste))
+        tnew = np.concatenate((tnew[0:-portion], tte))
+        
+        # plt.figure()
+        # plt.plot(sc, rc*tc, '-', color='C0', ms=2, label='Pre')
+        # plt.plot(snew, rc*tnew, '-', color='C1', ms=2, label='Post')
+        # plt.xlabel(r'$s_{m}$ [m]')
+        # plt.ylabel(r'$r \theta$ [m]')
+        # plt.legend()
+        # plt.gca().set_aspect('equal', adjustable='box')
+
+        return rc, tnew, zc, sc
 
 
     def compute_thickness(self):
@@ -1577,10 +1621,10 @@ class Blade:
     def compute_blade_camber_angles(self, convention='neutral'):
         """
         From the normal and streamline vectors of the camber compute:
-        -gas_path_angle: gas path angle (angle in the meridional plane between streamline and axial direction)
-        -blade_metal_angle: angle between the camber 3d streamline vector and its meridional projection
-        -lean_angle: angle between the camber 3D spanwise direction and its meridional projection
-        -blade_blockage: as defined by Kottapalli. For the moment not ready yet.
+        -gas_path_angle: gas path angle (angle in the meridional plane between camber-streamline and axial direction)
+        -blade_metal_angle: angle between the camber-streamline vector and the meridional direction
+        -lean_angle: check the definition on the Lamprakis paper about BFM (2025)
+        -blade_blockage: as defined by Kottapalli. 
         :param convention: neutral doesn't care about the sign, but rotation-wise takes positive the angles in the
         direction of rotation
         """
@@ -1589,8 +1633,9 @@ class Blade:
             return r*np.cos(t), r*np.sin(t), z
         
         xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
-        streamwiseVectors = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
-        spanwiseVectors = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        camberStreamline = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        camberSpanline = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        meridionalVectors = ComputeMeridionalVectors(self.z_grid, self.r_grid)
 
         # if self.config.get_visual_debug():
         #     self.plot_surface_normals(xCamber, yCamber, zCamber, streamwiseVectors[:,:,0], streamwiseVectors[:,:,1], streamwiseVectors[:,:,2], 'cartesian', 'Streamwise Vectors')
@@ -1602,13 +1647,50 @@ class Blade:
         self.blade_lean_angle = np.zeros_like(self.z_grid)
         for i in range(ni):
             for j in range(nj):
-                streamVecCyl = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], streamwiseVectors[i,j,:])
-                spanVecCyl = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], spanwiseVectors[i,j,:])
+                khat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberStreamline[i,j,:])
+                khat /= np.linalg.norm(khat)
                 
-                warnings.warn('The blades metal angle are not well computed yet. The normal is ok.')
-                self.gas_path_angle[i, j] = np.arctan(streamVecCyl[0] / streamVecCyl[2])
-                self.blade_metal_angle[i, j] = np.arctan(streamVecCyl[1] / (streamVecCyl[2]**2 + streamVecCyl[0]**2)**0.5)
-                self.blade_lean_angle[i, j] = np.arctan(spanVecCyl[1] / (spanVecCyl[0]**2 + spanVecCyl[2]**2)**0.5)
+                shat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberSpanline[i,j,:])
+                shat /= np.linalg.norm(shat)
+                
+                mhat = meridionalVectors[i, j] / np.linalg.norm(meridionalVectors[i, j])
+                
+                # convention for the metal angle is that is positive only if kvector has positive theta component
+                self.blade_metal_angle[i, j] = ComputeAngleBetweenVectors(mhat, khat)
+                if khat[1] < 0:
+                    self.blade_metal_angle[i, j] *= -1
+                
+                # convention for the gas path angle is that is positive only if mvector has positive radial component
+                self.gas_path_angle[i, j] = ComputeAngleBetweenVectors(mhat, np.array([0,0,1]))
+                if mhat[0] < 0:
+                    self.gas_path_angle[i, j] *= -1
+                
+                # compute the n vector (see Lamprakis)
+                thetahat = np.array([0.0, 1.0, 0.0])
+                nhat = np.cross(mhat, thetahat)
+                nhat /= np.linalg.norm(nhat)
+                
+                # take the one with positive radial component
+                if nhat[0] < 0:
+                    nhat *= -1
+                
+                # projection of camber-spanline on the n-theta plane. Remove every component in the meridional direction
+                pntheta_s = shat - np.dot(shat, mhat) * mhat
+                pntheta_s /= np.linalg.norm(pntheta_s)
+                self.blade_lean_angle[i, j] = ComputeAngleBetweenVectors(pntheta_s, nhat)
+                
+                # # convention for lean angle is that it is positive if the cross product (k,s) has positive radial component
+                # if np.cross(khat, shat)[0] < 0:
+                #     self.blade_lean_angle[i, j] *= -1
+                
+        
+        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.blade_metal_angle, r'$\kappa \quad \mathrm{[deg]}$')
+        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.gas_path_angle, r'$\phi \quad \mathrm{[deg]}$')
+        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.blade_lean_angle, r'$\lambda \quad \mathrm{[deg]}$')
+        
+        print()
+                
+                
 
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
