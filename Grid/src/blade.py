@@ -203,7 +203,8 @@ class Blade:
             spline_points = splev(u_fine, tck)
 
             # obtain the coordinates of the spline in the blade to blade view
-            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points)
+            te_cutoff = self.config.cutoff_trailing_edge(iblade)
+            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points, te_cutoff)
             
             # fig = plt.figure()
             # ax = fig.add_subplot(111, projection='3d')
@@ -380,7 +381,7 @@ class Blade:
     
     
 
-    def compute_meridional_coordinate(self, spline_points):
+    def compute_meridional_coordinate(self, spline_points, te_cutoff):
         """
         For the x,y,z points in the spline_points list, compute the associated mprime coordinate (curvilinear abscissa), 
         distinguishing also between the two sides of the blade.
@@ -434,6 +435,12 @@ class Blade:
             return rp, thetap, sp
         r1,t1,m1 = compute_mprime_coords(x1,y1,z1)
         r2,t2,m2 = compute_mprime_coords(x2,y2,z2)
+        
+        if te_cutoff:
+            mglob = np.concatenate((m1,m2))
+            mglob_cut = np.max(mglob*(1-0.005))
+            r1,t1,m1,z1 = self.fix_cutoff_trailingedge(r1,t1,m1,z1,mglob_cut)
+            r2,t2,m2,z2 = self.fix_cutoff_trailingedge(r2,t2,m2,z2,mglob_cut)
 
         rglob = np.concatenate((r1,r2))
         tglob = np.concatenate((t1,t2))
@@ -464,6 +471,12 @@ class Blade:
 
         return r1, t1, m1, z1, r2, t2, m2, z2, r_camber_new, theta_camber_new, s_camber_new, z_camber_new
     
+    
+    def fix_cutoff_trailingedge(self, r, t, m, z, mcut):
+        idx = np.where(m<=mcut)
+        return r[idx],t[idx],m[idx],z[idx]
+    
+    
     def fix_camberline_extremes(self, rc, tc, zc, sc):
         """Approximate the theta of the camber line with a polynomial fitted on a portion of points close to the edges
 
@@ -471,7 +484,7 @@ class Blade:
         npoints = len(rc)
         portion = npoints//35 # 10% of the points
         nportions = 1
-        degree = 3
+        degree = 2
         
         
         # LE

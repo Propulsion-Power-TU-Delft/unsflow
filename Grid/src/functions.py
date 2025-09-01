@@ -1120,7 +1120,7 @@ def remove_duplicate_points(x, y, z):
     return x_unique, y_unique, z_unique
 
 
-def compute_3dSpline_curve(x, y, z, num_points=250, u_param=None, spacing=None, degree=3):
+def compute_3dSpline_curve(x, y, z, degree, num_points=250, u_param=None, spacing=None):
     """
     Given points in the space x,y,z, return the points lying on the spline passing throug them
     """

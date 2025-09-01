@@ -223,6 +223,20 @@ class Config:
             values = [1 for i in range(nBlades)]
             return values
     
+    def cutoff_trailing_edge(self, iblade):
+        try:
+            value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'TRAILING_EDGE_CUTOFF'))
+            value = [str(i.strip(',')) for i in value.split()]
+            val = value[iblade]
+            if val.lower()=='yes' or val.lower()=='true':
+                return True
+            elif val.lower()=='no' or val.lower()=='false':
+                return False
+            else:
+                raise ValueError('TRAILING_EDGE_CUTOFF option can be true or false')
+        except:
+            return False
+    
     def get_boundaries_spline_order(self):
         try:
             value = int(self.config_parser.get('GRID GENERATION', 'BOUNDARIES_SPLINE_ORDER'))

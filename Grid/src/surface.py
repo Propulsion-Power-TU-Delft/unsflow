@@ -161,7 +161,7 @@ class Surface:
         # generate the spline along the streamwise directions
         streamSplineX, streamSplineY, streamSplineZ = [], [], []
         for i, (key, values) in enumerate(self.coords.items()):
-            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=streamKnots)
+            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], degree=3, u_param=streamKnots)
             # fig = plt.figure()
             # ax = fig.add_subplot(111, projection='3d')
             # ax.plot(values['x'], values['y'], values['z'], '-o', label='1d-Bspline-Points')
@@ -189,7 +189,10 @@ class Surface:
         # generate the spline in the spanwise direction
         spanSplineX, spanSplineY, spanSplineZ = [], [], []
         for key, values in spanCoords.items():
-            xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=spanKnots)
+            try:
+                xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], degree=3, u_param=spanKnots)
+            except:
+                xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], degree=1, u_param=spanKnots)
             spanSplineX.append(xint)
             spanSplineY.append(yint)
             spanSplineZ.append(zint)

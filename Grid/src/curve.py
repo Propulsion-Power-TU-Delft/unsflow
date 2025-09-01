@@ -70,7 +70,7 @@ class Curve:
         r_spline, z_spline = splev(u_eval, self.tck)
         return r_spline, z_spline
 
-    def extend(self, u_min=-0.05, u_max=1.05, degree_spline=1, num_points=10000):
+    def extend(self, u_min=-0.25, u_max=1.25, degree_spline=1, num_points=10000):
         """
         Extend the spline out of the normal domain of definition.
         :param u_min: minimum value of curve parametrization. To extend must be less than zero.
