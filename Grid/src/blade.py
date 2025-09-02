@@ -1645,14 +1645,13 @@ class Blade:
         def getCartesianCoords(r,t,z):
             return r*np.cos(t), r*np.sin(t), z
         
+        # camber grid vectors
         xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
-        camberStreamline = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
-        camberSpanline = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
-        meridionalVectors = ComputeMeridionalVectors(self.z_grid, self.r_grid)
-
-        # if self.config.get_visual_debug():
-        #     self.plot_surface_normals(xCamber, yCamber, zCamber, streamwiseVectors[:,:,0], streamwiseVectors[:,:,1], streamwiseVectors[:,:,2], 'cartesian', 'Streamwise Vectors')
-        #     self.plot_surface_normals(xCamber, yCamber, zCamber, spanwiseVectors[:,:,0], spanwiseVectors[:,:,1], spanwiseVectors[:,:,2], 'cartesian', 'Spanwise Vectors')
+        camberStreamVectors = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        camberSpanVectors = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        
+        # meridional grid vectors
+        meridionalStreamVectors = ComputeMeridionalVectors(self.z_grid, self.r_grid)
         
         ni,nj = self.z_grid.shape
         self.gas_path_angle = np.zeros_like(self.z_grid)
@@ -1660,27 +1659,29 @@ class Blade:
         self.blade_lean_angle = np.zeros_like(self.z_grid)
         for i in range(ni):
             for j in range(nj):
-                khat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberStreamline[i,j,:])
+                
+                # khat is the vector following the streamwise direction on the camber
+                khat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberStreamVectors[i,j,:])
                 khat /= np.linalg.norm(khat)
                 
-                shat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberSpanline[i,j,:])
+                # shat is the vector following the spanwise direction on the camber
+                shat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberSpanVectors[i,j,:])
                 shat /= np.linalg.norm(shat)
                 
-                mhat = meridionalVectors[i, j] / np.linalg.norm(meridionalVectors[i, j])
+                # mhat is the vector following the meridional grids direction (zero theta components)
+                mhat = meridionalStreamVectors[i, j] / np.linalg.norm(meridionalStreamVectors[i, j])
                 
-                # convention for the metal angle is that is positive only if kvector has positive theta component
-                self.blade_metal_angle[i, j] = ComputeAngleBetweenVectors(mhat, khat)
-                if khat[1] < 0:
-                    self.blade_metal_angle[i, j] *= -1
                 
-                # convention for the gas path angle is that is positive only if mvector has positive radial component
+                # 1) GAS PATH ANGLE. Convention is that is positive only if mhat has positive radial component
                 self.gas_path_angle[i, j] = ComputeAngleBetweenVectors(mhat, np.array([0,0,1]))
                 if mhat[0] < 0:
                     self.gas_path_angle[i, j] *= -1
                 
-                # compute the n vector (see Lamprakis)
+                
+                # 2) LEAN ANGLE. Convention is that is positive when 
+                # # compute the n vector (see Lamprakis)
                 thetahat = np.array([0.0, 1.0, 0.0])
-                nhat = np.cross(mhat, thetahat)
+                nhat = np.cross(thetahat, mhat)
                 nhat /= np.linalg.norm(nhat)
                 
                 # take the one with positive radial component
@@ -1691,6 +1692,13 @@ class Blade:
                 pntheta_s = shat - np.dot(shat, mhat) * mhat
                 pntheta_s /= np.linalg.norm(pntheta_s)
                 self.blade_lean_angle[i, j] = ComputeAngleBetweenVectors(pntheta_s, nhat)
+
+                
+                # 3) METAL ANGLE
+                # convention for the metal angle is that is positive only if kvector has positive theta component
+                self.blade_metal_angle[i, j] = ComputeAngleBetweenVectors(mhat, khat)
+                if khat[1] < 0:
+                    self.blade_metal_angle[i, j] *= -1
                 
                 # # convention for lean angle is that it is positive if the cross product (k,s) has positive radial component
                 # if np.cross(khat, shat)[0] < 0:
