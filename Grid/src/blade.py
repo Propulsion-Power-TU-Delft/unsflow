@@ -187,7 +187,7 @@ class Blade:
         self.rss_data, self.thetass_data, self.zss_data = [], [], []
         self.rps_data, self.thetaps_data, self.zps_data = [], [], []
         
-        profiles_to_plot = [0, self.number_profiles//2, self.number_profiles-1] # hub, mid and shroud
+        profiles_to_plot = [0, self.number_profiles//4, self.number_profiles//2, 3*self.number_profiles//4, self.number_profiles-1] # hub, mid and shroud
         for i in range(self.number_profiles):
             idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
             z = self.z_main[idx]
