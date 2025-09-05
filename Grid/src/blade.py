@@ -1692,6 +1692,8 @@ class Blade:
                 pntheta_s = shat - np.dot(shat, mhat) * mhat
                 pntheta_s /= np.linalg.norm(pntheta_s)
                 self.blade_lean_angle[i, j] = ComputeAngleBetweenVectors(pntheta_s, nhat)
+                if pntheta_s[1] < 0: # convention for the sign of lean angle
+                    self.blade_lean_angle[i, j] *= -1
 
                 
                 # 3) METAL ANGLE
