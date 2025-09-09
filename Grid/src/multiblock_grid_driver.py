@@ -170,22 +170,13 @@ class MultiBlockGridDriver:
             self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
             self.blades[iblade].plot_blockage_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
-            if  self.config.get_blade_edges_extrapolation_coefficient()[iblade] > 1e-4:
-                self.blades[iblade].extrapolate_camber_vector()
-            if self.config.get_blade_camber_smoothing_coefficient()>1e-4:
-                self.blades[iblade].smooth_camber_vector()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_endwalls_gaps()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
             # copy quantities to the block objects for later use
-            self.blocks[iblock].add_blockage_grid(self.blades[iblade].blockage)
-            self.blocks[iblock].add_camber_grid(self.blades[iblade].n_camber_z, self.blades[iblade].n_camber_r, self.blades[iblade].n_camber_t)
-            self.blocks[iblock].add_streamline_length_grid(self.blades[iblade].z_grid, self.blades[iblade].r_grid)
-            self.blocks[iblock].add_number_of_blades(self.config.get_blades_number()[iblade])
-            self.blocks[iblock].add_blade_is_present(self.blades[iblade].bladePresent)
-            self.blocks[iblock].add_theta_camber(self.blades[iblade].theta_camber)
-            
+            fieldsForBFM = self.blades[iblade].getOutputFieldsForMeshBFM()
+            self.blocks[iblock].addFieldsForBFM(fieldsForBFM)
             
             # if required, compute the body force fields
             if self.config.perform_body_force_reconstruction(): # compute it from circumferential averages

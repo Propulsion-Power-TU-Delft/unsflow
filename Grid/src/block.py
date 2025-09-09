@@ -94,48 +94,38 @@ class Block:
         """
         When the BFM file must be written, generate also the data needed for it
         """
-        self.blockage = np.ones((self.nstream, self.nspan))
-        self.normal_camber = {}
-        self.normal_camber['Axial'] = np.zeros((self.nstream, self.nspan))
-        self.normal_camber['Radial'] = np.zeros((self.nstream, self.nspan))
-        self.normal_camber['Tangential'] = np.zeros((self.nstream, self.nspan))
-        self.streamline_length = np.zeros((self.nstream, self.nspan))
-        self.rpm = self.config.get_shaft_rpm()[self.iblock]+np.zeros((self.nstream, self.nspan))
-        self.nBlades = np.zeros((self.nstream, self.nspan))
-        self.bodyForce = {"Force_Axial": np.zeros((self.nstream, self.nspan)),
-                          "Force_Radial": np.zeros((self.nstream, self.nspan)),
-                          "Force_Tangential": np.zeros((self.nstream, self.nspan)),
-                          "AngularMomentumDerivative": np.zeros((self.nstream, self.nspan)),
-                          "EntropyDerivative": np.zeros((self.nstream, self.nspan))}
+        self.bfmFields = {}
+        outputFields = self.config.get_turbo_BFM_mesh_output_fields()
+        if 'blockage' in outputFields:
+            self.bfmFields['blockage'] = np.ones((self.nstream, self.nspan))
+            
+        if 'camber' in outputFields:
+            print('Camber normal vector grid added to the CTurboBFM mesh file')
+            self.bfmFields['normalAxial'] = np.zeros((self.nstream, self.nspan))
+            self.bfmFields['normalRadial'] = np.zeros((self.nstream, self.nspan))
+            self.bfmFields['normalTangential'] = np.zeros((self.nstream, self.nspan))
         
-        if self.config.get_body_force_calibration_method()=='lift/drag':
-            self.BFCalibrationCoefficients = {'Model': 'lift/drag',
-                                            'beta_0': np.zeros((self.nstream, self.nspan)),
-                                            'kp_etaMax': np.zeros((self.nstream, self.nspan)),
-                                            'beta_etaMax': np.zeros((self.nstream, self.nspan)),
-                                            'solidity': np.zeros((self.nstream, self.nspan)),
-                                            'h_parameter': np.zeros((self.nstream, self.nspan)),
-                                            'kn_turning': np.zeros((self.nstream, self.nspan))}
-        elif self.config.get_body_force_calibration_method()=='hall-thollet':
-            self.BFCalibrationCoefficients = {'Model': 'hall-thollet',
-                                            'Kn': np.zeros((self.nstream, self.nspan)),
-                                            'Kf': np.zeros((self.nstream, self.nspan)),
-                                            'Kd': np.zeros((self.nstream, self.nspan))}
-        elif self.config.get_body_force_calibration_method()=='inference':
-            inferencePolyOrder = 3 # for now this is hard coded for a cubic inference
-            self.inferenceCoefficients = {"fn_3": np.zeros((self.nstream, self.nspan)),
-                                          "fn_2": np.zeros((self.nstream, self.nspan)),
-                                          "fn_1": np.zeros((self.nstream, self.nspan)),
-                                          "fn_0": np.zeros((self.nstream, self.nspan)),
-                                          "fp_3": np.zeros((self.nstream, self.nspan)),
-                                          "fp_2": np.zeros((self.nstream, self.nspan)),
-                                          "fp_1": np.zeros((self.nstream, self.nspan)),
-                                          "fp_0": np.zeros((self.nstream, self.nspan))}
-        elif self.config.get_body_force_calibration_method()=='none':
-            pass
-        else:
-            raise ValueError('No other method implemented at the moment')
-        self.bladePresent = np.zeros_like(self.blockage)
+        if 'blade_angles' in outputFields:
+            self.bfmFields['bladeMetalAngle'] = np.zeros((self.nstream, self.nspan))
+            self.bfmFields['dbladeMetalAngle_dm'] = np.zeros((self.nstream, self.nspan))
+            self.bfmFields['bladeLeanAngle'] = np.zeros((self.nstream, self.nspan))
+            self.bfmFields['bladeGasPathAngle'] = np.zeros((self.nstream, self.nspan))
+        
+        if 'rpm' in outputFields:
+            self.bfmFields['rpm'] = np.zeros((self.nstream, self.nspan))
+        
+        if 'stwl' in outputFields:
+            self.bfmFields['streamwiseLength'] = np.zeros((self.nstream, self.nspan))
+        
+        if 'spwl' in outputFields:
+            self.bfmFields['spanwiseLength'] = np.zeros((self.nstream, self.nspan))
+        
+        if 'blade_present' in outputFields:
+            self.bfmFields['bladePresent'] = np.zeros((self.nstream, self.nspan))
+        
+        if 'number_blades' in outputFields:
+            self.bfmFields['numberBlades'] = np.zeros((self.nstream, self.nspan))
+      
 
     def trim_inlet_curve(self, z_trim='span', r_trim='span'):
         """
@@ -777,76 +767,76 @@ class Block:
         print(f"Data saved to '{filepath}'")
     
 
-    def add_blockage_grid(self, blockage_grid):
+    def addFieldsForBFM(self, fields):
         """
-        Overwrite the blockage grid data with the blade data. Instead of 1, it will decrease to the value specified.
+        Add the blade fields to the object fields
         """
-        assert blockage_grid.shape[0] == self.z_grid_points.shape[0], 'The blockage must have the same dimensions of the background grid'
-        assert blockage_grid.shape[1] == self.z_grid_points.shape[1], 'The blockage must have the same dimensions of the background grid'
-        self.blockage = blockage_grid
+        self.bfmFields = {}
+        for key in fields.keys():
+            self.bfmFields[key] = fields[key]
     
 
-    def add_streamline_length_grid(self, zgrid, rgrid):
-        """
-        Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
-        """
-        streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
-        self.streamline_length = streamLength
+    # def add_streamline_length_grid(self, zgrid, rgrid):
+    #     """
+    #     Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
+    #     """
+    #     streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
+    #     self.streamline_length = streamLength
     
     
-    def add_number_of_blades(self, Nblades):
-        nbladeGrid = np.zeros_like(self.z_grid_points)+Nblades
-        self.nBlades = nbladeGrid
+    # def add_number_of_blades(self, Nblades):
+    #     nbladeGrid = np.zeros_like(self.z_grid_points)+Nblades
+    #     self.nBlades = nbladeGrid
     
-    def add_blade_is_present(self, f):
-        self.bladePresent = f
+    # def add_blade_is_present(self, f):
+    #     self.bladePresent = f
     
-    def add_theta_camber(self, f):
-        self.theta_camber = f
+    # def add_theta_camber(self, f):
+    #     self.theta_camber = f
     
 
-    def add_body_force_cylindric(self, f_axial, f_radial, f_tangential):
-        """
-        Overwrite the force grid data with the blade data. Instead of 1, it will decrease to the value specified.
-        """
-        self.force_axial = f_axial
-        self.force_radial = f_radial
-        self.force_tangential = f_tangential
+    # def add_body_force_cylindric(self, f_axial, f_radial, f_tangential):
+    #     """
+    #     Overwrite the force grid data with the blade data. Instead of 1, it will decrease to the value specified.
+    #     """
+    #     self.force_axial = f_axial
+    #     self.force_radial = f_radial
+    #     self.force_tangential = f_tangential
 
 
-    def add_camber_grid(self, nz, nr, nt):
-        """
-        Add the values of the normal camber vector (axial, radial, tangential).
-        """
-        assert nz.shape[0] == self.z_grid_points.shape[0], 'The camnber normal must have the same dimensions of the background grid'
-        assert nz.shape[1] == self.z_grid_points.shape[1], 'The camber normal must have the same dimensions of the background grid'
-        self.normal_camber = {}
-        self.normal_camber['Axial'] = nz
-        self.normal_camber['Radial'] = nr
-        self.normal_camber['Tangential'] = nt
+    # def add_camber_grid(self, nz, nr, nt):
+    #     """
+    #     Add the values of the normal camber vector (axial, radial, tangential).
+    #     """
+    #     assert nz.shape[0] == self.z_grid_points.shape[0], 'The camnber normal must have the same dimensions of the background grid'
+    #     assert nz.shape[1] == self.z_grid_points.shape[1], 'The camber normal must have the same dimensions of the background grid'
+    #     self.normal_camber = {}
+    #     self.normal_camber['Axial'] = nz
+    #     self.normal_camber['Radial'] = nr
+    #     self.normal_camber['Tangential'] = nt
     
-    def add_body_force_info(self, bodyForceObj):
-        self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
-        self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
-        self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
-        self.bodyForce["AngularMomentumDerivative"] = bodyForceObj.meridionalFields["AngularMomentumDerivative"]
-        self.bodyForce["EntropyDerivative"] = bodyForceObj.meridionalFields["EntropyDerivative"]
-        self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
+    # def add_body_force_info(self, bodyForceObj):
+    #     self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
+    #     self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
+    #     self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
+    #     self.bodyForce["AngularMomentumDerivative"] = bodyForceObj.meridionalFields["AngularMomentumDerivative"]
+    #     self.bodyForce["EntropyDerivative"] = bodyForceObj.meridionalFields["EntropyDerivative"]
+    #     self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
     
-    def add_inference_info(self, fnCoeffs, fpCoeffs):
-        assert fnCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
-        assert fpCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
+    # def add_inference_info(self, fnCoeffs, fpCoeffs):
+    #     assert fnCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
+    #     assert fpCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
         
-        # the coefficients are ordered in descending order of polynomial power
-        self.inferenceCoefficients["fn_3"] = fnCoeffs[:, :, 0]
-        self.inferenceCoefficients["fn_2"] = fnCoeffs[:, :, 1]
-        self.inferenceCoefficients["fn_1"] = fnCoeffs[:, :, 2]
-        self.inferenceCoefficients["fn_0"] = fnCoeffs[:, :, 3]
+    #     # the coefficients are ordered in descending order of polynomial power
+    #     self.inferenceCoefficients["fn_3"] = fnCoeffs[:, :, 0]
+    #     self.inferenceCoefficients["fn_2"] = fnCoeffs[:, :, 1]
+    #     self.inferenceCoefficients["fn_1"] = fnCoeffs[:, :, 2]
+    #     self.inferenceCoefficients["fn_0"] = fnCoeffs[:, :, 3]
         
-        self.inferenceCoefficients["fp_3"] = fpCoeffs[:, :, 0]
-        self.inferenceCoefficients["fp_2"] = fpCoeffs[:, :, 1]
-        self.inferenceCoefficients["fp_1"] = fpCoeffs[:, :, 2]
-        self.inferenceCoefficients["fp_0"] = fpCoeffs[:, :, 3]
+    #     self.inferenceCoefficients["fp_3"] = fpCoeffs[:, :, 0]
+    #     self.inferenceCoefficients["fp_2"] = fpCoeffs[:, :, 1]
+    #     self.inferenceCoefficients["fp_1"] = fpCoeffs[:, :, 2]
+    #     self.inferenceCoefficients["fp_0"] = fpCoeffs[:, :, 3]
     
     def PlotInferenceCoefficients(self, save_filename):
         for key in self.inferenceCoefficients.keys():

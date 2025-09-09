@@ -52,35 +52,21 @@ class MultiBlock:
 
         self.z_grid_cg = self.blocks[0].z_grid_cg[row_slice, :]
         self.r_grid_cg = self.blocks[0].r_grid_cg[row_slice, :]
-        self.blockage = self.blocks[0].blockage[row_slice, :]
-        self.rpm = self.blocks[0].rpm[row_slice, :]
-        self.streamline_length = self.blocks[0].streamline_length[row_slice, :]
-
-        self.normal_camber = {}
-        self.normal_camber['Axial'] = self.blocks[0].normal_camber['Axial'][row_slice, :]
-        self.normal_camber['Radial'] = self.blocks[0].normal_camber['Radial'][row_slice, :]
-        self.normal_camber['Tangential'] = self.blocks[0].normal_camber['Tangential'][row_slice, :]
-
-        self.force_axial = self.blocks[0].bodyForce['Force_Axial'][row_slice, :]
-        self.force_radial = self.blocks[0].bodyForce['Force_Radial'][row_slice, :]
-        self.force_tangential = self.blocks[0].bodyForce['Force_Tangential'][row_slice, :]
-        self.angular_momentum_derivative = self.blocks[0].bodyForce['AngularMomentumDerivative'][row_slice, :]
-        self.entropy_derivative = self.blocks[0].bodyForce['EntropyDerivative'][row_slice, :]
-
-        if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
-            self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients.copy()
-            for key in self.BFCalibrationCoefficients:
-                if key.lower() != 'model':
-                    self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][row_slice, :]
         
-        if self.config.get_body_force_calibration_method().lower() == 'inference':
-            self.inferenceCoefficients = self.blocks[0].inferenceCoefficients.copy()
-            for key in self.inferenceCoefficients:
-                self.inferenceCoefficients[key] = self.inferenceCoefficients[key][row_slice, :]
+        self.bfmFields = {}
+        for key in self.blocks[0].bfmFields.keys():
+            self.bfmFields[key] = self.blocks[0].bfmFields[key][row_slice, :]
+
+        # if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
+        #     self.BFCalibrationCoefficients = self.blocks[0].BFCalibrationCoefficients.copy()
+        #     for key in self.BFCalibrationCoefficients:
+        #         if key.lower() != 'model':
+        #             self.BFCalibrationCoefficients[key] = self.BFCalibrationCoefficients[key][row_slice, :]
         
-        self.nBlades = self.blocks[0].nBlades[row_slice, :]
-        self.bladePresent = self.blocks[0].bladePresent[row_slice, :]
-        self.theta_camber = self.blocks[0].theta_camber[row_slice, :]
+        # if self.config.get_body_force_calibration_method().lower() == 'inference':
+        #     self.inferenceCoefficients = self.blocks[0].inferenceCoefficients.copy()
+        #     for key in self.inferenceCoefficients:
+        #         self.inferenceCoefficients[key] = self.inferenceCoefficients[key][row_slice, :]
         
         bladeFlag = 1
         for iBlock, block in enumerate(self.blocks[1:]):
@@ -94,42 +80,45 @@ class MultiBlock:
             
             self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[streamSlice, :]), axis=0)
             self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[streamSlice, :]), axis=0)
-            self.blockage = np.concatenate((self.blockage, block.blockage[streamSlice, :]), axis=0)
-            self.rpm = np.concatenate((self.rpm, block.rpm[streamSlice, :]), axis=0)
-            self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[streamSlice, :]), axis=0)
-            self.normal_camber['Axial'] = np.concatenate((self.normal_camber['Axial'], block.normal_camber['Axial'][streamSlice, :]), axis=0)
-            self.normal_camber['Radial'] = np.concatenate((self.normal_camber['Radial'], block.normal_camber['Radial'][streamSlice, :]), axis=0)
-            self.normal_camber['Tangential'] = np.concatenate((self.normal_camber['Tangential'], block.normal_camber['Tangential'][streamSlice, :]), axis=0)
-            self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][streamSlice, :]), axis=0)
-            self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][streamSlice, :]), axis=0)
-            self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][streamSlice, :]), axis=0)
-            self.angular_momentum_derivative = np.concatenate((self.angular_momentum_derivative, block.bodyForce['AngularMomentumDerivative'][streamSlice, :]), axis=0)
-            self.entropy_derivative = np.concatenate((self.entropy_derivative, block.bodyForce['EntropyDerivative'][streamSlice, :]), axis=0)
-            self.nBlades = np.concatenate((self.nBlades, block.nBlades[streamSlice, :]), axis=0)
-            self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[streamSlice, :]), axis=0)
-            self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[streamSlice, :]), axis=0)
             
-            if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
-                for key in self.BFCalibrationCoefficients.keys():
-                    if key.lower()!='model':
-                        self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][streamSlice, :]), axis=0)
+            for key in self.bfmFields.keys():
+                self.bfmFields[key] = np.concatenate((self.bfmFields[key], block.bfmFields[key][streamSlice, :]), axis=0)
             
-            if self.config.get_body_force_calibration_method().lower() == 'inference':
-                for key in self.inferenceCoefficients.keys():
-                    self.inferenceCoefficients[key] = np.concatenate((self.inferenceCoefficients[key], block.inferenceCoefficients[key][streamSlice, :]), axis=0)
+            # self.blockage = np.concatenate((self.blockage, block.blockage[streamSlice, :]), axis=0)
+            # self.rpm = np.concatenate((self.rpm, block.rpm[streamSlice, :]), axis=0)
+            # self.streamline_length = np.concatenate((self.streamline_length, block.streamline_length[streamSlice, :]), axis=0)
+            # self.normal_camber['Axial'] = np.concatenate((self.normal_camber['Axial'], block.normal_camber['Axial'][streamSlice, :]), axis=0)
+            # self.normal_camber['Radial'] = np.concatenate((self.normal_camber['Radial'], block.normal_camber['Radial'][streamSlice, :]), axis=0)
+            # self.normal_camber['Tangential'] = np.concatenate((self.normal_camber['Tangential'], block.normal_camber['Tangential'][streamSlice, :]), axis=0)
+            # self.force_axial = np.concatenate((self.force_axial, block.bodyForce['Force_Axial'][streamSlice, :]), axis=0)
+            # self.force_radial = np.concatenate((self.force_radial, block.bodyForce['Force_Radial'][streamSlice, :]), axis=0)
+            # self.force_tangential = np.concatenate((self.force_tangential, block.bodyForce['Force_Tangential'][streamSlice, :]), axis=0)
+            # self.angular_momentum_derivative = np.concatenate((self.angular_momentum_derivative, block.bodyForce['AngularMomentumDerivative'][streamSlice, :]), axis=0)
+            # self.entropy_derivative = np.concatenate((self.entropy_derivative, block.bodyForce['EntropyDerivative'][streamSlice, :]), axis=0)
+            # self.nBlades = np.concatenate((self.nBlades, block.nBlades[streamSlice, :]), axis=0)
+            # self.bladePresent = np.concatenate((self.bladePresent, block.bladePresent[streamSlice, :]), axis=0)
+            # self.theta_camber = np.concatenate((self.theta_camber, block.theta_camber[streamSlice, :]), axis=0)
+            
+            # if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
+            #     for key in self.BFCalibrationCoefficients.keys():
+            #         if key.lower()!='model':
+            #             self.BFCalibrationCoefficients[key] = np.concatenate((self.BFCalibrationCoefficients[key], block.BFCalibrationCoefficients[key][streamSlice, :]), axis=0)
+            
+            # if self.config.get_body_force_calibration_method().lower() == 'inference':
+            #     for key in self.inferenceCoefficients.keys():
+            #         self.inferenceCoefficients[key] = np.concatenate((self.inferenceCoefficients[key], block.inferenceCoefficients[key][streamSlice, :]), axis=0)
             
             bladeFlag *= -1 # the next block will be unbladed
             
-        self.theta_camber = gaussian_filter(self.theta_camber, sigma=3)
+        # self.theta_camber = gaussian_filter(self.theta_camber, sigma=3)
         self.spanline_length_normalized = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg, normalize=True)
         self.streamline_length_normalized = compute_meridional_streamwise_coordinates(self.z_grid_cg, self.r_grid_cg, normalize=True)
         self.spanline_length = compute_meridional_spanwise_coordinates(self.z_grid_cg, self.r_grid_cg, normalize=False)
-
+        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid_cg, self.r_grid_cg, normalize=False)
+        self.nstream = self.z_grid_cg.shape[0]
+        self.nspan = self.z_grid_cg.shape[1]
         self.z_grid_points = self.z_grid_cg
         self.r_grid_points = self.r_grid_cg
-
-        self.nstream = self.z_grid_points.shape[0]
-        self.nspan = self.z_grid_points.shape[1]
 
     def remove_inlet_grid_points(self, Ntrim):
         """
@@ -653,59 +642,9 @@ class MultiBlock:
         mesh = {'x': X, 'y': Y}
         mesh['z'] = np.zeros((ni,nj))
         
-        if 'blockage' in outputFields:
-            print('Blockage grid added to the CTurboBFM mesh file')
-            mesh['blockage'] = self.blockage
-            
-        if 'camber' in outputFields:
-            print('Camber normal vector grid added to the CTurboBFM mesh file')
-            mesh['normalAxial'] = self.normal_camber['Axial']
-            mesh['normalRadial'] = self.normal_camber['Radial']
-            mesh['normalTangential'] = self.normal_camber['Tangential']
-        
-        if 'rpm' in outputFields:
-            print('RPM grid added to the CTurboBFM mesh file')
-            mesh['rpm'] = self.rpm
-        
-        if 'stwl' in outputFields:
-            print('Streamwise length added to the CTurboBFM mesh file')
-            mesh['streamwiseLength'] = self.streamline_length
-        
-        if 'spwl' in outputFields:
-            print('Spanwise length added to the CTurboBFM mesh file')
-            mesh['spanwiseLength'] = self.spanline_length_normalized
-        
-        if 'blade_present' in outputFields:
-            print('Blade presence grid added to the CTurboBFM mesh file')
-            mesh['bladePresent'] = self.bladePresent
-        
-        if 'number_blades' in outputFields:
-            print('Number of blades grid added to the CTurboBFM mesh file')
-            mesh['numberBlades'] = self.nBlades
-        
-        if 'frozen_force' in outputFields:
-            print('Frozen forces added to the TurboBFM mesh file')
-            mesh['axialForce'] = self.force_axial
-            mesh['radialForce'] = self.force_radial
-            mesh['tangentialForce'] = self.force_tangential
-        
-        if 'frozen_gradient' in outputFields:
-            print('Frozen gradients added to the CTurboBFM mesh file')
-            mesh['angularMomentumDerivative'] = self.angular_momentum_derivative
-            mesh['entropyDerivative'] = self.entropy_derivative
-        
-        if 'calibration_coefficients' in outputFields:
-            bf_model = self.config.get_body_force_calibration_method()
-            print(f"Calibration coefficients for model {bf_model} added to the CTurboBFM mesh file")
-            for key in self.BFCalibrationCoefficients.keys():
-                if isinstance(self.BFCalibrationCoefficients[key], np.ndarray):
-                    mesh[key] = self.BFCalibrationCoefficients[key]
-        
-        if 'inference_coefficients' in outputFields:
-            print(f"Inference coefficients for Neri model added to the CTurboBFM mesh file")
-            for key in self.inferenceCoefficients.keys():
-                if isinstance(self.inferenceCoefficients[key], np.ndarray):
-                    mesh[key] = self.inferenceCoefficients[key]
+        for key in self.bfmFields.keys():
+            print(f"{key} grid added to the CTurboBFM mesh file")
+            mesh[key] = self.bfmFields[key]
         
         outputTopology = self.config.get_mesh_output_topology()
         
@@ -798,36 +737,27 @@ class MultiBlock:
     
     def plot_all_relevant_contours(self):
         # plot geometric quantities always contained
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.blockage, r'$b \ \rm{[-]}$', save_filename='multiblock_blockage', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.rpm, r'$\Omega \ \rm{[rpm]}$', save_filename='multiblock_rpm', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.streamline_length, r'$s_{stwl} \ \rm{[m]}$', save_filename='multiblock_stwl', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Axial'], r'$n_z \ \rm{[-]}$', save_filename='multiblock_normalAxial', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Radial'], r'$n_r \ \rm{[-]}$', save_filename='multiblock_normalRadial', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.normal_camber['Tangential'], r'$n_{\theta} \ \rm{[-]}$', save_filename='multiblock_normalTangential', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.nBlades, r'$N_{blades} \ \rm{[-]}$', save_filename='multiblock_numberBlades', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.bladePresent, r'Blade is present', save_filename='multiblock_bladeIsPresent', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.theta_camber*180/np.pi, r'Theta Mid-Surface [deg]', save_filename='thetCamberCAD', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.streamline_length, r'Streamwise Coord [m]', save_filename='multiblock_totalStreamLength', folder_name=self.config.get_pictures_folder_path())
-        contour_template(self.z_grid_cg, self.r_grid_cg, self.spanline_length, r'Spanwise Coord [m]', save_filename='multiblock_totalSpanLength', folder_name=self.config.get_pictures_folder_path())
+        for key in self.bfmFields.keys():
+            contour_template(self.z_grid_cg, self.r_grid_cg, self.bfmFields[key], name=key, save_filename='multiblock_%s' %key, folder_name=self.config.get_pictures_folder_path())
         
         
-        # now plot only if really needed
-        if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
-            for key in self.BFCalibrationCoefficients.keys():
-                if key.lower()!='model':
-                    contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
+        # # now plot only if really needed
+        # if self.config.get_body_force_calibration_method().lower() == 'lift/drag':
+        #     for key in self.BFCalibrationCoefficients.keys():
+        #         if key.lower()!='model':
+        #             contour_template(self.z_grid_cg, self.r_grid_cg, self.BFCalibrationCoefficients[key], 'BF Coefficient %s' %key, save_filename='multiblock_calibration_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
         
-        if self.config.get_body_force_calibration_method().lower() == 'inference':
-            for key in self.inferenceCoefficients.keys():
-                contour_template(self.z_grid_cg, self.r_grid_cg, self.inferenceCoefficients[key], 'inferenceCoefficients %s' %key, save_filename='multiblock_inference_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
+        # if self.config.get_body_force_calibration_method().lower() == 'inference':
+        #     for key in self.inferenceCoefficients.keys():
+        #         contour_template(self.z_grid_cg, self.r_grid_cg, self.inferenceCoefficients[key], 'inferenceCoefficients %s' %key, save_filename='multiblock_inference_coefficient_%s' %key, folder_name=self.config.get_pictures_folder_path())
         
-        bodyForceReconstructed = self.config.perform_body_force_reconstruction()
-        if bodyForceReconstructed:
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.force_axial, r'$f_{ax} \ \rm{[N/kg]}$', save_filename='multiblock_forceAxial', folder_name=self.config.get_pictures_folder_path())
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.force_radial, r'$f_{r} \ \rm{[N/kg]}$', save_filename='multiblock_forceRadial', folder_name=self.config.get_pictures_folder_path())
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.force_tangential, r'$f_{\theta} \ \rm{[N/kg]}$', save_filename='multiblock_forceTangential', folder_name=self.config.get_pictures_folder_path())
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.angular_momentum_derivative, r'$\partial (r u_{\theta}) / \partial m \ \rm{[m/s]}$', save_filename='multiblock_angularMomentumDerivative', folder_name=self.config.get_pictures_folder_path())
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.entropy_derivative, r'$\partial (s) / \partial m \ \rm{[J/kgKm]}$', save_filename='multiblock_entropyDerivative', folder_name=self.config.get_pictures_folder_path())
+        # bodyForceReconstructed = self.config.perform_body_force_reconstruction()
+        # if bodyForceReconstructed:
+        #     contour_template(self.z_grid_cg, self.r_grid_cg, self.force_axial, r'$f_{ax} \ \rm{[N/kg]}$', save_filename='multiblock_forceAxial', folder_name=self.config.get_pictures_folder_path())
+        #     contour_template(self.z_grid_cg, self.r_grid_cg, self.force_radial, r'$f_{r} \ \rm{[N/kg]}$', save_filename='multiblock_forceRadial', folder_name=self.config.get_pictures_folder_path())
+        #     contour_template(self.z_grid_cg, self.r_grid_cg, self.force_tangential, r'$f_{\theta} \ \rm{[N/kg]}$', save_filename='multiblock_forceTangential', folder_name=self.config.get_pictures_folder_path())
+        #     contour_template(self.z_grid_cg, self.r_grid_cg, self.angular_momentum_derivative, r'$\partial (r u_{\theta}) / \partial m \ \rm{[m/s]}$', save_filename='multiblock_angularMomentumDerivative', folder_name=self.config.get_pictures_folder_path())
+        #     contour_template(self.z_grid_cg, self.r_grid_cg, self.entropy_derivative, r'$\partial (s) / \partial m \ \rm{[J/kgKm]}$', save_filename='multiblock_entropyDerivative', folder_name=self.config.get_pictures_folder_path())
         
         
     def fix_theta_camber_grids(self):

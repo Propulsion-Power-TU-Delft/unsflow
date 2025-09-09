@@ -2955,6 +2955,47 @@ class Blade:
         return inviscidCoeff, viscousCoeff
     
     
+    def getOutputFieldsForMeshBFM(self):
+        outputFields = self.config.get_turbo_BFM_mesh_output_fields()
+        outputDict = {}
+        
+        if 'blockage' in outputFields:
+            outputDict['blockage'] = self.blockage
+            
+        if 'camber' in outputFields:
+            outputDict['normalAxial'] = self.n_camber_z
+            outputDict['normalRadial'] = self.n_camber_r
+            outputDict['normalTangential'] = self.n_camber_t
+        
+        if 'blade_angles' in outputFields:
+            dbeta_dz, dbeta_dr = compute_gradient_least_square(self.z_grid, self.r_grid, self.blade_metal_angle)
+            dbeta_dm = dbeta_dz * np.cos(self.gas_path_angle) + dbeta_dr * np.sin(self.gas_path_angle)
+            outputDict['bladeMetalAngle'] = self.blade_metal_angle
+            outputDict['dbladeMetalAngle_dm'] = dbeta_dm
+            outputDict['bladeLeanAngle'] = self.blade_lean_angle
+            outputDict['bladeGasPathAngle'] = self.gas_path_angle
+        
+        if 'rpm' in outputFields:
+            omega = self.config.get_omega_shaft()[self.iblock]
+            outputDict['rpm'] = omega*60/(2*np.pi)+ np.zeros_like(self.z_grid)
+        
+        if 'stwl' in outputFields:
+            stwl = compute_meridional_streamwise_coordinates(self.z_grid, self.r_grid, normalize=False)
+            outputDict['streamwiseLength'] = stwl
+        
+        if 'spwl' in outputFields:
+            outputDict['spanwiseLength'] = self.spanline_length_normalized
+        
+        if 'blade_present' in outputFields:
+            outputDict['bladePresent'] = self.bladePresent+ np.zeros_like(self.z_grid)
+        
+        if 'number_blades' in outputFields:
+            outputDict['numberBlades'] = self.config.get_blades_number()[self.iblade] + np.zeros_like(self.z_grid)
+        
+        return outputDict
+        
+        
+    
     
         
         
