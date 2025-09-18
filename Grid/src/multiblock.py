@@ -408,7 +408,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.75, enlargeLoops = 3):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.25, enlargeLoops = 3):
         """
         Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
         The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid
@@ -432,29 +432,22 @@ class MultiBlock:
         zgrid = move_hub_shroud_points(self.z_grid_points.copy())
         rgrid = move_hub_shroud_points(self.r_grid_points.copy())
         
-        # inlet_cut_type = 'axial'
-        # outlet_cut_type = 'radial'
-        # coord_cutIn = -0.03
-        # coord_cutOut = 0.23
-        # zgrid, rgrid = self.cut_meridional_grid(zgrid, rgrid, 
-        #                                         inlet_cut_type, outlet_cut_type, 
-        #                                         coord_cutIn, coord_cutOut)
-        
-        # enlargerCounter = 1
-        # while enlargerCounter < enlargeLoops:
-        #     zgrid = enlarge_domain_array(zgrid)
-        #     rgrid = enlarge_domain_array(rgrid)
-            
-        #     # remove the spanwise enlargements
-        #     zgrid = zgrid[:, 1:-1]
-        #     rgrid = rgrid[:, 1:-1]
-            
-        #     enlargerCounter += 1
+        niTot, njTot = zgrid.shape
+        grid_portion = self.config.get_meridional_grid_portion()
+        if grid_portion=='full' or grid_portion=='all':
+            zgrid, rgrid = zgrid[:,:], rgrid[:,:]
+        else:
+            iStart = int(grid_portion.split('-')[0])
+            iEnd = int(grid_portion.split('-')[1])
+            if iEnd>niTot:
+                iEnd = niTot-1
+            if iStart<0:
+                iStart = 0
+            zgrid, rgrid = zgrid[iStart:iEnd,:], rgrid[iStart:iEnd,:]
 
         x = rgrid
         y = np.zeros_like(x)
         z = zgrid
-
         ni, nj = zgrid.shape
         os.makedirs(foldername, exist_ok=True)
         with open(foldername + '/' + filename, 'w') as file:
@@ -466,6 +459,21 @@ class MultiBlock:
                                  y[istream, ispan], 
                                  z[istream, ispan]))
         print('Written meridional grid csv file to: %s' %(foldername + '/' + filename))
+        
+        
+        plt.figure()
+        for i in range(niTot):
+            plt.plot(self.z_grid_points[i, :], self.r_grid_points[i, :], lw=light_line_width, c='black')
+        for j in range(njTot):
+            plt.plot(self.z_grid_points[:, j], self.r_grid_points[:, j], lw=light_line_width, c='black')
+        for i in range(ni):
+            plt.plot(zgrid[i, :], rgrid[i, :], lw=line_width, c='red')
+        for j in range(nj):
+            plt.plot(zgrid[:, j], rgrid[:, j], lw=line_width, c='red')
+        plt.xlabel(r'$z \ \mathrm{[m]}$')
+        plt.ylabel(r'$r \ \mathrm{[m]}$')
+        plt.gca().set_aspect('equal')
+        plt.title('Exported meridional grid')
     
     def write_spanwise_splines(self, foldername='Grid'):
         """

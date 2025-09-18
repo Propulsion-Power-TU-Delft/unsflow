@@ -476,9 +476,12 @@ class Config:
             return ['none'] # default
     
     def get_turbo_BFM_mesh_output_fields(self):
-        values = self.config_parser.get('GENERAL', 'TURBO_BFM_MESH_OUTPUT_FIELDS').lower()
-        values = [str(val.strip(',')) for val in values.split()]
-        return values
+        try:
+            values = self.config_parser.get('GENERAL', 'TURBO_BFM_MESH_OUTPUT_FIELDS').lower()
+            values = [str(val.strip(',')) for val in values.split()]
+            return values
+        except:
+            return ['none'] # default
     
     
     def get_blade_edges_extrapolation_coefficient(self):
@@ -616,6 +619,12 @@ class Config:
     
     def get_bladed_CFD_solver_type(self):
         return str(self.config_parser.get('BODY FORCE', 'BLADED_CFD_SOLVER')).lower()
+    
+    def get_meridional_grid_portion(self):
+        try:
+            return str(self.config_parser.get('GENERAL', 'MERIDIONAL_GRID_PORTION')).lower()
+        except:
+            return 'full'
     
     def hub_shroud_body_force_extrapolation_span_extent(self):
         return float(self.config_parser.get('BODY FORCE', 'HUB_SHROUD_BODY_FORCE_EXTRAPOLATION_SPAN_EXTENT'))
