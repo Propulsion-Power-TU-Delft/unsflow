@@ -1647,8 +1647,8 @@ class Blade:
         
         # camber grid vectors
         xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
-        camberStreamVectors = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
-        camberSpanVectors = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        self.camberStreamVectors = ComputeStreamwiseVectorsToSurface(xCamber, yCamber, zCamber)
+        self.camberSpanVectors = ComputeSpanwiseVectorsToSurface(xCamber, yCamber, zCamber)
         
         # meridional grid vectors
         meridionalStreamVectors = ComputeMeridionalVectors(self.z_grid, self.r_grid)
@@ -1661,11 +1661,11 @@ class Blade:
             for j in range(nj):
                 
                 # khat is the vector following the streamwise direction on the camber
-                khat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberStreamVectors[i,j,:])
+                khat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], self.camberStreamVectors[i,j,:])
                 khat /= np.linalg.norm(khat)
                 
                 # shat is the vector following the spanwise direction on the camber
-                shat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], camberSpanVectors[i,j,:])
+                shat = cartesian_to_cylindrical(xCamber[i,j], yCamber[i,j], zCamber[i,j], self.camberSpanVectors[i,j,:])
                 shat /= np.linalg.norm(shat)
                 
                 # mhat is the vector following the meridional grids direction (zero theta components)
