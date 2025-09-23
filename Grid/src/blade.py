@@ -734,17 +734,17 @@ class Blade:
         
         method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
         
-        theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
+        self.theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
         # contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
 
-        theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
+        self.theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
         # contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
 
         # this part evaluates the camber: choose if you want to model the camber as interface between pressure and suction, or like the camber itself reconstructed previously
         # self.theta_camber = 0.5*(theta_ps+theta_ss)
         self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
         # contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
-        self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
+        self.thk = self.r_grid*np.abs(self.theta_ps-self.theta_ss)
         try:
             self.thk += self.splitterThickness
         except:
