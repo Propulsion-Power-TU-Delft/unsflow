@@ -622,7 +622,9 @@ class Config:
     
     def get_meridional_grid_portion(self):
         try:
-            return str(self.config_parser.get('GENERAL', 'MERIDIONAL_GRID_PORTION')).lower()
+            values = str(self.config_parser.get('GENERAL', 'MERIDIONAL_GRID_PORTION')).lower()
+            vals = [int(val.strip(',')) for val in values.split()]
+            return vals
         except:
             return 'full'
     

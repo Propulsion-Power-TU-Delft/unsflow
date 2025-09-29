@@ -408,7 +408,7 @@ class MultiBlock:
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
-    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.25, enlargeLoops = 3):
+    def write_paraview_grid_file(self, filename='meridional_grid.csv', foldername='Grid', border_factor=0.9, enlargeLoops = 3):
         """
         Write the meridional grid file requireed by Paraview Macro to run the Circumferential Average Process.
         The format of the file generated (istream, ispan, x, y, z). The points at hub and shroud are slightly moved towards the passage to avoid
@@ -437,13 +437,15 @@ class MultiBlock:
         if grid_portion=='full' or grid_portion=='all':
             zgrid, rgrid = zgrid[:,:], rgrid[:,:]
         else:
-            iStart = int(grid_portion.split('-')[0])
-            iEnd = int(grid_portion.split('-')[1])
-            if iEnd>niTot:
-                iEnd = niTot-1
-            if iStart<0:
-                iStart = 0
-            zgrid, rgrid = zgrid[iStart:iEnd,:], rgrid[iStart:iEnd,:]
+            nStations = len(grid_portion)
+            zportion, rportion = np.zeros((nStations, njTot)), np.zeros((nStations, njTot))
+            for ii in range(len(grid_portion)):
+                station = grid_portion[ii]
+                if station>=niTot-1:
+                    raise ValueError('The streamwise station %i specified is out of the grid' % station)
+                zportion[ii,:] = zgrid[station,:]
+                rportion[ii,:] = rgrid[station,:]
+            zgrid, rgrid = zportion, rportion
 
         x = rgrid
         y = np.zeros_like(x)
@@ -468,8 +470,6 @@ class MultiBlock:
             plt.plot(self.z_grid_points[:, j], self.r_grid_points[:, j], lw=light_line_width, c='black')
         for i in range(ni):
             plt.plot(zgrid[i, :], rgrid[i, :], lw=line_width, c='red')
-        for j in range(nj):
-            plt.plot(zgrid[:, j], rgrid[:, j], lw=line_width, c='red')
         plt.xlabel(r'$z \ \mathrm{[m]}$')
         plt.ylabel(r'$r \ \mathrm{[m]}$')
         plt.gca().set_aspect('equal')
