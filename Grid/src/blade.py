@@ -2984,7 +2984,7 @@ class Blade:
             outputDict['streamwiseLength'] = stwl
         
         if 'spwl' in outputFields:
-            outputDict['spanwiseLength'] = self.spanline_length_normalized
+            outputDict['spanwiseLength'] = self.spanwise_normalized_coord
         
         if 'blade_present' in outputFields:
             outputDict['bladePresent'] = self.bladePresent+ np.zeros_like(self.z_grid)
