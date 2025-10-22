@@ -38,19 +38,19 @@ class SunModelMultiBlock():
         self.blocks = sun_objects
         self.config = config
         self.number_blocks = len(self.blocks)
-        self.streamwise_points = [block.data.nAxialNodes for block in self.blocks]
-        self.spanwise_points = self.blocks[0].data.nRadialNodes
+        self.streamwise_points = [block.nStream for block in self.blocks]
+        self.spanwise_points = self.blocks[0].nSpan
         self.assemble_physical_grid()
 
     def assemble_physical_grid(self):
         """
         Stack together the physical grids of the various blocks.
         """
-        self.z_grid = self.blocks[0].data.meridional_obj.z_grid
-        self.r_grid = self.blocks[0].data.meridional_obj.r_grid
+        self.z_grid = self.blocks[0].inputData['AxialCoord']
+        self.r_grid = self.blocks[0].inputData['RadialCoord']
         for block in self.blocks[1:]:
-            self.z_grid = np.concatenate((self.z_grid, block.data.meridional_obj.z_grid), axis=0)
-            self.r_grid = np.concatenate((self.r_grid, block.data.meridional_obj.r_grid), axis=0)
+            self.z_grid = np.concatenate((self.inputData['AxialCoord'], block.inputData['AxialCoord']), axis=0)
+            self.r_grid = np.concatenate((self.inputData['RadialCoord'], block.inputData['RadialCoord']), axis=0)
 
     def construct_L_global_matrices(self, visual_check=False):
         """
@@ -118,7 +118,7 @@ class SunModelMultiBlock():
             raise ValueError('Uknown differentiation method.')
 
         # Let's start from the downstream block (index 1), and consider the block itself and the previous (index 0).
-        rows_band = self.config.get_spanwise_points() * 5  # number of equations to modify per each block
+        rows_band = self.blocks[0].nSpan * 5  # number of equations to modify per each block
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
@@ -327,7 +327,6 @@ class SunModelMultiBlock():
         """
         z = self.z_grid
         r = self.r_grid
-        self.pic_size_blank, self.pic_size_contour = compute_picture_size(z, r)
         Nz = np.shape(z)[0]
         Nr = np.shape(z)[1]
         modes_map = cm.bwr

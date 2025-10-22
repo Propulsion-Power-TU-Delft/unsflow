@@ -19,79 +19,56 @@ class SunGrid():
     to apply the Sun instability model.
     """
 
-    def __init__(self, meridional_obj, mode='physical'):
+    def __init__(self, inputData, gridType='physical'):
         """
         instantiate the Sun Grid object, that contains the grids (physical and spectral), and the arrays of nodes objects
         contaning the fields and the matrices necessary for the instability model
         :param meridional_obj: object storing the 2D meridional flow fields, processed from CFD.
         :param mode: if physical it stores physical cordinates and fields data, if spectral it stores only spectral cordinates.
         """
-        self._meridional_obj = meridional_obj  # data contaning the fluid dynamic fields on the meridional plane
-        self.n_stream = meridional_obj.nstream
-        self.nAxialNodes = self.n_stream
-        self.n_span = meridional_obj.nspan
-        self.nRadialNodes = self.n_span
-        self.nPoints = self.n_stream*self.n_span
+        self.nStream = inputData['AxialCoord'].shape[0]
+        self.nSpan = inputData['AxialCoord'].shape[1]
+        self.nPoints = self.nStream*self.nSpan
+        self.inputData = inputData
 
-        if mode == 'physical':
-            self.rGrid, self.zGrid = meridional_obj.r_cg.copy(), meridional_obj.z_cg.copy()
-        elif mode == 'spectral':  # construct a gauss-lobatto grid for the spectral dataset
-            self.z = GaussLobattoPoints(self.nAxialNodes)
-            self.r = GaussLobattoPoints(self.nRadialNodes)
-            self.rGrid, self.zGrid = np.meshgrid(self.r, self.z)
-        else:
-            raise ValueError("Unknown mode")
-
-        if mode == 'physical':
-            self.dataSet = np.empty((self.n_stream, self.n_span), dtype=Node)  # an array of Node elements
+        if gridType == 'physical':
+            self.rGrid, self.zGrid = inputData['RadialCoord'].copy(), inputData['AxialCoord'].copy()
+            
+            self.dataSet = np.empty((self.nStream, self.nSpan), dtype=Node)  # an array of Node elements
             counter = 0
 
-            Nz = self.n_stream
-            Nr = self.n_span
-            for ii in range(0, self.n_stream):
-                for jj in range(0, self.n_span):
+            Nz = self.nStream
+            Nr = self.nSpan
+            for ii in range(0, self.nStream):
+                for jj in range(0, self.nSpan):
                     if ii == 0:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                        self.dataSet[ii, jj] = Node(self.zGrid[ii, jj], self.rGrid[ii, jj],
                                                     'inlet', counter)
                     elif ii == Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                        self.dataSet[ii, jj] = Node(self.zGrid[ii, jj], self.rGrid[ii, jj],
                                                     'outlet', counter)
                     elif jj == 0 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                        self.dataSet[ii, jj] = Node(self.zGrid[ii, jj], self.rGrid[ii, jj],
                                                     'hub', counter)
                     elif jj == Nr - 1 and ii != 0 and ii != Nz - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                        self.dataSet[ii, jj] = Node(self.zGrid[ii, jj], self.rGrid[ii, jj],
                                                     'shroud', counter)
                     elif ii != 0 and ii != Nz - 1 and jj != 0 and jj != Nr - 1:
-                        self.dataSet[ii, jj] = Node(meridional_obj.z_grid[ii, jj], meridional_obj.r_grid[ii, jj],
+                        self.dataSet[ii, jj] = Node(self.zGrid[ii, jj], self.rGrid[ii, jj],
                                                     'internal', counter)
                     else:
                         raise ValueError("The constructor of the grid has some problems")
 
-                    # # add the fluid dynamic field if is a physical grid
-                    # if mode == 'physical':
-                    #     self.dataSet[ii, jj].AppendDensityInfo(meridional_obj.rho[ii, jj],
-                    #                                            meridional_obj.drho_dr[ii, jj],
-                    #                                            meridional_obj.drho_dz[ii, jj])
-                    #
-                    #     self.dataSet[ii, jj].AppendVelocityInfo(meridional_obj.ur[ii, jj],
-                    #                                             meridional_obj.ut[ii, jj],
-                    #                                             meridional_obj.uz[ii, jj],
-                    #                                             meridional_obj.dur_dr[ii, jj],
-                    #                                             meridional_obj.dur_dz[ii, jj],
-                    #                                             meridional_obj.dut_dr[ii, jj],
-                    #                                             meridional_obj.dut_dz[ii, jj],
-                    #                                             meridional_obj.duz_dr[ii, jj],
-                    #                                             meridional_obj.duz_dz[ii, jj])
-                    #
-                    #     self.dataSet[ii, jj].AppendPressureInfo(meridional_obj.p[ii, jj],
-                    #                                             meridional_obj.dp_dr[ii, jj],
-                    #                                             meridional_obj.dp_dz[ii, jj])
-                    if counter != jj+ii*self.n_span:
+                    if counter != jj+ii*self.nSpan:
                         raise ValueError('Error in the numbering of the nodes')
                     counter += 1
+        
+        elif gridType == 'spectral':  # construct a gauss-lobatto grid for the spectral dataset
+            self.z = GaussLobattoPoints(self.nStream)
+            self.r = GaussLobattoPoints(self.nSpan)
+            self.rGrid, self.zGrid = np.meshgrid(self.r, self.z)
         else:
-            pass
+            raise ValueError("Unknown grid type")
 
 
     @property
@@ -103,8 +80,8 @@ class SunGrid():
         Print information about the nodes.
         :param datafile: set printing destination.
         """
-        for ii in range(0, self.nAxialNodes):
-            for jj in range(0, self.nRadialNodes):
+        for ii in range(0, self.nStream):
+            for jj in range(0, self.nSpan):
                 self.dataSet[ii, jj].PrintInfo(datafile)
 
 
@@ -113,8 +90,8 @@ class SunGrid():
         For every node on the hub and shroud it computes the normal vectors, and store them at the node level.
         The components are in the {r, theta, zeta} reference frame.
         """
-        for ii in range(0, self.nAxialNodes):
-            for jj in range(0, self.nRadialNodes):
+        for ii in range(0, self.nStream):
+            for jj in range(0, self.nSpan):
                 if (self.dataSet[ii, jj].marker == 'hub' or self.dataSet[ii, jj].marker == 'shroud'):
                     t_vec = np.array([self.dataSet[ii + 1, jj].r - self.dataSet[ii - 1, jj].r,
                              0,
@@ -152,7 +129,7 @@ class SunGrid():
         located on the gauss-lobatto points between 1 and -1 in both the directions.
         It conserves the same amount of grid nodes of the physical grid.
         """
-        newGridObj = SunGrid(self.meridional_obj, mode='spectral')
+        newGridObj = SunGrid(self.inputData, gridType='spectral')
         return newGridObj
 
 
@@ -166,9 +143,9 @@ class SunGrid():
         :param mode: type of visualization
         :param vector: if True plots also the boundary normals.
         """
-        mark = np.empty((self.nAxialNodes, self.nRadialNodes), dtype=str)
-        for ii in range(0, self.nAxialNodes):
-            for jj in range(0, self.nRadialNodes):
+        mark = np.empty((self.nStream, self.nSpan), dtype=str)
+        for ii in range(0, self.nStream):
+            for jj in range(0, self.nSpan):
                 if self.dataSet[ii, jj].marker == 'inlet':
                     mark[ii, jj] = "i"
                 elif self.dataSet[ii, jj].marker == 'outlet':
@@ -196,8 +173,8 @@ class SunGrid():
                 plt.scatter(self.zGrid[condition], self.rGrid[condition], c='black')
 
             if vector == 'wall normals':
-                for ii in range(0, self.nAxialNodes):
-                    for jj in range(0, self.nRadialNodes):
+                for ii in range(0, self.nStream):
+                    for jj in range(0, self.nSpan):
                         if self.dataSet[ii, jj].marker == 'hub' or self.dataSet[ii, jj].marker == 'shroud':
                             plt.quiver(self.dataSet[ii, jj].z, self.dataSet[ii, jj].r,
                                        self.dataSet[ii, jj].n_wall[2], self.dataSet[ii, jj].n_wall[0])
@@ -206,9 +183,9 @@ class SunGrid():
 
 
         elif mode == 'lines':
-            for ii in range(0, self.nAxialNodes):
+            for ii in range(0, self.nStream):
                 plt.plot(self.zGrid[ii, :], self.rGrid[ii, :], 'black', lw = light_line_width)
-            for jj in range(0, self.nRadialNodes):
+            for jj in range(0, self.nSpan):
                 plt.plot(self.zGrid[:, jj], self.rGrid[:, jj], 'black', lw = light_line_width)
 
         if save_filename is not None:
@@ -229,8 +206,8 @@ class SunGrid():
         self.rGrid /= x_ref
 
         # normalize every node quantity with the reference ones
-        for ii in range(0, self.n_stream):
-            for jj in range(0, self.n_span):
+        for ii in range(0, self.nStream):
+            for jj in range(0, self.nSpan):
                 self.dataSet[ii, jj].Normalize(rho_ref, u_ref, x_ref)
 
     def return_2d_field(self, field):
