@@ -14,7 +14,6 @@ import pickle
 from scipy.ndimage import minimum_filter
 from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
-from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
 from Utils.styles import *
 from .eigenmode import Eigenmode
@@ -1335,7 +1334,7 @@ class SunModel:
                     elif marker != 'internal':
                         raise Exception('Boundary condition unknown. Check the grid markers!')
 
-    def set_boundary_conditions(self):
+    def read_boundary_conditions(self):
         """
         Store in the object the information related to the boundary conditions to use for the problem
         """
@@ -1583,22 +1582,6 @@ class SunModel:
             plt.spy(self.P)
             plt.title(r'$\mathbf{P}$')
 
-    # def solve_quadratic_evp(self):
-    #     """
-    #     Solve the EVP using implicitly restarted Arnoldi algorithm with shift and invert strategy
-    #     """
-    #     print("Transforming generalized EVP in standard one...")
-    #     Y_tilde = np.linalg.inv(self.Y - sigma * P)
-    #     Y_tilde = np.dot(Y_tilde, P)
-    #
-    #     print("Solving standard EVP...")
-    #     self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-    #     self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return of the initial shift
-    #     self.eigenfreqs *= omega_ref  # convert to dimensional frequencies
-    #     self.eigenfreqs_df = self.eigenfreqs.imag / omega_ref
-    #     self.eigenfreqs_rs = self.eigenfreqs.real / omega_ref
-    #     self.sort_eigensolution()
-
     def sort_eigensolution(self):
         """
         Sort the eigenvalues and eigenvectors from the most unstable to the least one.
@@ -1775,35 +1758,4 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
                 plt.close()
 
-    def write_results(self, folder_name, save_filename=None, extension='csv'):
-        """
-        Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
-        Possible file types are (csv, pickle).
-        csv: write only DF and RS in a csv file, organized in two columns
-        pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
-        """
-        if save_filename is not None:
-            filename = save_filename
-        else:
-            filename = 'eigenvalues'
 
-        eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
-
-        if extension == 'csv':
-            with open(folder_name + filename + '.csv', 'w', newline='') as csvfile:
-                fieldnames = ['RS', 'DF']
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writeheader()
-                for num in eigenvalue_array:
-                    writer.writerow({'RS': num.real, 'DF': num.imag})
-        elif extension == 'pickle':
-            with open(folder_name + 'eigenfields.pickle', 'wb') as picklefile:
-                pickle.dump(self.eigenfields, picklefile)
-        else:
-            raise ValueError("Incorrect Extension of the output file.")
-
-    def free_dataset_memory(self):
-        """
-        Release memory that is not needed anymore
-        """
-        self.grid = None

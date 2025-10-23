@@ -260,3 +260,13 @@ def enlarge_square_matrices(A_list):
         A_g[counter:counter + A.shape[0], counter:counter + A.shape[1]] = A
         counter += A.shape[0]
     return A_g
+
+
+def gauss_lobatto_grid_generation(N, x_start, x_end):
+    """
+    Return the array of points distributed following gauss-lobatto structure
+    """
+    xi = np.zeros(N)
+    for ii in range(len(xi)):
+        xi[ii] = x_start + (x_end-x_start)*(1-np.cos(np.pi*ii/(N-1)))/2
+    return xi

@@ -14,7 +14,6 @@ import pickle
 from scipy.ndimage import minimum_filter
 from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
-from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
 from Utils.styles import *
 from .eigenmode import Eigenmode

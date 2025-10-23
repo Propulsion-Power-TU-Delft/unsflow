@@ -8,9 +8,11 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from .node import Node
+from Sun.src.node import Node
 import Utils
-from .general_functions import GaussLobattoPoints
+from Sun.src.general_functions import GaussLobattoPoints
+from Utils.styles import *
+import os
 
 
 class SunGrid():
@@ -84,7 +86,6 @@ class SunGrid():
             for jj in range(0, self.nSpan):
                 self.dataSet[ii, jj].PrintInfo(datafile)
 
-
     def ComputeBoundaryNormals(self):
         """
         For every node on the hub and shroud it computes the normal vectors, and store them at the node level.
@@ -134,7 +135,7 @@ class SunGrid():
 
 
 
-    def ShowGrid(self, formatFig=(10, 6), save_filename=None, mode=None, vector=None):
+    def ShowGrid(self, save_filename=None, mode=None, vector=None):
         """
         Show a scatter plots of the grid, with different colors for the different zones.
         if mode is set to boundaries it plots only them with normal vectors superposed.
@@ -157,7 +158,7 @@ class SunGrid():
                 else:
                     mark[ii, jj] = ''
 
-        plt.figure(figsize=formatFig)
+        plt.figure()
 
         if mode is None:
             condition = mark == 'i'  # plot only the inlet points
@@ -189,87 +190,8 @@ class SunGrid():
                 plt.plot(self.zGrid[:, jj], self.rGrid[:, jj], 'black', lw = light_line_width)
 
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-            plt.close()
+            os.makedirs('pictures', exist_ok=True)
+            plt.savefig('pictures/' + save_filename + '.pdf', bbox_inches='tight')
 
 
-
-    def Normalize(self, rho_ref, u_ref, x_ref):
-        """
-        Taking reference magnitudes for density, velocity and length, it normalizes all the data
-        contained in the grid, and in the nodes.
-        :param rho_ref: reference density [kg/m3]
-        :param u_ref: reference velocity [m/s]
-        :param x_ref: reference length [m]
-        """
-        self.zGrid /= x_ref
-        self.rGrid /= x_ref
-
-        # normalize every node quantity with the reference ones
-        for ii in range(0, self.nStream):
-            for jj in range(0, self.nSpan):
-                self.dataSet[ii, jj].Normalize(rho_ref, u_ref, x_ref)
-
-    def return_2d_field(self, field):
-        """
-        Given the name of the field, return the 2D array
-        """
-        size = self.dataSet.shape
-        array = np.zeros(size)
-        for i in range(size[0]):
-            for j in range(size[1]):
-                if field == 'z':
-                    array[i, j] = self.dataSet[i, j].z
-                elif field == 'r':
-                    array[i, j] = self.dataSet[i, j].r
-                elif field == 'rho':
-                    array[i, j] = self.dataSet[i, j].rho
-                elif field == 'ur':
-                    array[i, j] = self.dataSet[i, j].ur
-                elif field == 'ut':
-                    array[i, j] = self.dataSet[i, j].ut
-                elif field == 'uz':
-                    array[i, j] = self.dataSet[i, j].uz
-                elif field == 'p':
-                    array[i, j] = self.dataSet[i, j].p
-
-                elif field == 'drho_dr':
-                    array[i, j] = self.dataSet[i, j].drho_dr
-                elif field == 'drho_dz':
-                    array[i, j] = self.dataSet[i, j].drho_dz
-                elif field == 'dur_dr':
-                    array[i, j] = self.dataSet[i, j].dur_dr
-                elif field == 'dur_dz':
-                    array[i, j] = self.dataSet[i, j].dur_dz
-                elif field == 'dut_dr':
-                    array[i, j] = self.dataSet[i, j].dut_dr
-                elif field == 'dut_dz':
-                    array[i, j] = self.dataSet[i, j].dut_dz
-                elif field == 'duz_dr':
-                    array[i, j] = self.dataSet[i, j].duz_dr
-                elif field == 'duz_dz':
-                    array[i, j] = self.dataSet[i, j].duz_dz
-                elif field == 'dp_dr':
-                    array[i, j] = self.dataSet[i, j].dp_dr
-                elif field == 'dp_dz':
-                    array[i, j] = self.dataSet[i, j].dp_dz
-        return array
-
-
-
-    def check_fields(self):
-        """
-        Check the fluid dynamic fields associated to the nodes dataset.
-        """
-        z = self.return_2d_field('z')
-        r = self.return_2d_field('r')
-
-        fields = ['rho', 'ur', 'ut', 'uz', 'p', 'drho_dr', 'drho_dz', 'dur_dr', 'dur_dz', 'dut_dr', 'dut_dz', 'duz_dr', 'duz_dz',
-                  'dp_dr', 'dp_dz']
-
-        for field in fields:
-            plt.figure()
-            plt.contourf(z, r, self.return_2d_field(field), levels=N_levels, cmap=color_map)
-            plt.title(field)
-            plt.colorbar()
 

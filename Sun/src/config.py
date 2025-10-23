@@ -276,6 +276,13 @@ class Config:
                 return False
         except:
             return False
+        
+    def get_result_name(self):
+        try:
+            res = self.config_parser.get('SUN MODEL', 'RESULT_NAME')
+            return res
+        except:
+            return 'results'
 
     def get_fluid_gamma(self):
         return float(self.config_parser.get('CFD PROCESSING', 'GAMMA_FLUID'))

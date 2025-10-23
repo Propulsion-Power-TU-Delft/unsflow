@@ -14,7 +14,6 @@ import pickle
 from scipy.ndimage import minimum_filter
 from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
-from .annulus_meridional import AnnulusMeridional
 from .general_functions import *
 from Utils.styles import *
 from .eigenmode import Eigenmode
@@ -38,8 +37,8 @@ class SunModelMultiBlock():
         self.blocks = sun_objects
         self.config = config
         self.number_blocks = len(self.blocks)
-        self.streamwise_points = [block.nStream for block in self.blocks]
-        self.spanwise_points = self.blocks[0].nSpan
+        self.nStream = [block.nStream for block in self.blocks]
+        self.nSpan = self.blocks[0].nSpan
         self.assemble_physical_grid()
 
     def assemble_physical_grid(self):
@@ -52,49 +51,49 @@ class SunModelMultiBlock():
             self.z_grid = np.concatenate((self.inputData['AxialCoord'], block.inputData['AxialCoord']), axis=0)
             self.r_grid = np.concatenate((self.inputData['RadialCoord'], block.inputData['RadialCoord']), axis=0)
 
-    def construct_L_global_matrices(self, visual_check=False):
+    def construct_L_global_matrices(self, visual_check=True):
         """
         Construct the global L matrices for the multiblock problem, stacking together along the diagonal the blocks of every
         sub block.
         """
         L0 = [block.L0 for block in self.blocks]
         self.L0 = enlarge_square_matrices(L0)
-        if visual_check:
-            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-            ax[0].spy(np.abs(L0[0]))
-            ax[0].set_title(r'$L0_0$')
-            ax[1].spy(np.abs(L0[1]))
-            ax[1].set_title(r'$L0_1$')
-            ax[2].spy(np.abs(L0[2]))
-            ax[2].set_title(r'$L0_2$')
-            ax[3].spy(np.abs(self.L0))
-            ax[3].set_title(r'$L0_{tot}$')
+        # if visual_check:
+        #     fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+        #     ax[0].spy(np.abs(L0[0]))
+        #     ax[0].set_title(r'$L0_0$')
+        #     ax[1].spy(np.abs(L0[1]))
+        #     ax[1].set_title(r'$L0_1$')
+        #     ax[2].spy(np.abs(L0[2]))
+        #     ax[2].set_title(r'$L0_2$')
+        #     ax[3].spy(np.abs(self.L0))
+        #     ax[3].set_title(r'$L0_{tot}$')
 
         L1 = [block.L1 for block in self.blocks]
         self.L1 = enlarge_square_matrices(L1)
-        if visual_check:
-            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-            ax[0].spy(np.abs(L1[0]))
-            ax[0].set_title(r'$L1_0$')
-            ax[1].spy(np.abs(L1[1]))
-            ax[1].set_title(r'$L1_1$')
-            ax[2].spy(np.abs(L1[2]))
-            ax[2].set_title(r'$L1_2$')
-            ax[3].spy(np.abs(self.L1))
-            ax[3].set_title(r'$L1_{tot}$')
+        # if visual_check:
+        #     fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+        #     ax[0].spy(np.abs(L1[0]))
+        #     ax[0].set_title(r'$L1_0$')
+        #     ax[1].spy(np.abs(L1[1]))
+        #     ax[1].set_title(r'$L1_1$')
+        #     ax[2].spy(np.abs(L1[2]))
+        #     ax[2].set_title(r'$L1_2$')
+        #     ax[3].spy(np.abs(self.L1))
+        #     ax[3].set_title(r'$L1_{tot}$')
 
         L2 = [block.L2 for block in self.blocks]
         self.L2 = enlarge_square_matrices(L2)
-        if visual_check:
-            fig, ax = plt.subplots(1, 4, figsize=(12, 4))
-            ax[0].spy(np.abs(L2[0]))
-            ax[0].set_title(r'$L2_0$')
-            ax[1].spy(np.abs(L2[1]))
-            ax[1].set_title(r'$L2_1$')
-            ax[2].spy(np.abs(L2[2]))
-            ax[2].set_title(r'$L2_2$')
-            ax[3].spy(np.abs(self.L2))
-            ax[3].set_title(r'$L2_{tot}$')
+        # if visual_check:
+        #     fig, ax = plt.subplots(1, 4, figsize=(12, 4))
+        #     ax[0].spy(np.abs(L2[0]))
+        #     ax[0].set_title(r'$L2_0$')
+        #     ax[1].spy(np.abs(L2[1]))
+        #     ax[1].set_title(r'$L2_1$')
+        #     ax[2].spy(np.abs(L2[2]))
+        #     ax[2].set_title(r'$L2_2$')
+        #     ax[3].spy(np.abs(self.L2))
+        #     ax[3].set_title(r'$L2_{tot}$')
 
         if any(arg.dtype != np.complex128 for arg in (self.L0, self.L1, self.L2)):
             raise TypeError('The matrices are not complex')
@@ -202,17 +201,18 @@ class SunModelMultiBlock():
 
         print("Solving standard EVP...")
         self.eigenfreqs, self.eigenmodes = eigs(Y_tilde, k=self.config.get_research_number_omega_eigenvalues())
-        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0] // 2]  # divided by two because of the quadratic extension
+        self.eigenmodes = self.eigenmodes[0:self.eigenmodes.shape[0] // 2]  # take only the first half because of the quadratic EVP
 
         self.eigenfreqs = sigma + 1 / self.eigenfreqs  # return from the initial shift
         self.eigenfreqs *= self.config.get_reference_omega()  # convert to dimensional frequencies
+        
         self.eigenfreqs_df = self.eigenfreqs.imag / self.config.get_reference_omega() / \
                              self.config.get_circumferential_harmonic_order()
         self.eigenfreqs_rs = self.eigenfreqs.real / self.config.get_reference_omega() / \
                              self.config.get_circumferential_harmonic_order()
         self.sort_eigensolution(sort_mode=sort_mode)
 
-    def sort_eigensolution(self, sort_mode='imaginary decreasing'):
+    def sort_eigensolution(self, sort_mode='real increasing'):
         """
         Sort the eigenvalues and eigenvectors following the sort_mode ordering.
         """
@@ -284,7 +284,7 @@ class SunModelMultiBlock():
 
             self.eigenfields.append(Eigenmode(eigenfrequency, rho_eig_r, ur_eig_r, ut_eig_r, uz_eig_r, p_eig_r))
 
-    def plot_eigenfrequencies(self, delimit=None, normalization=True, save_filename=None, save_foldername='pictures'):
+    def plot_eigenfrequencies(self, delimit=None, normalization=False, save_filename=None, save_foldername='pictures'):
         """
         Plot the eigenfrequencies obtained with the Arnoldi Method
         :param delimit: if true, delimit the plot zone the important one for compressors
@@ -305,8 +305,7 @@ class SunModelMultiBlock():
             ax.set_ylabel(r'DF [-]')
         else:
             for mode in self.eigenfields:
-                ax.scatter(mode.eigenfrequency.real, mode.eigenfrequency.imag, marker='o', facecolors='none', edgecolors='red',
-                           s=marker_size)
+                ax.plot(mode.eigenfrequency.real, mode.eigenfrequency.imag, 'o', mfc='none')
             ax.set_xlabel(r'$\omega_R \mathrm{[rad/s]}$')
             ax.set_ylabel(r'$\omega_I \mathrm{[rad/s]}$')
 
@@ -408,35 +407,35 @@ class SunModelMultiBlock():
             if save_filename is not None:
                 plt.savefig(save_foldername + '/' + save_filename + '_p_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
-    def write_results(self, save_filename=None, folder_name='pictures'):
-        """
-        Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
-        Possible file types are (csv, pickle).
-        csv: write only DF and RS in a csv file, organized in two columns
-        pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
-        """
-        if save_filename is not None:
-            filename = save_filename
-        else:
-            filename = 'eigenvalues'
+    # def write_results(self, save_filename=None, folder_name='pictures'):
+    #     """
+    #     Print information regarding the eigenfrequencies found, in the form of damping factors and rotations speeds
+    #     Possible file types are (csv, pickle).
+    #     csv: write only DF and RS in a csv file, organized in two columns
+    #     pickle: write the full list of eigenfields, which contain frequencies and eigenfunctions, in a single pickle
+    #     """
+    #     if save_filename is not None:
+    #         filename = save_filename
+    #     else:
+    #         filename = 'eigenvalues'
 
-        eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
+    #     eigenvalue_array = self.eigenfreqs_rs + 1j * self.eigenfreqs_df
 
-        # save the csv of the eigenfrequencies already normalized
-        with open(folder_name + '/' + filename + '.csv', 'w', newline='') as csvfile:
-            fieldnames = ['RS', 'DF']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for num in eigenvalue_array:
-                writer.writerow({'RS': num.real, 'DF': num.imag})
+    #     # save the csv of the eigenfrequencies already normalized
+    #     with open(folder_name + '/' + filename + '.csv', 'w', newline='') as csvfile:
+    #         fieldnames = ['RS', 'DF']
+    #         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #         writer.writeheader()
+    #         for num in eigenvalue_array:
+    #             writer.writerow({'RS': num.real, 'DF': num.imag})
 
-        # save the pickle with all the eigenmodes
-        with open(folder_name + '/' + 'eigenfields.pickle', 'wb') as picklefile:
-            pickle.dump(self.eigenfields, picklefile)
+    #     # save the pickle with all the eigenmodes
+    #     with open(folder_name + '/' + 'eigenfields.pickle', 'wb') as picklefile:
+    #         pickle.dump(self.eigenfields, picklefile)
 
-        print('Saved eigenvalues.csv and eigenfields.pickle in: %s', folder_name)
-        print_banner_begin('END OF SIMULATION')
-        print_banner_end()
+    #     print('Saved eigenvalues.csv and eigenfields.pickle in: %s', folder_name)
+    #     print_banner_begin('END OF SIMULATION')
+    #     print_banner_end()
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """
@@ -469,3 +468,18 @@ class SunModelMultiBlock():
             plt.title(name)
             plt.xlabel('Value')
             plt.ylabel('N elements')
+    
+    def SaveOutput(self):
+        os.makedirs('Output', exist_ok=True)
+        output = {}
+        output['AxialCoords'] = self.z_grid
+        output['RadialCoords'] = self.r_grid
+        output['Eigenfrequencies'] = self.eigenfreqs
+        output['Eigenmodes'] = self.eigenmodes
+        
+        filename = self.config.get_result_name()
+        
+        with open('Output/' + filename + '.pkl', 'wb') as f:
+            pickle.dump(output, f)
+        
+        print("Results saved in Output/" + filename + ".pkl")
