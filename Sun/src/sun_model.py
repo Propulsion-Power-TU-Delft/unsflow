@@ -49,7 +49,7 @@ class SunModel:
         self.blockType = self.config.GetBlockType()
         self.iblock = iblock
         
-        inputFile = self.config.GetInputFile()[self.iblock]
+        inputFile = self.config.GetInputGridFiles()[self.iblock]
         with open(inputFile, 'rb') as file:
             self.inputData = pickle.load(file)
         

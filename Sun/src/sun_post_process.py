@@ -116,64 +116,66 @@ class PostProcessSun():
             rs = mode.eigenfrequency.real
             df = mode.eigenfrequency.imag
 
-            plt.figure()
-            plt.contourf(z, r, mode.eigen_rho, levels=N_levels, cmap=modes_map)
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            plt.xticks([])
-            plt.yticks([])
-            plt.gca().set_aspect('equal', adjustable='box')
-            if save_filename is not None:
-                plt.savefig(save_foldername + '/' + save_filename + '_rho_%i_%i_%i.pdf' % (self.nStream, self.nSpan, imode), bbox_inches='tight')
+            fig, axs = plt.subplots(2, 3, figsize=(18, 10))
+            axs = axs.flatten()
 
-            plt.figure()
-            plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            plt.xticks([])
-            plt.yticks([])
-            plt.gca().set_aspect('equal', adjustable='box')
-            if save_filename is not None:
-                plt.savefig(save_foldername + '/' + save_filename + '_ur_%i_%i_%i.pdf' % (self.nStream, self.nSpan, imode), bbox_inches='tight')
+            titles = [
+                r'$\tilde{\rho}_{%i}$' % (imode),
+                r'$\tilde{u}_{r,%i}$' % (imode),
+                r'$\tilde{u}_{\theta,%i}$' % (imode),
+                r'$\tilde{u}_{z,%i}$' % (imode),
+                r'$\tilde{p}_{%i}$' % (imode),
+                r'$\tilde{p}_{%i}$ with $\vec{u}_m$ quiver' % (imode),
+            ]
 
-            plt.figure()
-            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            plt.xticks([])
-            plt.yticks([])
-            plt.gca().set_aspect('equal', adjustable='box')
-            if save_filename is not None:
-                plt.savefig(save_foldername + '/' + save_filename + '_ut_%i_%i_%i.pdf' % (self.nStream, self.nSpan, imode), bbox_inches='tight')
+            fields = [
+                mode.eigen_rho,
+                mode.eigen_ur,
+                mode.eigen_utheta,
+                mode.eigen_uz,
+                mode.eigen_p,
+                mode.eigen_p,
+            ]
 
-            plt.figure()
-            plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            plt.xticks([])
-            plt.yticks([])
-            plt.gca().set_aspect('equal', adjustable='box')
-            if save_filename is not None:
-                plt.savefig(save_foldername + '/' + save_filename + '_uz_%i_%i_%i.pdf' % (self.nStream, self.nSpan, imode), bbox_inches='tight')
+            quiver_flags = [False, False, False, False, False, True]
 
-            plt.figure()
-            plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
-            plt.xlabel(r'$z$ [-]')
-            plt.ylabel(r'$r$ [-]')
-            plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
-            plt.colorbar()
-            plt.gca().set_aspect('equal', adjustable='box')
-            plt.xticks([])
-            plt.yticks([])
-            plt.quiver(z, r, mode.eigen_uz, mode.eigen_ur)
+            for i, (ax, field, title, qflag) in enumerate(zip(axs, fields, titles, quiver_flags)):
+                cf = ax.contourf(z, r, field, levels=N_levels, cmap=modes_map)
+                ax.set_title(title)
+                ax.set_aspect('equal', adjustable='box')
+                plt.colorbar(cf, ax=ax)
+
+                # Keep y-label only for first column
+                if i % 3 == 0:
+                    ax.set_ylabel(r'$r$ [m]')
+                else:
+                    ax.set_ylabel('')
+
+                # Keep x-label only for bottom row
+                if i >= 3:
+                    ax.set_xlabel(r'$z$ [m]')
+                else:
+                    ax.set_xlabel('')
+
+                if qflag:
+                    ax.quiver(z, r, mode.eigen_uz, mode.eigen_ur)
+
+            # Hide any unused subplots (if any)
+            for i in range(len(fields), len(axs)):
+                axs[i].axis('off')
+
+            plt.tight_layout()
+
             if save_filename is not None:
-                plt.savefig(save_foldername + '/' + save_filename + '_p_%i_%i_%i.pdf' % (self.nStream, self.nSpan, imode), bbox_inches='tight')
+                plt.savefig(
+                    save_foldername + '/' + save_filename + '_modes_%i_%i_%i.pdf' %
+                    (self.nStream, self.nSpan, imode),
+                    bbox_inches='tight'
+                )
+
+
+
+
+
+
 
