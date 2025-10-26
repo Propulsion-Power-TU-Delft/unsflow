@@ -691,7 +691,7 @@ class MultiBlock:
         nk = self.config.get_mesh_periodic_number_points()
         
         if self.config.get_mesh_output_topology().lower() == 'periodic':
-            periodicityTheta = self.config.get_mesh_periodicity_theta()
+            periodicityTheta = self.config.get_mesh_periodicity_angle()
             theta = np.linspace(0, periodicityTheta, nk)
         elif self.config.get_mesh_output_topology().lower() == 'full_annulus':
             theta = np.linspace(0, 2*np.pi, nk)

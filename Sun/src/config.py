@@ -279,7 +279,7 @@ class Config:
         
     def get_result_name(self):
         try:
-            res = self.config_parser.get('SUN MODEL', 'RESULT_NAME')
+            res = self.config_parser.get('SUN MODEL', 'RESULT_FILENAME')
             return res
         except:
             return 'results'
@@ -341,7 +341,13 @@ class Config:
         return str(self.config_parser.get('SUN MODEL', 'HUB_BC'))
     
     def GetInputFile(self):
-        return str(self.config_parser.get('SUN MODEL', 'INPUT_FILE'))
+        values = str(self.config_parser.get('SUN MODEL', 'INPUT_FILE'))
+        values = [str(i.strip(',')) for i in values.split()]
+        return values
+    
+    def getNumberOfBlocks(self):
+        inputfiles = self.GetInputFile()
+        return len(inputfiles)
 
     def get_shroud_bc(self):
         return str(self.config_parser.get('SUN MODEL', 'SHROUD_BC'))

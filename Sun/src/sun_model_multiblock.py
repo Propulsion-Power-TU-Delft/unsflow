@@ -48,8 +48,8 @@ class SunModelMultiBlock():
         self.z_grid = self.blocks[0].inputData['AxialCoord']
         self.r_grid = self.blocks[0].inputData['RadialCoord']
         for block in self.blocks[1:]:
-            self.z_grid = np.concatenate((self.inputData['AxialCoord'], block.inputData['AxialCoord']), axis=0)
-            self.r_grid = np.concatenate((self.inputData['RadialCoord'], block.inputData['RadialCoord']), axis=0)
+            self.z_grid = np.concatenate((self.z_grid, block.inputData['AxialCoord']), axis=0)
+            self.r_grid = np.concatenate((self.r_grid, block.inputData['RadialCoord']), axis=0)
 
     def construct_L_global_matrices(self, visual_check=True):
         """
@@ -135,8 +135,8 @@ class SunModelMultiBlock():
                 (-phi_dn[1,j]+phi_dn[0,j])/(xi_dn[1,j]-xi_dn[0,j])"""
                 self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
-                dxi_up = self.blocks[iblock - 1].dataSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].dataSpectral.zGrid[-2, 0]
-                dxi_dn = self.blocks[iblock].dataSpectral.zGrid[1, 0] - self.blocks[iblock].dataSpectral.zGrid[0, 0]
+                dxi_up = self.blocks[iblock - 1].gridSpectral.zGrid[-1, 0] - self.blocks[iblock - 1].gridSpectral.zGrid[-2, 0]
+                dxi_dn = self.blocks[iblock].gridSpectral.zGrid[1, 0] - self.blocks[iblock].gridSpectral.zGrid[0, 0]
 
                 self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + rows_band] = np.eye(rows_band) / dxi_dn
                 self.L0[eq_counter:eq_counter + rows_band, eq_counter - rows_band:eq_counter] = np.eye(rows_band) / dxi_up
@@ -150,18 +150,18 @@ class SunModelMultiBlock():
                 self.L0[eq_counter:eq_counter + rows_band, :] = np.zeros_like(self.L0[eq_counter:eq_counter + rows_band, :])
 
                 # previous block
-                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock-1].dataSpectral.z)
-                Iy = np.eye(self.blocks[iblock-1].data.nRadialNodes)
+                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock-1].gridSpectral.z)
+                Iy = np.eye(self.blocks[iblock-1].nSpan)
                 DX = np.kron(DX, Iy)
-                DX = DX[-self.config.get_spanwise_points():, :]
+                DX = DX[-self.nSpan:, :]
                 DX = np.kron(DX, np.eye(5))
                 self.L0[eq_counter:eq_counter + rows_band, eq_counter-DX.shape[1]:eq_counter] = DX
 
                 # next block
-                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock].dataSpectral.z)
-                Iy = np.eye(self.blocks[iblock].data.nRadialNodes)
+                DX = ChebyshevDerivativeMatrixBayliss(self.blocks[iblock].gridSpectral.z)
+                Iy = np.eye(self.blocks[iblock].nSpan)
                 DX = np.kron(DX, Iy)
-                DX = DX[0:self.config.get_spanwise_points(), :]
+                DX = DX[0:self.nSpan, :]
                 DX = np.kron(DX, np.eye(5))
                 self.L0[eq_counter:eq_counter + rows_band, eq_counter:eq_counter + DX.shape[1]] = -DX
 

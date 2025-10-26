@@ -38,7 +38,7 @@ class SunModel:
         S : coefficient matrix of the body force model
     """
 
-    def __init__(self, config):
+    def __init__(self, config, iblock=0):
         """
         Instantiate the sun model Object, contaning all the attributes and methods necessary for the instability
         analysis.
@@ -47,8 +47,9 @@ class SunModel:
         """
         self.config = config
         self.blockType = self.config.GetBlockType()
+        self.iblock = iblock
         
-        inputFile = self.config.GetInputFile()
+        inputFile = self.config.GetInputFile()[self.iblock]
         with open(inputFile, 'rb') as file:
             self.inputData = pickle.load(file)
         
@@ -1240,11 +1241,12 @@ class SunModel:
         """
         self.Z_g = self.Q_const + self.C_g + self.R_g
 
-    def compute_L_matrices(self, block_i):
+    def compute_L_matrices(self):
         """
         Compute the L0 matrix, defined as L0 = Z_g(1+j*m*Omega*tau)+S_g
         :param block_i: number of the current block
         """
+        block_i = self.iblock
         try:
             block_type = self.config.get_blocks_type()[block_i]
         except:

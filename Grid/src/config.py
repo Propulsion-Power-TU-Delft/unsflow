@@ -262,8 +262,8 @@ class Config:
         value = int(self.config_parser.get('GENERAL', 'PERIODIC_NUMBER_POINTS'))
         return value
     
-    def get_mesh_periodicity_theta(self):
-        value = float(self.config_parser.get('GENERAL', 'PERIODICITY_THETA'))
+    def get_mesh_periodicity_angle(self):
+        value = float(self.config_parser.get('GENERAL', 'PERIODICITY_ANGLE'))
         return value*np.pi/180
 
     def get_blade_outlet_type(self):
