@@ -117,7 +117,7 @@ class SunModelMultiBlock():
             raise ValueError('Uknown differentiation method.')
 
         # Let's start from the downstream block (index 1), and consider the block itself and the previous (index 0).
-        rows_band = self.blocks[0].nSpan * 5  # number of equations to modify per each block
+        rows_band = self.nSpan * 5  # number of equations to modify per each block
         eq_counter = self.blocks[0].L0.shape[0]  # this is the equation counter at the end of the first block
         for iblock in range(1, self.number_blocks):
 
@@ -182,10 +182,14 @@ class SunModelMultiBlock():
         Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
         Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)
         self.Y = np.concatenate((Y1, Y2), axis=0)  # Y matrix of EVP problem
+        
+        del Y1, Y2
 
         P1 = np.concatenate((self.L1, self.L2), axis=1)
         P2 = np.concatenate((np.eye(self.L0.shape[0]), np.zeros_like(self.L0)), axis=1)
         self.P = np.concatenate((P1, P2), axis=0)  # P matrix of EVP problem
+        
+        del P1, P2
 
     def solve_evp(self, sort_mode='imaginary decreasing'):
         """

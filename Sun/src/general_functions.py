@@ -1,6 +1,9 @@
 import numpy as np
 from Utils.styles import total_chars
 from findiff import FinDiff
+import pandas as pd
+import os
+import pickle
 
 
 def JacobianTransform_hardcoded(X, Y, Z, R):
@@ -270,3 +273,69 @@ def gauss_lobatto_grid_generation(N, x_start, x_end):
     for ii in range(len(xi)):
         xi[ii] = x_start + (x_end-x_start)*(1-np.cos(np.pi*ii/(N-1)))/2
     return xi
+
+
+def write_gridfile_from_cturbobfm(filepath, outputName=None):
+    """Take the path to results obtained with cturbobfm, supplemented by gradients, and produce the pkl file
+    needed from the Sun module
+
+    Args:
+        filepath (_type_): path
+        outputName (str, optional): _description_. Defaults to 'grid.pkl'.
+    """
+    
+    # Read the first three lines to extract grid sizes
+    with open(filepath, 'r') as f:
+        ni = int(f.readline().strip().split('=')[1])
+        nj = int(f.readline().strip().split('=')[1])
+        nk = int(f.readline().strip().split('=')[1])
+
+    # Read the rest of the CSV data into a DataFrame
+    df = pd.read_csv(filepath, skiprows=3)
+
+    print("Found the following grid sizes:")
+    print(f"NI = {ni}, NJ = {nj}, NK = {nk}\n")
+
+    if nk != 1:
+        raise ValueError("Grid file is not 2D")
+
+    print("With the following field values")
+
+    # Convert DataFrame to dict of 2D float arrays
+    field_dict = {
+        key: np.array(values, dtype=float).reshape((ni, nj))
+        for key, values in df.to_dict(orient='list').items()
+    }
+
+    print(field_dict.keys())
+    
+    # ok output the pkl file for Sun model (be careful for the convetion about directions)
+    # CTurboBFM (x,y,z) corresponds to Sun (z, r, t)
+    data = {
+    'AxialCoord': field_dict['x'],
+    'RadialCoord': field_dict['y'],
+    'Density': field_dict['Density'],
+    'AxialVel': field_dict['Velocity X'],
+    'RadialVel': field_dict['Velocity Y'],
+    'TangentialVel': field_dict['Velocity Z'],
+    'Pressure': field_dict['Pressure'],
+    'drho_dr': field_dict['Density Gradient Y'],
+    'drho_dz': field_dict['Density Gradient X'],
+    'duz_dr': field_dict['Velocity X Gradient Y'],
+    'duz_dz': field_dict['Velocity X Gradient X'],
+    'dur_dr': field_dict['Velocity Y Gradient Y'],
+    'dur_dz': field_dict['Velocity Y Gradient X'],
+    'dut_dr': field_dict['Velocity Z Gradient Y'],
+    'dut_dz': field_dict['Velocity Z Gradient X'],
+    'dp_dr': field_dict['Pressure Gradient Y'],
+    'dp_dz': field_dict['Pressure Gradient X']
+    }
+    
+    os.makedirs('Grids', exist_ok=True)
+    with open('Grids/Sun_Data_%02i_%02i.pkl' % (ni, nj), 'wb') as f:
+        pickle.dump(data, f)
+
+    print('Data saved in Grids/data_%02i_%02i.pkl' % (ni, nj))
+    
+    
+    
