@@ -1903,3 +1903,43 @@ def plot_line_template(x_tuple, y_tuple, labels=None, xname=r'$x$', yname=r'$y$'
 
     if save_filename is not None:
         plt.savefig(save_filename, bbox_inches='tight')
+
+
+def write_3D_cturbobfm_csv_input_distribution_file(dataset, outputFilename='CTurboBFM_Mesh', outputFolder='Grids'):
+    """Function to generate input 2D file
+
+    Args:
+        dataset (_type_): _description_
+        outputFilename (str, optional): _description_. Defaults to 'CTurboBFM_Mesh'.
+        outputFolder (str, optional): _description_. Defaults to 'Grids'.
+    """
+    nj, nk = dataset['x'].shape
+    ni = 1
+    for key, value in dataset.items():
+        dataset[key] = value.reshape((ni, nj, nk))
+    
+    os.makedirs(outputFolder, exist_ok=True)
+    filepath = outputFolder + '/%s_%02i_%02i_%02i.csv' % (outputFilename, ni, nj, nk)
+    with open(filepath, 'w') as f:
+        f.write('NI=%i\n' % ni)
+        f.write('NJ=%i\n' % nj)
+        f.write('NK=%i\n' % nk)
+        for key in dataset.keys():
+            if key == 'x':
+                f.write('%s' % key)
+            else:
+                f.write(',%s' % key)
+        f.write('\n')
+        for i in range(ni):
+            for j in range(nj):
+                for k in range(nk):
+                    for key, values in dataset.items():
+                        if key == 'x':
+                            f.write('%.6f' % values[i,j,k])
+                        elif key == 'y' or key == 'z':
+                            f.write(',%.6f' % values[i,j,k])
+                        else:
+                            f.write(',%.6f' % values[i,j,k])
+                    f.write('\n')
+        
+        print(f"CTurboBFM 3D mesh csv file saved to {filepath}")
