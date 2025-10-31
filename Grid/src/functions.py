@@ -1943,3 +1943,28 @@ def write_3D_cturbobfm_csv_input_distribution_file(dataset, outputFilename='CTur
                     f.write('\n')
         
         print(f"CTurboBFM 3D mesh csv file saved to {filepath}")
+
+
+def computeMinDistanceFromWalls(pointCoords, hubCoords, shroudCoords, nPointsReconstruction=5000):
+    """Compute the minimum distance of a point wrt hub and shroud curves, as needed by SA model
+
+    Args:
+        pointCoords (tuple of floats): axial and radial cordinates
+        hubCoords (tuple of arr): set of points (axial and radial) defining the hub curve
+        shroudCoords (tuple of arr): set of points (axial and radial) defining the shroud curve
+        nPointsReconstruction (int, optional): number of points used to compute the wall splines. Defaults to 5000.
+
+    Returns:
+        float: min distance from walls
+    """
+    
+    hub_ax, hub_rad = compute_2dSpline_curve(hubCoords[0], hubCoords[1], nPointsReconstruction)
+    dhub = np.sqrt((pointCoords[0]-hub_ax)**2 + (pointCoords[1]-hub_rad)**2)
+    
+    shroud_ax, shroud_rad = compute_2dSpline_curve(shroudCoords[0], shroudCoords[1], nPointsReconstruction)
+    dshroud = np.sqrt((pointCoords[0]-shroud_ax)**2 + (pointCoords[1]-shroud_rad)**2)
+    
+    tmp = np.concatenate((dhub, dshroud))
+    minDistance = np.min(tmp)
+    
+    return minDistance
