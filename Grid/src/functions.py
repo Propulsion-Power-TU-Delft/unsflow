@@ -22,6 +22,8 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 import plotly.graph_objects as go
 import plotly.io as pio
+from scipy import ndimage
+
 
 
 def cluster_sample_u(n, shrink_effect=3.5, border='default'):
@@ -1271,7 +1273,7 @@ def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, fo
         # cbar.set_ticks(tick_values)  # Set custom tick locations
         
         if contour_levels:
-            contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.3, linestyles='solid')
+            contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.15, linestyles='solid')
         
         plt.title(name)
         if ticks is not True:
@@ -1968,3 +1970,26 @@ def computeMinDistanceFromWalls(pointCoords, hubCoords, shroudCoords, nPointsRec
     minDistance = np.min(tmp)
     
     return minDistance
+
+
+
+def fill_nans_2d(arr):
+    """
+    Fill NaNs in a 2D NumPy array by copying values 
+    from the nearest non-NaN cell.
+    The output has the exact same shape.
+    """
+    if arr.ndim != 2:
+        raise ValueError("Array must be 2D")
+
+    mask = np.isnan(arr)
+
+    # Compute distance to nearest non-NaN
+    # idx contains coordinates of nearest valid cell for each position
+    _, idx = ndimage.distance_transform_edt(mask, return_indices=True)
+    
+    # Use the indices to build the filled array
+    filled = arr.copy()
+    filled[mask] = arr[tuple(idx)][mask]
+
+    return filled

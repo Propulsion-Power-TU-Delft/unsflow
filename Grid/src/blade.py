@@ -272,7 +272,7 @@ class Blade:
                 plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
                 plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')
                 plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
-                plt.xlabel(r'$s_{m}$ [m]')
+                plt.xlabel(r'$m$ [m]')
                 plt.ylabel(r'$r \theta$ [m]')
                 plt.legend()
                 plt.title(f'Profile {i+1} of {self.number_profiles}')

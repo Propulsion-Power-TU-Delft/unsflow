@@ -63,7 +63,7 @@ class Greitzer:
     
     
     def computeLinearizedStabilityMap(self):
-        resolution = 50
+        resolution = 100
         B_min = 0.001
         B_max = 1.25
         G_min = 0.001
@@ -89,21 +89,27 @@ class Greitzer:
                 roots = np.roots(coeffs)
                 roots_real = roots.real
 
-                if (roots_real[0]>=0 or roots_real[1]>=0 or roots_real[2]>=0):
-                    self.stabilityMap[i,j] = 1 #unstable
-                else:
-                    self.stabilityMap[i,j] = 0 #stable
+                self.stabilityMap[i,j] = np.max(roots_real)
+                # if (roots_real[0]>=0 or roots_real[1]>=0 or roots_real[2]>=0):
+                #     self.stabilityMap[i,j] = 1 #unstable
+                # else:
+                #     self.stabilityMap[i,j] = 0 #stable
     
     
     
-    def plotStabilityMap(self, save_filename=None):
+    def plotStabilityMap(self, save_filename=None, plotSystem=False):
         os.makedirs(PICS_FOLDER, exist_ok=True)
         
         plt.figure()
-        plt.contourf(self.B_grid, self.G_grid, self.stabilityMap, cmap='bwr')
-        plt.plot(self.B_system, self.G_system, 'ow')
-        plt.xlabel(r'$B$')
-        plt.ylabel(r'$G$')
+        plt.contourf(self.B_grid, self.G_grid, self.stabilityMap, cmap='RdBu_r', levels=50)
+        plt.colorbar()
+        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='--', linewidths=2.0)
+        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=15)
+        if plotSystem:
+            plt.plot(self.B_system, self.G_system, 'ow')
+        plt.xlabel(r'$B$ [-]')
+        plt.ylabel(r'$G$ [-]')
+        plt.title(r'max Re($\lambda$) [-]')
         if save_filename is not None:
             plt.savefig(PICS_FOLDER + '/' + save_filename + '_stability_map_B_%.3f.pdf' % (self.B_system), bbox_inches='tight')
         
