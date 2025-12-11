@@ -132,7 +132,7 @@ def perform_chima_profiles_processing(inputFiles, massFlows, refFile, visualDebu
     
     
     # now extrapolated the line data by 20% through linear extrapolation
-    extrapExtent = 0.5
+    extrapExtent = 0.2
     deltaMass = massFlowNorm.max() - massFlowNorm.min()
     mMin = massFlowNorm.min() - deltaMass*extrapExtent
     mMax = massFlowNorm.max() + deltaMass*extrapExtent
@@ -197,7 +197,7 @@ def perform_chima_profiles_processing(inputFiles, massFlows, refFile, visualDebu
     with open('Output/scaling_functions.csv', 'w') as f:
         f.write(f"MassFlow,PhiTurn,PhiLoss,PhiDev\n")
         for i in range(len(mFlowNew)):
-            f.write(f"{mFlowNew[i]},{phi_turning_new[i]},{phi_loss_new[i]},{phi_deviation_new[i]}\n")
+            f.write(f"{mFlowNew[i]*massFlows[refFile]},{phi_turning_new[i]},{phi_loss_new[i]},{phi_deviation_new[i]}\n")
     print("Chima profiles processing completed. Files saved in 'Output' folder.")
     
     if visualDebug:
@@ -343,8 +343,6 @@ def read_cturbobfm_csv_file(gridFilePath):
     # Read the rest of the CSV data into a DataFrame
     df = pd.read_csv(gridFilePath, skiprows=3)
 
-    # Output to verify
-    print(f"NI = {ni}, NJ = {nj}, NK = {nk}")
     return df, ni, nj, nk
 
 

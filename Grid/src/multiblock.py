@@ -679,9 +679,9 @@ class MultiBlock:
                 for j in range(nj):
                     for key, values in mesh.items():
                         if key == 'x':
-                            f.write('%.6e' % values[i,j])
+                            f.write('%.15f' % values[i,j])
                         else:
-                            f.write(',%.6e' % values[i,j])
+                            f.write(',%.15f' % values[i,j])
                     f.write('\n')
             
         print(f"CTurboBFM axisymmetric mesh pickle file saved to {filepath}")
@@ -732,11 +732,11 @@ class MultiBlock:
                     for k in range(nk):
                         for key, values in mesh.items():
                             if key == 'x':
-                                f.write('%.6e' % values[i,j,k])
+                                f.write('%.15f' % values[i,j,k])
                             elif key == 'y' or key == 'z':
-                                f.write(',%.6e' % values[i,j,k])
+                                f.write(',%.15f' % values[i,j,k])
                             else:
-                                f.write(',%.6e' % values[i,j])
+                                f.write(',%.15f' % values[i,j])
                         f.write('\n')
                     
                     
