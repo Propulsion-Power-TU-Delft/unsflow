@@ -1705,15 +1705,32 @@ class Blade:
                 # # convention for lean angle is that it is positive if the cross product (k,s) has positive radial component
                 # if np.cross(khat, shat)[0] < 0:
                 #     self.blade_lean_angle[i, j] *= -1
-                
+    
+    def compute_blade_camber_curvature(self):
         
-        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.blade_metal_angle, r'$\kappa \quad \mathrm{[deg]}$')
-        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.gas_path_angle, r'$\phi \quad \mathrm{[deg]}$')
-        # contour_template(self.z_grid, self.r_grid, 180/np.pi*self.blade_lean_angle, r'$\lambda \quad \mathrm{[deg]}$')
+        # First compute the vectors oriented along streamwise and spanwise directions of the blade
+        def getCartesianCoords(r,t,z):
+            return r*np.cos(t), r*np.sin(t), z
         
-        print()
+        # camber coords
+        xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
+        
+        # dbeta_dz, dbeta_dr = compute_gradient_least_square(self.z_grid, self.r_grid, self.blade_metal_angle)
+        # dbeta_dm = dbeta_dz * np.cos(self.gas_path_angle) + dbeta_dr * np.sin(self.gas_path_angle)
+        
+        ni,nj = self.z_grid.shape
+        self.camber_curvature = np.zeros_like(self.z_grid)
+        
+        # compute blade camnber curvature along the meridional direction, using the derivative of blade metal angle
+        for i in range(ni):
+            for j in range(nj):
+                ip, im, jp, jm = get_2d_finite_difference_stencil(i, j, ni, nj)
+                dkappa = self.blade_metal_angle[ip,j] - self.blade_metal_angle[im,j]
+                ds = np.sqrt( (xCamber[ip,j] - xCamber[im,j])**2 + (yCamber[ip,j] - yCamber[im,j])**2 + (zCamber[ip,j] - zCamber[im,j])**2 )
+                self.camber_curvature[i,j] = np.abs(dkappa / ds)
                 
-                
+        contour_template(self.z_camber, self.r_camber, self.camber_curvature, r'Curvature $\mathrm{[1/m]}$')
+        
 
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
@@ -2968,10 +2985,9 @@ class Blade:
             outputDict['normalTangential'] = self.n_camber_t
         
         if 'blade_angles' in outputFields:
-            dbeta_dz, dbeta_dr = compute_gradient_least_square(self.z_grid, self.r_grid, self.blade_metal_angle)
-            dbeta_dm = dbeta_dz * np.cos(self.gas_path_angle) + dbeta_dr * np.sin(self.gas_path_angle)
+            
             outputDict['bladeMetalAngle'] = self.blade_metal_angle
-            outputDict['dbladeMetalAngle_dm'] = dbeta_dm
+            outputDict['bladeCamberCurvature'] = self.camber_curvature
             outputDict['bladeLeanAngle'] = self.blade_lean_angle
             outputDict['bladeGasPathAngle'] = self.gas_path_angle
         

@@ -990,6 +990,55 @@ def create_folder(foldername):
         os.makedirs(foldername)
 
 
+def get_2d_finite_difference_stencil(ii, jj, nstream, nspan):
+    if ii == 0 and jj == 0:
+        ip = 1
+        im = 0
+        jp = 1
+        jm = 0
+    elif ii == 0 and jj == nspan - 1:
+        ip = 1
+        im = 0
+        jp = 0
+        jm = -1
+    elif ii == nstream - 1 and jj == 0:
+        ip = 0
+        im = -1
+        jp = 1
+        jm = 0
+    elif ii == nstream - 1 and jj == nspan - 1:
+        ip = 0
+        im = -1
+        jp = 0
+        jm = -1
+    elif ii == 0:
+        ip = 1
+        im = 0
+        jp = 1
+        jm = -1
+    elif ii == nstream - 1:
+        ip = 0
+        im = -1
+        jp = 1
+        jm = -1
+    elif jj == 0:
+        ip = 1
+        im = -1
+        jp = 1
+        jm = 0
+    elif jj == nspan - 1:
+        ip = 1
+        im = -1
+        jp = 0
+        jm = -1
+    else:
+        ip = 1
+        im = -1
+        jp = 1
+        jm = -1
+
+    return ip, im, jp, jm
+
 def compute_2d_curvilinear_gradient(z, r, f):
     """
     Compute a gradient of the field f, defined on z,r (2d arrays), where the coordinate lines may be curvilinear.
@@ -1001,53 +1050,7 @@ def compute_2d_curvilinear_gradient(z, r, f):
     dfdr = np.zeros_like(f)
     for ii in range(0, nstream):
         for jj in range(0, nspan):
-
-            # selection of proper stencil
-            if ii == 0 and jj == 0:
-                ip = 1
-                im = 0
-                jp = 1
-                jm = 0
-            elif ii == 0 and jj == nspan - 1:
-                ip = 1
-                im = 0
-                jp = 0
-                jm = -1
-            elif ii == nstream - 1 and jj == 0:
-                ip = 0
-                im = -1
-                jp = 1
-                jm = 0
-            elif ii == nstream - 1 and jj == nspan - 1:
-                ip = 0
-                im = -1
-                jp = 0
-                jm = -1
-            elif ii == 0:
-                ip = 1
-                im = 0
-                jp = 1
-                jm = -1
-            elif ii == nstream - 1:
-                ip = 0
-                im = -1
-                jp = 1
-                jm = -1
-            elif jj == 0:
-                ip = 1
-                im = -1
-                jp = 1
-                jm = 0
-            elif jj == nspan - 1:
-                ip = 1
-                im = -1
-                jp = 0
-                jm = -1
-            else:
-                ip = 1
-                im = -1
-                jp = 1
-                jm = -1
+            ip, im, jp, jm = get_2d_finite_difference_stencil(ii, jj, nstream, nspan)
 
             dstream = np.array([z[ii + ip, jj] - z[ii + im, jj], r[ii + ip, jj] - r[ii + im, jj]])
             dspan = np.array([z[ii, jj + jp] - z[ii, jj + jm], r[ii, jj + jp] - r[ii, jj + jm]])
