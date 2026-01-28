@@ -428,7 +428,6 @@ class MultiBlock:
             grid[:,0] = grid[:,0] + (grid[:,1] - grid[:,0])*border_factor
             grid[:,-1] = grid[:,-1] + (grid[:,-2] - grid[:,-1])*border_factor
             return grid
-
         zgrid = move_hub_shroud_points(self.z_grid_points.copy())
         rgrid = move_hub_shroud_points(self.r_grid_points.copy())
         
@@ -437,20 +436,19 @@ class MultiBlock:
         if grid_portion=='full' or grid_portion=='all':
             zgrid, rgrid = zgrid[:,:], rgrid[:,:]
         else:
-            nStations = len(grid_portion)
+            iStart = grid_portion[0]
+            iEnd = grid_portion[-1]+1
+            if iEnd>niTot:
+                iEnd = niTot
+            nStations = iEnd - iStart
             zportion, rportion = np.zeros((nStations, njTot)), np.zeros((nStations, njTot))
-            for ii in range(len(grid_portion)):
-                station = grid_portion[ii]
-                if station>=niTot-1:
-                    raise ValueError('The streamwise station %i specified is out of the grid' % station)
-                zportion[ii,:] = zgrid[station,:]
-                rportion[ii,:] = rgrid[station,:]
-            zgrid, rgrid = zportion, rportion
+            zportion[:,:] = zgrid[iStart:iEnd,:]
+            rportion[:,:] = rgrid[iStart:iEnd,:]
 
-        x = rgrid
+        x = rportion
         y = np.zeros_like(x)
-        z = zgrid
-        ni, nj = zgrid.shape
+        z = zportion
+        ni, nj = zportion.shape
         os.makedirs(foldername, exist_ok=True)
         with open(foldername + '/' + filename, 'w') as file:
             for istream in range(ni):
@@ -468,8 +466,7 @@ class MultiBlock:
             plt.plot(self.z_grid_points[i, :], self.r_grid_points[i, :], lw=light_line_width, c='black')
         for j in range(njTot):
             plt.plot(self.z_grid_points[:, j], self.r_grid_points[:, j], lw=light_line_width, c='black')
-        for i in range(ni):
-            plt.plot(zgrid[i, :], rgrid[i, :], lw=line_width, c='red')
+        plt.scatter(zportion, rportion, s=5, c='red')
         plt.xlabel(r'$z \ \mathrm{[m]}$')
         plt.ylabel(r'$r \ \mathrm{[m]}$')
         plt.gca().set_aspect('equal')

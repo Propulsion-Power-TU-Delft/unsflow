@@ -72,11 +72,11 @@ total_chars_mid = total_chars//2
 Uncomment the following to have latex output
 """
 # Set font size for different elements 
-# font_family = 'serif'
-# font_name = 'Computer Modern'
-# plt.rc('text', usetex=True)
-# plt.rc('font', family=font_family)
-# plt.rc('font', serif=font_name)
+font_family = 'serif'
+font_name = 'Computer Modern'
+plt.rc('text', usetex=True)
+plt.rc('font', family=font_family)
+plt.rc('font', serif=font_name)
 
 
 
