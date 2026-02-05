@@ -231,7 +231,10 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
     blade = mb.blades[0]
 
     # compute additional fields
-    data['Span'] = compute_meridional_spanwise_coordinates(data['Axial_Coordinate'], data['Radial_Coordinate'], normalize=True)
+    data['Span'] = compute_meridional_spanwise_coordinates(
+        data['Axial_Coordinate'], 
+        data['Radial_Coordinate'], 
+        normalize=True)
     data['Total_Pressure'] = data['Pressure (Pa)'] * (1 + (gamma - 1)/2*data['Mach']**2) ** (gamma / (gamma - 1))
     data['Beta_tt'] = data['Total_Pressure'] / ptIn
     data['Total_Temperature'] = data['Temperature (K)'] * (1 + (gamma - 1)/2*data['Mach']**2) 
@@ -279,6 +282,7 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
         plt.ylabel(r'Span [-]')
         plt.grid(alpha=0.2)
         plt.legend()
+        plt.tight_layout()
 
         plt.figure()
         plt.plot(data["Tau_tt"][-1,:], data['Span'][-1,:], '--o', mfc='none', label='Current')
@@ -286,6 +290,7 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
         plt.ylabel(r'Span [-]')
         plt.grid(alpha=0.2)
         plt.legend()
+        plt.tight_layout()
 
         plt.figure()
         plt.plot(data["Efficiency"][-1,:], data['Span'][-1,:], '--o', mfc='none', label='Current')
@@ -293,6 +298,7 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
         plt.ylabel(r'Span [-]')
         plt.grid(alpha=0.2)
         plt.legend()
+        plt.tight_layout()
 
         # analysis of trailing edge
         plt.figure()
@@ -302,6 +308,7 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
         plt.grid(alpha=0.2)
         plt.ylabel('Span [-]')
         plt.xlabel('Angles [deg]')
+        plt.tight_layout()
 
 
     # now export what is needed by the Chima model. 
@@ -315,6 +322,8 @@ def extract_chima_profiles_from_CFD(bladePklPath, inputAvgFile, visualDebug = Tr
     chima['Deviation_Angle'] = data['Flow_Angle'][-1,:] - blade.blade_metal_angle[-1,:]
     chima['DeltaAngularMomentum'] = data['Angular_Momentum'][-1,:]
     chima['Spanwise_Mass_Flow'] = data['Spanwise_Mass_Flow'][-1,:]
+    chima['Flow_Angle'] = data['Flow_Angle'][-1,:]
+    chima['Vel_Meridional'] = data['Velocity_Meridional'][-1,:]
 
     with open("exit_profile.pkl", 'wb') as f:
         pickle.dump(chima, f)

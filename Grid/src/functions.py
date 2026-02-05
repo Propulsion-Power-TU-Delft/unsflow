@@ -1229,7 +1229,9 @@ def compute_gradient_least_square(x, y, z, enlargeDomain = True):
         return dzdx, dzdy
 
 
-def contour_template(z, r, f, name, vmin=None, vmax=None, save_filename=None, folder_name='.', white_grid=False, ticks=False, contour_levels=False):
+def contour_template(z, r, f, name, 
+                     vmin=None, vmax=None, save_filename=None, folder_name='.', 
+                     white_grid=False, ticks=False, contour_levels=False):
         """
         Template function to create contours.
 
