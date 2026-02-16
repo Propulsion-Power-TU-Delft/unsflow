@@ -101,15 +101,17 @@ class Greitzer:
         os.makedirs(PICS_FOLDER, exist_ok=True)
         
         plt.figure()
-        plt.contourf(self.B_grid, self.G_grid, self.stabilityMap, cmap='RdBu_r', levels=50)
-        plt.colorbar()
+        css = plt.contourf(self.B_grid, self.G_grid, self.stabilityMap, cmap='RdBu_r', levels=15)
+        cbar = plt.colorbar(css)
+        cbar.set_label(r'max Re($\lambda$)')
         cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='--', linewidths=2.0)
-        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=15)
+        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
         if plotSystem:
             plt.plot(self.B_system, self.G_system, 'ow')
-        plt.xlabel(r'$B$ [-]')
-        plt.ylabel(r'$G$ [-]')
-        plt.title(r'max Re($\lambda$) [-]')
+        plt.xlabel(r'$B$')
+        plt.ylabel(r'$G$')
+        # plt.title(r'max Re($\lambda$)')
+        plt.tight_layout()
         if save_filename is not None:
             plt.savefig(PICS_FOLDER + '/' + save_filename + '_stability_map_B_%.3f.pdf' % (self.B_system), bbox_inches='tight')
         

@@ -13,7 +13,7 @@ from matplotlib import cm
 
 
 # Set grid opacity:
-grid_opacity = 0.2
+grid_opacity = 0.3
 
 # Set font size for axis ticks:
 font_axes = 16
