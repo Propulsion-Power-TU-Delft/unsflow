@@ -25,10 +25,18 @@ class Greitzer:
 
 
     def computeCompressorValveIntersection(self):
+        self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
+        phi = np.linspace(0,1,1000)
+        psi_c = unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param)
+        # phi = self.config.get_flow_coeffs()
+        # psi_c = self.config.get_work_coeffs()
         
-        phi = self.config.get_flow_coeffs()
-        psi_c = self.config.get_work_coeffs()
-        k_valve = self.config.get_valve_coefficient()
+        try:
+            k_valve = self.config.get_valve_coefficient()
+        except: 
+            # take as a reference the zero slope compressor curve
+            phi_c_max = phi[np.argmax(psi_c)]
+            k_valve = psi_c[np.argmax(psi_c)] / phi_c_max**2 + 0.01
         
         #polynomial interpolation for the compressor curve
         z_coeff = np.polyfit(phi, psi_c, 3)
@@ -46,7 +54,7 @@ class Greitzer:
         psi_eq = k_valve * phi_eq ** 2
         
         #calculate derivatives of the compressor and throttle characteristic at equilibrium point
-        phi_eq = phi_eq[0]       # unpack the scalar value from the array
+        phi_eq = phi_eq[0]       
         psi_eq = psi_eq[0]
         delta_phi = phi_eq * 0.001
 
@@ -58,15 +66,26 @@ class Greitzer:
         psi_c_prime = (psi_c_right - psi_c_left) / (2 * delta_phi)
         psi_v_prime = 2 * k_valve * phi_eq
         
+        plt.figure()
+        plt.plot(phi, psi_c, label='unstalled characteristic')
+        plt.plot(phi, psi_v, label='valve characteristic')
+        plt.scatter(phi_eq, psi_eq, c='black', label='initial point')
+        # plt.xlim([0, 1])
+        # plt.ylim([0, 0.8])
+        plt.xlabel(r'$\phi$')
+        plt.ylabel(r'$\psi$')
+        plt.legend()
+        plt.grid(alpha=0.3)
+        
         return phi_eq, psi_eq, psi_c_prime, psi_v_prime
     
     
     
     def computeLinearizedStabilityMap(self):
         resolution = 100
-        B_min = 0.001
+        B_min = 0.05
         B_max = 1.25
-        G_min = 0.001
+        G_min = 0.05
         G_max = 3
         B = np.linspace(B_min,B_max,resolution)
         G = np.linspace(G_min,G_max,resolution)
@@ -145,7 +164,7 @@ class Greitzer:
     def solveGreitzerSystem(self):
         self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
         self.phi = np.linspace(0,1,1000)
-        self.psi_c = self.unstalled_characteristic(self.phi, self.H_param, self.W_param, self.psi_c_0_param)
+        self.psi_c = unstalled_characteristic(self.phi, self.H_param, self.W_param, self.psi_c_0_param)
         
         k_valve = self.config.get_valve_coefficient()
         self.psi_v = k_valve*self.phi**2
@@ -155,14 +174,14 @@ class Greitzer:
             Function needed by fsolve in order to find the intersection between unstalled
             compressor curve and throttle line
             """
-            return self.unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param) - k_valve*phi**2
+            return unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param) - k_valve*phi**2
 
         initial_phi_guess = self.phi.min() + (self.phi.max()-self.phi.min())*0.5 
         phi_eq = fsolve(func_work_coefficient,initial_phi_guess) 
         psi_eq = k_valve*phi_eq**2 
         
         #time span
-        t = np.linspace(0,self.config.get_max_time(),2500)
+        t = np.linspace(0,self.config.get_max_time(), 5000)
         a = self.config.get_sound_speed()
         Ac = self.config.get_inlet_duct_area()
         Vp = self.config.get_plenum_volume()
@@ -197,34 +216,21 @@ class Greitzer:
             x3 : compressor work coefficient
         """
         x1, x2, x3 = y
-        dydt = [B * (self.unstalled_characteristic(x1, self.H_param, self.W_param, self.psi_c_0_param) - x3),
+        dydt = [B * (unstalled_characteristic(x1, self.H_param, self.W_param, self.psi_c_0_param) - x3),
                 (x3 - k_valve*x2**2) * B/G,
                 (x1-x2)/B]
         return dydt
-            
-    
-    def unstalled_characteristic(self, phi, H, W, psi_c_0):
-            """
-            It computes the unstalled characteristic of the compressor using the cubic model defined in literature
-
-            Arguments:
-                phi :  flow coefficient
-                H : H parameter
-                W : W parameter
-                psi_c_0 : performance at zero flow coefficient
-            """
-            return psi_c_0 + H * (1 + 1.5*(phi/W - 1) - 0.5*(phi/W -1)**3)
     
     def plotTemporalEvolutionGreitzer(self, save_filename):
         os.makedirs(PICS_FOLDER, exist_ok=True)
         
-        fig, axes = plt.subplots(3,1, figsize=(10,7))
-        axes[0].set_ylabel(r'$\Phi_{c}$')
-        axes[0].plot(self.xi, self.solutionGreitzer[:,0])
-        axes[1].set_ylabel(r'$\Phi_{t}$')
-        axes[1].plot(self.xi, self.solutionGreitzer[:,1])
-        axes[2].set_ylabel(r'$\Psi_p$')
-        axes[2].plot(self.xi, self.solutionGreitzer[:,2])
+        fig, axes = plt.subplots(3,1, figsize=(8,5))
+        axes[0].set_ylabel(r'$\Phi_{\rm c}$')
+        axes[0].plot(self.xi, self.solutionGreitzer[:,0], '-C0')
+        axes[1].set_ylabel(r'$\Phi_{\rm t}$')
+        axes[1].plot(self.xi, self.solutionGreitzer[:,1], '-C1')
+        axes[2].set_ylabel(r'$\Psi_{\rm p}$')
+        axes[2].plot(self.xi, self.solutionGreitzer[:,2], '-C2')
         axes[2].set_xlabel(r'$\xi $')
         for axx in axes:
             axx.grid(alpha=grid_opacity)
@@ -360,3 +366,15 @@ class Greitzer:
         plt.grid(alpha=grid_opacity)
         if save_filename is not None:
             plt.savefig(PICS_FOLDER+'/'+save_filename+'_trajectory.pdf', bbox_inches='tight')
+
+def unstalled_characteristic(phi, H, W, psi_c_0):
+            """
+            It computes the unstalled characteristic of the compressor using the cubic model defined in literature
+
+            Arguments:
+                phi :  flow coefficient
+                H : H parameter
+                W : W parameter
+                psi_c_0 : performance at zero flow coefficient
+            """
+            return psi_c_0 + H * (1 + 1.5*(phi/W - 1) - 0.5*(phi/W -1)**3)
