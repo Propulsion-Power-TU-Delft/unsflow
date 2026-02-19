@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import Sun
 from sun.src.sun_model_multiblock import SunModelMultiBlock
 from sun.src.general_functions import gauss_lobatto_grid_generation 
 from grid.src.config import Config
@@ -12,13 +11,13 @@ import pickle
 
 # INPUT VALUES
 Nz = 30
-Nr = 40
+Nr = 30
 r2 = 0.2487  # outer radius [m]
 r1 = r2/10  # inner radius [m]
 M = 0.015  # Mach number
 p = 100e3  # pressure [Pa]
 T = 288  # temperature [K]
-L = 0.08  # length [m]
+L = 0.25  # length [m]
 R = 287.058  # air gas constant [kJ/kgK]
 gmma = 1.4  # cp/cv ratio of air
 rho = p/R/T  # density [kg/m3]

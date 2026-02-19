@@ -8,7 +8,7 @@ Created on Wed May  3 09:29:59 2023
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import jv, yv, jvp, yvp
-import Sun
+import sun
 import scipy
 from scipy.optimize import fsolve
 from scipy.sparse.linalg import eigs
@@ -97,11 +97,11 @@ plt.plot(roots, roots*0, 'o')
 plt.xlim([lambda_span.min(), lambda_span.max()])
 plt.ylim([-1, 3])
 
-alpha = [1, 2, 3]  # possible axial wavenumbers
-omega_analytical = compute_omega(alpha, roots[0:8], M, L, a)
+alpha = [1, 2, 3, 4]  # possible axial wavenumbers
+omega_analytical = compute_omega(alpha, roots[0:5], M, L, a)
 
 
-file_path = 'analytical_eigenvalues.pickle'
+file_path = 'analytical_eigenvalues.pkl'
 with open(file_path, 'wb') as file:
     pickle.dump(omega_analytical, file)
 
