@@ -1,2 +1,0 @@
-this python script computes the temporal solution of Greitzer's surge equation model. It directly solves the non-linear equations
-and shows how limit cycles can be observed
