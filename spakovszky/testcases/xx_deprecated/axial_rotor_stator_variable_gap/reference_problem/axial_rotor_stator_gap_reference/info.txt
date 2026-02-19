@@ -1,5 +1,0 @@
-Results of the rotor-stator-gap problem described in spakovszky thesis.
-The different results described in the picture are in agreement with those
-described in the thesis, considering also a slight assumptions of some data
-(bladed rows characteristic curve).
-Script working directly with the functions.
