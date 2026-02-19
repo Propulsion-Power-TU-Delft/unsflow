@@ -16,9 +16,9 @@ gradient_order = 2
 
 
 # STABILITY ANALYSIS
-compressor_grid = Sun.src.sun_grid.SunGrid(meridional_obj)
+compressor_grid = sun.src.sun_grid.SunGrid(meridional_obj)
 compressor_grid.ShowGrid(save_filename='grid')
-sun_obj = Sun.src.SunModel(compressor_grid)
+sun_obj = sun.src.SunModel(compressor_grid)
 sun_obj.ComputeBoundaryNormals()
 sun_obj.add_shaft_rpm(rpm)
 sun_obj.set_normalization_quantities()

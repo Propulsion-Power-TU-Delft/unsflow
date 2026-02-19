@@ -11,8 +11,8 @@ import Sun
 import scipy
 from numpy import pi, sin, cos
 import os
-from Grid.src.config import Config
-from Utils.styles import *
+from grid.src.config import Config
+from utils.styles import *
 
 # input data of the problem (SI units)
 R1 = 1  # inner radius [m]
@@ -94,7 +94,7 @@ if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
 config = Config('config.ini')
-duct_obj = Sun.src.CouetteTaylor1D(R1, R2, N, config, mode='gauss-lobatto')
+duct_obj = sun.src.CouetteTaylor1D(R1, R2, N, config, mode='gauss-lobatto')
 duct_obj.zeta = (duct_obj.r-R1)/D
 duct_obj.ut = (R1 + duct_obj.zeta*D)*OMEGA1*(1-(1-MU)*duct_obj.zeta)
 duct_obj.p = P1 + duct_obj.zeta*R1 + duct_obj.zeta**2*(D/2-R1*(1-MU)) + duct_obj.zeta**3*(R1*(1-MU)**2/3 -
@@ -144,7 +144,7 @@ if plots:
 
 duct_obj.normalize_data()
 k_axial = 1
-sun_obj = Sun.src.SunModel1D(duct_obj, config=config)
+sun_obj = sun.src.SunModel1D(duct_obj, config=config)
 sun_obj.compute_L0(k_axial)
 sun_obj.compute_L1()
 sun_obj.compute_L2(k_axial)

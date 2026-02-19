@@ -8,16 +8,16 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from Sun.src.node import Node
+from sun.src.node import Node
 import Utils
-from Sun.src.general_functions import GaussLobattoPoints
-from Utils.styles import *
+from sun.src.general_functions import GaussLobattoPoints
+from utils.styles import *
 import os
 
 
 class SunGrid():
     """
-    Class of Sun Grid. It contains a grid of Node objects, in which every node object contains the properties that we need
+    Class of Sun grid. It contains a grid of Node objects, in which every node object contains the properties that we need
     to apply the Sun instability model.
     """
 

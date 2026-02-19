@@ -1,8 +1,8 @@
 import pickle
 import matplotlib.pyplot as plt
 import Sun
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 from numpy import genfromtxt
 
 markers = ['v', '^', '<', '>', 'o', 's', 'D']

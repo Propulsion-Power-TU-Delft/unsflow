@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import cos, sin, pi, linspace
 from findiff import FinDiff
-from Utils.styles import *
+from utils.styles import *
 
 N = 30  # number of grid points
 L = 1

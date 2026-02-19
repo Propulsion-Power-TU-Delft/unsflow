@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import sin, cos, sqrt, arctan2, arcsin, arccos, pi
 import pickle
-from Grid.src.functions import *
+from grid.src.functions import *
 import os
 from scipy.interpolate import interp1d
 import pandas as pd

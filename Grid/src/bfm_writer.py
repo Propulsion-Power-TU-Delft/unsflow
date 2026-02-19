@@ -8,14 +8,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 
-import Grid.src
-from Utils.styles import *
+import grid.src
+from utils.styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation
 from .curve import Curve
-from Sun.src.general_functions import print_banner_begin, print_banner_end
+from sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
-from Grid.src.functions import create_folder
+from grid.src.functions import create_folder
 import pickle
 
 
@@ -149,7 +149,7 @@ class BFM_Writer:
             file.write('\n')
 
             file.write('[number of data entries in chordwise direction]\n')
-            if isinstance(self.blades, Grid.src.Blade):
+            if isinstance(self.blades, grid.src.Blade):
                 file.write('%i\n' % self.blades.z_camber.shape[0])
             elif isinstance(self.blades, list):
                 for blade in self.blades:
@@ -160,7 +160,7 @@ class BFM_Writer:
             file.write('\n')
 
             file.write('[number of data entries in spanwise direction]\n')
-            if isinstance(self.blades, Grid.src.Blade):
+            if isinstance(self.blades, grid.src.Blade):
                 file.write('%i\n' % self.blades.z_camber.shape[1])
             elif isinstance(self.blades, list):
                 for blade in self.blades:

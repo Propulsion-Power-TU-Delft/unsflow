@@ -139,14 +139,14 @@ for ii in range(0, Nz):
         pressure[ii, jj] = p
 
 # create a meridional object, having the same information of the meridional post-process object of a compressor
-duct_Obj = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
+duct_Obj = sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
                                      density, radialVel, tangentialVel, axialVel, pressure, grid_refinement=1)
 duct_Obj.normalize_data(rho_ref, u_ref, x_ref)
-duct_grid = Sun.src.sun_grid.SunGrid(duct_Obj)
+duct_grid = sun.src.sun_grid.SunGrid(duct_Obj)
 duct_grid.ShowGrid()
 
 # general workflow of the sun model
-sun_obj = Sun.src.SunModel(duct_grid)
+sun_obj = sun.src.SunModel(duct_grid)
 sun_obj.set_overwriting_equation_euler_wall('utheta')
 sun_obj.ComputeBoundaryNormals()
 sun_obj.ShowNormals()

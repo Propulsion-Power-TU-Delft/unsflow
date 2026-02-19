@@ -7,7 +7,7 @@ Created on Wed Jun 14 18:29:29 2023
 import matplotlib.pyplot as plt
 from numpy import sqrt
 from scipy.interpolate import splprep, splev
-from Utils.styles import *
+from utils.styles import *
 from .functions import *
 
 

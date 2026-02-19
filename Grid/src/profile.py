@@ -10,8 +10,8 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Utils.styles import *
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from utils.styles import *
 
 
 class Profile:

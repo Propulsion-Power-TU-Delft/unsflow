@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Utils.styles import *
+from utils.styles import *
 import pickle
-from Greitzer.src.config import Config
+from greitzer.src.config import Config
 from scipy.optimize import fsolve
 import os
 from scipy.integrate import odeint
@@ -86,7 +86,7 @@ class Greitzer:
         B_min = 0.05
         B_max = 1.25
         G_min = 0.05
-        G_max = 3
+        G_max = 3.5
         B = np.linspace(B_min,B_max,resolution)
         G = np.linspace(G_min,G_max,resolution)
         self.B_grid, self.G_grid = np.meshgrid(B, G, indexing='ij')
@@ -120,13 +120,17 @@ class Greitzer:
         os.makedirs(PICS_FOLDER, exist_ok=True)
         
         plt.figure()
-        css = plt.contourf(self.B_grid, self.G_grid, self.stabilityMap, cmap='RdBu_r', levels=15)
-        cbar = plt.colorbar(css)
-        cbar.set_label(r'max Re($\lambda$)')
-        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='--', linewidths=2.0)
+        
+        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='-', linewidths=2.0)
         plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
-        if plotSystem:
-            plt.plot(self.B_system, self.G_system, 'ow')
+        
+        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[-0.1], colors='b', linestyles='--', linewidths=2.0)
+        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
+        
+        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[+0.1], colors='r', linestyles='-.', linewidths=2.0)
+        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
+        
+
         plt.xlabel(r'$B$')
         plt.ylabel(r'$G$')
         # plt.title(r'max Re($\lambda$)')
@@ -258,8 +262,8 @@ class Greitzer:
     
     def solveMooreGreitzerSystem(self):
         self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
-        self.phi = np.linspace(0,1,1000)
-        self.psi_c = self.unstalled_characteristic(self.phi, self.H_param, self.W_param, self.psi_c_0_param)
+        self.phi = np.linspace(0,1,5000)
+        self.psi_c = unstalled_characteristic(self.phi, self.H_param, self.W_param, self.psi_c_0_param)
         
         k_valve = self.config.get_valve_coefficient()
         self.psi_v = k_valve*self.phi**2
@@ -269,14 +273,14 @@ class Greitzer:
             Function needed by fsolve in order to find the intersection between unstalled
             compressor curve and throttle line
             """
-            return self.unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param) - k_valve*phi**2
+            return unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param) - k_valve*phi**2
 
         initial_phi_guess = self.phi.min() + (self.phi.max()-self.phi.min())*0.5 
         phi_eq = fsolve(func_work_coefficient,initial_phi_guess) 
         psi_eq = k_valve*phi_eq**2 
         
         #time span
-        t = np.linspace(0,self.config.get_max_time(),2500)
+        t = np.linspace(0,self.config.get_max_time(),5000)
         
         #parameters
         self.a = self.config.get_sound_speed()
@@ -288,8 +292,8 @@ class Greitzer:
         self.mMoore = self.config.get_moore_greitzer_m_param()
         
         #initial conditions
-        perturbation = 1e-2 # work and flow coeff initial perturbations
-        J_0 = 1 # initial rotating perturbation
+        perturbation = 1e-3 # work and flow coeff initial perturbations
+        J_0 = 1e-3 # initial rotating perturbation
         y0 = [psi_eq[0]*(1-perturbation), 
             phi_eq[0]*(1+perturbation), 
             J_0] 

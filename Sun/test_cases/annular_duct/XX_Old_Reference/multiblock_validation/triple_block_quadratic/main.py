@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import Sun
 import os
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 from scipy.sparse.linalg import eigs
-from Utils.styles import *
+from utils.styles import *
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]
@@ -49,22 +49,22 @@ folder_path = "pictures/%02i_%02i" %(Nz*3, Nr)  # Replace with the desired folde
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
 
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
-duct_Obj2 = Sun.src.AnnulusMeridional(L/3, 2*L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
-duct_Obj3 = Sun.src.AnnulusMeridional(2*L/3, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj1 = sun.src.AnnulusMeridional(0, L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj2 = sun.src.AnnulusMeridional(L/3, 2*L/3, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
+duct_Obj3 = sun.src.AnnulusMeridional(2*L/3, L, r1, r2, Nz, Nr, rho, 0, 0, M*a, p, config, mode='gauss-lobatto')
 
 
 duct_Obj1.normalize_data()
 duct_Obj2.normalize_data()
 duct_Obj3.normalize_data()
 
-duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
-duct_grid2 = Sun.src.sun_grid.SunGrid(duct_Obj2)
-duct_grid3 = Sun.src.sun_grid.SunGrid(duct_Obj3)
+duct_grid1 = sun.src.sun_grid.SunGrid(duct_Obj1)
+duct_grid2 = sun.src.sun_grid.SunGrid(duct_Obj2)
+duct_grid3 = sun.src.sun_grid.SunGrid(duct_Obj3)
 
-sun_obj = Sun.src.SunModel(duct_grid1, config=config)
-sun_obj2 = Sun.src.SunModel(duct_grid2, config=config)
-sun_obj3 = Sun.src.SunModel(duct_grid3, config=config)
+sun_obj = sun.src.SunModel(duct_grid1, config=config)
+sun_obj2 = sun.src.SunModel(duct_grid2, config=config)
+sun_obj3 = sun.src.SunModel(duct_grid3, config=config)
 
 sun_blocks = [sun_obj, sun_obj2, sun_obj3]
 ii = 0

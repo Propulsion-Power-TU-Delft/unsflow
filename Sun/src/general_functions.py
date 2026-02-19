@@ -1,5 +1,5 @@
 import numpy as np
-from Utils.styles import total_chars
+from utils.styles import total_chars
 from findiff import FinDiff
 import pandas as pd
 import os

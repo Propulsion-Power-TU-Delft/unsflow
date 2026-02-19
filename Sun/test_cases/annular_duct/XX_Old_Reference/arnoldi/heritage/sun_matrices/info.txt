@@ -1,2 +1,2 @@
 this file shows the results of the annular duct using the original version
-of matrices shown by Sun. This should explain that those are wrong and mines are correct.
+of matrices shown by sun. This should explain that those are wrong and mines are correct.

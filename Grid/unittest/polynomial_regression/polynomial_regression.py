@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
-from Grid.src.polynomial_ls_regression import *
-from Grid.src.styles import color_map
+from grid.src.polynomial_ls_regression import *
+from grid.src.styles import color_map
 
 # FUNCTION TO REGRESS AND TEST. 4th ORDER SHOULD BE CAPTURED PERFECTLY
 

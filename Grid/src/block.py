@@ -7,12 +7,12 @@ Created on Wed Jun 14 18:29:29 2023
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
-from Utils.styles import *
-from Grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
+from utils.styles import *
+from grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
 from .curve import Curve
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.config import Config
-from Grid.src.body_force import BodyForce
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from grid.src.config import Config
+from grid.src.body_force import BodyForce
 from .area_element import AreaElement
 import pickle
 

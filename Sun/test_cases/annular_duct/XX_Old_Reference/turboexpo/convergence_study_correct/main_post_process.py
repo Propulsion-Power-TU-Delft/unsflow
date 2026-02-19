@@ -3,7 +3,7 @@ import numpy as np
 from os import listdir
 from os.path import isdir
 import pickle
-from Utils.styles import *
+from utils.styles import *
 
 # READ SIMULATION RESULTS
 directory = './'

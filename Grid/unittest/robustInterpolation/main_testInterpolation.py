@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import *
+from grid.src.functions import *
 import pickle
 
 #### test 2d function to compare results
@@ -14,15 +14,15 @@ def functionTest(x, y):
 #### Test Data, basic data onto which things are interpolated
 with open('../data/NASA_LSCC_data.pik', 'rb') as file:
     data = pickle.load(file)
-xData = data.multiBlockGrid.z_grid_points
-yData = data.multiBlockGrid.r_grid_points
+xData = data.multiBlockgrid.z_grid_points
+yData = data.multiBlockgrid.r_grid_points
 zData = functionTest(xData,yData)
 
 ### Evaluation Data
 with open('../data/NASA_LSCC_eval.pik', 'rb') as file:
     data = pickle.load(file)
-xEval = data.multiBlockGrid.z_grid_points
-yEval = data.multiBlockGrid.r_grid_points
+xEval = data.multiBlockgrid.z_grid_points
+yEval = data.multiBlockgrid.r_grid_points
 zEval = robust_griddata_interpolation_with_linear_filler(xData, yData, zData, xEval, yEval)
 
 #### Plotting

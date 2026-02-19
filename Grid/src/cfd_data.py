@@ -7,8 +7,8 @@ Created on Thu Jun 15 16:53:11 2023
 import warnings
 import pandas as pd
 from .functions import *
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Utils.styles import total_chars, total_chars_mid
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from utils.styles import total_chars, total_chars_mid
 from numpy import sin, cos, tan, sqrt
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import Grid
-from Grid.src.functions import elliptic_grid_generation
+from grid.src.functions import elliptic_grid_generation
 from scipy.interpolate import CubicSpline
 
 """ 

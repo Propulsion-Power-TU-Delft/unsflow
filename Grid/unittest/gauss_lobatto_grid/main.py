@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Sun.src.general_functions import GaussLobattoPoints
+from sun.src.general_functions import GaussLobattoPoints
 
 Nz = 25
 Nr = 15

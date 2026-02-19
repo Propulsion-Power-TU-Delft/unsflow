@@ -1,4 +1,4 @@
-from Sun.src.sun_post_process import PostProcessSun
+from sun.src.sun_post_process import PostProcessSun
 import matplotlib.pyplot as plt
 import pickle
 

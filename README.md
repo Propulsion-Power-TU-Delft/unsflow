@@ -1,5 +1,5 @@
 # Compressor Instability Prediction Tools
-The folder is organized in different modules. Every module is independent from the others, except Sun, which needs data objects obtained by Grid.
+The folder is organized in different modules. Every module is independent from the others, except Sun, which needs data objects obtained by grid.
 
 ### Greitzer Model (1976)
 ##### Reference article: Surge and Rotating Stall in Axial Flow Compressors—Part I: Theoretical Compression System Model - Greitzer

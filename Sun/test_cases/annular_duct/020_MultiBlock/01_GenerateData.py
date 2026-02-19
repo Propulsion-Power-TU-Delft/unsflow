@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import Sun
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Sun.src.general_functions import gauss_lobatto_grid_generation 
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from sun.src.general_functions import gauss_lobatto_grid_generation 
+from grid.src.config import Config
 from scipy.sparse.linalg import eigs
-from Utils.styles import *
+from utils.styles import *
 import pickle
 
 

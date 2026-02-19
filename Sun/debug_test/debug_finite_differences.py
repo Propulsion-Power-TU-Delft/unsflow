@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import Sun
 from matplotlib import cm
-from Sun.src.styles import *
+from sun.src.styles import *
 
 # %%
 nx = 20
@@ -71,7 +71,7 @@ cbar = plt.colorbar(contour03, ax=ax[0, 3])
 cbar = plt.colorbar(contour04, ax=ax[0, 4])
 
 # compute the finite difference version (_fd)
-dzdx_fd, dzdy_fd, drdx_fd, drdy_fd = Sun.src.general_functions.JacobianTransform3(Z, R, X, Y)
+dzdx_fd, dzdy_fd, drdx_fd, drdy_fd = sun.src.general_functions.JacobianTransform3(Z, R, X, Y)
 J_fd = dzdx_fd * drdy_fd - dzdy_fd * drdx_fd
 
 contour10 = ax[1, 0].contourf(X, Y, dzdx_fd, cmap=cm.jet, levels=N_levels)

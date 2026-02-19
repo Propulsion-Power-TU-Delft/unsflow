@@ -2,8 +2,8 @@ import time
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
-from Grid.src.config import Config
-from Grid.src.multiblock_grid_driver import MultiBlockGridDriver
+from grid.src.config import Config
+from grid.src.multiblock_grid_driver import MultiBlockGridDriver
 
 # SETTINGS
 configuration_file = 'input.ini'

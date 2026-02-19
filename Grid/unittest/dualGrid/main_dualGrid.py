@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import *
+from grid.src.functions import *
 import pickle
 
 

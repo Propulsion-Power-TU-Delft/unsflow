@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import os
-from Sun.src.eigenmode import Eigenmode
-from Utils.styles import *
-from Sun.src.general_functions import scaled_eigenvector_real
+from sun.src.eigenmode import Eigenmode
+from utils.styles import *
+from sun.src.general_functions import scaled_eigenvector_real
 
 class PostProcessSun():
     """
@@ -90,7 +90,7 @@ class PostProcessSun():
         if save_filename is not None:
             fig.savefig(save_foldername + '/' + save_filename + '.pdf', bbox_inches='tight')
 
-    def plot_eigenfields(self, n=None, save_filename=None, save_foldername='pictures'):
+    def plot_eigenfields(self, n=None, save_filename=None, save_foldername='pictures', set_aspect_equal=False):
         """
         Plot the first n eigenmodes structures.
         :param n: specify the first n eigenfunctions to plot
@@ -116,16 +116,15 @@ class PostProcessSun():
             rs = mode.eigenfrequency.real
             df = mode.eigenfrequency.imag
 
-            fig, axs = plt.subplots(2, 3, figsize=(18, 10))
+            fig, axs = plt.subplots(1, 5, figsize=(25, 4), sharey=True)
             axs = axs.flatten()
 
             titles = [
                 r'$\tilde{\rho}_{%i}$' % (imode),
-                r'$\tilde{u}_{r,%i}$' % (imode),
+                r'$\tilde{u}_{\rm r,%i}$' % (imode),
                 r'$\tilde{u}_{\theta,%i}$' % (imode),
-                r'$\tilde{u}_{z,%i}$' % (imode),
-                r'$\tilde{p}_{%i}$' % (imode),
-                r'$\tilde{p}_{%i}$ with $\vec{u}_m$ quiver' % (imode),
+                r'$\tilde{u}_{\rm z,%i}$' % (imode),
+                r'$\tilde{p}_{%i}$' % (imode)
             ]
 
             fields = [
@@ -134,35 +133,26 @@ class PostProcessSun():
                 mode.eigen_utheta,
                 mode.eigen_uz,
                 mode.eigen_p,
-                mode.eigen_p,
             ]
 
-            quiver_flags = [False, False, False, False, False, True]
 
-            for i, (ax, field, title, qflag) in enumerate(zip(axs, fields, titles, quiver_flags)):
+            for i, (ax, field, title) in enumerate(zip(axs, fields, titles)):
                 cf = ax.contourf(z, r, field, levels=N_levels, cmap=modes_map)
                 ax.set_title(title)
-                ax.set_aspect('equal', adjustable='box')
-                plt.colorbar(cf, ax=ax)
+                if set_aspect_equal:
+                    ax.set_aspect('equal', adjustable='box')
+                plt.colorbar(cf, ax=ax, format='%.1f')
 
                 # Keep y-label only for first column
-                if i % 3 == 0:
-                    ax.set_ylabel(r'$r$ [m]')
+                if i == 0:
+                    ax.set_ylabel(r'$r$')
                 else:
                     ax.set_ylabel('')
 
                 # Keep x-label only for bottom row
-                if i >= 3:
-                    ax.set_xlabel(r'$z$ [m]')
-                else:
-                    ax.set_xlabel('')
-
-                if qflag:
-                    ax.quiver(z, r, mode.eigen_uz, mode.eigen_ur)
-
-            # Hide any unused subplots (if any)
-            for i in range(len(fields), len(axs)):
-                axs[i].axis('off')
+                ax.set_xlabel(r'$z$')
+                ax.set_xticks([])
+                ax.set_yticks([])
 
             plt.tight_layout()
 

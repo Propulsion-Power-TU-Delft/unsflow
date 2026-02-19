@@ -12,12 +12,12 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import *
-from Grid.src.profile import Profile
-from Grid.src.body_force import BodyForce
-from Utils.styles import *
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from utils.styles import total_chars, total_chars_mid
+from grid.src.functions import *
+from grid.src.profile import Profile
+from grid.src.body_force import BodyForce
+from utils.styles import *
 from scipy import interpolate
 import math
 import os
@@ -27,7 +27,7 @@ import plotly.graph_objects as go
 from scipy.interpolate import bisplrep, bisplev
 from shapely.geometry import LineString
 from scipy.spatial import KDTree
-from Grid.src.surface import Surface
+from grid.src.surface import Surface
 from scipy.interpolate import bisplev, bisplrep, griddata
 from scipy.interpolate import splprep, splev
 from scipy.ndimage import gaussian_filter

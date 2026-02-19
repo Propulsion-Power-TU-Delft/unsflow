@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from Utils.styles import N_levels, color_map
+from utils.styles import N_levels, color_map
 
 
 class DiffuserMeridional():

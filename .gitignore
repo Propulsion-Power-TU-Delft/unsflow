@@ -22,6 +22,8 @@ build/
 # Package files
 *.jar
 
+*.jpeg
+
 # Maven
 target/
 

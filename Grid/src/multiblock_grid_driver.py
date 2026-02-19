@@ -2,14 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import os
-from Utils.styles import *
-from Grid.src.blade import Blade
-from Grid.src.block import Block
-from Grid.src.multiblock import MultiBlock
-from Grid.src.su2_mesh_generator import generate_SU2mesh
-from Grid.src.bfm_writer import BFM_Writer
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
+from utils.styles import *
+from grid.src.blade import Blade
+from grid.src.block import Block
+from grid.src.multiblock import MultiBlock
+from grid.src.su2_mesh_generator import generate_SU2mesh
+from grid.src.bfm_writer import BFM_Writer
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 
 
 class MultiBlockGridDriver:
@@ -202,10 +202,10 @@ class MultiBlockGridDriver:
         Assemble the grid of the different blocks in a single one.
         """
         self.multiBlockGrid = MultiBlock(self.config, self.blocks, self.blades)
-        self.multiBlockGrid.assemble_grid()
-        self.multiBlockGrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
+        self.multiBlockgrid.assemble_grid()
+        self.multiBlockgrid.plot_full_grid(save_filename=self.config.get_machine_name(), ticks=True)
         if self.driverType=='multiblock':
-            self.multiBlockGrid.plot_all_relevant_contours()
+            self.multiBlockgrid.plot_all_relevant_contours()
     
     
     def SaveOutput(self):
@@ -227,12 +227,12 @@ class MultiBlockGridDriver:
             if outputType.lower()=='turbobfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type turbobfm is not available for single_blade or full_machine driver configurations.')
-                self.multiBlockGrid.write_turbobfm_grid_file_2D()
+                self.multiBlockgrid.write_turbobfm_grid_file_2D()
             
             elif outputType.lower()=='cturbobfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type cturbobfm is not available for single_blade or full_machine driver configurations.')
-                self.multiBlockGrid.write_cturbobfm_grid_file()
+                self.multiBlockgrid.write_cturbobfm_grid_file()
             
             elif outputType.lower()=='pickle':
                 filePath = os.path.join(outputFolder, self.config.get_machine_name() + '.pik')
@@ -250,9 +250,9 @@ class MultiBlockGridDriver:
             elif outputType.lower()=='su2mesh':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type su2mesh is not available for single_blade or full_machine driver configurations.')
-                self.multiBlockGrid.compute_three_dimensional_mesh(self.config, nodes_number=5)
-                generate_SU2mesh(self.multiBlockGrid.X_mesh, self.multiBlockGrid.Y_mesh, self.multiBlockGrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh_%.4f.su2' %(self.multiBlockGrid.deltatheta_periodic))
-                print('SU2 mesh file written in %s/mesh_%.4f.su2' %(outputFolder, self.multiBlockGrid.deltatheta_periodic))
+                self.multiBlockgrid.compute_three_dimensional_mesh(self.config, nodes_number=5)
+                generate_SU2mesh(self.multiBlockgrid.X_mesh, self.multiBlockgrid.Y_mesh, self.multiBlockgrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh_%.4f.su2' %(self.multiBlockgrid.deltatheta_periodic))
+                print('SU2 mesh file written in %s/mesh_%.4f.su2' %(outputFolder, self.multiBlockgrid.deltatheta_periodic))
                 
             elif outputType.lower()=='su2bfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
@@ -264,13 +264,13 @@ class MultiBlockGridDriver:
             elif outputType.lower()=='meridional_splines':
                 spanValues = [0.2, 0.5, 0.8] # default span values, modify if needed
                 for span in spanValues:
-                    self.multiBlockGrid.export_meridional_spline(folder=outputFolder, filename='meridional_spline_%.2f' %span, span=span)
+                    self.multiBlockgrid.export_meridional_spline(folder=outputFolder, filename='meridional_spline_%.2f' %span, span=span)
             
             elif outputType.lower()=='meridional_grid':
-                self.multiBlockGrid.write_paraview_grid_file(foldername=outputFolder, filename='meridional_grid.csv')
+                self.multiBlockgrid.write_paraview_grid_file(foldername=outputFolder, filename='meridional_grid.csv')
             
             elif outputType.lower()=='spanwise_profiles':
-                self.multiBlockGrid.write_spanwise_splines(foldername=outputFolder)
+                self.multiBlockgrid.write_spanwise_splines(foldername=outputFolder)
             
             elif outputType=='none':
                 print('No output type specified, therefore no output saved.')
@@ -283,7 +283,7 @@ class MultiBlockGridDriver:
                     print(f'Saved Blade object pickle {i} in: {filePath}.')
             
             elif outputType=='luminary_cad':
-                self.multiBlockGrid.write_thetaWrapped_hub_shroud_curves(foldername=outputFolder, filename='tud-glra')
+                self.multiBlockgrid.write_thetaWrapped_hub_shroud_curves(foldername=outputFolder, filename='tud-glra')
             
             else:
                 print('Output type %s not recognized, therefore ignored.' %(outputType))

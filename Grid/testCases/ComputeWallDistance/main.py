@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-from Grid.src.functions import contour_template, compute_2dSpline_curve, computeMinDistanceFromWalls
+from grid.src.functions import contour_template, compute_2dSpline_curve, computeMinDistanceFromWalls
 
 N = 5000
 

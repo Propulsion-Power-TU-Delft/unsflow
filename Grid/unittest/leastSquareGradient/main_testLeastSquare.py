@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import *
+from grid.src.functions import *
 import pickle
 
 #### test 2d function to compare results
@@ -27,8 +27,8 @@ def functionTest(x, y):
 #### Test Data, basic data onto which things are interpolated
 with open('../data/NASA_LSCC_data.pik', 'rb') as file:
     data = pickle.load(file)
-xData = data.multiBlockGrid.z_grid_points
-yData = data.multiBlockGrid.r_grid_points
+xData = data.multiBlockgrid.z_grid_points
+yData = data.multiBlockgrid.r_grid_points
 zData, dzdxData, dzdyData = functionTest(xData,yData)
 
 ### Compute the gradient

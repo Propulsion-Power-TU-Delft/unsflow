@@ -2,8 +2,8 @@ import configparser
 import ast
 import numpy as np
 import os
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Utils.styles import total_chars, total_chars_mid
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from utils.styles import total_chars, total_chars_mid
 
 
 

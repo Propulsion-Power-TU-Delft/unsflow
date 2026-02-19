@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import cos, sin, pi, linspace
 from findiff import FinDiff
-from Utils.styles import *
+from utils.styles import *
 
 ALPHA_GRID = 0.2
 N = 20  # number of grid points
@@ -71,15 +71,15 @@ dxi_dx_num_findiff10 = 1/dx_dxi_num_findiff10
 xi_refined = np.linspace(-0.999, 0.999, 1000)
 dx_dxi_refined = -L/pi/np.sqrt(1-xi_refined**2)
 
-plt.figure(figsize=(8,5))
-plt.plot(xi_refined, dx_dxi_refined, label='analytical', linewidth=line_width)
-plt.plot(xi, dx_dxi_num, '--o', label=r'$2^{nd}$ order', linewidth=light_line_width)
-plt.plot(xi, dx_dxi_num_findiff4, '--s', label=r'$4^{th}$ order', linewidth=light_line_width)
-plt.plot(xi, dx_dxi_num_findiff6, '--^', label=r'$6^{th}$ order', linewidth=light_line_width)
-plt.plot(xi, dx_dxi_num_findiff8, '--P', label=r'$8^{th}$ order', linewidth=light_line_width)
-plt.plot(xi, dx_dxi_num_findiff10, '--D', label=r'$10^{th}$ order', linewidth=light_line_width)
-plt.xlabel(r'$\xi$ [-]', fontsize=font_labels)
-plt.ylabel(r'$d x / d \xi$ [-]', fontsize=font_labels)
+plt.figure()
+plt.plot(xi_refined, dx_dxi_refined, label='Analytical', linewidth=1.5)
+plt.plot(xi, dx_dxi_num, ':o', label=r'$2^{nd}$ order', linewidth=1.5, mfc='none')
+plt.plot(xi, dx_dxi_num_findiff4, ':s', label=r'$4^{th}$ order', linewidth=1.5, mfc='none')
+plt.plot(xi, dx_dxi_num_findiff6, ':^', label=r'$6^{th}$ order', linewidth=1.5, mfc='none')
+plt.plot(xi, dx_dxi_num_findiff8, ':P', label=r'$8^{th}$ order', linewidth=1.5, mfc='none')
+plt.plot(xi, dx_dxi_num_findiff10, ':D', label=r'$10^{th}$ order', linewidth=1.5, mfc='none')
+plt.xlabel(r'$\xi$', fontsize=font_labels)
+plt.ylabel(r'$d x / d \xi$', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.ylim([-5.5, 0])

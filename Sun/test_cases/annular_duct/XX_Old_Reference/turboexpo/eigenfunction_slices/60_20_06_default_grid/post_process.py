@@ -12,10 +12,10 @@ import Sun
 import scipy
 from scipy.optimize import fsolve
 from scipy.sparse.linalg import eigs
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 import os
-from Utils.styles import *
+from utils.styles import *
 import pickle
 
 
@@ -135,24 +135,14 @@ omega = dict['omega']
 Nz = p_eig_r.shape[0]
 Nr = p_eig_r.shape[1]
 
-xtick_locations = [z_grid[0, 0], z_grid[-1, 0]]
-xtick_labels = [r'$0$', r'$L$']
-ytick_locations = [r_grid[0, 0], r_grid[0, -1]]
-ytick_labels = [r'$r_1$', r'$r_2$']
 
 plt.figure()
-cnt = plt.contourf(z_grid, r_grid, p_eig_r, levels=N_levels_medium, cmap='RdBu')
-for c in cnt.collections:
-    c.set_edgecolor("face")
-    c.set_linewidth(0.000000000001)
-plt.xlabel(r'$z$ [-]', fontsize=font_labels)
-plt.ylabel(r'$r$ [-]', fontsize=font_labels)
-plt.xticks(ticks=xtick_locations, labels=xtick_labels, fontsize=font_axes)
-plt.yticks(ticks=ytick_locations, labels=ytick_labels, fontsize=font_axes)
-plt.title(r'$\tilde{p}$ [-]', fontsize=font_title)
+cnt = plt.contourf(z_grid*x_ref/L, r_grid, p_eig_r, levels=N_levels_medium, cmap='RdBu')
+plt.xlabel(r'$z/L$', fontsize=font_labels)
+plt.ylabel(r'$r/r_{\rm min}$', fontsize=font_labels)
+plt.title(r'$\tilde{p}$', fontsize=font_title)
 cnbar = plt.colorbar(cnt)
-# cnbar.set_ticks(np.linspace(-0.5, 0.5, 9))
-cnbar.ax.tick_params(labelsize=font_axes)
+plt.tight_layout()
 plt.savefig('eigenfunction_p_2D_%02i_%02i.pdf' %(z_grid.shape[0], z_grid.shape[1]), bbox_inches='tight')
 
 
@@ -166,16 +156,17 @@ Z_eig = np.sin(3*np.pi/L * z_grid_refined)
 
 # # second axial order
 plt.figure()
-plt.plot(z_grid_refined, Z_eig.real/np.min(Z_eig.real), label='analytical',
+plt.plot(z_grid_refined/L, Z_eig.real/np.min(Z_eig.real), label='Analytical',
          lw=medium_line_width)
-plt.plot(z_grid[:, 7]*x_ref, p_eig_r[:, 7]/np.max(p_eig_r[:,7]), ':ro', label='numerical', lw=medium_line_width, markerfacecolor='none',
+plt.plot(z_grid[:, 7]*x_ref/L, p_eig_r[:, 7]/np.max(p_eig_r[:,7]), ':ro', label='Numerical', lw=medium_line_width, markerfacecolor='none',
          markeredgewidth=1.5, markersize=8)
-plt.ylabel(r'$\tilde{p}$ [-]', fontsize=font_labels)
-plt.xlabel(r'$z$ [-]', fontsize=font_labels)
+plt.ylabel(r'$\tilde{p}$', fontsize=font_labels)
+plt.xlabel(r'$z/L$', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.grid(alpha=grid_opacity)
 plt.legend(fontsize=font_legend)
+plt.tight_layout()
 plt.savefig('eigenfunction_z_%02i_%02i.pdf' %(z_grid.shape[0], z_grid.shape[1]), bbox_inches='tight')
 
 
@@ -192,19 +183,20 @@ eigen_analyt_r_scaled = eigen_analyt_r / (np.max(eigen_analyt_r) - np.min(eigen_
 
 plt.figure()
 # if opposite signs
-plt.plot(r_var/r1, eigen_analyt_r_scaled, label='analytical', lw=medium_line_width)
+plt.plot(r_var/r1, eigen_analyt_r_scaled, label='Analytical', lw=medium_line_width)
 plt.plot(r_grid[Nz // 3, :], (p_eig_r[Nz // 3, :]) / (np.max(p_eig_r[Nz // 3, :]) - np.min(p_eig_r[Nz // 3, :])),
-         ':ro', label='numerical', lw=medium_line_width, markerfacecolor='none', markeredgewidth=1.5,
+         ':ro', label='Numerical', lw=medium_line_width, markerfacecolor='none', markeredgewidth=1.5,
          markersize=8)
 #if same signs
 # plt.plot(r_grid[Nz // 2, :], np.abs(p_eig_r[Nz // 2, :])/np.max(np.abs(p_eig_r[Nz // 2, :])), '--o', label='numerical')
 # plt.plot(r_var/r1, np.abs(eigen_analyt_r_scaled)/np.max(np.abs(eigen_analyt_r_scaled)), label='analytical')
-plt.ylabel(r'$\tilde{p}$ [-]', fontsize=font_labels)
-plt.xlabel(r'$r$ [-]', fontsize=font_labels)
+plt.ylabel(r'$\tilde{p}$', fontsize=font_labels)
+plt.xlabel(r'$r/r_{\rm min}$', fontsize=font_labels)
 plt.xticks(fontsize=font_axes)
 plt.yticks(fontsize=font_axes)
 plt.grid(alpha=grid_opacity)
 # plt.title()
+plt.tight_layout()
 plt.legend(fontsize=font_legend)
 plt.savefig('eigenfunction_r_%02i_%02i.pdf' %(z_grid.shape[0], z_grid.shape[1]), bbox_inches='tight')
 plt.show()

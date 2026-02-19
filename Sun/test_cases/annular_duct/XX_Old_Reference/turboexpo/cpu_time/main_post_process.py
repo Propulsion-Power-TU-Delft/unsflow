@@ -8,7 +8,7 @@ Created on Wed May  3 09:29:59 2023
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from Utils.styles import *
+from utils.styles import *
 
 # Get a list of all directories in the current directory
 directories = [d for d in os.listdir('.') if os.path.isdir(d)]

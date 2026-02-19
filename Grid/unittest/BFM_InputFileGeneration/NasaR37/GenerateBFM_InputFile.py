@@ -4,8 +4,8 @@ import sys
 import pickle
 import numpy as np
 import Grid
-from Grid.src.config import Config
-from Grid.src.functions import create_folder
+from grid.src.config import Config
+from grid.src.functions import create_folder
 
 start_time = time.time()
 print('Start execution:')
@@ -18,7 +18,7 @@ config = Config(configuration_file)
 BLADE_BLOCK = True
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE GEO AND CFD DATA READING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-blade = Grid.src.Blade(config)
+blade = grid.src.Blade(config)
 blade.find_inlet_points()
 blade.find_outlet_points()
 
@@ -27,7 +27,7 @@ spwise_pts = config.get_spanwise_points()
 
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% BLADE BLOCK PROCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-bladed_block = Grid.src.Block(config, nstream=config.get_streamwise_points()[1], nspan=config.get_spanwise_points())
+bladed_block = grid.src.Block(config, nstream=config.get_streamwise_points()[1], nspan=config.get_spanwise_points())
 bladed_block.add_inlet_outlet_curves(blade.inlet, blade.outlet)
 bladed_block.extend_inlet_outlet_curves()
 bladed_block.find_intersections()

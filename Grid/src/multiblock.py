@@ -7,17 +7,17 @@ Created on Wed Jun 14 18:29:29 2023
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
-from Utils.styles import *
+from utils.styles import *
 from .functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 from .curve import Curve
-from Sun.src.general_functions import print_banner_begin, print_banner_end
+from sun.src.general_functions import print_banner_begin, print_banner_end
 from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
 import pickle
 import os
 from scipy.ndimage import gaussian_filter
-from Grid.src.functions import enlarge_domain_array
-from Grid.src.config import Config
+from grid.src.functions import enlarge_domain_array
+from grid.src.config import Config
 
 
 class MultiBlock:

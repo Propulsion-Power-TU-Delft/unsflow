@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Utils.styles import *
+from utils.styles import *
 
 file_path = 'history_BFM.csv'
 header = np.genfromtxt(file_path, delimiter=',', max_rows=1, dtype=str)

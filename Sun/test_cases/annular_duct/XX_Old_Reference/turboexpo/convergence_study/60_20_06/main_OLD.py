@@ -12,10 +12,10 @@ import Sun
 import scipy
 from scipy.optimize import fsolve
 from scipy.sparse.linalg import eigs
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 import os
-from Utils.styles import *
+from utils.styles import *
 
 
 # input data of the problem (SI units)
@@ -157,11 +157,11 @@ for ii in range(0, Nz):
         pressure[ii, jj] = p
 
 config = Config('duct.ini')
-duct_Obj1 = Sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
+duct_Obj1 = sun.src.AnnulusMeridional(0, L, r1, r2, Nz, Nr,
                                      density, radialVel, tangentialVel, axialVel, pressure, config)
 duct_Obj1.normalize_data()
-duct_grid1 = Sun.src.sun_grid.SunGrid(duct_Obj1)
-sun_obj = Sun.src.SunModel(duct_grid1, config=config)
+duct_grid1 = sun.src.sun_grid.SunGrid(duct_Obj1)
+sun_obj = sun.src.SunModel(duct_grid1, config=config)
 
 sun_blocks = [sun_obj]
 ii = 0

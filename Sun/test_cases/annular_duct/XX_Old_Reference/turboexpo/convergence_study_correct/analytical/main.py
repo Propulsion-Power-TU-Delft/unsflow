@@ -13,7 +13,7 @@ import scipy
 from scipy.optimize import fsolve
 from scipy.sparse.linalg import eigs
 import os
-from Utils.styles import *
+from utils.styles import *
 
 # input data of the problem (SI units)
 r1 = 0.1826  # inner radius [m]

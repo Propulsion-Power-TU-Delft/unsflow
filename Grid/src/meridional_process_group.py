@@ -8,12 +8,12 @@ import os.path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from Utils.styles import *
+from utils.styles import *
 from scipy.ndimage import gaussian_filter
 import pickle
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Grid.src.functions import print_object_memory_info
-from Grid.src.polynomial_ls_regression import *
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from grid.src.functions import print_object_memory_info
+from grid.src.polynomial_ls_regression import *
 
 
 class MeridionalProcessGroup:

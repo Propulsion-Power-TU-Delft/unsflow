@@ -12,10 +12,10 @@ import Sun
 import scipy
 from scipy.optimize import fsolve
 from scipy.sparse.linalg import eigs
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 import os
-from Utils.styles import *
+from utils.styles import *
 import pickle
 
 

@@ -4,7 +4,7 @@ import numpy as np
 from numpy import sin, cos, pi
 import pickle
 import pandas as pd
-from Utils.styles import *
+from utils.styles import *
 
 #############################################################################################################################
 #

@@ -1,10 +1,10 @@
-from Grid.src.config import Config
+from grid.src.config import Config
 import os
 import numpy as np
 from numpy import sin, cos, tan, arctan2, pi, sqrt
 import matplotlib.pyplot as plt
 import pandas as pd
-from Grid.src.functions import *
+from grid.src.functions import *
 import pickle
 
 

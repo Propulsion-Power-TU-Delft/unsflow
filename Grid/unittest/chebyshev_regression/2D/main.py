@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.polynomial.chebyshev import chebvander2d
 from numpy.linalg import lstsq
-from Grid.src.functions import create_folder
+from grid.src.functions import create_folder
 
 X_MIN = -0.1
 X_MAX = 1

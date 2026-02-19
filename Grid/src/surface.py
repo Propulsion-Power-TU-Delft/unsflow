@@ -12,11 +12,11 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
-from Sun.src.general_functions import print_banner_begin, print_banner_end
-from Utils.styles import total_chars, total_chars_mid
-from Grid.src.functions import clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both
-from Grid.src.profile import Profile
-from Utils.styles import *
+from sun.src.general_functions import print_banner_begin, print_banner_end
+from utils.styles import total_chars, total_chars_mid
+from grid.src.functions import clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both
+from grid.src.profile import Profile
+from utils.styles import *
 from scipy import interpolate
 import math
 import os

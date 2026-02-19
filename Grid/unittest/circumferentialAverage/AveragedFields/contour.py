@@ -1,7 +1,7 @@
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import contour_template, compute_meridional_spanwise_coordinates 
+from grid.src.functions import contour_template, compute_meridional_spanwise_coordinates 
 
 avgTypes = ['massFlowAvg']
 

@@ -15,11 +15,11 @@ from scipy.ndimage import minimum_filter
 from scipy.sparse.linalg import eigs
 from .sun_grid import SunGrid
 from .general_functions import *
-from Utils.styles import *
+from utils.styles import *
 from .eigenmode import Eigenmode
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
-from Grid.src.functions import create_folder
+from grid.src.functions import create_folder
 import os
 
 

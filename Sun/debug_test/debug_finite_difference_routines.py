@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import Sun
 from matplotlib import cm
-from Sun.src.styles import *
+from sun.src.styles import *
 
 # %%
 nx = 20
@@ -68,19 +68,19 @@ J = dzdx * drdy - dzdy * drdx
 # compute the finite difference version (_fd)
 
 # hard coded version
-dzdx_fd, dzdy_fd, drdx_fd, drdy_fd = Sun.src.general_functions.JacobianTransform(Z, R, X, Y)
+dzdx_fd, dzdy_fd, drdx_fd, drdy_fd = sun.src.general_functions.JacobianTransform(Z, R, X, Y)
 J_fd = dzdx_fd * drdy_fd - dzdy_fd * drdx_fd
 
 # numpy.gradient() version
-dzdx_fd2, dzdy_fd2, drdx_fd2, drdy_fd2 = Sun.src.general_functions.JacobianTransform2(Z, R, X, Y)
+dzdx_fd2, dzdy_fd2, drdx_fd2, drdy_fd2 = sun.src.general_functions.JacobianTransform2(Z, R, X, Y)
 J_fd2 = dzdx_fd2 * drdy_fd2 - dzdy_fd2 * drdx_fd2
 
 # findiff version of second order
-dzdx_fd3, dzdy_fd3, drdx_fd3, drdy_fd3 = Sun.src.general_functions.JacobianTransform3(Z, R, X, Y, order=2)
+dzdx_fd3, dzdy_fd3, drdx_fd3, drdy_fd3 = sun.src.general_functions.JacobianTransform3(Z, R, X, Y, order=2)
 J_fd3 = dzdx_fd3 * drdy_fd3 - dzdy_fd3 * drdx_fd3
 
 # findiff version of fourth order
-dzdx_fd4, dzdy_fd4, drdx_fd4, drdy_fd4 = Sun.src.general_functions.JacobianTransform3(Z, R, X, Y, order=4)
+dzdx_fd4, dzdy_fd4, drdx_fd4, drdy_fd4 = sun.src.general_functions.JacobianTransform3(Z, R, X, Y, order=4)
 J_fd4 = dzdx_fd4 * drdy_fd4 - dzdy_fd4 * drdx_fd4
 
 # now compare the jacobians with the analytical one

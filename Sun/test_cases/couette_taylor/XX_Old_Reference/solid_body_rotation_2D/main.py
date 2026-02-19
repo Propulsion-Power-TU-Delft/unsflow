@@ -10,10 +10,10 @@ import numpy as np
 from numpy import pi, sin, cos
 import Sun
 import os
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
 from scipy.sparse.linalg import eigs
-from Utils.styles import *
+from utils.styles import *
 import pickle
 
 # input data of the problem (SI units)
@@ -104,7 +104,7 @@ pressure = np.ones((Nz, Nr))*P1
 
 
 config = Config('config.ini')
-duct_obj = Sun.src.AnnulusMeridional(0, L, R1, R2, Nz, Nr, density, radialVel, tangentialVel, axialVel, pressure,
+duct_obj = sun.src.AnnulusMeridional(0, L, R1, R2, Nz, Nr, density, radialVel, tangentialVel, axialVel, pressure,
                                       config, mode='gauss-lobatto')
 
 
@@ -155,8 +155,8 @@ plt.colorbar()
 # plt.show()
 
 duct_obj.normalize_data()
-duct_grid1 = Sun.src.sun_grid.SunGrid(duct_obj)
-sun_obj = Sun.src.SunModel(duct_grid1, config=config)
+duct_grid1 = sun.src.sun_grid.SunGrid(duct_obj)
+sun_obj = sun.src.SunModel(duct_grid1, config=config)
 
 sun_blocks = [sun_obj]
 ii = 0

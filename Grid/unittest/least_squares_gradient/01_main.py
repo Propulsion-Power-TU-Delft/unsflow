@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import os
 
-from Grid.src.functions import compute_gradient_least_square
+from grid.src.functions import compute_gradient_least_square
 
 SELECTION = 2
 color_map = 'jet'

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy import sin, cos, tan, sqrt, meshgrid
 import Sun
-from Utils.styles import *
+from utils.styles import *
 
 
 def function2D(X, Y, func):
@@ -46,8 +46,8 @@ for i in range(len(NODES)):
     NX = NODES[i]
     NY = NODES[i]
 
-    x_gl = Sun.src.general_functions.GaussLobattoPoints(NX)
-    y_gl = Sun.src.general_functions.GaussLobattoPoints(NY)
+    x_gl = sun.src.general_functions.GaussLobattoPoints(NX)
+    y_gl = sun.src.general_functions.GaussLobattoPoints(NY)
 
     X, Y = meshgrid(x_gl, y_gl, indexing='ij')
     Z, dZdx, dZdy, dZ2dX2, dZ2dy2, dZ2dxdy, name_func = function2D(X, Y, func=FUNC_NUM)
@@ -62,9 +62,9 @@ for i in range(len(NODES)):
         plt.savefig('pictures/func_%i_nodes_%i_%i.pdf' % (FUNC_NUM, NX, NY), bbox_inches='tight')
 
 
-    Dx = Sun.src.general_functions.ChebyshevDerivativeMatrixBayliss(
+    Dx = sun.src.general_functions.ChebyshevDerivativeMatrixBayliss(
         x_gl)  # derivative operator in xi, Bayliss formulation
-    Dy = Sun.src.general_functions.ChebyshevDerivativeMatrixBayliss(y_gl)
+    Dy = sun.src.general_functions.ChebyshevDerivativeMatrixBayliss(y_gl)
 
     # First (serial implementation of the spectral differentiation matrix in 2D)
     # dZdX_gl = np.zeros_like(Z)

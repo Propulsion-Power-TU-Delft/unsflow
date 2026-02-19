@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from Grid.src.su2_mesh_generator import generate_SU2mesh
+from grid.src.su2_mesh_generator import generate_SU2mesh
 
 pickle_mesh = 'mesh_78_20_100.pickle'
 with open(pickle_mesh, 'rb') as f:

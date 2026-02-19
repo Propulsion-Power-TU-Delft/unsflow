@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import *
+from grid.src.functions import *
 import pickle
 
 with open('../data/NASA_LSCC_data.pik', 'rb') as file:
     data = pickle.load(file)
 
-x = data.multiBlockGrid.z_grid_points
-y = data.multiBlockGrid.r_grid_points
+x = data.multiBlockgrid.z_grid_points
+y = data.multiBlockgrid.r_grid_points
 
 xNew = enlarge_domain_array(x)
 yNew = enlarge_domain_array(y)

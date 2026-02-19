@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Grid.src.functions import *
+from grid.src.functions import *
 
 xData = np.linspace(0, 1, 100)
 yData = np.linspace(0, 1, 100)

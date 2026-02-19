@@ -1,8 +1,8 @@
 import pickle
 import Sun
-from Sun.src.sun_model_multiblock import SunModelMultiBlock
-from Grid.src.config import Config
-from Grid.src.functions import create_folder
+from sun.src.sun_model_multiblock import SunModelMultiBlock
+from grid.src.config import Config
+from grid.src.functions import create_folder
 
 folder_out = 'pictures'
 create_folder(folder_out)
@@ -13,8 +13,8 @@ with open(config.get_meridional_pickle_filepath(), "rb") as file:
 
 sun_blocks = []
 for meridional_block in meridional_obj.group:
-    compressor_grid = Sun.src.sun_grid.SunGrid(meridional_block)
-    sun_blocks.append(Sun.src.SunModel(compressor_grid, config))
+    compressor_grid = sun.src.sun_grid.SunGrid(meridional_block)
+    sun_blocks.append(sun.src.SunModel(compressor_grid, config))
 
 ii = 0
 for sun_obj in sun_blocks:
