@@ -10,7 +10,7 @@ from spakovszky.src.driver import Driver
 
 # Relevant geometric parameters for the compressor. All the variables that begin with
 # capital letters are dimensional. Otherwise, they have been non-dimensionalized
-
+speedline = 1  # choose the speedline to be used
 total_blades = 14  # number of blades (normal + split)
 main_blades = 7  # main blades
 splitter_blades = total_blades - main_blades  # splitter blades
@@ -107,7 +107,7 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
 
 # %%PREPROCESSING OF THE DATA, IN ORDER TO HAVE INPUT DATA READY FOR THE TRANSFER FUNCTIONS
 
-speedline = 1  # choose the speedline to be used
+
 print("Selected speedline : %2d rpm" % (rpm[speedline]))
 
 # drop out the zeros used to allocate data for chocked conditions
@@ -199,7 +199,8 @@ for wpoint in working_points:
     print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
     inlet = AxialDuct(vy1[0], vx1[0], x1)
     impeller = RadialImpeller(r1, r2, rho1[wpoint], rho2[wpoint], A1_blade/A_Ref, A2_blade/A_Ref, vy1[wpoint], vx1[wpoint],
-                              vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint], 1)
+                              vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint],
+                              1)
     vaneless_diffuser = VanelessDiffuser(r2, r4, vr2[wpoint], vy2[wpoint])
     outlet = SwirlingFlow(r4, vr4[wpoint], vy4[wpoint], r4)
     driver = Driver('Centrifugal with vaneless diffuser')

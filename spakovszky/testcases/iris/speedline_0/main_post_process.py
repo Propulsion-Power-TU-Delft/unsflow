@@ -4,6 +4,7 @@ import pickle
 import os
 from utils.styles import *
 
+speedline = 0
 data_folder = "../data/IRIS_single_stage/design0_beta_3.450/operating_map/"
 with open(data_folder + 'mass_flow.pkl', 'rb') as f:
     mass_flow = pickle.load(f)
@@ -28,14 +29,13 @@ plt.grid(alpha=0.2)
 plt.legend(fontsize=font_legend)
 plt.savefig('pictures/iris_characteristic_curves.pdf', bbox_inches='tight')
 
-speedline = 0  # choose the speedline to be used
+
 mass_flow = mass_flow[speedline, :]
 beta_ts = beta_ts[speedline, :]
 
 data_folder = 'results/'
 files_and_directories = os.listdir(data_folder)
-filenames = [data_folder + file_name for file_name in files_and_directories if (os.path.isfile(data_folder +
-                                                                    file_name) and file_name[-6:] == 'pickle')]
+filenames = [data_folder + file_name for file_name in files_and_directories if file_name.split('.')[-1] == 'pkl']
 filenames.sort()
 
 poles = []
@@ -44,7 +44,8 @@ for file in filenames:
     with open(file, 'rb') as pik:
         driver = pickle.load(pik)
         poles.append(driver.poles_dict)
-        mass_idx.append(int(file[-9: -7]))
+        idx = int(file.split('_')[-1].split('.')[0])
+        mass_idx.append(idx)
 
 # the first index is the number of flow conditions, the second is the number of harmonics
 n_harmonics = len(poles[0].keys())

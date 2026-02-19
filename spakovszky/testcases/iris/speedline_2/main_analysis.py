@@ -10,7 +10,7 @@ from spakovszky.src.driver import Driver
 
 # Relevant geometric parameters for the compressor. All the variables that begin with
 # capital letters are dimensional. Otherwise, they have been non-dimensionalized
-
+speedline = 2  # choose the speedline to be used
 total_blades = 14  # number of blades (normal + split)
 main_blades = 7  # main blades
 splitter_blades = total_blades - main_blades  # splitter blades
@@ -107,7 +107,7 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
 
 # %%PREPROCESSING OF THE DATA, IN ORDER TO HAVE INPUT DATA READY FOR THE TRANSFER FUNCTIONS
 
-speedline = 2  # choose the speedline to be used
+
 print("Selected speedline : %2d rpm" % (rpm[speedline]))
 
 # drop out the zeros used to allocate data for chocked conditions
@@ -154,7 +154,7 @@ p2_t = p2 + 0.5 * Rho2[speedline, 0:index_max] * ((vx2 * U_Ref) ** 2 + (vy2 * U_
 p4 = P4[speedline, 0:index_max]
 p4_t = p4 + 0.5 * Rho4[speedline, 0:index_max] * ((vx4 * U_Ref) ** 2 + (vy4 * U_Ref) ** 2 + (vr4 * U_Ref) ** 2)
 
-beta_tt_calc = p4_t/p1_t
+beta_tt_calc = p4_t / p1_t
 beta_tt_speedline = beta_tt[speedline, 0:index_max]
 
 # static density [kg/m3]
@@ -192,46 +192,47 @@ beta1 = Beta1[speedline, 0:index_max]
 beta2 = Beta2[speedline, 0:index_max]
 alpha4 = Alpha4[speedline, 0:index_max]
 
-working_points = [5]
+working_points = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 harmonics = [1, 2, 3, 4]
 poles_global = {}  # dictionary for the whole set of poles
-# for wpoint in working_points:
-#     print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
-#     inlet = AxialDuct(vy1[0], vx1[0], x1)
-#     impeller = RadialImpeller(r1, r2, rho1[wpoint], rho2[wpoint], A1_blade/A_Ref, A2_blade/A_Ref, vy1[wpoint], vx1[wpoint],
-#                               vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint], 1)
-#     vaneless_diffuser = VanelessDiffuser(r2, r4, vr2[wpoint], vy2[wpoint])
-#     outlet = SwirlingFlow(r4, vr4[wpoint], vy4[wpoint], r4)
-#     driver = Driver('Centrifugal with vaneless diffuser')
-#     driver.add_component(inlet)
-#     driver.add_component(impeller)
-#     driver.add_component(vaneless_diffuser)
-#     driver.add_component(outlet)
-#     driver.set_eigenvalues_research_settings([-3, 1.5, -5, 5], [1, 1], 10, 1e-3)
-#     driver.set_inlet_boundary_conditions()
-#     driver.set_outlet_boundary_conditions('infinite duct length')
-#     driver.find_eigenvalues(harmonics)
-#     driver.plot_eigenvalues(save_filename='eigenvalues_%.2i' %(wpoint))
-#     driver.store_results_pickle(save_filename='eigenvalues_%.2i' %(wpoint))
+for wpoint in working_points:
+    print('Working Point: ' + str(wpoint) + ' of ' + str(working_points[-1]))
+    inlet = AxialDuct(vy1[0], vx1[0], x1)
+    impeller = RadialImpeller(r1, r2, rho1[wpoint], rho2[wpoint], A1_blade/A_Ref, A2_blade/A_Ref, vy1[wpoint], vx1[wpoint],
+                              vr2[wpoint], vy2[wpoint], alpha1[wpoint], beta1[wpoint], beta2[wpoint], s_i, dLi_dTanb[wpoint],
+                              1)
+    vaneless_diffuser = VanelessDiffuser(r2, r4, vr2[wpoint], vy2[wpoint])
+    outlet = SwirlingFlow(r4, vr4[wpoint], vy4[wpoint], r4)
+    driver = Driver('Centrifugal with vaneless diffuser')
+    driver.add_component(inlet)
+    driver.add_component(impeller)
+    driver.add_component(vaneless_diffuser)
+    driver.add_component(outlet)
+    driver.set_eigenvalues_research_settings([-3, 1.5, -5, 5], [1, 1], 10, 1e-3)
+    driver.set_inlet_boundary_conditions()
+    driver.set_outlet_boundary_conditions('infinite duct length')
+    driver.find_eigenvalues(harmonics)
+    driver.plot_eigenvalues(save_filename='eigenvalues_%.2i' %(wpoint))
+    driver.store_results_pickle(save_filename='eigenvalues_%.2i' %(wpoint))
 
 
 # %% General plots
 # plot of characteristics
-fig, ax = plt.subplots(1, figsize=(8, 6))
-for s in range(0, len(rpm)):
-    speedline = s  # choose the speedline to be used
-    index_max = np.where(mass_flow[speedline, :] == 0)
-    index_max = index_max[0]
-    index_max = index_max[0]
-    index_max = index_max - 1  # index max in order to avoid the choked data
-    ax.plot(mass_flow[speedline, 0:index_max], beta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
-ax.set_ylabel(r'$\beta_{ts}$')
-ax.set_xlabel(r'$\dot{m}$')
-ax.set_title('compressor characteristics')
-ax.plot(mass_flow[:, 0], beta_ts[:, 0], 'k^', label='Senoo')
-ax.plot(mass_flow[:, 5], beta_ts[:, 5], 'ko', label='Spakovszky')  # instability point, visually located
-ax.legend()
-fig.savefig('pictures/compressor_characteristics.pdf')
+# fig, ax = plt.subplots(1, figsize=(8, 6))
+# for s in range(0, len(rpm)):
+#     speedline = s  # choose the speedline to be used
+#     index_max = np.where(mass_flow[speedline, :] == 0)
+#     index_max = index_max[0]
+#     index_max = index_max[0]
+#     index_max = index_max - 1  # index max in order to avoid the choked data
+#     ax.plot(mass_flow[speedline, 0:index_max], beta_ts[speedline, 0:index_max], label='%0d krpm' % (rpm[speedline] / 1000))
+# ax.set_ylabel(r'$\beta_{ts}$')
+# ax.set_xlabel(r'$\dot{m}$')
+# ax.set_title('compressor characteristics')
+# ax.plot(mass_flow[:, 0], beta_ts[:, 0], 'k^', label='Senoo')
+# ax.plot(mass_flow[:, 5], beta_ts[:, 5], 'ko', label='Spakovszky')  # instability point, visually located
+# ax.legend()
+# fig.savefig('pictures/compressor_characteristics.pdf')
 #
 # # plot of efficiency
 # fig, ax = plt.subplots(1, figsize=(8, 6))

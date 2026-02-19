@@ -10,7 +10,7 @@ from spakovszky.src.driver import Driver
 
 # Relevant geometric parameters for the compressor. All the variables that begin with
 # capital letters are dimensional. Otherwise, they have been non-dimensionalized
-
+speedline = 0  # choose the speedline to be used
 total_blades = 14  # number of blades (normal + split)
 main_blades = 7  # main blades
 splitter_blades = total_blades - main_blades  # splitter blades
@@ -107,7 +107,7 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
 
 # %%PREPROCESSING OF THE DATA, IN ORDER TO HAVE INPUT DATA READY FOR THE TRANSFER FUNCTIONS
 
-speedline = 0  # choose the speedline to be used
+
 print("Selected speedline : %2d rpm" % (rpm[speedline]))
 
 # drop out the zeros used to allocate data for chocked conditions
