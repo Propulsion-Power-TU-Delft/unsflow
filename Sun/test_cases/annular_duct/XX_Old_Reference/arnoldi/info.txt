@@ -1,2 +1,0 @@
-set of folders contaning solutions of the annular duct problem using arnoldi algorithm.
-They show both eigenfrequencies and eigenfunctions.

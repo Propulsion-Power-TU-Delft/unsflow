@@ -1,2 +1,0 @@
-1D slices of the eigenfunctions, trying to match analytical and numerical values. 
-The analytical problem still not fully understood, due to dissipation in z.

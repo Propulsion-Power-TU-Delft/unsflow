@@ -9,7 +9,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from sun.src.node import Node
-import Utils
+import utils
 from sun.src.general_functions import GaussLobattoPoints
 from utils.styles import *
 import os

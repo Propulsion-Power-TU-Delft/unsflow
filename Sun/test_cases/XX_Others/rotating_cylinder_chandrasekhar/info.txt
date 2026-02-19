@@ -1,1 +1,0 @@
-Exercise to test the code, to find the eigenfrequencies of a rotating column of liquid. The solution corresponds to Chandreskhar book

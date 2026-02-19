@@ -1,2 +1,0 @@
-Implementation of the boundary conditions by strong imposition also at the corners of the domain. Not only in the walls
-

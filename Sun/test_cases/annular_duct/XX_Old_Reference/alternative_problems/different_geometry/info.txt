@@ -1,1 +1,0 @@
-Duct problem with different geometry for the walls.

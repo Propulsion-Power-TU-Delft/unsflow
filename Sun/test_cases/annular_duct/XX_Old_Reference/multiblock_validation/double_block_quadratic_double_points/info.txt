@@ -1,5 +1,0 @@
-This shows that the problem is a bit ruined in multiblock, when there are not enough
-points in the streamwise directions (keeping global streamwise nodes number constant and
-augmenting the number of blocks).
-
-So the problem at the borders are not caused by implementation errors, but to grid resolution.

@@ -1,2 +1,0 @@
-Since the annular problem is cartesian, apply finite differences directly in the physical grid, to avoid messing up with the transformation and spectral derivatives.
-You should get the same results.

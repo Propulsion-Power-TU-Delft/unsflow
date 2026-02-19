@@ -1,2 +1,0 @@
-this folder contains scripts to execute the duct annulus problem for 
-different meshes, to see if the results are mesh independent or not

@@ -1,3 +1,0 @@
-Perform sensitivity study of the first results, for the turbo expo paper. Compute spectrum for different grids and for different finite difference order.
-The names refer to <Nz points>_<Nr points>_<finite diff. order>
-The grid still refers to the default one, having problems at borders

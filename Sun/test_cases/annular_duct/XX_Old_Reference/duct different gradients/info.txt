@@ -1,2 +1,0 @@
-this folder contains scripts to execute the duct annulus problem for 
-different order of finding differentiation on the 30x10 mesh, to check if the situation improves or not.
