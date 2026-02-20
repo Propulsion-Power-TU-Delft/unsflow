@@ -28,8 +28,6 @@ class Greitzer:
         self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
         phi = np.linspace(0,1,1000)
         psi_c = unstalled_characteristic(phi, self.H_param, self.W_param, self.psi_c_0_param)
-        # phi = self.config.get_flow_coeffs()
-        # psi_c = self.config.get_work_coeffs()
         
         try:
             k_valve = self.config.get_valve_coefficient()
@@ -130,7 +128,7 @@ class Greitzer:
         cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[+0.1], colors='r', linestyles='-.', linewidths=2.0)
         plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
         
-
+        plt.grid(alpha=0.3)
         plt.xlabel(r'$B$')
         plt.ylabel(r'$G$')
         # plt.title(r'max Re($\lambda$)')
