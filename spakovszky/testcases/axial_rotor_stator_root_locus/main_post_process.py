@@ -58,7 +58,7 @@ scatter = plt.scatter(pole_dn.real, -pole_dn.imag, c=colors, s=20, cmap=colormap
 colorbar = plt.colorbar(scatter)
 colorbar.set_label(r'$\Delta x$', rotation=90, labelpad=15)
 plt.xlabel(r'$\sigma_3$')
-plt.ylabel(r'$j \omega_3$')
+plt.ylabel(r'$\omega_3$')
 plt.grid(alpha=0.2)
 plt.xlim([-4.5, 0.5])
 plt.ylim([-0.5, 2])
