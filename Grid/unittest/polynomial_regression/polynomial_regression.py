@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 
 from grid.src.polynomial_ls_regression import *
-from grid.src.styles import color_map
+from utils.styles import color_map
 
 # FUNCTION TO REGRESS AND TEST. 4th ORDER SHOULD BE CAPTURED PERFECTLY
 

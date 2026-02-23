@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Grid
 from grid.src.functions import elliptic_grid_generation
 
 

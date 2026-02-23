@@ -8,7 +8,7 @@ import numpy as np
 import pickle
 
 from grid.src.weighted_least_squares import *
-from grid.src.styles import color_map
+from utils.styles import color_map
 import time
 
 begin = time.time()
@@ -56,8 +56,7 @@ Z_wls_dy = np.zeros_like(Z)
 for ii in range(nx):
     for jj in range(ny):
         print("Regression %i of %i" % (jj + ii * ny, nx * ny))
-        f, dfdx, dfdy = evaluate_weight_least_square_regression(X[ii, jj], Y[ii, jj], x_points, y_points, z_points,
-                                                                order=2, delta=delta, wfunc_type = 'gauss')
+        f, dfdx, dfdy = compute_function_and_gradient_approximation(X[ii, jj], Y[ii, jj], x_points, y_points, z_points)
         Z_wls[ii, jj] = f
         Z_wls_dx[ii, jj] = dfdx
         Z_wls_dy[ii, jj] = dfdy

@@ -8,7 +8,7 @@ import numpy as np
 import pickle
 
 from grid.src.weighted_least_squares import *
-from grid.src.styles import color_map
+from utils.styles import color_map
 import time
 
 begin = time.time()

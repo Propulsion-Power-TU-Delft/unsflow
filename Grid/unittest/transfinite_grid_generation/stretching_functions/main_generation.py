@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import Grid
 from grid.src.functions import transfinite_grid_generation, eriksson_stretching_function_initial, \
     eriksson_stretching_function_final, eriksson_stretching_function_both
 import pickle

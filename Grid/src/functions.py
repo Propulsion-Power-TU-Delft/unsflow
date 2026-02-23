@@ -1454,7 +1454,7 @@ def compute_meridional_streamwise_coordinates(axialGrid: np.ndarray, radialGrid:
         radialGrid (np.ndarray): 2D array of radial grid points
         normalize (bool): if True, every streamline will go from 0 at leading edge to 1 at trailing edge
     """
-    ni,nj = axialgrid.shape
+    ni,nj = axialGrid.shape
     streamLen = np.zeros((ni,nj))
     for ii in range(1, ni):
             ds = np.sqrt((axialGrid[ii, :] - axialGrid[ii - 1, :]) ** 2 + (radialGrid[ii, :] - radialGrid[ii - 1, :]) ** 2)
@@ -1475,11 +1475,11 @@ def compute_meridional_spanwise_coordinates(axialGrid: np.ndarray, radialGrid: n
         radialGrid (np.ndarray): 2D array of radial grid points
         normalize (bool): if True, every streamline will go from 0 at leading edge to 1 at trailing edge
     """
-    if len(axialgrid.shape) == 1:
+    if len(axialGrid.shape) == 1:
         axialGrid = np.reshape(axialGrid, (1, len(axialGrid)))
         radialGrid = np.reshape(radialGrid, (1, len(radialGrid)))
     
-    ni,nj = axialgrid.shape
+    ni,nj = axialGrid.shape
     
     spanLen = np.zeros((ni,nj))
     for jj in range(1, nj):
