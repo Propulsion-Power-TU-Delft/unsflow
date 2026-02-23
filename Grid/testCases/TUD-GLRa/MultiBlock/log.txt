@@ -88,3 +88,25 @@ Y Stretching Coefficient:                                                       
 +--------------------------------------------------------------------------------------------------+
 
 +-----------------------------------GRID GENERATION OF BLOCK 05------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           3
+X Stretching Coefficient:                                                                        1.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
++-----------------------------------GRID GENERATION OF BLOCK 06------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           3
+X Stretching Coefficient:                                                                        1.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+No body force reconstruction requested.
+No body force reconstruction requested.
+No body force reconstruction requested.
++--------------------------------------MULTIBLOCK GRID OUTPUT--------------------------------------+
+No output type specified, therefore no output saved.
++--------------------------------------------------------------------------------------------------+
+
