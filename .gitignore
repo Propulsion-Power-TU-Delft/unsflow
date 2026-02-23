@@ -59,6 +59,7 @@ Thumbs.db
 *pickle*
 *pickle
 *.pik
+*.txt
 *.pkl
 *.su2
 *.cfg
