@@ -434,7 +434,7 @@ class MultiBlock:
         niTot, njTot = zgrid.shape
         grid_portion = self.config.get_meridional_grid_portion()
         if grid_portion=='full' or grid_portion=='all':
-            zgrid, rgrid = zgrid[:,:], rgrid[:,:]
+            zportion, rportion = zgrid[:,:], rgrid[:,:]
         else:
             iStart = grid_portion[0]
             iEnd = grid_portion[-1]+1
