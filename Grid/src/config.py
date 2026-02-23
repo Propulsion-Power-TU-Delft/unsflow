@@ -16,12 +16,6 @@ class Config:
         print(f"{'Configuration file: ':<{total_chars_mid}}{config_file:>{total_chars_mid}}")
         pic_folder = self.get_pictures_folder_path()
         os.makedirs(pic_folder, exist_ok=True)
-        # print(f"{'Output folder for the pictures: ':<{total_chars_mid}}{pic_folder:>{total_chars_mid}}")
-        # sw_points = self.get_streamwise_points()
-        # sp_points = self.get_spanwise_points()
-        # print(f"{'Number of streamwise points: ':<{total_chars_mid}}{str(sw_points):>{total_chars_mid}}")
-        # print(f"{'Number of spanwise points: ':<{total_chars_mid}}{sp_points:>{total_chars_mid}}")
-        # print(f"{'Driver type: ':<{total_chars_mid}}{self.get_multiblock_driver_type():>{total_chars_mid}}")
         print_banner_end('')
         
 
