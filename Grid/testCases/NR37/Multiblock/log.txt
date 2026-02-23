@@ -1,0 +1,51 @@
++----------------------------------------CONFIGURATION FILE----------------------------------------+
+Configuration file:                                                                        input.ini
++--------------------------------------------------------------------------------------------------+
+
++------------------------------------------BLADE 00 main-------------------------------------------+
+Blade coordinate file:                                                     coordinates/profile.curve
+Coordinates rescaled to SI units by factor:                                                    0.010
+Blade coordinate file contains splitter blade:                                                     0
+Number of profiles:                                                                                6
+Rescale Factor [-]:                                                                            0.010
+Reference Length [m]:                                                                          1.000
+Splitter Blade:                                                                                    0
+Blade inlet type:                                                                              axial
+Blade outlet type:                                                                             axial
+Method used for blade camber reconstruction:                                           interpolation
+Blade edges extrapolation coefficient:                                                         0.000
+Camber smoothing coefficient:                                                                  0.000
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 00------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        2.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 01------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        1.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 02------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        2.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+No body force reconstruction requested.
++--------------------------------------MULTIBLOCK GRID OUTPUT--------------------------------------+
+No output type specified, therefore no output saved.
++--------------------------------------------------------------------------------------------------+
+

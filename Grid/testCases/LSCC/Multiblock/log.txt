@@ -1,0 +1,59 @@
++----------------------------------------CONFIGURATION FILE----------------------------------------+
+Configuration file:                                                                        input.ini
++--------------------------------------------------------------------------------------------------+
+
++------------------------------------------BLADE 00 main-------------------------------------------+
+Blade coordinate file:                                                  coordinates/main_blade.curve
+Coordinates rescaled to SI units by factor:                                                    0.010
+Blade coordinate file contains splitter blade:                                                     0
+Number of profiles:                                                                                6
+Rescale Factor [-]:                                                                            0.010
+Reference Length [m]:                                                                          1.000
+Splitter Blade:                                                                                    0
+Blade inlet type:                                                                              axial
+Blade outlet type:                                                                            radial
+Method used for blade camber reconstruction:                                           interpolation
+Blade edges extrapolation coefficient:                                                         0.040
+Camber smoothing coefficient:                                                                  0.500
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 00------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        1.0
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 01------------------------------------+
+Trim type:                                                                              axial-radial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                       1.25
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+Camber normal vector grid added to the CTurboBFM mesh file
++-----------------------------------GRID GENERATION OF BLOCK 02------------------------------------+
+Trim type:                                                                                    radial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        1.1
+Y Stretching Coefficient:                                                                        1.0
++--------------------------------------------------------------------------------------------------+
+
+No body force reconstruction requested.
++--------------------------------------MULTIBLOCK GRID OUTPUT--------------------------------------+
+blockage grid added to the CTurboBFM mesh file
+normalAxial grid added to the CTurboBFM mesh file
+normalRadial grid added to the CTurboBFM mesh file
+normalTangential grid added to the CTurboBFM mesh file
+rpm grid added to the CTurboBFM mesh file
+streamwiseLength grid added to the CTurboBFM mesh file
+bladePresent grid added to the CTurboBFM mesh file
+numberBlades grid added to the CTurboBFM mesh file
+CTurboBFM axisymmetric mesh pickle file saved to Output/CTurboBFM_Mesh_50_21.csv
++--------------------------------------------------------------------------------------------------+
+

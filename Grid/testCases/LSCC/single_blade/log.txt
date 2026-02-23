@@ -1,0 +1,32 @@
++----------------------------------------CONFIGURATION FILE----------------------------------------+
+Configuration file:                                                                        input.ini
++--------------------------------------------------------------------------------------------------+
+
++------------------------------------------BLADE 00 main-------------------------------------------+
+Blade coordinate file:                                                  coordinates/main_blade.curve
+Coordinates rescaled to SI units by factor:                                                    1.000
+Blade coordinate file contains splitter blade:                                                     0
+Number of profiles:                                                                                6
+Rescale Factor [-]:                                                                            1.000
+Reference Length [m]:                                                                          1.000
+Splitter Blade:                                                                                    0
+Blade inlet type:                                                                              axial
+Blade outlet type:                                                                            radial
+Method used for blade camber reconstruction:                                           interpolation
+Blade edges extrapolation coefficient:                                                         0.020
+Camber smoothing coefficient:                                                                  0.500
++--------------------------------------------------------------------------------------------------+
+
++-----------------------------------GRID GENERATION OF BLOCK 00------------------------------------+
+Trim type:                                                                              axial-radial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           1
+X Stretching Coefficient:                                                                        1.2
+Y Stretching Coefficient:                                                                        1.2
++--------------------------------------------------------------------------------------------------+
+
+No body force reconstruction requested.
++--------------------------------------MULTIBLOCK GRID OUTPUT--------------------------------------+
+Object saved in Output/LSCC.pik
++--------------------------------------------------------------------------------------------------+
+

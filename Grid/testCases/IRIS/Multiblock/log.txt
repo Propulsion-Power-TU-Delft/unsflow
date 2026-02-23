@@ -1,0 +1,44 @@
++----------------------------------------CONFIGURATION FILE----------------------------------------+
+Configuration file:                                                                        input.ini
++--------------------------------------------------------------------------------------------------+
+
++------------------------------------------BLADE 00 main-------------------------------------------+
+Blade coordinate file:                                                     coordinates/profile.curve
+Coordinates rescaled to SI units by factor:                                                    1.000
+Blade coordinate file contains splitter blade:                                                     1
+Number of profiles:                                                                                5
+Rescale Factor [-]:                                                                            1.000
+Reference Length [m]:                                                                          1.000
+Splitter Blade:                                                                                    1
+Blade inlet type:                                                                              axial
+Blade outlet type:                                                                            radial
+Method used for blade camber reconstruction:                                           interpolation
+Blade edges extrapolation coefficient:                                                         0.025
+Camber smoothing coefficient:                                                                  0.500
++--------------------------------------------------------------------------------------------------+
+
++-----------------------------------GRID GENERATION OF BLOCK 00------------------------------------+
+Trim type:                                                                                     axial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           3
+X Stretching Coefficient:                                                                        1.5
+Y Stretching Coefficient:                                                                        1.5
++--------------------------------------------------------------------------------------------------+
+
++-----------------------------------GRID GENERATION OF BLOCK 01------------------------------------+
+Trim type:                                                                              axial-radial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           3
+X Stretching Coefficient:                                                                        1.5
+Y Stretching Coefficient:                                                                        1.5
++--------------------------------------------------------------------------------------------------+
+
++-----------------------------------GRID GENERATION OF BLOCK 02------------------------------------+
+Trim type:                                                                                    radial
+Grid Generation Mode:                                                                            TFI
+Boundaries spline order:                                                                           3
+X Stretching Coefficient:                                                                        1.5
+Y Stretching Coefficient:                                                                        1.5
++--------------------------------------------------------------------------------------------------+
+
+No body force reconstruction requested.

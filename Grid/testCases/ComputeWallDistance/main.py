@@ -45,4 +45,4 @@ plt.title('Wall Distance')
 
 
 
-plt.show()
+# plt.show()

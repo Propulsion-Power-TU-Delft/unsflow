@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/fneri/Documents/PhD/Unsflow/grid/testcases/ComputeWallDistance/main.py", line 12, in <module>
+    with open(inputFile, 'r') as f:
+FileNotFoundError: [Errno 2] No such file or directory: 'lscc.csv'

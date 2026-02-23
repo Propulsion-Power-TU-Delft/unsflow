@@ -15,4 +15,4 @@ driver.ComputeBladesData()
 driver.AssembleMultiBlockGrid()
 driver.SaveOutput()
 
-plt.show()
+# plt.show()

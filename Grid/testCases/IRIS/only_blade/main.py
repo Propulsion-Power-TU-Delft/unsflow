@@ -13,4 +13,4 @@ driver.GenerateGrid()
 driver.ComputeBladesData()
 driver.AssembleMultiBlockGrid()
 
-plt.show()
+# plt.show()
