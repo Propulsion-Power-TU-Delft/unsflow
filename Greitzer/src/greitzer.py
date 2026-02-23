@@ -12,17 +12,10 @@ RESULT_FOLDER = 'results'
 
 
 class Greitzer:
-    """
-    Class that creates a greitzer model
-    """
 
     def __init__(self, config):
-        """
-        :param systemData: parameters of the system
-        """
         self.config = config
         
-
 
     def computeCompressorValveIntersection(self):
         self.H_param, self.W_param, self.psi_c_0_param = self.config.get_unstalled_characteristic_params()
@@ -68,8 +61,6 @@ class Greitzer:
         plt.plot(phi, psi_c, label='unstalled characteristic')
         plt.plot(phi, psi_v, label='valve characteristic')
         plt.scatter(phi_eq, psi_eq, c='black', label='initial point')
-        # plt.xlim([0, 1])
-        # plt.ylim([0, 0.8])
         plt.xlabel(r'$\phi$')
         plt.ylabel(r'$\psi$')
         plt.legend()
@@ -105,12 +96,7 @@ class Greitzer:
                 # Find the roots of the polynomial
                 roots = np.roots(coeffs)
                 roots_real = roots.real
-
                 self.stabilityMap[i,j] = np.max(roots_real)
-                # if (roots_real[0]>=0 or roots_real[1]>=0 or roots_real[2]>=0):
-                #     self.stabilityMap[i,j] = 1 #unstable
-                # else:
-                #     self.stabilityMap[i,j] = 0 #stable
     
     
     
@@ -131,7 +117,6 @@ class Greitzer:
         plt.grid(alpha=0.3)
         plt.xlabel(r'$B$')
         plt.ylabel(r'$G$')
-        # plt.title(r'max Re($\lambda$)')
         plt.tight_layout()
         if save_filename is not None:
             plt.savefig(PICS_FOLDER + '/' + save_filename + '_stability_map_B_%.3f.pdf' % (self.B_system), bbox_inches='tight')
@@ -356,7 +341,6 @@ class Greitzer:
     
     def plotTrajectoryMooreGreitzer(self, save_filename):
         os.makedirs(PICS_FOLDER, exist_ok=True)
-        
         plt.figure()
         plt.plot(self.phi, self.psi_c,linewidth=2.0,label='Compressor')
         plt.plot(self.phi, self.psi_v,linewidth=2.0,label='Throttle')
@@ -369,9 +353,11 @@ class Greitzer:
         if save_filename is not None:
             plt.savefig(PICS_FOLDER+'/'+save_filename+'_trajectory.pdf', bbox_inches='tight')
 
+
 def unstalled_characteristic(phi, H, W, psi_c_0):
             """
-            It computes the unstalled characteristic of the compressor using the cubic model defined in literature
+            It computes the unstalled characteristic of the compressor using the cubic model defined in
+            greitzer/moore articles
 
             Arguments:
                 phi :  flow coefficient
