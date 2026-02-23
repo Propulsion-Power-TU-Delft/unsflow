@@ -25,7 +25,7 @@ format_fig = (7, 7)
 
 
 # INPUT DATA for the implementation of the generic actuator disk of Greitzer, with variable gap
-gap = np.linspace(0, 0.2, 100)
+gap = np.linspace(0, 1.0, 1000)
 for DeltaX in gap:
     print(f"Computing poles for DeltaX = {DeltaX}")
     

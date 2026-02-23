@@ -61,7 +61,7 @@ plt.xlabel(r'$\sigma_3$')
 plt.ylabel(r'$\omega_3$')
 plt.grid(alpha=0.2)
 plt.xlim([-4.5, 0.5])
-plt.ylim([-0.5, 2])
+plt.ylim([-0.4, 2])
 plt.tight_layout()
 # plt.title('Root Locus')
 plt.savefig('pictures/root_locus_complex_plane.pdf', bbox_inches='tight')
@@ -72,28 +72,31 @@ plt.savefig('pictures/root_locus_complex_plane.pdf', bbox_inches='tight')
 plt.figure(figsize=(6, 5))
 step = 1
 alpha=1
+ms=10
 for i in range(len(deltax)):
-    first_key = list(poles[i].keys())[0]
+    first_key = list(poles[i].keys())[0]w
     real_part = poles[i][first_key].real
     imag_part = -poles[i][first_key].imag
     deltax_var = np.zeros(len(real_part)) + deltax[i]
     if i == 0:
-        plt.scatter(deltax_var[::step], real_part[::step], facecolors='none', edgecolors='red', marker='o', label=r'$\sigma_3$', alpha=alpha, s=20)
-        plt.scatter(deltax_var[::step], imag_part[::step], facecolors='none', edgecolors='blue', marker='^', label=r'$\omega_3$', alpha=alpha, s=20)
+        plt.scatter(deltax_var[::step], real_part[::step], edgecolors='C0', facecolors='none', marker='o', label=r'$\sigma_3$', alpha=alpha, s=ms)
+        # plt.scatter(deltax_var[::step], imag_part[::step], c='C0', marker='^', label=r'$\omega_3$', alpha=alpha, s=ms)
     else:
         if deltax[i]>0.4:  # avoid spurious eigenvalues
             idx = np.where(imag_part>-0.4)
-            plt.scatter(deltax_var[idx][::step], real_part[idx][::step], facecolors='none', edgecolors='red', marker='o', alpha=alpha, s=20)
-            plt.scatter(deltax_var[idx][::step], imag_part[idx][::step], facecolors='none', edgecolors='blue', marker='^', alpha=alpha, s=20)
+            plt.scatter(deltax_var[idx][::step], real_part[idx][::step], edgecolors='C0', facecolors='none', marker='o', alpha=alpha, s=ms)
+            # plt.scatter(deltax_var[idx][::step], imag_part[idx][::step], c='C0', marker='^', alpha=alpha, s=ms)
         else:
-            plt.scatter(deltax_var[::step], real_part[::step], facecolors='none', edgecolors='red', marker='o', alpha=alpha, s=20)
-            plt.scatter(deltax_var[::step], imag_part[::step], facecolors='none', edgecolors='blue', marker='^', alpha=alpha, s=20)
+            plt.scatter(deltax_var[::step], real_part[::step], edgecolors='C0', facecolors='none', marker='o', alpha=alpha, s=ms)
+            # plt.scatter(deltax_var[::step], imag_part[::step], c='C0', marker='^', alpha=alpha, s=ms)
 plt.xlim([0, 1])
-plt.ylim([-2, 2])
+plt.ylim([-1.5, 0.25])
+plt.axhline(0, color='red', linestyle='--')
 # plt.title('Root Locus')
 plt.grid(alpha=0.2)
-plt.legend()
+# plt.legend()
 plt.xlabel(r'$\Delta x$')
+plt.ylabel(r'$\sigma_3$')
 plt.tight_layout()
 
 plt.savefig('pictures/root_locus_variable_deltx.pdf', bbox_inches='tight')
