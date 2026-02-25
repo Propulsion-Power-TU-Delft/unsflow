@@ -26,8 +26,8 @@ class MultiBlock:
         else:
             row_slice = slice(None, -1)
 
-        self.z_grid_cg = self.blocks[0].z_grid_cg[row_slice, :]
-        self.r_grid_cg = self.blocks[0].r_grid_cg[row_slice, :]
+        self.z_grid = self.blocks[0].z_grid[row_slice, :]
+        self.r_grid = self.blocks[0].r_grid[row_slice, :]
         
         self.bfmFields = {}
         for key in self.blocks[0].bfmFields.keys():
@@ -43,8 +43,8 @@ class MultiBlock:
             else:
                 streamSlice = slice(1, -1)
             
-            self.z_grid_cg = np.concatenate((self.z_grid_cg, block.z_grid_cg[streamSlice, :]), axis=0)
-            self.r_grid_cg = np.concatenate((self.r_grid_cg, block.r_grid_cg[streamSlice, :]), axis=0)
+            self.z_grid = np.concatenate((self.z_grid, block.z_grid[streamSlice, :]), axis=0)
+            self.r_grid = np.concatenate((self.r_grid, block.r_grid[streamSlice, :]), axis=0)
             
             for key in self.bfmFields.keys():
                 self.bfmFields[key] = np.concatenate((self.bfmFields[key], block.bfmFields[key][streamSlice, :]), axis=0)
@@ -52,24 +52,24 @@ class MultiBlock:
             bladeFlag *= -1
             
         self.spanline_length_normalized = compute_meridional_spanwise_coordinates(
-            self.z_grid_cg, 
-            self.r_grid_cg, 
+            self.z_grid, 
+            self.r_grid, 
             normalize=True)
         self.streamline_length_normalized = compute_meridional_streamwise_coordinates(
-            self.z_grid_cg, 
-            self.r_grid_cg, 
+            self.z_grid, 
+            self.r_grid, 
             normalize=True)
         self.spanline_length = compute_meridional_spanwise_coordinates(
-            self.z_grid_cg, 
-            self.r_grid_cg, 
+            self.z_grid, 
+            self.r_grid, 
             normalize=False)
         self.streamline_length = compute_meridional_streamwise_coordinates(
-            self.z_grid_cg, 
-            self.r_grid_cg, 
+            self.z_grid, 
+            self.r_grid, 
             normalize=False)
         
-        self.nstream = self.z_grid_cg.shape[0]
-        self.nspan = self.z_grid_cg.shape[1]
+        self.nstream = self.z_grid.shape[0]
+        self.nspan = self.z_grid.shape[1]
 
     def remove_inlet_grid_points(self, Ntrim):
         self.z_grid_dual = self.z_grid_dual[Ntrim:, :]
@@ -93,17 +93,17 @@ class MultiBlock:
 
         if primary_grid:
             for istream in range(0, self.nstream):
-                plt.plot(self.z_grid_cg[istream, :], self.r_grid_cg[istream, :], lw=light_line_width, c='black')
+                plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
             for ispan in range(0, self.nspan):
-                plt.plot(self.z_grid_cg[:, ispan], self.r_grid_cg[:, ispan], lw=light_line_width, c='black')
+                plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
         elif outline:
-            plt.plot(self.z_grid_cg[0, :], self.r_grid_cg[0, :], lw=line_width, label='leading edge')
-            plt.plot(self.z_grid_cg[-1, :], self.r_grid_cg[-1, :], lw=line_width, label='trailing edge')
-            plt.plot(self.z_grid_cg[:, 0], self.r_grid_cg[:, 0], lw=line_width, label='hub')
-            plt.plot(self.z_grid_cg[:, -1], self.r_grid_cg[:, -1], lw=line_width, label='shroud')
+            plt.plot(self.z_grid[0, :], self.r_grid[0, :], lw=line_width, label='leading edge')
+            plt.plot(self.z_grid[-1, :], self.r_grid[-1, :], lw=line_width, label='trailing edge')
+            plt.plot(self.z_grid[:, 0], self.r_grid[:, 0], lw=line_width, label='hub')
+            plt.plot(self.z_grid[:, -1], self.r_grid[:, -1], lw=line_width, label='shroud')
 
         if primary_grid_points:
-            plt.scatter(self.z_grid_cg.flatten(), self.r_grid_cg.flatten(), c='black', s=scatter_point_size,
+            plt.scatter(self.z_grid.flatten(), self.r_grid.flatten(), c='black', s=scatter_point_size,
                         label='primary grid nodes')
 
         if secondary_grid:
@@ -113,7 +113,7 @@ class MultiBlock:
                 plt.plot(self.z_grid_dual[:, ispan], self.r_grid_dual[:, ispan], '--r', lw=light_line_width)
 
         if grid_centers:
-            plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='black')
+            plt.scatter(self.z_grid, self.r_grid, marker='+', s=marker_size_small, c='black')
 
         if secondary_grid_points:
             plt.scatter(self.z_grid_dual.flatten(), self.r_grid_dual.flatten(), c='red', s=scatter_point_size,
@@ -146,10 +146,10 @@ class MultiBlock:
         avg_length = 0
         for i in range(self.nstream - 1):
             for j in range(self.nspan - 1):
-                avg_length += np.sqrt(np.abs(self.z_grid_cg[i + 1, j] - self.z_grid_cg[i, j]) * np.abs(
-                    self.r_grid_cg[i, j + 1] - self.r_grid_cg[i, j]))
+                avg_length += np.sqrt(np.abs(self.z_grid[i + 1, j] - self.z_grid[i, j]) * np.abs(
+                    self.r_grid[i, j + 1] - self.r_grid[i, j]))
         avg_length /= (self.nstream - 1) * (self.nspan - 1)
-        r_mean = (self.r_grid_cg[0, self.nspan // 2] + self.r_grid_cg[-1, self.nspan // 2]) / 2
+        r_mean = (self.r_grid[0, self.nspan // 2] + self.r_grid[-1, self.nspan // 2]) / 2
         return avg_length / r_mean
 
     def compute_three_dimensional_mesh(
@@ -184,9 +184,9 @@ class MultiBlock:
             for i in range(self.nstream):
                 for j in range(self.nspan):
                     for k in range(nodes_number):
-                        self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
-                        self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
-                        self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+                        self.X_mesh[i, j, k] = self.r_grid[i, j] * np.cos(theta[k])
+                        self.Y_mesh[i, j, k] = self.r_grid[i, j] * np.sin(theta[k])
+                        self.Z_mesh[i, j, k] = self.z_grid[i, j]
             if dimensional:
                 self.X_mesh *= config.get_reference_length()
                 self.Y_mesh *= config.get_reference_length()
@@ -200,9 +200,9 @@ class MultiBlock:
                 for i in range(block.nstream):
                     for j in range(block.nspan):
                         for k in range(nodes_number):
-                            block.X_mesh[i, j, k] = block.r_grid_cg[i, j] * np.cos(theta[k])
-                            block.Y_mesh[i, j, k] = block.r_grid_cg[i, j] * np.sin(theta[k])
-                            block.Z_mesh[i, j, k] = block.z_grid_cg[i, j]
+                            block.X_mesh[i, j, k] = block.r_grid[i, j] * np.cos(theta[k])
+                            block.Y_mesh[i, j, k] = block.r_grid[i, j] * np.sin(theta[k])
+                            block.Z_mesh[i, j, k] = block.z_grid[i, j]
 
 
     def save_mesh_pickle(self, mode='singlezone'):
@@ -237,10 +237,10 @@ class MultiBlock:
         if format_file is None:
             format_file = 'csv'
 
-        n_span = self.z_grid_cg.shape[1]
+        n_span = self.z_grid.shape[1]
         ispan = int(span * n_span)
-        y = self.r_grid_cg[:, ispan]
-        z = self.z_grid_cg[:, ispan]
+        y = self.r_grid[:, ispan]
+        z = self.z_grid[:, ispan]
         x = np.zeros_like(y)
 
         filepath = folder + '/' + filename + '.' + format_file
@@ -263,55 +263,55 @@ class MultiBlock:
         for istream in range(1, self.nstream):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.25 * (
-                        self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + 
-                        self.z_grid_cg[istream, ispan - 1] + self.z_grid_cg[istream - 1, ispan - 1])
+                        self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan] + 
+                        self.z_grid[istream, ispan - 1] + self.z_grid[istream - 1, ispan - 1])
 
                 r_mid_point = 0.25 * (
-                        self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + 
-                        self.r_grid_cg[istream, ispan - 1] + self.r_grid_cg[istream - 1, ispan - 1])
+                        self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan] + 
+                        self.r_grid[istream, ispan - 1] + self.r_grid[istream - 1, ispan - 1])
 
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # fix the vertices
-        self.z_grid_dual[0, 0] = self.z_grid_cg[0, 0]
-        self.r_grid_dual[0, 0] = self.r_grid_cg[0, 0]
-        self.z_grid_dual[0, -1] = self.z_grid_cg[0, -1]
-        self.r_grid_dual[0, -1] = self.r_grid_cg[0, -1]
-        self.z_grid_dual[-1, -1] = self.z_grid_cg[-1, -1]
-        self.r_grid_dual[-1, -1] = self.r_grid_cg[-1, -1]
-        self.z_grid_dual[-1, 0] = self.z_grid_cg[-1, 0]
-        self.r_grid_dual[-1, 0] = self.r_grid_cg[-1, 0]
+        self.z_grid_dual[0, 0] = self.z_grid[0, 0]
+        self.r_grid_dual[0, 0] = self.r_grid[0, 0]
+        self.z_grid_dual[0, -1] = self.z_grid[0, -1]
+        self.r_grid_dual[0, -1] = self.r_grid[0, -1]
+        self.z_grid_dual[-1, -1] = self.z_grid[-1, -1]
+        self.r_grid_dual[-1, -1] = self.r_grid[-1, -1]
+        self.z_grid_dual[-1, 0] = self.z_grid[-1, 0]
+        self.r_grid_dual[-1, 0] = self.r_grid[-1, 0]
 
         # istream = 0 border
         for istream in range(0, 1):
             for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # istream = -1 border
         for istream in range(self.nstream, self.nstream + 1):
             for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[istream - 1, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream - 1, ispan] + self.z_grid[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream - 1, ispan] + self.r_grid[istream - 1, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = 0 border
         for istream in range(1, self.nstream):
             for ispan in range(0, 1):
-                z_mid_point = 0.5 * (self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan])
-                r_mid_point = 0.5 * (self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = -1 border
         for istream in range(1, self.nstream):
             for ispan in range(self.nspan, self.nspan + 1):
-                z_mid_point = 0.5 * (self.z_grid_cg[istream, ispan - 1] + self.z_grid_cg[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_cg[istream, ispan - 1] + self.r_grid_cg[istream - 1, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan - 1] + self.z_grid[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan - 1] + self.r_grid[istream - 1, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
@@ -339,8 +339,8 @@ class MultiBlock:
             grid[:,-1] = grid[:,-1] + (grid[:,-2] - grid[:,-1])*border_factor
             return grid
         
-        zgrid = move_hub_shroud_points(self.z_grid_cg.copy())
-        rgrid = move_hub_shroud_points(self.r_grid_cg.copy())
+        zgrid = move_hub_shroud_points(self.z_grid.copy())
+        rgrid = move_hub_shroud_points(self.r_grid.copy())
         
         niTot, njTot = zgrid.shape
         grid_portion = self.config.get_meridional_grid_portion()
@@ -374,9 +374,9 @@ class MultiBlock:
         
         plt.figure()
         for i in range(niTot):
-            plt.plot(self.z_grid_cg[i, :], self.r_grid_cg[i, :], lw=light_line_width, c='black')
+            plt.plot(self.z_grid[i, :], self.r_grid[i, :], lw=light_line_width, c='black')
         for j in range(njTot):
-            plt.plot(self.z_grid_cg[:, j], self.r_grid_cg[:, j], lw=light_line_width, c='black')
+            plt.plot(self.z_grid[:, j], self.r_grid[:, j], lw=light_line_width, c='black')
         plt.scatter(zportion, rportion, s=5, c='red')
         plt.xlabel(r'$z \ \mathrm{[m]}$')
         plt.ylabel(r'$r \ \mathrm{[m]}$')
@@ -388,7 +388,7 @@ class MultiBlock:
         """
         Write the spanwise splines file required by Paraview Macro to extract spanwise profiles
         """
-        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid_cg, self.r_grid_cg)
+        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid, self.r_grid)
         
         os.makedirs(foldername, exist_ok=True)
         offsetGridLines = self.config.get_offset_blade_grid_lines()
@@ -406,16 +406,16 @@ class MultiBlock:
             nstreamInitial = self.blocks[iBlock-1].nstream
             nstreamFinal = nstreamInitial + self.blocks[iBlock].nstream-1
             
-            zcoordUp = self.z_grid_cg[nstreamInitial-1-offsetGridLines,:]
-            rcoordUp = self.r_grid_cg[nstreamInitial-1-offsetGridLines,:]
+            zcoordUp = self.z_grid[nstreamInitial-1-offsetGridLines,:]
+            rcoordUp = self.r_grid[nstreamInitial-1-offsetGridLines,:]
             stwLenUp = self.streamline_length[nstreamInitial-1-offsetGridLines,:]
             
             with open(foldername + '/spanwise_spline_inlet_blade_%i.csv' % iblade, 'w') as f:
                 for i in range(len(zcoordUp)):
                     f.write('%.9f,%.9f\n' % (zcoordUp[i], rcoordUp[i]))
             
-            zcoordDown = self.z_grid_cg[nstreamFinal-1+offsetGridLines,:]
-            rcoordDown = self.r_grid_cg[nstreamFinal-1+offsetGridLines,:]
+            zcoordDown = self.z_grid[nstreamFinal-1+offsetGridLines,:]
+            rcoordDown = self.r_grid[nstreamFinal-1+offsetGridLines,:]
             stwLenDown = self.streamline_length[nstreamFinal-1+offsetGridLines,:]
             
             ni = 1
@@ -449,11 +449,11 @@ class MultiBlock:
     def write_thetaWrapped_hub_shroud_curves(self, filename='machine', foldername='Grid'):
         """Used for CAD tools. Wraps the hub and shroud curves following the camber line of the machine
         """
-        rHub = self.r_grid_cg[:,0]
-        zHub = self.z_grid_cg[:,0]
+        rHub = self.r_grid[:,0]
+        zHub = self.z_grid[:,0]
 
-        rShroud = self.r_grid_cg[:,-1]
-        zShroud = self.z_grid_cg[:,-1]
+        rShroud = self.r_grid[:,-1]
+        zShroud = self.z_grid[:,-1]
         
         thetaHub = self.theta_camber[:,0]
         thetaShroud = self.theta_camber[:,-1]
@@ -483,8 +483,8 @@ class MultiBlock:
         """
         outputFields = self.config.get_turbo_BFM_mesh_output_fields()
         
-        X = self.z_grid_cg
-        Y = self.r_grid_cg
+        X = self.z_grid
+        Y = self.r_grid
 
         ni,nj = X.shape
         nk = 1
@@ -585,8 +585,8 @@ class MultiBlock:
     def plot_all_relevant_contours(self):
         for key in self.bfmFields.keys():
             contour_template(
-                self.z_grid_cg, 
-                self.r_grid_cg, 
+                self.z_grid, 
+                self.r_grid, 
                 self.bfmFields[key], 
                 name=key, 
                 save_filename='multiblock_%s' %key, 
@@ -622,8 +622,8 @@ class MultiBlock:
                         theta_previous = self.blocks[iBlock-1].theta_camber[-1,:]
                         theta_next = self.blocks[iBlock+1].theta_camber[0,:]
                         normStreamLength = compute_meridional_streamwise_coordinates(
-                            block.z_grid_points, 
-                            block.r_grid_points, 
+                            block.z_grid, 
+                            block.r_grid, 
                             normalize=True)
                         theta_camber = np.zeros_like(normStreamLength)
                         theta_camber[0,:] = theta_previous

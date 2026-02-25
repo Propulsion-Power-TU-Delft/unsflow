@@ -107,8 +107,8 @@ class MultiBlockGridDriver:
         block.sample_hub_shroud()
         block.sample_inlet_outlet()
         block.compute_grid_points()
-        block.streamwise_normalized_grid = compute_meridional_streamwise_coordinates(block.z_grid_cg, block.r_grid_cg, normalize=True)
-        block.spanwise_normalized_grid = compute_meridional_spanwise_coordinates(block.z_grid_cg, block.r_grid_cg, normalize=True)
+        block.streamwise_normalized_grid = compute_meridional_streamwise_coordinates(block.z_grid, block.r_grid, normalize=True)
+        block.spanwise_normalized_grid = compute_meridional_spanwise_coordinates(block.z_grid, block.r_grid, normalize=True)
         return block
         
     
@@ -146,11 +146,11 @@ class MultiBlockGridDriver:
                 iblock = (iblade+1)+iblade
             
             # compute the meridional grid
-            self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg)
-            self.blades[iblade].streamwise_normalized_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
-            self.blades[iblade].spanwise_normalized_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=True)
-            self.blades[iblade].streamwise_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=False)
-            self.blades[iblade].spanwise_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid_cg, self.blocks[iblock].r_grid_cg, normalize=False)
+            self.blades[iblade].add_meridional_grid(self.blocks[iblock].z_grid, self.blocks[iblock].r_grid)
+            self.blades[iblade].streamwise_normalized_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid, self.blocks[iblock].r_grid, normalize=True)
+            self.blades[iblade].spanwise_normalized_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid, self.blocks[iblock].r_grid, normalize=True)
+            self.blades[iblade].streamwise_coord = compute_meridional_streamwise_coordinates(self.blocks[iblock].z_grid, self.blocks[iblock].r_grid, normalize=False)
+            self.blades[iblade].spanwise_coord = compute_meridional_spanwise_coordinates(self.blocks[iblock].z_grid, self.blocks[iblock].r_grid, normalize=False)
             self.blades[iblade].plot_meridional_coordinates(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             
             # compute the thickness of eventual splitter blades (for centrifigual machines)

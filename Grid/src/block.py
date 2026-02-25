@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 14 18:29:29 2023
-@author: F. Neri, TU Delft
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
@@ -17,16 +11,8 @@ import pickle
 
 
 class Block:
-    """
-    this class contains a single block, obtained after trimming the hub and shroud curves where needed.
-    """
 
     def __init__(self, config, iblock):
-        """
-        Construct the Block object, storing all the data and methods for the meridional grid. There is no need to provide the
-        dimensions and scaling factor of the cordinates since they are already used in the hub and shroud curve objects.
-        :param config: configuration file
-        """
         self.config = config
         
         splineOrder = self.config.get_boundaries_spline_order()
@@ -84,10 +70,7 @@ class Block:
             outletR = np.linspace(self.hub.r[-1], self.shroud.r[-1], self.nspan)
             self.inletLine = np.stack((inletZ, inletR), axis=1)
             self.outletLine = np.stack((outletZ, outletR), axis=1)
-            
-        
-        
-            
+
     
     def add_bfm_file_arrays(self):
         """
@@ -95,6 +78,7 @@ class Block:
         """
         self.bfmFields = {}
         outputFields = self.config.get_turbo_BFM_mesh_output_fields()
+        
         if 'blockage' in outputFields:
             self.bfmFields['blockage'] = np.ones((self.nstream, self.nspan))
             
@@ -126,23 +110,23 @@ class Block:
             self.bfmFields['numberBlades'] = np.zeros((self.nstream, self.nspan))
       
 
-    def trim_inlet_curve(self, z_trim='span', r_trim='span'):
+    def trim_flowpath_inlet(self, z_trim=None, r_trim=None):
         """
         Trim the inlet at a certain location.
         :param z_trim: z cordinate of trim
         :param r_trim: r cordinate of trim
         """
-        self.hub.trim_inlet(z_trim, r_trim)
-        self.shroud.trim_inlet(z_trim, r_trim)
+        self.hub.trim_curve_inlet(z_trim, r_trim)
+        self.shroud.trim_curve_inlet(z_trim, r_trim)
 
-    def trim_outlet_curve(self, z_trim='span', r_trim='span'):
+    def trim_flowpath_outlet(self, z_trim=None, r_trim=None):
         """
         Trim the outlet at a certain location.
         :param z_trim: z cordinate of trim
         :param r_trim: r cordinate of trim
         """
-        self.hub.trim_outlet(z_trim, r_trim)
-        self.shroud.trim_outlet(z_trim, r_trim)
+        self.hub.trim_curve_outlet(z_trim, r_trim)
+        self.shroud.trim_curve_outlet(z_trim, r_trim)
 
     def spline_of_hub_shroud(self):
         """
@@ -156,10 +140,6 @@ class Block:
         Make splines of the inlet and outlet border of the domain considered
         """
         def remove_excess_points(topology, point_hub, point_shroud, curve):
-            # plt.figure()
-            # plt.scatter(point_hub[0], point_hub[1])
-            # plt.scatter(point_shroud[0], point_shroud[1])
-            # plt.plot(curve[:, 0], curve[:, 1], '-o')
             if topology == 'axial':
                 condition1 = point_hub[1] < curve[:, 1]
                 condition2 = curve[:, 1] < point_shroud[1]
@@ -170,11 +150,8 @@ class Block:
                 res = condition1 & condition2
             else:
                 raise ValueError("Not recognized topology")
+            
             curve = curve[res, :]
-            # plt.figure()
-            # plt.scatter(point_hub[0], point_hub[1])
-            # plt.scatter(point_shroud[0], point_shroud[1])
-            # plt.plot(curve[:, 0], curve[:, 1], '-o')
             return curve
 
         inlet_type = self.config.get_blade_inlet_type()
@@ -207,10 +184,6 @@ class Block:
         self.trailing_edge = Curve(z=self.outlet[:, 0], r=self.outlet[:, 1], mode='cordinates')
 
     def spline_of_outlet(self):
-        """
-        Make splines of the outlet border for the inlet block, which is the blade leading edge.
-        At the same time prepare the straight spline for the inlet (called leading edge). Sorry for the confusion.
-        """
         # outlet border
         self.outlet = np.concatenate(
             (np.reshape(self.point_hub_inlet, (1, 2)), self.inlet[1:-1, :], np.reshape(self.point_shroud_inlet, (1, 2))))
@@ -220,21 +193,6 @@ class Block:
         inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
         inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
         self.leading_edge = Curve(z=inlet_z, r=inlet_r, mode='cordinates')
-
-    # def spline_of_inlet_outlet_full_block(self):
-    #     """
-    #     Make inlet and outlet splines for the whole domain together. The inlet and outlet coincides with initial and last
-    #     points of hub and shroud splines. Degree 1 because they are straight lines.
-    #     """
-    #     inlet_z = np.array([self.hub_trim.z[0], self.shroud_trim.z[0]])
-    #     inlet_r = np.array([self.hub_trim.r[0], self.shroud_trim.r[0]])
-    #     self.leading_edge = Curve(z=inlet_z, r=inlet_r, nstream=self.nspan,
-    #                               mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
-    #
-    #     outlet_z = np.array([self.hub_trim.z[-1], self.shroud_trim.z[-1]])
-    #     outlet_r = np.array([self.hub_trim.r[-1], self.shroud_trim.r[-1]])
-    #     self.trailing_edge = Curve(z=outlet_z, r=outlet_r, nstream=self.nspan,
-    #                                mode='cordinates', x_ref=1, rescale_factor=1, degree_spline=1)
 
     def spline_of_inlet(self):
         """
@@ -258,14 +216,6 @@ class Block:
         """
         self.hub_trim.sample(self.nstream, sampling_mode=sampling_mode)
         self.shroud_trim.sample(self.nstream, sampling_mode=sampling_mode)
-
-    # def sample_hub_shroud_full_block(self, sampling_mode='default'):
-    #     """
-    #     Sample the hub and shroud spline, already trimmed properly, with a certain sampling mode
-    #     :param sampling_mode: type of sampling, default or clustered
-    #     """
-    #     self.hub_trim.sample(sampling_mode=sampling_mode)
-    #     self.shroud_trim.sample(sampling_mode=sampling_mode)
 
     def sample_inlet_outlet(self, sampling_mode='default'):
         """
@@ -324,42 +274,17 @@ class Block:
         hub = np.vstack((self.hub_trim.z_sample, self.hub_trim.r_sample))
         shroud = np.vstack((self.shroud_trim.z_sample, self.shroud_trim.r_sample))
 
-
-
         if self.config.get_mesh_generation_method() == 'elliptic':
-            self.z_grid_points, self.r_grid_points = elliptic_grid_generation(inlet, hub, outlet, shroud,
+            self.z_grid, self.r_grid = elliptic_grid_generation(inlet, hub, outlet, shroud,
                                                                               self.config.get_grid_orthogonality(),
                                                                               self.config.get_mesh_type(),
                                                                               inlet_block=inlet_block, outlet_block=outlet_block,
                                                                               save_animation=save_animation)
         elif self.config.get_mesh_generation_method().upper() == 'TFI':
-            self.z_grid_points, self.r_grid_points = transfinite_grid_generation(inlet, hub, outlet, shroud,
+            self.z_grid, self.r_grid = transfinite_grid_generation(inlet, hub, outlet, shroud,
                                                                                  self.config.get_blocks_topology()[block_counter],
                                                                                  stream_coeff, span_coeff)
 
-        self.compute_grid_centers()
-
-    def compute_grid_centers(self):
-        """
-        Once the main grid is computed find the nodes that lie in the baricenter of the geometry. Note that the number of points
-        will be lower than the number of the main grid lines, varying the dimensions of the matrices.
-        """
-        # self.r_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
-        # self.z_grid_cg = np.zeros((self.nstream - 1, self.nspan - 1))
-        #
-        # # slices of original arrays
-        # i = slice(0, self.nstream - 1)
-        # ip = slice(1, self.nstream)
-        # j = slice(0, self.nspan - 1)
-        # jp = slice(1, self.nspan)
-        #
-        # self.r_grid_cg = (self.r_grid_points[i, j] + self.r_grid_points[ip, j]
-        #                   + self.r_grid_points[i, jp] + self.r_grid_points[ip, jp]) / 4
-        #
-        # self.z_grid_cg = (self.z_grid_points[i, j] + self.z_grid_points[ip, j]
-        #                   + self.z_grid_points[i, jp] + self.z_grid_points[ip, jp]) / 4
-        self.z_grid_cg = self.z_grid_points
-        self.r_grid_cg = self.r_grid_points
 
     def add_inlet_outlet_curves(self, inlet, outlet):
         """
@@ -466,11 +391,11 @@ class Block:
         :param mode: axial or radial, used to distinguish trimming algorithm.
         """
         if mode == 'axial':
-            self.hub.trim_outlet(z_trim=self.point_hub_inlet[0])
-            self.shroud.trim_outlet(z_trim=self.point_shroud_inlet[0])
+            self.hub.trim_curve_outlet(z_trim=self.point_hub_inlet[0])
+            self.shroud.trim_curve_outlet(z_trim=self.point_shroud_inlet[0])
         elif mode == 'radial':
-            self.hub.trim_inlet(r_trim=self.point_hub_inlet[1])
-            self.shroud.trim_inlet(r_trim=self.point_shroud_inlet[1])
+            self.hub.trim_curve_inlet(r_trim=self.point_hub_inlet[1])
+            self.shroud.trim_curve_inlet(r_trim=self.point_shroud_inlet[1])
         else:
             raise ValueError("Unknown trimming method.")
 
@@ -481,11 +406,11 @@ class Block:
         :param mode: axial or radial, used to distinguish trimming algorithm.
         """
         if mode == 'radial':
-            self.hub.trim_inlet(r_trim=self.point_hub_outlet[1])
-            self.shroud.trim_inlet(r_trim=self.point_shroud_outlet[1])
+            self.hub.trim_curve_inlet(r_trim=self.point_hub_outlet[1])
+            self.shroud.trim_curve_inlet(r_trim=self.point_shroud_outlet[1])
         elif mode == 'axial':
-            self.hub.trim_inlet(z_trim=self.point_hub_outlet[0])
-            self.shroud.trim_inlet(z_trim=self.point_shroud_outlet[0])
+            self.hub.trim_curve_inlet(z_trim=self.point_hub_outlet[0])
+            self.shroud.trim_curve_inlet(z_trim=self.point_shroud_outlet[0])
         else:
             raise ValueError("Unknown trimming method.")
 
@@ -500,55 +425,55 @@ class Block:
         for istream in range(1, self.nstream):
             for ispan in range(1, self.nspan):
                 z_mid_point = 0.25 * (
-                        self.z_grid_cg[istream, ispan] + self.z_grid_cg[istream - 1, ispan] + self.z_grid_cg[istream, ispan - 1] +
-                        self.z_grid_cg[istream - 1, ispan - 1])
+                        self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan] + self.z_grid[istream, ispan - 1] +
+                        self.z_grid[istream - 1, ispan - 1])
 
                 r_mid_point = 0.25 * (
-                        self.r_grid_cg[istream, ispan] + self.r_grid_cg[istream - 1, ispan] + self.r_grid_cg[istream, ispan - 1] +
-                        self.r_grid_cg[istream - 1, ispan - 1])
+                        self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan] + self.r_grid[istream, ispan - 1] +
+                        self.r_grid[istream - 1, ispan - 1])
 
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # fix the vertices
-        self.z_grid_dual[0, 0] = self.z_grid_cg[0, 0]
-        self.r_grid_dual[0, 0] = self.r_grid_cg[0, 0]
-        self.z_grid_dual[0, -1] = self.z_grid_cg[0, -1]
-        self.r_grid_dual[0, -1] = self.r_grid_cg[0, -1]
-        self.z_grid_dual[-1, -1] = self.z_grid_cg[-1, -1]
-        self.r_grid_dual[-1, -1] = self.r_grid_cg[-1, -1]
-        self.z_grid_dual[-1, 0] = self.z_grid_cg[-1, 0]
-        self.r_grid_dual[-1, 0] = self.r_grid_cg[-1, 0]
+        self.z_grid_dual[0, 0] = self.z_grid[0, 0]
+        self.r_grid_dual[0, 0] = self.r_grid[0, 0]
+        self.z_grid_dual[0, -1] = self.z_grid[0, -1]
+        self.r_grid_dual[0, -1] = self.r_grid[0, -1]
+        self.z_grid_dual[-1, -1] = self.z_grid[-1, -1]
+        self.r_grid_dual[-1, -1] = self.r_grid[-1, -1]
+        self.z_grid_dual[-1, 0] = self.z_grid[-1, 0]
+        self.r_grid_dual[-1, 0] = self.r_grid[-1, 0]
 
         # istream = 0 border
         for istream in range(0, 1):
             for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # istream = -1 border
         for istream in range(self.nstream, self.nstream + 1):
             for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid_points[istream - 1, ispan] + self.z_grid_points[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_points[istream - 1, ispan] + self.r_grid_points[istream - 1, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream - 1, ispan] + self.z_grid[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream - 1, ispan] + self.r_grid[istream - 1, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = 0 border
         for istream in range(1, self.nstream):
             for ispan in range(0, 1):
-                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan] + self.z_grid_points[istream - 1, ispan])
-                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan] + self.r_grid_points[istream - 1, ispan])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = -1 border
         for istream in range(1, self.nstream):
             for ispan in range(self.nspan, self.nspan + 1):
-                z_mid_point = 0.5 * (self.z_grid_points[istream, ispan - 1] + self.z_grid_points[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid_points[istream, ispan - 1] + self.r_grid_points[istream - 1, ispan - 1])
+                z_mid_point = 0.5 * (self.z_grid[istream, ispan - 1] + self.z_grid[istream - 1, ispan - 1])
+                r_mid_point = 0.5 * (self.r_grid[istream, ispan - 1] + self.r_grid[istream - 1, ispan - 1])
                 self.z_grid_dual[istream, ispan] = z_mid_point
                 self.r_grid_dual[istream, ispan] = r_mid_point
 
@@ -580,18 +505,18 @@ class Block:
         # primary grid
         if primary_grid:
             for istream in range(0, self.nstream):
-                plt.plot(self.z_grid_points[istream, :], self.r_grid_points[istream, :], lw=light_line_width, c='black')
+                plt.plot(self.z_grid[istream, :], self.r_grid[istream, :], lw=light_line_width, c='black')
             for ispan in range(0, self.nspan):
-                plt.plot(self.z_grid_points[:, ispan], self.r_grid_points[:, ispan], lw=light_line_width, c='black')
+                plt.plot(self.z_grid[:, ispan], self.r_grid[:, ispan], lw=light_line_width, c='black')
         elif outline:
-            plt.plot(self.z_grid_points[0, :], self.r_grid_points[0, :], lw=line_width, label='leading edge')
-            plt.plot(self.z_grid_points[-1, :], self.r_grid_points[-1, :], lw=line_width, label='trailing edge')
-            plt.plot(self.z_grid_points[:, 0], self.r_grid_points[:, 0], lw=line_width, label='hub')
-            plt.plot(self.z_grid_points[:, -1], self.r_grid_points[:, -1], lw=line_width, label='shroud')
+            plt.plot(self.z_grid[0, :], self.r_grid[0, :], lw=line_width, label='leading edge')
+            plt.plot(self.z_grid[-1, :], self.r_grid[-1, :], lw=line_width, label='trailing edge')
+            plt.plot(self.z_grid[:, 0], self.r_grid[:, 0], lw=line_width, label='hub')
+            plt.plot(self.z_grid[:, -1], self.r_grid[:, -1], lw=line_width, label='shroud')
 
         # primary grid points
         if primary_grid_points:
-            plt.scatter(self.z_grid_points.flatten(), self.r_grid_points.flatten(), c='black', s=scatter_point_size,
+            plt.scatter(self.z_grid.flatten(), self.r_grid.flatten(), c='black', s=scatter_point_size,
                         label='primary grid nodes')
 
         # secondary grid
@@ -602,7 +527,7 @@ class Block:
                 plt.plot(self.z_grid_dual[:, ispan], self.r_grid_dual[:, ispan], '--r', lw=light_line_width)
 
         if grid_centers:
-            plt.scatter(self.z_grid_cg, self.r_grid_cg, marker='+', s=marker_size_small, c='black')
+            plt.scatter(self.z_grid, self.r_grid, marker='+', s=marker_size_small, c='black')
 
         if secondary_grid_points:
             plt.scatter(self.z_grid_dual.flatten(), self.r_grid_dual.flatten(), c='red', s=scatter_point_size,
@@ -631,20 +556,20 @@ class Block:
         border_r = []
 
         # append hub cordinates
-        border_z.append(self.z_grid_points[0:, 0])
-        border_r.append(self.r_grid_points[0:, 0])
+        border_z.append(self.z_grid[0:, 0])
+        border_r.append(self.r_grid[0:, 0])
 
         # append outlet cordinates
-        border_z.append(self.z_grid_points[-1, 1:])
-        border_r.append(self.r_grid_points[-1, 1:])
+        border_z.append(self.z_grid[-1, 1:])
+        border_r.append(self.r_grid[-1, 1:])
 
         # append shroud cordinates
-        border_z.append(np.flip(self.z_grid_points[0:-2, -1]))
-        border_r.append(np.flip(self.r_grid_points[0:-2, -1]))
+        border_z.append(np.flip(self.z_grid[0:-2, -1]))
+        border_r.append(np.flip(self.r_grid[0:-2, -1]))
 
         # append inlet cordinates
-        border_z.append(np.flip(self.z_grid_points[0, 1:]))
-        border_r.append(np.flip(self.r_grid_points[0, 1:]))
+        border_z.append(np.flip(self.z_grid[0, 1:]))
+        border_r.append(np.flip(self.r_grid[0, 1:]))
 
         border_z = [item for sublist in border_z for item in sublist]
         border_r = [item for sublist in border_r for item in sublist]
@@ -662,78 +587,6 @@ class Block:
         plt.plot(self.leading_edge.z_sample, self.leading_edge.r_sample, '-o')
         plt.plot(self.trailing_edge.z_sample, self.trailing_edge.r_sample, '-o')
 
-    def create_area_elements(self):
-        """
-        For each point of the primary grid, compute the associated area element object, and store it in a 2d array ordered
-        as the primary grid
-        """
-        self.area_elements = np.empty((self.nstream, self.nspan), dtype=AreaElement)
-        for ii in range(self.nstream):
-            for jj in range(self.nspan):
-                self.area_elements[ii, jj] = AreaElement(self.z_grid_cg[ii, jj], self.r_grid_cg[ii, jj], self.z_grid_dual[ii, jj],
-                                                         self.r_grid_dual[ii, jj], self.z_grid_dual[ii + 1, jj],
-                                                         self.r_grid_dual[ii + 1, jj], self.z_grid_dual[ii + 1, jj + 1],
-                                                         self.r_grid_dual[ii + 1, jj + 1], self.z_grid_dual[ii, jj + 1],
-                                                         self.r_grid_dual[ii, jj + 1])
-
-    def compute_areas(self):
-        """
-        For each area element of the grid, compute the associated area
-        """
-        for ii in range(self.nstream):
-            for jj in range(self.nspan):
-                self.area_elements[ii, jj].compute_area()
-
-    def compute_total_area(self):
-        """
-        Compute the total area
-        """
-        self.create_area_elements()  # generate the area elements
-        self.compute_areas()  # compute the area of the all the elements
-
-        # compute total area of the block
-        self.area_total = 0
-        for ii in range(self.nstream):
-            for jj in range(self.nspan):
-                self.area_total += self.area_elements[ii, jj].area
-
-    def plot_check_areas(self):
-        plt.figure()
-        for i in range(self.nstream):
-            for j in range(self.nspan):
-                plt.title(r'Element [%i,%i]' % (i, j))
-                plt.scatter(self.z_grid_cg[i, j], self.r_grid_cg[i, j], c='black', marker='x')
-                plt.scatter(self.z_grid_dual[i, j], self.r_grid_dual[i, j], c='red')
-                plt.scatter(self.z_grid_dual[i + 1, j], self.r_grid_dual[i + 1, j], c='red')
-                plt.scatter(self.z_grid_dual[i + 1, j + 1], self.r_grid_dual[i + 1, j + 1], c='red')
-                plt.scatter(self.z_grid_dual[i, j + 1], self.r_grid_dual[i, j + 1], c='red')
-                line_elements = self.area_elements[i, j].line_elements
-                for k, line in enumerate(line_elements):
-                    plt.plot(line.z, line.r, label='line %i' % k)
-                    plt.quiver(line.z_cg, line.r_cg, line.l_orth[0], line.l_orth[1])
-                    plt.text(line.z_cg, line.r_cg,
-                             r'$[%.1e, %.1e] \cdot %.1e} $' % (line.l_orth_dir[0], line.l_orth_dir[1], line.l_norm), fontsize=8,
-                             color='black')
-                plt.legend()
-                plt.cla()
-
-    def plot_areas_distribution(self):
-        """
-        Given the information in the areas element, plot the areas scatter distribution
-        """
-        areas = np.zeros((self.nstream, self.nspan))
-        for ii in range(self.nstream):
-            for jj in range(self.nspan):
-                areas[ii, jj] = self.area_elements[ii, jj].area
-
-        plt.figure()
-        plt.scatter(self.z_grid_cg, self.r_grid_cg, c=areas)
-        for ii in range(self.nstream + 1):
-            plt.plot(self.z_grid_centers[ii, :], self.r_grid_centers[ii, :], 'k', linewidth=0.5)
-        for jj in range(self.nspan + 1):
-            plt.plot(self.z_grid_centers[:, jj], self.r_grid_centers[:, jj], 'k', linewidth=0.5)
-        # plt.gca().set_aspect('equal', adjustable='box')
-        plt.colorbar()  # plt.savefig('prova.pdf', bbox_inches='tight')
 
     def compute_three_dimensional_mesh(self, N_THETA):
         """
@@ -747,9 +600,9 @@ class Block:
         for i in range(self.nstream):
             for j in range(self.nspan):
                 for k in range(N_THETA):
-                    self.X_mesh[i, j, k] = self.r_grid_cg[i, j] * np.cos(theta[k])
-                    self.Y_mesh[i, j, k] = self.r_grid_cg[i, j] * np.sin(theta[k])
-                    self.Z_mesh[i, j, k] = self.z_grid_cg[i, j]
+                    self.X_mesh[i, j, k] = self.r_grid[i, j] * np.cos(theta[k])
+                    self.Y_mesh[i, j, k] = self.r_grid[i, j] * np.sin(theta[k])
+                    self.Z_mesh[i, j, k] = self.z_grid[i, j]
 
     def save_mesh_pickle(self, filepath=None):
         """
@@ -773,72 +626,3 @@ class Block:
         self.bfmFields = {}
         for key in fields.keys():
             self.bfmFields[key] = fields[key]
-    
-
-    # def add_streamline_length_grid(self, zgrid, rgrid):
-    #     """
-    #     Overwrite the stwl grid data with the blade data. Instead of 1, it will decrease to the value specified.
-    #     """
-    #     streamLength = compute_meridional_streamwise_coordinates(zgrid, rgrid)
-    #     self.streamline_length = streamLength
-    
-    
-    # def add_number_of_blades(self, Nblades):
-    #     nbladeGrid = np.zeros_like(self.z_grid_points)+Nblades
-    #     self.nBlades = nbladeGrid
-    
-    # def add_blade_is_present(self, f):
-    #     self.bladePresent = f
-    
-    # def add_theta_camber(self, f):
-    #     self.theta_camber = f
-    
-
-    # def add_body_force_cylindric(self, f_axial, f_radial, f_tangential):
-    #     """
-    #     Overwrite the force grid data with the blade data. Instead of 1, it will decrease to the value specified.
-    #     """
-    #     self.force_axial = f_axial
-    #     self.force_radial = f_radial
-    #     self.force_tangential = f_tangential
-
-
-    # def add_camber_grid(self, nz, nr, nt):
-    #     """
-    #     Add the values of the normal camber vector (axial, radial, tangential).
-    #     """
-    #     assert nz.shape[0] == self.z_grid_points.shape[0], 'The camnber normal must have the same dimensions of the background grid'
-    #     assert nz.shape[1] == self.z_grid_points.shape[1], 'The camber normal must have the same dimensions of the background grid'
-    #     self.normal_camber = {}
-    #     self.normal_camber['Axial'] = nz
-    #     self.normal_camber['Radial'] = nr
-    #     self.normal_camber['Tangential'] = nt
-    
-    # def add_body_force_info(self, bodyForceObj):
-    #     self.bodyForce["Force_Axial"] = bodyForceObj.bodyForceFields["Force_Axial"]
-    #     self.bodyForce["Force_Radial"] = bodyForceObj.bodyForceFields["Force_Radial"]
-    #     self.bodyForce["Force_Tangential"] = bodyForceObj.bodyForceFields["Force_Tangential"]
-    #     self.bodyForce["AngularMomentumDerivative"] = bodyForceObj.meridionalFields["AngularMomentumDerivative"]
-    #     self.bodyForce["EntropyDerivative"] = bodyForceObj.meridionalFields["EntropyDerivative"]
-    #     self.BFCalibrationCoefficients = bodyForceObj.calibrationCoefficients
-    
-    # def add_inference_info(self, fnCoeffs, fpCoeffs):
-    #     assert fnCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
-    #     assert fpCoeffs.shape[2] == 4, 'For now only cubic polynomial inference allowed'
-        
-    #     # the coefficients are ordered in descending order of polynomial power
-    #     self.inferenceCoefficients["fn_3"] = fnCoeffs[:, :, 0]
-    #     self.inferenceCoefficients["fn_2"] = fnCoeffs[:, :, 1]
-    #     self.inferenceCoefficients["fn_1"] = fnCoeffs[:, :, 2]
-    #     self.inferenceCoefficients["fn_0"] = fnCoeffs[:, :, 3]
-        
-    #     self.inferenceCoefficients["fp_3"] = fpCoeffs[:, :, 0]
-    #     self.inferenceCoefficients["fp_2"] = fpCoeffs[:, :, 1]
-    #     self.inferenceCoefficients["fp_1"] = fpCoeffs[:, :, 2]
-    #     self.inferenceCoefficients["fp_0"] = fpCoeffs[:, :, 3]
-    
-    def PlotInferenceCoefficients(self, save_filename):
-        for key in self.inferenceCoefficients.keys():
-            contour_template(self.z_grid_cg, self.r_grid_cg, self.inferenceCoefficients[key], 
-                            key, save_filename=save_filename + '_inference_' + key, folder_name=self.config.get_pictures_folder_path())
-

@@ -42,10 +42,10 @@ class Curve:
         u_spline_ext = np.linspace(u_min, u_max, num_points)
         self.r_spline_ext, self.z_spline_ext = self.compute_spline(u_eval=u_spline_ext, degree_spline=degree_spline)
 
-    def trim_curve_inlet(self, z_trim='span', r_trim='span'):
-        if r_trim == 'span':
+    def trim_curve_inlet(self, z_trim=None, r_trim=None):
+        if r_trim == None:
             idx = np.where(self.z_spline >= z_trim)
-        elif z_trim == 'span':
+        elif z_trim == None:
             idx = np.where(self.r_spline >= r_trim)
         else:
             raise ValueError("Unknown trim type!")
