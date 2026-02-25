@@ -7,7 +7,6 @@ from grid.src.blade import Blade
 from grid.src.block import Block
 from grid.src.multiblock import MultiBlock
 from grid.src.su2_mesh_generator import generate_SU2mesh
-from grid.src.bfm_writer import BFM_Writer
 from sun.src.general_functions import print_banner_begin, print_banner_end
 from grid.src.functions import contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 

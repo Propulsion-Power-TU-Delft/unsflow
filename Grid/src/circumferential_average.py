@@ -6,14 +6,14 @@ import pickle
 import pandas as pd
 from utils.styles import *
 
-#############################################################################################################################
+##########################################################################################################
 #
 #       SET OF TOOLS FOR CIRCUMFERENTIAL AVERAGE OF CFD DATASET OBTAINED WITH SU2 OR LUMINARY. 
 #       THE INPUT NEEDED IS THE FOLDER WHERE ALL THE MERIDIONAL ARCS WITH DATA (OBTAINED WITH A PARAVIEW MACRO) 
-#       ARE STORED IS CSV FILES. THE OUTPUT IS TWO PICKLE FILES CONTAINING THE AVERAGED FIELDS (RAW AND DENSITY-WEIGHTED)
+#       ARE STORED IS CSV FILES. THE OUTPUT IS PICKLE FILES CONTAINING THE AVERAGED FIELDS
 #       FOR EACH QUANTITY IN THE DATASET ON THE MERIDIONAL GRID POINTS PROVIDED
 #
-#############################################################################################################################
+###########################################################################################################
 
 
 

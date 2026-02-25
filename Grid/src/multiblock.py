@@ -1,21 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 14 18:29:29 2023
-@author: F. Neri, TU Delft
-"""
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial import KDTree
 from utils.styles import *
 from .functions import *
 from .curve import Curve
-from sun.src.general_functions import print_banner_begin, print_banner_end
-from .area_element import AreaElement
 from scipy.interpolate import CubicSpline
 import pickle
 import os
-from scipy.ndimage import gaussian_filter
 from grid.src.functions import enlarge_domain_array
 from grid.src.config import Config
 
