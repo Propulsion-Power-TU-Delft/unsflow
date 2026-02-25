@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 14 18:29:29 2023
-@author: F. Neri, TU Delft
-"""
 import os.path
 import matplotlib.pyplot as plt
 import sys
@@ -26,17 +20,17 @@ from scipy import ndimage
 
 
 
-def cluster_sample_u(n, shrink_effect=3.5, border='default'):
+def cluster_points(n, shrink_effect=3.5, border='default'):
     """
     routine to provide an array of numbers from 0 to 1, in which many points are clustered close to the borders.
     it makes use of sigmoid functions.
     :param n: total number of sampling points
-    :param shrink_effect: value of the shrink used in the sigmoid case. A higher value cluster the points more. 3.5 is good.
+    :param shrink_effect: A higher value cluster the points more. 3.5 is good.
     :param border: set the borders at which the points will be clustered. left, right, or default (both).
     """
     length = n
     # Generate the array with more points near the extremes
-    if border == 'default':
+    if border == 'default' or border=='both':
         array = np.linspace(-shrink_effect, shrink_effect, length)
     elif border == 'left':
         array = np.linspace(-shrink_effect, 0, length)
@@ -45,7 +39,7 @@ def cluster_sample_u(n, shrink_effect=3.5, border='default'):
     else:
         raise ValueError("Unknown type of border")
 
-    sigmoid = 1 / (1 + np.exp(-array))  # Apply sigmoid function
+    sigmoid = 1 / (1 + np.exp(-array))  
     scaled_array = (sigmoid - sigmoid.min()) / (sigmoid.max() - sigmoid.min())
     return scaled_array
 
@@ -60,20 +54,14 @@ def eliminate_duplicates(x, y, z):
     matrix = np.array((x, y, z))
     unique_columns, indices = np.unique(matrix, axis=1, return_index=True)
     sorted_indices = np.sort(indices)
-    # Select the unique columns from the original matrix
+
     unique_matrix = matrix[:, sorted_indices]
     return unique_matrix[0, :], unique_matrix[1, :], unique_matrix[2, :]
 
 
 def project_vector_to_cylindrical(ux, uy, theta):
-    """
-    Project a vector written in x-y components in the equivalent vector written in r-theta components.
-    :param ux: x-component of the vector
-    :param uy: y-component of the vector
-    :param theta: theta location of the considered point [rad]
-    """
-    ur = ux * cos(theta) + uy * sin(theta)  # radial component
-    ut = -ux * sin(theta) + uy * cos(theta)  # tangential component
+    ur = ux * cos(theta) + uy * sin(theta)
+    ut = -ux * sin(theta) + uy * cos(theta)
     return ur, ut
 
 
@@ -94,64 +82,48 @@ def project_scalar_gradient_to_cylindrical(da_dx, da_dy, da_dz, r, theta):
 def project_velocity_gradient_to_cylindrical(dux_dx, dux_dy, duy_dx, duy_dy, r, theta):
     """
     Project the x-y gradients of a vector field "a" in r-theta components.
+    Tensor transformation law T_{r,theta} = Q^T * T_{x,y} * Q)
+    
     :param dux_dx: x-derivative of the x-component field
     :param dux_dy: y-derivative of the x-component field
     :param duy_dx: x-derivative of the y-component field
     :param duy_dy: y-derivative of the y-component field
     :param r: radial cordinate of the point
     :param theta: theta location of the considered point [rad]
-    (tensor transformation law T_{r,theta} = Q^T * T_{x,y} * Q) where Q is the rotation matrix (sines and cosines of theta).
     """
 
     dur_dr = dux_dx * cos(theta) ** 2 + (duy_dx + dux_dy) * sin(theta) * cos(theta) + duy_dy * sin(theta) ** 2
-    # dur_dtheta = r * (dux_dy * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - duy_dx * sin(theta) ** 2)
+    dur_dtheta = r * (dux_dy * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - duy_dx * sin(theta) ** 2)
     dut_dr = duy_dx * cos(theta) ** 2 + (duy_dy - dux_dx) * sin(theta) * cos(theta) - dux_dy * sin(theta) ** 2
-    # dut_dtheta = r * (dux_dx * sin(theta) ** 2 - sin(theta) * cos(theta) * (duy_dx + dux_dy) + duy_dy * cos(theta) ** 2)
+    dut_dtheta = r * (dux_dx * sin(theta) ** 2 - sin(theta) * cos(theta) * (duy_dx + dux_dy) + duy_dy * cos(theta) ** 2)
 
     return dur_dr, dut_dr
 
 
 def cartesian_to_cylindrical(x, y, z, v):
-    """
-    Pass from the cordinates in cartesian (x,y,z) to cylindrical cordinate (r,t,z).
-    :param x: x cordinate
-    :param y: y cordinate
-    :param z: z cordinate
-    :param v: vector in cartesian components (x,y,z)
-    """
     M = cartesian_to_cylindrical_matrix(x, y)
     v_cylindrical = M @ v
     return v_cylindrical
 
 def cylindrical_to_cartesian(x, y, z, v):
-    """
-    Pass from the components in cylindrical (r,t,z) to cartesian cordinate (x,y,z).
-    :param x: x cordinate
-    :param y: y cordinate
-    :param z: z cordinate
-    :param v: vector in cyl components (r,t,z)
-    """
     M = cartesian_to_cylindrical_matrix(x, y).T
     v_cartesian = M @ v
     return v_cartesian
 
 
 def cartesian_to_cylindrical_matrix(x, y):
-    """
-    Returns the 3D matrix of the transformation from cartesian to cylindrical for the point located in (x,y)
-    :param x: x cordinate
-    :param y: y cordinate
-    """
     theta = np.arctan2(y, x)
     M = np.array([[np.cos(theta), np.sin(theta), 0], [-np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
 
     return M
 
 
-def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_stretching, y_stretching, tol=1e-3,
-                             save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1,
-                             guardian=False, method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False,
-                             border_adjustment=False, inlet_block=False, outlet_block=False):
+def elliptic_grid_generation(
+    c_left, c_bottom, c_right, c_top, 
+    orthogonality, x_stretching, y_stretching, tol=1e-3,
+    save_filename=None, show=True, pol_order=3, sigmoid_coeff_x=5, sigmoid_coeff_y=5, it_orth=-1,
+    guardian=False, method='intersection', fix_inlet=False, fix_outlet=False, save_animation=False,
+    border_adjustment=False, inlet_block=False, outlet_block=False):
     """
     Create a structured grid, using elliptic method (Winslow equations). Inputs are the 4 borders
     delimiting the figure, ordered in a certain way.
@@ -170,8 +142,8 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     :param sigmoid_coeff_y: y-coefficient of the sigmoid along the spanwise direction.
     :param it_orth: iteration number from which orthogonality is enabled.
     :param guardian: under-relaxation method
-    :param method: choose method used to update points on the border. Suggested minimize, as fzero frequently diverges, and
-    intersection doesn't work 100% good at the moment.
+    :param method: choose method used to update points on the border. Suggested minimize, as fzero frequently diverges, 
+    and intersection doesn't work 100% good at the moment.
     :param fix_inlet: if True, fixes the points on the inlet border
     :param fix_outlet: if True, fixes the points on the outlet border.
     :param save_animation: if specified,  saves figures with the defined filename path.
@@ -259,10 +231,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     d = np.zeros((nx, ny))
     e = np.zeros((nx, ny))
 
-    # WH_ratio = (np.max(X) - np.min(X)) / (np.max(Y) - np.min(Y))
-    # scale = 0.5 * ((np.max(X) - np.min(X)) + (np.max(Y) - np.min(Y)))  # reference lenght of the problem
-    # tol *= scale  # scale the tolerance threshold
-
     if show:
         plt.figure()
 
@@ -283,10 +251,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
                 plt.plot(X[ii, :], Y[ii, :], 'black', lw=0.5)
             for jj in range(ny):
                 plt.plot(X[:, jj], Y[:, jj], 'black', lw=0.5)
-            # plt.plot(c_left[0, :], c_left[1, :], 'red', lw=0.5)
-            # plt.plot(c_bottom[0, :], c_bottom[1, :], 'red', lw=0.5)
-            # plt.plot(c_right[0, :], c_right[1, :], 'red', lw=0.5)
-            # plt.plot(c_top[0, :], c_top[1, :], 'red', lw=0.5)
             plt.plot(X0[0, :], Y0[0, :], 'red', lw=0.5)
             plt.plot(X0[-1, :], Y0[-1, :], 'red', lw=0.5)
             plt.plot(X0[:, -1], Y0[:, -1], 'red', lw=0.5)
@@ -380,8 +344,6 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
             # BOTTOM EDGE
             x = c_bottom[0, :]
             y = c_bottom[1, :]
-            # x = X[:, 0]
-            # y = Y[:, 0]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, 0]
@@ -514,8 +476,14 @@ def elliptic_grid_generation(c_left, c_bottom, c_right, c_top, orthogonality, x_
     return X, Y
 
 
-def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology, streamwise_coeff, spanwise_coeff, nx=None,
-                                ny=None):
+def transfinite_grid_generation(
+    c_left, c_bottom, c_right, c_top, 
+    block_topology, 
+    streamwise_coeff, 
+    spanwise_coeff, 
+    nx=None,
+    ny=None,
+    visual_debug = False):
     """
     Method used to generate the grid with transfinite grid interpolation method.
     :param c_left: left border points (x, y)
@@ -525,8 +493,8 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
     :param block_topology: inlet, internal, or outlet to impose the right stretching functions
     :param streamwise_coeff: coefficient of stretching function along streamwise direction
     :param spanwise_coeff: coefficient of stretching function along spanwise direction
-    :param nx: number of points in streamwise direction (if None, default is used)
-    :param ny: number of points in spanwise direction (if None, default is used)
+    :param nx: number of points in streamwise direction (if None, the number of the input curve is used)
+    :param ny: number of points in spanwise direction (if None, the number of the input curve is used)
     """
     if nx is None:
         nx = c_bottom.shape[1]
@@ -548,21 +516,18 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
     splinex_right = CubicSpline(t_spanwise, c_right[0, :])
     spliney_right = CubicSpline(t_spanwise, c_right[1, :])
 
-    plt.figure()
-    plt.plot(splinex_bottom(t_streamwise), spliney_bottom(t_streamwise), '-o', label='spline bottom border')
-    plt.plot(splinex_top(t_streamwise), spliney_top(t_streamwise), '-s', label='spline top border')
-    plt.plot(splinex_left(t_spanwise), spliney_left(t_spanwise), '-^', label='spline left border')
-    plt.plot(splinex_right(t_spanwise), spliney_right(t_spanwise), '-x', label='spline right border')
-    ax = plt.gca()
-    ax.set_aspect('equal')
-    plt.legend()
+    if visual_debug:
+        plt.figure()
+        plt.plot(splinex_bottom(t_streamwise), spliney_bottom(t_streamwise), '-o', label='spline bottom border')
+        plt.plot(splinex_top(t_streamwise), spliney_top(t_streamwise), '-s', label='spline top border')
+        plt.plot(splinex_left(t_spanwise), spliney_left(t_spanwise), '-^', label='spline left border')
+        plt.plot(splinex_right(t_spanwise), spliney_right(t_spanwise), '-x', label='spline right border')
+        ax = plt.gca()
+        ax.set_aspect('equal')
+        plt.legend()
     
-
     xi = np.linspace(0, 1, nx)
     eta = np.linspace(0, 1, ny)
-
-    # stretching functions applied to the computational cordinates. if the coefficients are equal to 1 and 1, no stretching
-    # (this is needed because eriksson with a value of 1 is different from no stretching)
     if streamwise_coeff != 1:
         if block_topology.lower() == 'inlet':
             xi = eriksson_stretching_function_final(xi, streamwise_coeff)
@@ -578,8 +543,6 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
 
     XI, ETA = np.meshgrid(xi, eta, indexing='ij')
     X, Y = XI * 0, ETA * 0
-
-    # TRANSFINITE INTERPOLATION
     for i in range(nx):
         for j in range(ny):
             X[i, j] = (1 - XI[i, j]) * splinex_left(ETA[i, j]) + XI[i, j] * splinex_right(ETA[i, j]) + (
@@ -596,8 +559,7 @@ def transfinite_grid_generation(c_left, c_bottom, c_right, c_top, block_topology
     for i in range(nx):
         plt.plot(X[i, :], Y[i, :], 'k', lw=0.5)
     for j in range(ny):
-        plt.plot(X[:, j], Y[:, j], 'k', lw=0.5)
-    
+        plt.plot(X[:, j], Y[:, j], 'k', lw=0.5)    
     ax = plt.gca()
     ax.set_aspect('equal')
 
@@ -609,11 +571,6 @@ def eriksson_stretching_function_initial(x, alpha):
     equation 4.93 Farrashkhalvat Book. Gives clustering at the initial part of the computational domain
     """
     f = (np.exp(alpha * x) - 1) / (np.exp(alpha) - 1)
-    # plt.figure()
-    # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    # plt.xlabel(r'$x$')
-    # plt.xlabel(r'$f$')
-    # plt.grid(alpha=grid_opacity)
     return f
 
 
@@ -622,11 +579,6 @@ def eriksson_stretching_function_final(x, alpha):
     equation 4.95 Farrashkhalvat Book. Gives clustering at the final part of the computational domain
     """
     f = (np.exp(alpha) - np.exp(alpha * (1 - x))) / (np.exp(alpha) - 1)
-    # plt.figure()
-    # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    # plt.xlabel(r'$x$')
-    # plt.xlabel(r'$f$')
-    # plt.grid(alpha=grid_opacity)
     return f
 
 
@@ -642,21 +594,10 @@ def eriksson_stretching_function_both(x, alpha):
             f[i] = x_midpoint * (np.exp(alpha * x[i] / x_midpoint) - 1) / (np.exp(alpha) - 1)
         else:
             f[i] = 1 - (1 - x_midpoint) * (np.exp(alpha * (1 - x[i]) / (1 - x_midpoint)) - 1) / (np.exp(alpha) - 1)
-
-    # plt.figure()
-    # plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    # plt.xlabel(r'$x$')
-    # plt.ylabel(r'$f$')
-    # plt.grid(alpha=grid_opacity)
     return f
 
 
 def scaled_sigmoid(x, alpha):
-    """
-    Return sigmoid scaled function, first derivative, and second derivative over an array x.
-    :param x: array of sigmoid argument
-    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
-    """
     f = 1 / (1 + np.exp(-alpha * (x - 0.5)))
     f_prime = (alpha * np.exp(-alpha * (x - 0.5))) / (1 + np.exp(-alpha * (x - 0.5))) ** 2
     f_second = (-alpha ** 2 * np.exp(-alpha * (x - 0.5)) * (1 + np.exp(-alpha * (x - 0.5))) + 2 * alpha ** 2 * np.exp(
@@ -664,8 +605,6 @@ def scaled_sigmoid(x, alpha):
 
     plt.figure()
     plt.plot(x, f, '-o', label=r'$f/f_{max}$')
-    # plt.plot(x, f_prime / np.max(f_prime), '-o', label=r"$f ' / f' _{max}$")
-    # plt.plot(x, f_second / np.max(f_second), '-o', label=r"$f'' / f''_{max}$")
     plt.xlabel(r'$\xi$')
     plt.xlabel(r'$\eta$')
     plt.grid(alpha=grid_opacity)
@@ -692,29 +631,11 @@ def scaled_gauss_lobatto(x, inlet_block=False, outlet_block=False):
         f_prime[len(f) // 2:] = np.ones(len(f) // 2)
         f_second[len(f) // 2:] = np.zeros(len(f) // 2)
 
-    # plt.figure()
-    # plt.plot(x, f / (np.max(f)-np.min(f)), label=r'$f_{scaled}$')
-    # plt.plot(x, f_prime / (np.max(f_prime)-np.min(f_prime)), label=r"$f '_{scaled}$")
-    # plt.plot(x, f_second / (np.max(f_second)-np.min(f_second)), label=r"$f''_{scaled}$")
-    # plt.xlabel(r'$\zeta$')
-    # plt.ylabel(r'$f$')
-    # plt.grid(alpha=grid_opacity)
-    # plt.legend()
-    # plt.savefig('stretching_functions.pdf', bbox_inches='tight')
-
     return f, f_prime, f_second
 
 
 def scaled_sigmoid_right(x, alpha):
-    """
-    Return a straight line until half of the domain, and attach a sigmoid scaled function, first derivative,
-    and second derivative over an array x.
-    :param x: array of sigmoid argument
-    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
-    """
     f, f_prime, f_second = scaled_sigmoid(x, alpha)
-
-    # now overwrite the first half with a straight line function
     N = len(x)
     f[0:N // 2] = x[0:N // 2]
     f_prime[0:N // 2] = np.zeros(N // 2) + 1
@@ -723,15 +644,8 @@ def scaled_sigmoid_right(x, alpha):
 
 
 def scaled_sigmoid_left(x, alpha):
-    """
-    Return a straight line from half of the domain, and attach a sigmoid scaled function, first derivative,
-    and second derivative over an array x.
-    :param x: array of sigmoid argument
-    :param alpha: coefficient of the sigmoid function f(x) = 1 / (1 + np.exp(-alpha * (x - 0.5)))
-    """
     f, f_prime, f_second = scaled_sigmoid(x, alpha)
 
-    # now overwrite the first half with a straight line function
     N = len(x)
     f[N // 2:] = x[N // 2:]
     f_prime[N // 2:] = np.zeros_like(f_prime[N // 2:]) + 1
@@ -740,11 +654,6 @@ def scaled_sigmoid_left(x, alpha):
 
 
 def polynomial_function(x, n):
-    """
-    return polynomial x^n function, first derivative, and second derivative over an array x.
-    :param x: array of polynomial argument
-    :param n: order of the polynomial
-    """
     f = x ** n
     f_prime = n * x ** (n - 1)
     f_second = n * (n - 1) * x ** (n - 2)
@@ -752,10 +661,6 @@ def polynomial_function(x, n):
 
 
 def no_stretching_function(x):
-    """
-    return the x function, first derivative, and second derivative over an array x that defines the zero-stretching function.
-    :param x: array of function argument
-    """
     f = x
     f_prime = np.zeros(len(x)) + 1
     f_second = np.zeros(len(x))
@@ -773,13 +678,10 @@ def solve_linear_system(yb_prime, yp_new, xp_new, yb_old, xb_old):
     :param xb_old: new x cordinate of the border point.
     """
     if yb_prime == 0:
-        # print('Horizontal point\n')
         sol = [xp_new, None]  # same x cordinate of the interior point
     elif math.isinf(yb_prime) or math.isnan(yb_prime):
-        # print('Vertical point\n')
         sol = [None, yp_new]  # same y cordinate of the interior point
     else:
-        # print('Inclined point\n')
         A_sys = np.array([[1 / yb_prime, 1], [-yb_prime, 1]])
         B_sys = np.array([yp_new + xp_new / yb_prime, yb_old - yb_prime * xb_old])
         sol = np.linalg.solve(A_sys, B_sys)
@@ -867,16 +769,6 @@ def find_updated_point(x, y, xp_new, yp_new, xb_old, yb_old, yb_prime):
         xb_new, yb_new = xb_new[0], yb_new[0]
     except:
         xb_new, yb_new = xb_old, yb_old
-
-    # plt.figure()
-    # plt.plot(xspline_border(u_border), yspline_border(u_border), label='border line')
-    # plt.plot(xp_new, yp_new, 'ko', label='internal point')
-    # plt.plot(x_grid_line, y_grid_line, 'k', label='internal grid line')
-    # plt.plot(xb_new, yb_new, 'ro', label='intersection')
-    # # plt.xlim([-0.1, 0.4])
-    # # plt.ylim([0.6, 1.1])
-    # plt.gca().set_aspect('equal', adjustable='box')
-    # plt.legend()
 
     return xb_new, yb_new
 

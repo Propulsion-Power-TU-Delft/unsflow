@@ -223,12 +223,7 @@ class MultiBlockGridDriver:
         outputTypes = self.config.get_output_type()
         for outputType in outputTypes:
             
-            if outputType.lower()=='turbobfm':
-                if self.driverType=='single_blade' or self.driverType=='full_machine':
-                    raise ValueError('The output type turbobfm is not available for single_blade or full_machine driver configurations.')
-                self.multiBlockGrid.write_turbobfm_grid_file_2D()
-            
-            elif outputType.lower()=='cturbobfm':
+            if outputType.lower()=='cturbobfm':
                 if self.driverType=='single_blade' or self.driverType=='full_machine':
                     raise ValueError('The output type cturbobfm is not available for single_blade or full_machine driver configurations.')
                 self.multiBlockGrid.write_cturbobfm_grid_file()
@@ -252,13 +247,6 @@ class MultiBlockGridDriver:
                 self.multiBlockGrid.compute_three_dimensional_mesh(self.config, nodes_number=5)
                 generate_SU2mesh(self.multiBlockGrid.X_mesh, self.multiBlockGrid.Y_mesh, self.multiBlockGrid.Z_mesh, kind_elem=12, kind_bound=9, filename=outputFolder+'/mesh_%.4f.su2' %(self.multiBlockGrid.deltatheta_periodic))
                 print('SU2 mesh file written in %s/mesh_%.4f.su2' %(outputFolder, self.multiBlockGrid.deltatheta_periodic))
-                
-            elif outputType.lower()=='su2bfm':
-                if self.driverType=='single_blade' or self.driverType=='full_machine':
-                    raise ValueError('The output type su2bfm is not available for single_blade or full_machine driver configurations.')
-                bfmWriter = BFM_Writer(self.blades, self.config)
-                bfmWriter.write_bfm_input_file(filename=outputFolder + '/BFM_input.drg')
-                print('SU2 BFM input file written in %s' %(outputFolder+'/BFM_input.drg'))
             
             elif outputType.lower()=='meridional_splines':
                 spanValues = [0.2, 0.5, 0.8] # default span values, modify if needed

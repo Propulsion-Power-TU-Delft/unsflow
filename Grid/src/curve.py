@@ -67,11 +67,11 @@ class Curve:
         if sampling_mode == 'default':
             self.u_sample = np.linspace(0, 1, npoints)
         elif sampling_mode == 'clustering':
-            self.u_sample = cluster_sample_u(npoints)
+            self.u_sample = cluster_points(npoints)
         elif sampling_mode == 'clustering_left':
-            self.u_sample = cluster_sample_u(npoints, border='left')
+            self.u_sample = cluster_points(npoints, border='left')
         elif sampling_mode == 'clustering_right':
-            self.u_sample = cluster_sample_u(npoints, border='right')
+            self.u_sample = cluster_points(npoints, border='right')
         
         self.r_sample, self.z_sample = splev(self.u_sample, self.tck)
 

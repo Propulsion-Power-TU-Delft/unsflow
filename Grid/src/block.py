@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from utils.styles import *
-from grid.src.functions import cluster_sample_u, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
+from grid.src.functions import cluster_points, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
 from .curve import Curve
 from sun.src.general_functions import print_banner_begin, print_banner_end
 from grid.src.config import Config
