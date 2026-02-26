@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pickle
 from .functions import Trad_n
 from unsflow.utils.formatting import total_chars, total_chars_mid
-from unsflow.utils.formatting import print_banner_end, print_banner_begin
+from unsflow.utils.formatting import print_banner
 
 
 class Driver:
@@ -49,7 +49,7 @@ class Driver:
         """
         Generate the IC matrix.
         """
-        print_banner_begin('BOUNDARY CONDITIONS')
+        print_banner('BOUNDARY CONDITIONS')
         print(f"{'Inlet Boundary Conditions:':<{total_chars_mid}}{'Standard':>{total_chars_mid}}")
         self.IC = np.array([[0, 1, 0],
                             [0, 0, 1]])

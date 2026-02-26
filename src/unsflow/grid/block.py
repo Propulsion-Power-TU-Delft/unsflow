@@ -4,7 +4,7 @@ from scipy.spatial import KDTree
 from unsflow.utils.plot_styles import *
 from unsflow.grid.functions import cluster_points, elliptic_grid_generation, transfinite_grid_generation, compute_meridional_streamwise_coordinates, contour_template
 from .curve import Curve
-from unsflow.utils.formatting import print_banner_begin, print_banner_end, total_chars, total_chars_mid
+from unsflow.utils.formatting import print_banner, total_chars, total_chars_mid
 from .config import Config
 from .body_force import BodyForce
 import pickle
@@ -241,7 +241,7 @@ class Block:
         span_coeff = self.config.get_sigmoid_span_coefficient()
 
         if self.config.get_verbosity():
-            print_banner_begin('GRID GENERATION OF BLOCK %02d' % block_counter)
+            print_banner('GRID GENERATION OF BLOCK %02d' % block_counter)
             block_type = self.config.get_blocks_trim_type()[self.iblock]
             print(f"{'Trim type:':<{total_chars_mid}}{block_type:>{total_chars_mid}}")
             print(f"{'Grid Generation Mode:':<{total_chars_mid}}{self.config.get_mesh_generation_method():>{total_chars_mid}}")
@@ -256,7 +256,7 @@ class Block:
                 print(f"{'Inlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
             if outlet_meridional_obj is not None:
                 print(f"{'Outlet Object Present:':<{total_chars_mid}}{True:>{total_chars_mid}}")
-            print_banner_end()
+            print_banner()
 
         # handle the case in which some grid cordinates must be copied from adjacent blocks
         if inlet_meridional_obj is not None:

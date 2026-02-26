@@ -1,5 +1,5 @@
 from .functions import *
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 
 
@@ -40,9 +40,9 @@ class AxialDuct:
         """
         Print the information of the component
         """
-        print_banner_begin('AXIAL DUCT')
+        print_banner('AXIAL DUCT')
         print(f"{'Axial Velocity [-]:':<{total_chars_mid}}{self.uz:>{total_chars_mid}.2f}")
         print(f"{'Tangential Velocity [-]:':<{total_chars_mid}}{self.ut:>{total_chars_mid}.2f}")
         print(f"{'Evaluation Coordinate [-]:':<{total_chars_mid}}{self.z_eval:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()
 

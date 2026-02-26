@@ -97,14 +97,14 @@ class SunModel:
         self.t_ref = self.config.get_reference_time()
         
         total_chars_mid = 30
-        print_banner_begin('NORMALIZATION')
+        print_banner('NORMALIZATION')
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.ref_length:>{total_chars_mid}.2f}")
         print(f"{'Reference Velocity [m/s]:':<{total_chars_mid}}{self.u_ref:>{total_chars_mid}.2f}")
         print(f"{'Reference Density [kg/m3]:':<{total_chars_mid}}{self.ref_density:>{total_chars_mid}.2f}")
         print(f"{'Reference Pressure [Pa]:':<{total_chars_mid}}{self.ref_pressure:>{total_chars_mid}.2f}")
         print(f"{'Reference Time [s]:':<{total_chars_mid}}{self.ref_time:>{total_chars_mid}.6f}")
         print(f"{'Reference Omega [rad/s]:':<{total_chars_mid}}{self.ref_omega:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()
         
         
 
@@ -196,10 +196,10 @@ class SunModel:
         """
         routine = self.config.get_grid_transformation_gradient_routine()
         order = self.config.get_grid_transformation_gradient_order()
-        print_banner_begin('TRANSFORMATION GRADIENTS')
+        print_banner('TRANSFORMATION GRADIENTS')
         print(f"{'Routine Used:':<{total_chars_mid}}{routine:>{total_chars_mid}}")
         print(f"{'Order Used:':<{total_chars_mid}}{order:>{total_chars_mid}}")
-        print_banner_end()
+        print_banner()
 
         if dx_dz is None and dx_dr is None and dy_dz is None and dy_dr is None:
             Z = self.inputData['AxialCoord']
@@ -1262,11 +1262,11 @@ class SunModel:
         else:
             raise ValueError('Unknown block type!')
 
-        print_banner_begin('BLOCK TYPE')
+        print_banner('BLOCK TYPE')
         print(f"{'Block type:':<{total_chars_mid}}{block_type:>{total_chars_mid}}")
         print(f"{'Block Omega Sun [-]:':<{total_chars_mid}}{Omega:>{total_chars_mid}}")
         print(f"{'Block Tau Sun: [-]':<{total_chars_mid}}{tau:>{total_chars_mid}}")
-        print_banner_end()
+        print_banner()
 
         self.L0 = self.Z_g * (1 + 1j * m * Omega * tau) + self.S_g
         self.L1 = self.A_g * (m * Omega * tau - 1j) - 1j * tau * self.Z_g
@@ -1353,12 +1353,12 @@ class SunModel:
         if self.shroud_bc not in bc_list:
             raise ValueError('Incorrect Shroud boundary condition type.')
 
-        print_banner_begin('BOUNDARY CONDITIONS')
+        print_banner('BOUNDARY CONDITIONS')
         print(f"{'Inlet Boundary set to:':<{total_chars_mid}}{self.inlet_bc:>{total_chars_mid}}")
         print(f"{'Outlet Boundary set to:':<{total_chars_mid}}{self.outlet_bc:>{total_chars_mid}}")
         print(f"{'Hub Boundary set to:':<{total_chars_mid}}{self.hub_bc:>{total_chars_mid}}")
         print(f"{'Shroud Boundary set to:':<{total_chars_mid}}{self.shroud_bc:>{total_chars_mid}}")
-        print_banner_end()
+        print_banner()
 
     def apply_bc_condition(self, row, condition, ii, jj):
         """
@@ -1542,13 +1542,13 @@ class SunModel:
         sigma = self.config.get_research_center_omega_eigenvalues() / omega_ref  # non-dimensional center point of research
         number_search = self.config.get_research_number_omega_eigenvalues()
 
-        print_banner_begin('ARNOLDI SOLVER')
+        print_banner('ARNOLDI SOLVER')
         print(f"{'Circumferential Harmonic:':<{total_chars_mid}}{m:>{total_chars_mid}}")
         print(f"{'Shaft Angular Speed [rad/s]:':<{total_chars_mid}}{omega_shaft:>{total_chars_mid}.2f}")
         print(f"{'Ref. Angular Speed [rad/s]:':<{total_chars_mid}}{omega_ref:>{total_chars_mid}.2f}")
         print(f"{'Initial Searching Point [-]:':<{total_chars_mid}}{sigma:>{total_chars_mid}.2f}")
         print(f"{'Number of Eigenvalues to Find:':<{total_chars_mid}}{number_search:>{total_chars_mid}}")
-        print_banner_end()
+        print_banner()
 
         Y1 = np.concatenate((-self.L0, np.zeros_like(self.L0)), axis=1)
         Y2 = np.concatenate((np.zeros_like(self.L0), np.eye(self.L0.shape[0])), axis=1)

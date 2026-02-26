@@ -1,5 +1,5 @@
 from .functions import *
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from numpy import pi as pi
 
@@ -69,7 +69,7 @@ class RadialImpeller:
         """
         Print the information of the component
         """
-        print_banner_begin('RADIAL IMPELLER')
+        print_banner('RADIAL IMPELLER')
         print(f"{'Inlet Radius [-]:':<{total_chars_mid}}{self.r_1:>{total_chars_mid}.2f}")
         print(f"{'Outlet Radius [-]:':<{total_chars_mid}}{self.r_2:>{total_chars_mid}.2f}")
         print(f"{'Inlet Density [-]:':<{total_chars_mid}}{self.rho_1:>{total_chars_mid}.2f}")
@@ -86,4 +86,4 @@ class RadialImpeller:
         print(f"{'Path Length [-]:':<{total_chars_mid}}{self.s_i:>{total_chars_mid}.2f}")
         print(f"{'Loss coefficient [-]:':<{total_chars_mid}}{self.dLi_dTanb:>{total_chars_mid}.2f}")
         print(f"{'Time Lag Parameter [-]:':<{total_chars_mid}}{self.tau_i:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()

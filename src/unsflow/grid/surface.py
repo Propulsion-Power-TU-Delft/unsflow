@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_2d_curvilinear_gradient
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from .functions import clip_negative_values, compute_curvilinear_abscissa, compute_3dSpline_curve, compute_2dSpline_curve, find_intersection, eriksson_stretching_function_both
 from .profile import Profile

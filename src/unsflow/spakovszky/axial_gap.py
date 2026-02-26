@@ -1,5 +1,5 @@
 from .functions import Bgap_n
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from numpy import pi as pi
 
@@ -42,9 +42,9 @@ class AxialGap:
         """
         Print the information of the component
         """
-        print_banner_begin('AXIAL GAP')
+        print_banner('AXIAL GAP')
         print(f"{'Inlet Coordinate [-]:':<{total_chars_mid}}{self.z_1:>{total_chars_mid}.2f}")
         print(f"{'Outlet Coordinate [-]:':<{total_chars_mid}}{self.z_2:>{total_chars_mid}.2f}")
         print(f"{'Axial Velocity [-]:':<{total_chars_mid}}{self.uz:>{total_chars_mid}.2f}")
         print(f"{'Tang. Velocity [-]:':<{total_chars_mid}}{self.ut:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()

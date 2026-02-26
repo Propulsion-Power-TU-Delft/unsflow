@@ -1,6 +1,6 @@
 from .functions import Bvlsd_n
 from numpy import pi
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from numpy import pi as pi
 
@@ -50,10 +50,10 @@ class VanelessDiffuser:
         """
         Print the information of the component
         """
-        print_banner_begin('VANELESS DIFFUSER')
+        print_banner('VANELESS DIFFUSER')
         print(f"{'Inlet Radius [-]:':<{total_chars_mid}}{self.r_1:>{total_chars_mid}.2f}")
         print(f"{'Outlet Radius [-]:':<{total_chars_mid}}{self.r_2:>{total_chars_mid}.2f}")
         print(f"{'Inlet Radial Velocity [-]:':<{total_chars_mid}}{self.ur_1:>{total_chars_mid}.2f}")
         print(f"{'Radial Source Term Q [-]:':<{total_chars_mid}}{self.Q:>{total_chars_mid}.2f}")
         print(f"{'Circulation Term GAMMA [-]:':<{total_chars_mid}}{self.GAMMA:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()

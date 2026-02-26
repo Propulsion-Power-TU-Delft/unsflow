@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from .functions import cartesian_to_cylindrical, compute_gradient_least_square
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from unsflow.grid.functions import *
 from unsflow.grid.profile import Profile
@@ -47,7 +47,7 @@ class Blade:
         
         `iblade`: blade counter
         """
-        print_banner_begin('BLADE %02i %s' %(iblade, bladeType))
+        print_banner('BLADE %02i %s' %(iblade, bladeType))
         self.config = config
         self.x = []
         self.y = []
@@ -74,7 +74,7 @@ class Blade:
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
         print(f"{'Blade edges extrapolation coefficient:':<{total_chars_mid}}{self.config.get_blade_edges_extrapolation_coefficient()[self.iblade]:>{total_chars_mid}.3f}")
         print(f"{'Camber smoothing coefficient:' :<{total_chars_mid}}{self.config.get_blade_camber_smoothing_coefficient():>{total_chars_mid}.3f}")
-        print_banner_end()
+        print_banner()
 
 
     def read_from_curve_file(self, iblade, iblock):

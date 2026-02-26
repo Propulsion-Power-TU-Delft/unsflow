@@ -430,8 +430,8 @@ class SunModelMultiBlock():
     #         pickle.dump(self.eigenfields, picklefile)
 
     #     print('Saved eigenvalues.csv and eigenfields.pickle in: %s', folder_name)
-    #     print_banner_begin('END OF SIMULATION')
-    #     print_banner_end()
+    #     print_banner('END OF SIMULATION')
+    #     print_banner()
 
     def inspect_L_matrices(self, save_filename=None, save_foldername=None):
         """

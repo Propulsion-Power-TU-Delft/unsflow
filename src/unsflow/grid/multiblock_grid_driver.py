@@ -7,7 +7,7 @@ from .blade import Blade
 from .block import Block
 from .multiblock import MultiBlock
 from .su2_mesh_generator import generate_SU2mesh
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from .functions import contour_template, compute_meridional_streamwise_coordinates, compute_meridional_spanwise_coordinates
 
 
@@ -217,7 +217,7 @@ class MultiBlockGridDriver:
         4) meridional_splines: export the meridional splines in a paraview readable format for Paraview span macros
         5) meridional_grid: export the meridional grid in csv format for paraview macro writing
         """
-        print_banner_begin('MULTIBLOCK GRID OUTPUT')
+        print_banner('MULTIBLOCK GRID OUTPUT')
         outputFolder = self.config.get_output_data_folder()
         os.makedirs(outputFolder, exist_ok=True)
         outputTypes = self.config.get_output_type()
@@ -274,4 +274,4 @@ class MultiBlockGridDriver:
             
             else:
                 print('Output type %s not recognized, therefore ignored.' %(outputType))
-        print_banner_end('')
+        print_banner('')

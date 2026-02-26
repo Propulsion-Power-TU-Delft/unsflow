@@ -2,7 +2,7 @@ import configparser
 import ast
 import numpy as np
 import os
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 
 
@@ -26,13 +26,13 @@ class Config:
         """
         Print the entire configuration.
         """
-        print_banner_begin('CONFIGURATION FILE')
+        print_banner('CONFIGURATION FILE')
         for section in self.config_parser.sections():
             print(f"[{section}]")
             for option, value in self.config_parser.items(section):
                 print(f"{option} = {value}")
             print()
-        print_banner_end('')
+        print_banner('')
         print()
 
     def create_attributes(self):

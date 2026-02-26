@@ -1,5 +1,5 @@
 from .functions import Brot_n
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 from numpy import pi as pi
 
@@ -55,7 +55,7 @@ class AxialRotor:
         """
         Print the information of the component
         """
-        print_banner_begin('AXIAL ROTOR')
+        print_banner('AXIAL ROTOR')
         print(f"{'Inlet Axial Velocity [-]:':<{total_chars_mid}}{self.uz:>{total_chars_mid}.2f}")
         print(f"{'Inlet Tang. Velocity [-]:':<{total_chars_mid}}{self.ut_1:>{total_chars_mid}.2f}")
         print(f"{'Outlet Tang. Velocity [-]:':<{total_chars_mid}}{self.ut_2:>{total_chars_mid}.2f}")
@@ -65,4 +65,4 @@ class AxialRotor:
         print(f"{'Inertia Parameter [-]:':<{total_chars_mid}}{self.lambda_r:>{total_chars_mid}.2f}")
         print(f"{'Loss Coefficient [-]:':<{total_chars_mid}}{self.dLr_dTanb:>{total_chars_mid}.2f}")
         print(f"{'Time Lag Parameter [-]:':<{total_chars_mid}}{self.tau_r:>{total_chars_mid}.2f}")
-        print_banner_end()
+        print_banner()

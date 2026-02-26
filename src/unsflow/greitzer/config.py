@@ -2,7 +2,7 @@ import configparser
 import ast
 import numpy as np
 import os
-from unsflow.utils.formatting import print_banner_begin, print_banner_end
+from unsflow.utils.formatting import print_banner
 from unsflow.utils.formatting import total_chars, total_chars_mid
 
 
@@ -12,9 +12,9 @@ class Config:
         self.config_parser = configparser.ConfigParser()
         self.config_parser.read(config_file)
         
-        print_banner_begin('CONFIGURATION FILE')
+        print_banner('CONFIGURATION FILE')
         print(f"{'Configuration file: ':<{total_chars_mid}}{config_file:>{total_chars_mid}}")
-        print_banner_end('')
+        print_banner('')
         
 
     def get_config_value(self, section, option, default=None):
