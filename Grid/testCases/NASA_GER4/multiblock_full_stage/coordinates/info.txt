@@ -1,1 +1,0 @@
-the hub and shroud have been cut at inlet=-10 inches, and outlet 15inches, to replicate the throat at inlet, and the rake2 at exit

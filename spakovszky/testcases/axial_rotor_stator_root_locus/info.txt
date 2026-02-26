@@ -1,2 +1,0 @@
-Results of the rotor-stator-gap problem described in spakovszky thesis.
-Analysis of the variable gap size, to find the root locus for it.

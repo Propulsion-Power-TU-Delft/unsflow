@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unsflow"
+version = "0.1.0"
+description = "Set of tools for compressor instabilities research"
+
+[tool.setuptools.packages.find]
+where = ["src"]
