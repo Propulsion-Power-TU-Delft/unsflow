@@ -349,7 +349,7 @@ class Blade:
         mglob = np.concatenate((m1,m2))
         zglob = np.concatenate((z1,z2))
         
-        s_camber = np.linspace(0, np.max(mglob), (len(x1)+len(x2))//2) # camber line with same number of points of the two surfaces
+        s_camber = np.linspace(0, np.max(mglob), (len(x1)+len(x2))//2) 
         coeff = np.polyfit(mglob, rglob*tglob, deg=13) 
         rt_camber = np.polyval(coeff, s_camber)
         coeff = np.polyfit(mglob, rglob, deg=13)  
@@ -359,17 +359,8 @@ class Blade:
         z_camber = np.polyval(coeff, s_camber)
         
         # fix the extremes
-        r_camber_new, theta_camber_new, z_camber_new, s_camber_new = self.fix_camberline_extremes(r_camber, theta_camber, z_camber, s_camber)
-        
-        # plt.figure()
-        # plt.plot(m1, r1*t1, '-', color='C0', label='Pressure Side')
-        # plt.plot(m2, r2*t2, '-', color='C1', label='Suction Side')
-        # plt.plot(s_camber, r_camber*theta_camber, '-', color='C2', ms=2, label='Camber')
-        # plt.plot(s_camber_new, r_camber_new*theta_camber_new, '--', color='C3', ms=2, label='Camber Fixed Extremes')
-        # plt.xlabel(r'$s_{m}$ [m]')
-        # plt.ylabel(r'$r \theta$ [m]')
-        # plt.legend()
-        # plt.gca().set_aspect('equal', adjustable='box')
+        r_camber_new, theta_camber_new, z_camber_new, s_camber_new = \
+            self.fix_camberline_extremes(r_camber, theta_camber, z_camber, s_camber)
 
         return r1, t1, m1, z1, r2, t2, m2, z2, r_camber_new, theta_camber_new, s_camber_new, z_camber_new
     
@@ -388,7 +379,6 @@ class Blade:
         nportions = 1
         degree = 2
         
-        
         # LE
         sle = sc[0:portion]
         coeffs = np.polyfit(sc[portion:portion+nportions*portion], tc[portion:portion+nportions*portion], deg=degree)
@@ -402,231 +392,44 @@ class Blade:
         tte = np.polyval(coeffs, ste)
         snew = np.concatenate((snew[0:-portion], ste))
         tnew = np.concatenate((tnew[0:-portion], tte))
-        
-        # plt.figure()
-        # plt.plot(sc, rc*tc, '-', color='C0', ms=2, label='Pre')
-        # plt.plot(snew, rc*tnew, '-', color='C1', ms=2, label='Post')
-        # plt.xlabel(r'$s_{m}$ [m]')
-        # plt.ylabel(r'$r \theta$ [m]')
-        # plt.legend()
-        # plt.gca().set_aspect('equal', adjustable='box')
 
         return rc, tnew, zc, sc
 
 
-    def compute_thickness(self):
+    def compute_quantities_on_meridional_grid(self):
         """
-        Compute the blade thickness evaluating theta of the pressure and suction side on the meridional points of the camber surface
-        """
-        if self.extrapolationMethod == 'linear':
-            theta_ps = robust_griddata_interpolation_with_linear_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
-            theta_ss = robust_griddata_interpolation_with_linear_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
-        else:
-            theta_ps = robust_griddata_interpolation_with_linear_filler(self.z_psSurface, self.r_psSurface, self.theta_psSurface, self.z_cambSurface, self.r_cambSurface)
-            theta_ss = robust_griddata_interpolation_with_linear_filler(self.z_ssSurface, self.r_ssSurface, self.theta_ssSurface, self.z_cambSurface, self.r_cambSurface)
-            
-        self.thk_tang_cambSurface = self.r_cambSurface * np.abs(theta_ps - theta_ss)
-                
-        if self.config.get_visual_debug():
-            contour_template(self.z_cambSurface, self.r_cambSurface, self.thk_tang_cambSurface, 'Tangential Thickness')
-
-        # if np.mean(self.thk_tang_cambSurface) > 0:
-        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
-        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
-        #             if self.thk_tang_cambSurface[ii, jj] < 0:
-        #                 self.thk_tang_cambSurface[ii, jj] = 0
-        # else:
-        #     for ii in range(self.thk_tang_cambSurface.shape[0]):
-        #         for jj in range(self.thk_tang_cambSurface.shape[1]):
-        #             if self.thk_tang_cambSurface[ii, jj] < 0:
-        #                 self.thk_tang_cambSurface[ii, jj] *= -1
-        #             else:
-        #                 self.thk_tang_cambSurface[ii, jj] = 0
-
-
-    def compute_thickness_along_camber(self):
-        """
-        Compute thickness for each points on the spline along the camber
-        """
-        points_per_profile = len(self.zc_points) // self.number_profiles
-        def get_profile(arr, ii):
-            return arr[ii*points_per_profile:(ii+1)*points_per_profile]
-
-        for iProfile in range(self.number_profiles):
-            zc, rc, thetac = get_profile(self.zc_points, iProfile), get_profile(self.rc_points, iProfile), get_profile(self.thetac_points, iProfile)
-            zss, rss, thetass = get_profile(self.zss_points, iProfile), get_profile(self.rss_points, iProfile), get_profile(self.thetass_points, iProfile)
-            zps, rps, thetaps = get_profile(self.zps_points, iProfile), get_profile(self.rps_points, iProfile), get_profile(self.thetaps_points, iProfile)
-
-            plt.figure()
-            plt.plot(zc, rc*thetac, '-o', label='camber', mec='C0', mfc='none')
-            plt.plot(zss, rss*thetass, '-^', label='pside', mec='C1', mfc='none')
-            plt.plot(zps, rps*thetaps, '--s', label='sside', mec='C2', mfc='none')
-            plt.legend()
-            print()
-
-            zint, rint, thetaint = np.zeros_like(zc), np.zeros_like(rc), np.zeros_like(thetac)
-            dz, dy = np.zeros_like(zc), np.zeros_like(rc)
-            dz[1:-1], dy[1:-1] = zc[2:]-zc[0:-2], rc[2:]*thetac[2:]-rc[0:-2]*thetac[0:-2]
-            dz[0], dy[0] = zc[1] - zc[0], rc[1]*thetac[1] - rc[0]*thetac[0]
-            dz[-1], dy[-1] = zc[-1]-zc[-2], rc[-2]*thetac[-2]-rc[-1]*thetac[-1]
-            zdir = dz/np.sqrt(dz**2+dy**2)
-            dydir = dy/np.sqrt(dz**2+dy**2)
-            t = np.linspace(-zc[-1]-zc[0], zc[-1]-zc[0])
-            for iPoint in range(len(dz)):
-                zline = zc[iPoint] -dydir[iPoint]*t
-                yline = rc[iPoint]*thetac[iPoint] + zdir[iPoint]*t
-                plt.plot(zline, yline, 'k', lw=0.1)
-                plt.gca().set_aspect('equal', adjustable='box')
-
-
-    def point_intersection(self, curve1, curve2, tol=1e-18):
-        """
-        Find and return the intersection between 2 curves. static method because it is bound to the class, not to an instance
-        of the class. It could also avoid to specify the self, since it is not used.
-        :param curve1: first curve
-        :param curve2: second curve
-        :param tol: tolerance threshold for the algorithm. 1e-2 seems like a good value, since at this point the cordinates
-        are already non-dimensional
-        """
-        tree = KDTree(curve1)
-        intersection_points = []
-
-        # while loop to make sure the intersection algorithm finds a point
-        while len(intersection_points) == 0:
-            distances, indices = tree.query(curve2)
-            intersection_points = curve1[indices[distances < tol]]
-            tol *= 10
-        point = np.mean(intersection_points, axis=0)
-        return point
-
-    # def obtain_quantities_on_meridional_grid(self, smooth=1):
-    #     """
-    #     Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
-    #     Check the degree of the polynomial if it is ok.
-    #     """
-    #     self.z_camber = self.z_grid
-    #     self.r_camber = self.r_grid
-        
-    #     method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        
-    #     self.theta_camber = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #                                                      self.r_cambSurface.flatten(),
-    #                                                      (self.theta_cambSurface).flatten(),
-    #                                                      self.z_grid, self.r_grid,
-    #                                                      method)
-    #     self.x_camber = self.r_grid * np.cos(self.theta_camber)
-    #     self.y_camber = self.r_grid * np.sin(self.theta_camber)
-
-    #     self.blockage = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #                                                  self.r_cambSurface.flatten(),
-    #                                                  self.blockage_cambSurface.flatten(),
-    #                                                  self.z_grid, self.r_grid, method)
-
-    #     self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #                                            self.r_cambSurface.flatten(),
-    #                                            self.n_camber_r.flatten(),
-    #                                            self.z_grid, self.r_grid, method)
-
-    #     self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #                                                self.r_cambSurface.flatten(),
-    #                                                self.n_camber_t.flatten(),
-    #                                                self.z_grid, self.r_grid, method)
-
-    #     self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #                                            self.r_cambSurface.flatten(),
-    #                                            self.n_camber_z.flatten(),
-    #                                            self.z_grid, self.r_grid, method)
-    
-
-    # def obtain_quantities_on_meridional_grid_secondversion(self, smooth=1):
-    #     """
-    #     Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
-    #     Check the degree of the polynomial if it is ok.
-    #     """
-    #     self.z_camber = self.z_grid
-    #     self.r_camber = self.r_grid
-        
-    #     method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
-        
-    #     def unroll_list_in_nparray(l):
-    #         arr = np.concatenate(l)
-    #         return arr
-        
-    #     z_data = unroll_list_in_nparray(self.zss_data)
-    #     r_data = unroll_list_in_nparray(self.rss_data)
-    #     theta_data = unroll_list_in_nparray(self.thetass_data)
-    #     theta_ss = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
-    #     contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
-
-    #     z_data = unroll_list_in_nparray(self.zps_data)
-    #     r_data = unroll_list_in_nparray(self.rps_data)
-    #     theta_data = unroll_list_in_nparray(self.thetaps_data)
-    #     theta_ps = self.twoD_function_evaluation(z_data, r_data, (theta_data), self.z_grid, self.r_grid, method)
-    #     contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
-
-    #     self.theta_camber = 0.5*(theta_ps+theta_ss)
-    #     contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
-    #     self.thk = self.r_grid*np.abs(theta_ps-theta_ss)
-    #     contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
-
-        
-    #     # z_data = unroll_list_in_nparray(self.zc_data)
-    #     # r_data = unroll_list_in_nparray(self.rc_data)
-    #     # theta_data = unroll_list_in_nparray(self.thetac_data)
-    #     # thk_data = unroll_list_in_nparray(self.thk_data)
-
-    #     # self.theta_camber = self.twoD_function_evaluation(z_data, r_data, (theta_data),
-    #     #                                                  self.z_grid, self.r_grid,
-    #     #                                                  method)
-    #     # contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_c$ [deg]')
-    #     # self.x_camber = self.r_grid * np.cos(self.theta_camber)
-    #     # self.y_camber = self.r_grid * np.sin(self.theta_camber)
-
-    #     # self.thk = self.twoD_function_evaluation(z_data, r_data, (thk_data),
-    #     #                                         self.z_grid, self.r_grid,
-    #     #                                         method)
-    #     # contour_template(self.z_grid, self.r_grid, self.thk, r'$t$ [m]')
-
-    #     Nb = self.config.get_blades_number()[self.iblade]
-    #     self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
-    #     contour_template(self.z_grid, self.r_grid, self.blockage, r'$b$ [-]')
-
-    #     # self.nr = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #     #                                        self.r_cambSurface.flatten(),
-    #     #                                        self.n_camber_r.flatten(),
-    #     #                                        self.z_grid, self.r_grid, method)
-
-    #     # self.nt = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #     #                                            self.r_cambSurface.flatten(),
-    #     #                                            self.n_camber_t.flatten(),
-    #     #                                            self.z_grid, self.r_grid, method)
-
-    #     # self.nz = self.twoD_function_evaluation(self.z_cambSurface.flatten(),
-    #     #                                        self.r_cambSurface.flatten(),
-    #     #                                        self.n_camber_z.flatten(),
-    #     #                                        self.z_grid, self.r_grid, method)
-    
-
-    def obtain_quantities_on_meridional_grid_thirdversion(self):
-        """
-        Find the camber information on the blade grid via interpolation of the various functions stored on the camber grid.
+        Find the camber information on the blade grid via interpolation of the various functions stored on the camber.
         Check the degree of the polynomial if it is ok.
         """
         self.z_camber = self.z_grid
         self.r_camber = self.r_grid
         
-        method = self.config.get_blades_camber_reconstruction()[self.iblade].lower()
+        method = 'linear'
         
-        self.theta_ss = self.twoD_function_evaluation(self.z_ssSurface, self.r_ssSurface, (self.theta_ssSurface), self.z_grid, self.r_grid, method)
-        # contour_template(self.z_grid, self.r_grid, theta_ss*180/np.pi, r'$\theta_{ss}$ [deg]')
+        self.theta_ss = robust_griddata_interpolation_with_linear_filler(
+            self.z_ssSurface, 
+            self.r_ssSurface, 
+            self.theta_ssSurface, 
+            self.z_grid, 
+            self.r_grid,
+            method)
+        
+        self.theta_ps = robust_griddata_interpolation_with_linear_filler(
+            self.z_psSurface, 
+            self.r_psSurface, 
+            self.theta_psSurface, 
+            self.z_grid, 
+            self.r_grid,
+            method)
 
-        self.theta_ps = self.twoD_function_evaluation(self.z_psSurface, self.r_psSurface, (self.theta_psSurface), self.z_grid, self.r_grid, method)
-        # contour_template(self.z_grid, self.r_grid, theta_ps*180/np.pi, r'$\theta_{ps}$ [deg]')
+        self.theta_camber = robust_griddata_interpolation_with_linear_filler(
+            self.z_camberSurface, 
+            self.r_camberSurface, 
+            self.theta_camberSurface, 
+            self.z_grid, 
+            self.r_grid, 
+            method)
 
-        # this part evaluates the camber: choose if you want to model the camber as interface between pressure and suction, or like the camber itself reconstructed previously
-        # self.theta_camber = 0.5*(theta_ps+theta_ss)
-        self.theta_camber = self.twoD_function_evaluation(self.z_camberSurface, self.r_camberSurface, (self.theta_camberSurface), self.z_grid, self.r_grid, method)
-        # contour_template(self.z_grid, self.r_grid, self.theta_camber*180/np.pi, r'$\theta_{c}$ [deg]')
         self.thk = self.r_grid*np.abs(self.theta_ps-self.theta_ss)
         try:
             self.thk += self.splitterThickness
@@ -636,85 +439,29 @@ class Blade:
         Nb = self.config.get_blades_number()[self.iblade]
         self.blockage = 1 - Nb * self.thk / (2*np.pi*self.r_grid)
         
-        # self.n_camber_r, self.n_camber_t, self.n_camber_z = self.compute_surface_normal_vectors(self.r_grid, self.theta_camber, self.z_grid, coords='cylindrical')
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_r, r'$n_r$')
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_t, r'$n_{\theta}$')
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_z, r'$n_z$')
-        
-        # interpolate camber normal from the reference surface
-        self.n_camber_r = self.twoD_function_evaluation(self.z_camberSurface,
-                                                        self.r_camberSurface,
-                                                        self.nr_camberSurface,
-                                                        self.z_grid, self.r_grid, method)
+        self.n_camber_r = robust_griddata_interpolation_with_linear_filler(
+            self.z_camberSurface,
+            self.r_camberSurface,
+            self.nr_camberSurface,
+            self.z_grid, 
+            self.r_grid,
+            method)
 
-        self.n_camber_t = self.twoD_function_evaluation(self.z_camberSurface,
-                                                        self.r_camberSurface,
-                                                        self.nt_camberSurface,
-                                                        self.z_grid, self.r_grid, method)
+        self.n_camber_t = robust_griddata_interpolation_with_linear_filler(
+            self.z_camberSurface,
+            self.r_camberSurface,
+            self.nt_camberSurface,
+            self.z_grid, 
+            self.r_grid,
+            method)
 
-        self.n_camber_z = self.twoD_function_evaluation(self.z_camberSurface,
-                                                        self.r_camberSurface,
-                                                        self.nz_camberSurface,
-                                                        self.z_grid, self.r_grid, method)
-        
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_r, r'$n_r$')
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_t, r'$n_{\theta}$')
-        # contour_template(self.z_grid, self.r_grid, self.n_camber_z, r'$n_z$')
-        # plt.show()
-    
-    
-    def twoD_function_evaluation(self, z, r, theta, z_eval, r_eval, method):
-        """
-        Routine to evaluate whatever dataset (here called theta) as a function of the z and r.
-
-        Parameters
-        --------------------------------------
-        
-        `z`: np.ndarray of z coordinates where `theta` is stored
-
-        `r`: np.ndarray of r coordinates where `theta` is stored
-
-        `theta`: np.ndarray of theta values corresponding to `z` and `r`
-
-        `z_eval`: np.ndarray of z coordinates where evaluating `theta`
-
-        `r_eval`: np.ndarray of r coordinates where evaluating `theta`
-
-        `method`: regression or interpolation (linear) of the function theta(z,r)
-
-        """
-        if method == 'regression': # polynomial regression of order <degree>
-            raise ValueError('Regression method for two2D_function_evaluation not working properly. Please change to interpolation')
-            degree = self.config.get_blade_reconstruction_regression_order()
-            poly_features = PolynomialFeatures(degree)  
-            X = poly_features.fit_transform(np.column_stack((z, r)))
-            model = LinearRegression()
-            model.fit(X, theta)
-            coefficients = model.coef_ 
-            intercept = model.intercept_
-            X_eval = poly_features.fit_transform(np.column_stack((z_eval.flatten(), r_eval.flatten())))
-            surface_values = np.dot(X_eval, coefficients) + intercept
-            theta_eval = surface_values.reshape(z_eval.shape)
-        elif method == 'interpolation': # linear interpolation, with nearest-neighbor for the extrapolated points
-            # if self.extrapolationMethod == 'linear':
-            #     theta_eval = griddata_interpolation_with_linear_extrapolation(z, r, theta, z_eval, r_eval)
-            # else:
-            #     theta_eval = griddata_interpolation_with_nearest_filler(z, r, theta, z_eval, r_eval)
-            theta_eval = robust_griddata_interpolation_with_linear_filler(z, r, theta, z_eval, r_eval)
-        else:
-            raise ValueError('Unknown method')
-
-        return theta_eval
-        
-        
-
-    
-    def compute_thollet_angles(self):
-        dtdz, dtdr = compute_gradient_least_square(self.z_camber, self.r_camber, self.theta_camber)
-        beta = np.arctan(self.r_grid*dtdz)
-        contour_template(self.z_camber, self.r_camber, beta*180/np.pi, 'metal angle thollet [deg]')
-        lmbda = np.arctan(self.r_grid*dtdr)
-        contour_template(self.z_camber, self.r_camber, lmbda*180/np.pi, 'lean angle thollet [deg]')
+        self.n_camber_z = robust_griddata_interpolation_with_linear_filler(
+            self.z_camberSurface,
+            self.r_camberSurface,
+            self.nz_camberSurface,
+            self.z_grid, 
+            self.r_grid,
+            method)
 
 
     def add_meridional_grid(self, zgrid, rgrid):
@@ -733,8 +480,14 @@ class Blade:
         normalize : bool, optional
             If True, the streamline length and spanline length are normalized to lie between 0 and 1.
         """
-        self.streamline_length = compute_meridional_streamwise_coordinates(self.z_grid, self.r_grid, normalize=normalize)
-        self.spanline_length = compute_meridional_spanwise_coordinates(self.z_grid, self.r_grid, normalize=normalize)
+        self.streamline_length = compute_meridional_streamwise_coordinates(
+            self.z_grid, 
+            self.r_grid, 
+            normalize=normalize)
+        self.spanline_length = compute_meridional_spanwise_coordinates(
+            self.z_grid, 
+            self.r_grid, 
+            normalize=normalize)
 
 
     def plot_meridional_coordinates(self, save_filename=None):
@@ -743,54 +496,15 @@ class Blade:
         """
         contour_template(self.z_grid, self.r_grid, self.streamwise_coord, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', 
+                bbox_inches='tight')
 
         contour_template(self.z_grid, self.r_grid, self.spanwise_coord, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', bbox_inches='tight')
-
-
-    def plot_camber_surface(self, save_filename=None, sides=False, points=True):
-        """
-        Plot the main blade points and the camber surface
-        """
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.5, color='red', label='reference camber')
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5, color='blue', label='regressed camber')
-        if points:
-            ax.scatter(self.x_main, self.y_main, self.z_main, c='black', s=1, label='points')
-        ax.set_aspect('equal', adjustable='box')
-        ax.set_xlabel(r'$x$')
-        ax.set_ylabel(r'$y$')
-        ax.set_zlabel(r'$z$')
-
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + save_filename + '.pdf', bbox_inches='tight')
-
-
-    def plot_camber_meridional_grid(self, save_filename=None):
-        """
-        plot the main camber meridional grid
-        """
-        plt.figure()
-        plt.scatter(self.z_camber, self.r_camber)
-        plt.xlabel(r'$z$')
-        plt.ylabel(r'$r$')
-        ax = plt.gca()
-        ax.set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + save_filename + '.pdf', bbox_inches='tight')
-
-
-    def plot_camber_normal_contour_on_loft(self):
-        """
-        plot the camber normal vector contours
-        """
-        contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_r, r'$n_r$ reference')
-        contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_t, r'$n_{\theta}$ reference')
-        contour_template(self.z_cambSurface, self.r_cambSurface, self.n_camber_z, r'$n_z$ reference')
-
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', 
+                bbox_inches='tight')
 
     def plot_blockage_contour(self, save_filename=None):
         """
@@ -798,11 +512,15 @@ class Blade:
         """
         contour_template(self.z_grid, self.r_grid, self.blockage, name=r'$b \ \rm{[-]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blockage.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_blockage.pdf', 
+                bbox_inches='tight')
         
         contour_template(self.z_grid, self.r_grid, self.thk, name=r'$t_{\theta} \ \rm{[m]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_thickness.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_thickness.pdf', 
+                bbox_inches='tight')
 
 
     def plot_camber_normal_contour(self, save_filename=None):
@@ -811,83 +529,21 @@ class Blade:
         """
         contour_template(self.z_camber, self.r_camber, self.n_camber_r, name=r'$n_r$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_r.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_r.pdf', 
+                bbox_inches='tight')
 
         contour_template(self.z_camber, self.r_camber, self.n_camber_t, name=r'$n_{\theta}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_theta.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_theta.pdf', 
+                bbox_inches='tight')
 
         contour_template(self.z_camber, self.r_camber, self.n_camber_z, name=r'$n_z$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_z.pdf', bbox_inches='tight')
-
-
-    def write_bfm_input_file(self, filename=None, rescale=True):
-        """
-        Write the SU2 BFM input file
-        """
-        # before writing the cordinates, rescale them to meters
-        if rescale:
-            self.z_camber *= self.config.get_reference_length()
-            self.r_camber *= self.config.get_reference_length()
-
-        if filename is None:
-            filename = 'BFM_Input.drg'
-            with open(filename, 'w') as file:
-                file.write('<header>\n')
-                file.write('\n')
-
-                file.write('[version inputfile]\n')
-                file.write('1.0.0\n')
-                file.write('\n')
-
-                file.write('[number of blade rows]\n')
-                file.write('1\n')
-                file.write('\n')
-
-                file.write('[row blade count]\n')
-                file.write('%i\n' % self.config.get_blades_number())
-                file.write('\n')
-
-                file.write('[rotation factor]\n')
-                file.write('1\n')
-                file.write('\n')
-
-                file.write('[number of tangential locations]\n')
-                file.write('1\n')
-                file.write('\n')
-
-                file.write('[number of data entries in chordwise direction]\n')
-                file.write('%i\n' % self.z_camber.shape[0])
-                file.write('\n')
-
-                file.write('[number of data entries in spanwise direction]\n')
-                file.write('%i\n' % self.z_camber.shape[1])
-                file.write('\n')
-
-                file.write('[variable names]\n')
-                file.write('1:axial_coordinate 2:radial_coordinate 3:n_ax 4:n_tang 5:n_rad 6:blockage_factor 7:x_LE '
-                           '8:axial_chord\n')
-                file.write('\n')
-
-                file.write('</header>\n')
-                file.write('\n')
-
-                file.write('<data>\n')
-                file.write('<blade row>\n')
-                file.write('<tang section>\n')
-
-                for j in range(self.z_camber.shape[1]):
-                    file.write('<radial section>\n')
-                    for i in range(self.z_camber.shape[0]):
-                        file.write('%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\t%.10e\n' % (
-                        self.z_camber[i, j], self.r_camber[i, j], self.n_camber_z[i, j], self.n_camber_t[i, j],
-                        self.n_camber_r[i, j], self.blockage[i, j], self.z_camber[0, j],
-                        self.z_camber[-1, j] - self.z_camber[0, j]))
-                    file.write('</radial section>\n')
-                file.write('</tang section>\n')
-                file.write('</blade section>\n')
-                file.write('</data>')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_normal_z.pdf', 
+                bbox_inches='tight')
 
 
     def compute_normal_vector_on_point_ij(self, i, j, xgrid, ygrid, zgrid, check=False):
@@ -957,7 +613,7 @@ class Blade:
         self.inlet_z = []
         self.inlet_r = []
         self.profile_types = np.unique(self.profile)
-        self.profile_types = sorted(self.profile_types, key=lambda x: float(x.strip('%')))  # to sort the list in correct way
+        self.profile_types = sorted(self.profile_types, key=lambda x: float(x.strip('%')))  
         # in order to have span percentages in ascending order
 
         for span in self.profile_types:  # for each profile
@@ -1056,59 +712,6 @@ class Blade:
         self.outlet = np.stack((self.outlet_z, self.outlet_r), axis=1)
 
 
-    # def compute_normal_vectors_on_reference_surface(self, visual_debug=True):
-    #     """
-    #     for every point discretized on the camber surface, compute the normal vector, the streamline vector and the
-    #     spanline vector, all in cartesian and cylindrical reference systems.
-    #     """
-    #     self.x_cambSurface = self.r_cambSurface*np.cos(self.theta_cambSurface)
-    #     self.y_cambSurface = self.r_cambSurface * np.sin(self.theta_cambSurface)
-
-    #     # Create 2D NumPy array of empty arrays
-    #     self.normal_vectors = np.empty(self.z_cambSurface.shape, dtype=object)
-
-    #     # compute also the vector in cylindrical cordinates
-    #     self.normal_vectors_cyl = np.empty(self.z_cambSurface.shape, dtype=object)
-
-    #     for i in range(0, self.z_cambSurface.shape[0]):
-    #         for j in range(0, self.z_cambSurface.shape[1]):
-    #             self.normal_vectors[i, j] = self.compute_camber_vector(i, j, self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, check=False)[0]
-
-    #             self.normal_vectors_cyl[i, j] = cartesian_to_cylindrical(self.x_cambSurface[i, j],
-    #                                                                      self.y_cambSurface[i, j],
-    #                                                                      self.z_cambSurface[i, j],
-    #                                                                      self.normal_vectors[i, j])
-
-    #     # reorder the vectors in 2d arrays
-    #     self.n_camber_r = np.zeros_like(self.z_cambSurface)
-    #     self.n_camber_t = np.zeros_like(self.z_cambSurface)
-    #     self.n_camber_z = np.zeros_like(self.z_cambSurface)
-    #     for i in range(0, self.z_cambSurface.shape[0]):
-    #         for j in range(0, self.z_cambSurface.shape[1]):
-    #             self.n_camber_r[i, j] = self.normal_vectors_cyl[i, j][0]
-    #             self.n_camber_t[i, j] = self.normal_vectors_cyl[i, j][1]
-    #             self.n_camber_z[i, j] = self.normal_vectors_cyl[i, j][2]
-
-    #     if np.mean(self.n_camber_z)<0:
-    #         self.n_camber_z *= -1
-    #         self.n_camber_r *= -1
-    #         self.n_camber_t *= -1
-
-    #     if visual_debug:
-    #         arrow_len = (np.max(self.z_cambSurface) - np.min(self.z_cambSurface)) / 5
-    #         fig = plt.figure()
-    #         ax = fig.add_subplot(111, projection='3d')
-    #         ax.plot_surface(self.x_cambSurface, self.y_cambSurface, self.z_cambSurface, alpha=0.3)
-    #         ax.set_xlabel(r'$x$')
-    #         ax.set_ylabel(r'$y$')
-    #         ax.set_zlabel(r'$z$')
-    #         ax.set_aspect('equal', adjustable='box')
-    #         for i in range(0, self.z_cambSurface.shape[0], 10):
-    #             for j in range(0, self.z_cambSurface.shape[1], 5):
-    #                 ax.quiver(self.x_cambSurface[i, j], self.y_cambSurface[i, j], self.z_cambSurface[i, j], self.normal_vectors[i,j][0], self.normal_vectors[i,j][1], self.normal_vectors[i,j][2], length=arrow_len, color='blue')
-    #         print()
-
-
     def compute_surface_normal_vectors(self, x1, x2, x3, coords):
         """
         Compute the normal to a surface defined by 2d arrays.
@@ -1194,13 +797,20 @@ class Blade:
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], self.streamline_vectors[i, j][0],
-                          self.streamline_vectors[i, j][1], self.streamline_vectors[i, j][2], length=self.scale, color='green')
+                ax.quiver(
+                    self.x_camber[i, j], 
+                    self.y_camber[i, j], 
+                    self.z_camber[i, j], 
+                    self.streamline_vectors[i, j][0],
+                    self.streamline_vectors[i, j][1], 
+                    self.streamline_vectors[i, j][2], 
+                    length=self.scale, 
+                    color='green')
         ax.set_box_aspect([1, 1, 1])
         ax.grid(False)
-        surf.set_edgecolor('none')  # Remove edges
-        surf.set_linewidth(0.1)  # Set linewidth
-        surf.set_antialiased(True)  # Enable antialiasing for smoother edges
+        surf.set_edgecolor('none')  
+        surf.set_linewidth(0.1)  
+        surf.set_antialiased(True) 
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -1221,13 +831,20 @@ class Blade:
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
             for j in range(0, self.x_camber.shape[1]):
-                ax.quiver(self.x_camber[i, j], self.y_camber[i, j], self.z_camber[i, j], self.spanline_vectors[i, j][0],
-                          self.spanline_vectors[i, j][1], self.spanline_vectors[i, j][2], length=self.scale, color='purple')
+                ax.quiver(
+                    self.x_camber[i, j], 
+                    self.y_camber[i, j], 
+                    self.z_camber[i, j], 
+                    self.spanline_vectors[i, j][0],
+                    self.spanline_vectors[i, j][1], 
+                    self.spanline_vectors[i, j][2], 
+                    length=self.scale, 
+                    color='purple')
         ax.set_box_aspect([1, 1, 1])
         ax.grid(False)
-        surf.set_edgecolor('none')  # Remove edges
-        surf.set_linewidth(0.1)  # Set linewidth
-        surf.set_antialiased(True)  # Enable antialiasing for smoother edges
+        surf.set_edgecolor('none')  
+        surf.set_linewidth(0.1)  
+        surf.set_antialiased(True)  
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
         ax.set_zlabel(r'$z$')
@@ -1235,254 +852,6 @@ class Blade:
         ax.set_title('spanline vectors')
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
-
-
-    def compute_blade_thickness_normal_to_camber(self, xc, yc, xps, yps, xss, yss, debug=False):
-        """
-        Compute the blade thickness in the direction perpendicular to the local camber
-        """
-        visual_debug = debug
-        if visual_debug:
-            plt.figure()
-            plt.plot(xc, yc, '-o', label='camber', mec='C0', mfc='none', ms=2)
-            plt.plot(xps, yps, '-^', label='PSide', mec='C1', mfc='none', ms=2)
-            plt.plot(xss, yss, '--s', label='SSide', mec='C2', mfc='none', ms=2)
-            plt.gca().set_aspect('equal', adjustable='box')
-            plt.legend()
-
-        dx, dy = np.zeros_like(xc), np.zeros_like(yc)
-        dx[1:-1], dy[1:-1] = xc[2:] - xc[0:-2], yc[2:] - yc[0:-2]
-        dx[0], dy[0] = xc[1] - xc[0], yc[1] - yc[0]
-        dx[-1], dy[-1] = xc[-1] - xc[-2], yc[-1] - yc[-2]
-        x_vers = dx / np.sqrt(dx ** 2 + dy ** 2)
-        y_vers = dy / np.sqrt(dx ** 2 + dy ** 2)
-        t = np.linspace(-(xc[-1] - xc[0]), (xc[-1] - xc[0]))
-        thk_normal = np.zeros_like(xc)
-        for iPoint in range(len(dx)):
-            x_line = xc[iPoint] - y_vers[iPoint] * t
-            y_line = yc[iPoint] + x_vers[iPoint] * t
-
-            # Find intersection between the two curves
-            x_int_ps, y_int_ps = find_intersection(x_line, y_line, xps, yps)
-            x_int_ss, y_int_ss = find_intersection(x_line, y_line, xss, yss)
-
-            if visual_debug:
-                plt.plot(x_line, y_line, 'k', lw=0.1)
-                plt.plot(x_int_ps, y_int_ps, 'ro', ms=5)
-                plt.plot(x_int_ss, y_int_ss, 'ro', ms=5)
-
-            try:
-                if (len(x_int_ss)*len(x_int_ps)*len(y_int_ss)*len(y_int_ps)>0):
-                    thk_normal[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
-                else:
-                    thk_normal[iPoint] = 0
-            except:
-                thk_normal[iPoint] = 0
-
-        return thk_normal
-
-    def compute_blade_thickness_tangential(self, xc, yc, xps, yps, xss, yss, debug=False):
-        """
-        Compute the blade thickness in the circumferential direction
-        """
-        visual_debug = debug
-
-        if visual_debug:
-            plt.figure()
-            plt.plot(xc, yc, '-o', label='camber', mec='C0', mfc='none', ms=2)
-            plt.plot(xps, yps, '-^', label='PSide', mec='C1', mfc='none', ms=2)
-            plt.plot(xss, yss, '--s', label='SSide', mec='C2', mfc='none', ms=2)
-            plt.gca().set_aspect('equal', adjustable='box')
-            plt.legend()
-
-        t = np.linspace(-(xc[-1] - xc[0]), (xc[-1] - xc[0]))
-        thk = np.zeros_like(xc)
-        for iPoint in range(len(xc)):
-            x_line = xc[iPoint] + np.zeros_like(t)
-            y_line = yc[iPoint] + t
-
-            # Find intersection between the two curves
-            x_int_ps, y_int_ps = find_intersection(x_line, y_line, xps, yps)
-            x_int_ss, y_int_ss = find_intersection(x_line, y_line, xss, yss)
-
-            if visual_debug:
-                plt.plot(x_line, y_line, 'k', lw=0.1)
-                plt.plot(x_int_ps, y_int_ps, 'ro', ms=5)
-                plt.plot(x_int_ss, y_int_ss, 'ro', ms=5)
-
-            try:
-                if (len(x_int_ss)*len(x_int_ps)*len(y_int_ss)*len(y_int_ps)>0):
-                    thk[iPoint] = np.sqrt((x_int_ps[0]-x_int_ss[0])**2 + (y_int_ps[0]-y_int_ss[0])**2)
-                else:
-                    thk[iPoint] = 0
-            except:
-                thk[iPoint] = 0
-        
-        if debug:
-            plt.figure()
-            plt.plot(xc, thk, '-o', markersize=3)
-            plt.xlabel(r'$z$')
-            plt.title('Tangential Thickness')
-        return thk
-
-
-    def compute_blade_blockage_on_camber_loft(self):
-        """
-        Compute blade blockage based on the thickness of the blade in tangential direction
-        """
-        Nb = self.config.get_blades_number()[self.iblade]
-        self.blockage_cambSurface = 1 - Nb * self.thk_tang_cambSurface / (2*np.pi*self.r_cambSurface)
-        contour_template(self.z_cambSurface, self.r_cambSurface, self.blockage_cambSurface, r'$b$ reference')
-
-
-    def compute_blade_blockage_gradient(self, save_filename=None):
-        """
-        Compute the blockage gradient via finite difference on the meridional grid
-        """
-        self.db_dz, self.db_dr = compute_gradient_least_square(self.z_camber, self.r_camber, self.blockage)
-
-        contour_template(self.z_camber, self.r_camber, self.db_dz, r'$\partial_z b$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + '_dbdz.pdf', bbox_inches='tight')
-
-        contour_template(self.z_camber, self.r_camber, self.db_dr, r'$\partial_r b$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + '_dbdr.pdf', bbox_inches='tight')
-
-        contour_template(self.z_camber, self.r_camber, np.sqrt(self.db_dr**2+self.db_dz**2), r'$| \nabla b|$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_bgrad_magnitude.pdf', bbox_inches='tight')
-
-
-    def plot_blockage_and_grad_leading_to_trailing(self, jump=10, save_filename=None):
-        """
-        plot slices of the blockage and its gradient along streamwise direction from leading to trailing edge
-        :param jump: jump between streamlines from hub to shroud
-        """
-        stations = np.arange(0, self.blockage.shape[1], jump)
-        if self.blockage.shape[1]-1 not in stations:
-            stations = np.concatenate((stations, np.array([self.blockage.shape[1]-1])))
-
-        plt.figure()
-        for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan], self.blockage[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.ylabel(r'$b \ \rm{[-]}$')
-        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'blockage_slices.pdf', bbox_inches='tight')
-
-        plt.figure()
-        for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan], self.db_dz[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.ylabel(r'$db/dz \ \rm{[1/m]}$')
-        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'dbdz_slices.pdf', bbox_inches='tight')
-
-        plt.figure()
-        for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan], self.db_dr[:, ispan], '-s', ms=3, label=r'$i_{span}: \ %i/%i$' %(ispan, self.blockage.shape[1]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.ylabel(r'$db/dr \ \rm{[1/m]}$')
-        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_' + 'dbdr_slices.pdf', bbox_inches='tight')
-
-
-    def plot_blockage_and_grad_hub_to_shroud(self, jump=10, save_filename=None, folder_name=None):
-        """
-        plot slices of the blockage and its gradient along spanwise direction from hub to shroud
-        :param jump: jump between streamlines from hub to shroud
-        """
-        stations = np.arange(0, self.blockage.shape[0], jump)
-        if self.blockage.shape[0]-1 not in stations:
-            stations = np.concatenate((stations, np.array([self.blockage.shape[0] - 1])))
-
-        plt.figure()
-        for istream in stations:
-            plt.plot(self.blockage[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.xlabel(r'$b \ \rm{[-]}$')
-        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'blockage_slices_hub_to_shroud.pdf', bbox_inches='tight')
-
-        plt.figure()
-        for istream in stations:
-            plt.plot(self.db_dz[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.xlabel(r'$db/dz \ \rm{[1/m]}$')
-        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdz_hub_to_shroud.pdf', bbox_inches='tight')
-
-        plt.figure()
-        for istream in stations:
-            plt.plot(self.db_dr[istream, :], self.spanline_length[istream, :], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.xlabel(r'$db/dr \ \rm{[1/m]}$')
-        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'dbdr_hub_to_shroud.pdf', bbox_inches='tight')
-
-
-    def plot_bladetoblade_section(self, span_idx, save_filename=None, folder_name=None):
-        """
-        View of the blade section in the blade to blade plane, to check the camber angles.
-        :param span: percentage of the span you want to visualize the profile
-        """
-        span_percent = (span_idx) / (self.z_camber.shape[1] - 1) * 100
-
-        xs = self.streamline_length_ss[:, span_idx]
-        ys = self.r_ss[:, span_idx] * self.theta_ss[:, span_idx]
-
-        xp = self.streamline_length_ps[:, span_idx]
-        yp = self.r_ps[:, span_idx] * self.theta_ps[:, span_idx]
-
-        xc = self.streamline_length[:, span_idx]
-        yc = self.r_camber[:, span_idx] * self.theta_camber[:, span_idx]
-
-        plt.figure()
-        plt.plot(xs, ys, '-o', label='suction side')
-        plt.plot(xp, yp, '-s', label='pressure side')
-        plt.plot(xc, yc, '-^', label='camber line')
-        plt.legend()
-        plt.xlabel(r'$s \ \rm{[-]}$')
-        plt.ylabel(r'$r \theta \ \rm{[-]}$')
-        # plt.xticks([xc.min(), xc.max()])
-        # plt.yticks([yc.min(), yc.max()])
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(alpha=0.3)
-        ax = plt.gca()
-        # ax.set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_%.1f' % span_percent + '%_span.pdf', bbox_inches='tight')
-
-
-    def plot_bladetoblade_profile(self, span=50, save_filename=None, folder_name=None):
-        """
-        View of the blade section in the blade to blade plane, to check the camber angles.
-        :param span: percentage of the span you want to visualize the profile. If all, plot all of them
-        """
-        n_spans = self.z_camber.shape[1]
-
-        if span == 'all':
-            for i in range(n_spans):
-                self.plot_bladetoblade_section(i, save_filename, folder_name)
-        elif span >= 0 and span <= 100:
-            span_idx = int(n_spans * span / 100)
-            self.plot_bladetoblade_section(span_idx, save_filename, folder_name)
-        else:
-            raise ValueError('Span value not recognized')
 
 
     def compute_blade_camber_angles(self, convention='neutral'):
@@ -1555,36 +924,6 @@ class Blade:
                 self.blade_metal_angle[i, j] = ComputeAngleBetweenVectors(mhat, khat)
                 if khat[1] < 0:
                     self.blade_metal_angle[i, j] *= -1
-                
-                # # convention for lean angle is that it is positive if the cross product (k,s) has positive radial component
-                # if np.cross(khat, shat)[0] < 0:
-                #     self.blade_lean_angle[i, j] *= -1
-    
-    def compute_blade_camber_curvature(self):
-        
-        # First compute the vectors oriented along streamwise and spanwise directions of the blade
-        def getCartesianCoords(r,t,z):
-            return r*np.cos(t), r*np.sin(t), z
-        
-        # camber coords
-        xCamber, yCamber, zCamber = getCartesianCoords(self.r_grid, self.theta_camber, self.z_grid)
-        
-        # dbeta_dz, dbeta_dr = compute_gradient_least_square(self.z_grid, self.r_grid, self.blade_metal_angle)
-        # dbeta_dm = dbeta_dz * np.cos(self.gas_path_angle) + dbeta_dr * np.sin(self.gas_path_angle)
-        
-        ni,nj = self.z_grid.shape
-        self.camber_curvature = np.zeros_like(self.z_grid)
-        
-        # compute blade camnber curvature along the meridional direction, using the derivative of blade metal angle
-        for i in range(ni):
-            for j in range(nj):
-                ip, im, jp, jm = get_2d_finite_difference_stencil(i, j, ni, nj)
-                dkappa = self.blade_metal_angle[ip,j] - self.blade_metal_angle[im,j]
-                ds = np.sqrt( (xCamber[ip,j] - xCamber[im,j])**2 + (yCamber[ip,j] - yCamber[im,j])**2 + (zCamber[ip,j] - zCamber[im,j])**2 )
-                self.camber_curvature[i,j] = np.abs(dkappa / ds)
-                
-        contour_template(self.z_camber, self.r_camber, self.camber_curvature, r'Curvature $\mathrm{[1/m]}$')
-        
 
 
     def show_blade_angles_contour(self, save_filename=None, folder_name=None):
@@ -1592,80 +931,31 @@ class Blade:
         Contour of the blade angles.
         :param save_filename: if specified, saves the plots with the given name
         """
-        contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, r'$\varphi \quad \mathrm{[deg]}$')
+        contour_template(
+            self.z_camber, self.r_camber, 180 / np.pi * self.gas_path_angle, r'$\varphi \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_gas_path_angle.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_gas_path_angle.pdf', 
+                bbox_inches='tight')
 
-        contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, r'$\kappa \quad \mathrm{[deg]}$')
+        contour_template(
+            self.z_camber, self.r_camber, 180 / np.pi * self.blade_metal_angle, r'$\kappa \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_metal_angle.pdf', bbox_inches='tight')
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_metal_angle.pdf', 
+                bbox_inches='tight')
 
-        contour_template(self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, r'$\lambda \quad \mathrm{[deg]}$')
+        contour_template(
+            self.z_camber, self.r_camber, 180 / np.pi * self.blade_lean_angle, r'$\lambda \quad \mathrm{[deg]}$')
         if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_lean_angle.pdf', bbox_inches='tight')
-
-
-    def plot_inlet_outlet_metal_angle(self, save_filename=None, spans=(0, 0.25, 0.5, 0.75, 1)):
-        """
-        Plot inlet and metal angle
-        """
-        def normalize(f, dir):
-            ni,nj = f.shape
-            fnew = np.zeros_like(f)
-            if dir==0:
-                for j in range(nj):
-                    fnew[:,j] = (f[:,j]-f[:,j].min())/(f[:,j].max()-f[:,j].min())
-            else:
-                for i in range(ni):
-                    fnew[i,:] = (f[i,:]-f[i,:].min())/(f[i,:].max()-f[i,:].min())
-            return fnew
-        
-        stream_len = normalize(self.streamline_length, dir=0)
-        span_len = normalize(self.spanline_length, dir=1)
-
-        plt.figure()
-        plt.plot(span_len[0,:], self.blade_metal_angle[0,:]*180/np.pi, '-o', ms=3, mfc='none', label='leading edge')
-        plt.plot(span_len[-1, :], self.blade_metal_angle[-1, :]*180/np.pi, '-s', ms=3, mfc='none', label='trailing edge')
-        plt.xlabel('Normalized Span Length [-]')
-        plt.ylabel(r'Blade Metal Angle [deg]')
-        plt.grid(alpha=0.2)
-        plt.legend()
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_metal_angle_span.pdf', bbox_inches='tight')
-
-        idx_spans = self.compute_blade_span_indexes(spans, span_len)
-
-        plt.figure()
-        for ispan in idx_spans:
-            plt.plot(stream_len[:, ispan], self.blade_metal_angle[:, ispan] * 180 / np.pi, '-o', ms=3, mfc='none', label='span %.3f' %(span_len[0,ispan]))
-        plt.xlabel('Normalized Stream Length [-]')
-        plt.ylabel(r'Blade Metal Angle [deg]')
-        plt.grid(alpha=0.2)
-        plt.legend()
-        if save_filename is not None:
-            plt.savefig(self.config.get_pictures_folder_path() + '/' + save_filename + '_metal_angle_stream.pdf', bbox_inches='tight')
-
-
-    def plot_inlet_outlet_normal_thickness(self, save_filename=None, folder_name=None, spans=(0, 0.25, 0.5, 0.75, 1)):
-        """
-        Plot normal thickness
-        """
-        idx_spans = self.compute_blade_span_indexes(spans)
-        plt.figure()
-        for ispan in idx_spans:
-            plt.plot(self.streamline_length[:, ispan], self.thk_normal[:, ispan], '-o', ms=3, label='span %.3f' %(self.spanline_length[0,ispan]))
-        plt.xlabel('Meridional Length LE-to-TE [-]')
-        plt.ylabel(r'Blade Thickness [-]')
-        plt.grid(alpha=0.2)
-        plt.legend()
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + 'blade_thickness.pdf', bbox_inches='tight')
-
+            plt.savefig(
+                self.config.get_pictures_folder_path() + '/' + save_filename + '_blade_lean_angle.pdf', 
+                bbox_inches='tight')
 
     def compute_blade_span_indexes(self, spans, span_len):
         """
-        Given a tuple of spans (normalized from 0-hub to 1-tip), return the indexes of the meridional grid as close as possible
-        to those values.
+        Given a tuple of spans (normalized from 0-hub to 1-tip), return the indexes of the meridional grid 
+        as close as possible to those values.
         """
         idx_spans = np.zeros(len(spans), dtype=int)
         span_len = span_len[0, :]
@@ -1711,436 +1001,10 @@ class Blade:
                                                     self.y_paraview[istream, ispan], self.z_paraview[istream, ispan]))
 
 
-    # def process_paraview_dataset_kiwada(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
-    #     """
-    #     Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Kiwada Extraction procedure.
-    #     Average type distinguish the type of average used, raw for standard circumferential.
-    #     Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
-    #     """
-    #     available_avg_types = ['raw', 'density', 'axialMomentum']
-    #     self.avg_type = average_type
-    #     if self.avg_type not in available_avg_types:
-    #         raise ValueError('Not valid average type')
-    #     print('Weighted average type: %s' % self.avg_type)
-
-    #     def extract_grid_location(file_name):
-    #         print('Elaborating Filename: ' + file_name)
-    #         file_name = file_name.strip('spline_data_')
-    #         file_name = file_name.strip('.csv')
-    #         file_name = file_name.split('_')
-    #         nz = int(file_name[0])
-    #         nr = int(file_name[1])
-    #         return nz, nr
-       
-    #     data_dir = folder_path
-    #     files = [f for f in os.listdir(data_dir) if '.csv' in f]
-    #     files = sorted(files)
-
-    #     # give the name of the fields to average
-    #     fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
-    #                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy',
-    #                 'A1', 'A2', 'R2', 'R3', 'T1', 'T2', 'T3',
-    #                 'Tau_rr', 'Tau_tt', 'Tau_zz', 'Tau_rt', 'Tau_rz', 'Tau_tz']
-        
-    #     nz, nr = extract_grid_location(files[-1])
-    #     field_grids = {}
-    #     for field_name in fields:
-    #         field_grids[field_name] = np.zeros((nz+1, nr+1))
-    #     z_grid = np.zeros((nz+1, nr+1))
-    #     r_grid = np.zeros((nz+1, nr+1))
-
-    #     for file in files:
-    #         df = pd.read_csv(data_dir + file)
-    #         data_dict = df.to_dict('list')
-    #         data_dict = {key: np.array(value) for key, value in data_dict.items()}
-
-    #         x = data_dict['Points_0']
-    #         y = data_dict['Points_1']
-    #         z = data_dict['Points_2']
-    #         r = np.sqrt(x ** 2 + y ** 2)
-    #         theta = np.arctan2(y, x)
-    #         stream_id, span_id = extract_grid_location(file)
-    #         z_grid[stream_id, span_id] = np.sum(z) / len(z)
-    #         r_grid[stream_id, span_id] = np.sum(r) / len(r)
-
-    #         # Compute additional fields that will be circumferentially averaged 
-    #         data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
-
-    #         data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
-
-    #         data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
-
-    #         data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
-            
-    #         data_dict['Velocity_Axial'] = data_dict['Velocity_2']
-
-    #         data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
-
-    #         duxdx = data_dict['Velocity_X_Grad_0']
-    #         duxdy = data_dict['Velocity_X_Grad_1']
-    #         duxdz = data_dict['Velocity_X_Grad_2']
-    #         duydx = data_dict['Velocity_Y_Grad_0']
-    #         duydy = data_dict['Velocity_Y_Grad_1']
-    #         duydz = data_dict['Velocity_Y_Grad_2']
-    #         duzdx = data_dict['Velocity_Z_Grad_0']
-    #         duzdy = data_dict['Velocity_Z_Grad_1']
-    #         duzdz = data_dict['Velocity_Z_Grad_2']
-    #         div_u = duxdx+duydy+duzdz
-    #         mu = (data_dict['Laminar_Viscosity']+data_dict['Eddy_Viscosity'])*data_dict['Density']
-
-    #         tauxx = mu*(2*duxdx)-2/3*mu*div_u
-    #         tauyy = mu*(2*duydy)-2/3*mu*div_u
-    #         tauzz_cart = mu*(2*duzdz)-2/3*mu*div_u
-    #         tauxy = mu*(duydx+duxdy)
-    #         tauyz = mu*(duydz+duzdy)
-    #         tauxz = mu*(duxdz+duzdx)
-    #         trace_cart = tauxx+tauyy+tauzz_cart
-
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
-    #         # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
-    #         # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
-    #         # plt.plot(theta*180/pi, trace_cart, '.', label=r'$\tau_{xx} + \tau_{yy} + \tau_{zz}$')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'$\tau$ [Pa]')
-    #         # plt.legend()
-
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, tauxx, '.', label=r'$\tau_{xx}$')
-    #         # plt.plot(theta*180/pi, tauyy, '.', label=r'$\tau_{yy}$')
-    #         # plt.plot(theta*180/pi, tauzz_cart, '.', label=r'$\tau_{zz}$')
-    #         # plt.plot(theta*180/pi, tauxy, '.', label=r'$\tau_{xy}$')
-    #         # plt.plot(theta*180/pi, tauxz, '.', label=r'$\tau_{xz}$')
-    #         # plt.plot(theta*180/pi, tauyz, '.', label=r'$\tau_{yz}$')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'$\tau$ [Pa]')
-    #         # plt.legend()
-
-    #         taurr = np.zeros_like(tauxx) 
-    #         tautt = np.zeros_like(tauxx) 
-    #         tauzz_cyl = np.zeros_like(tauxx) 
-    #         taurt = np.zeros_like(tauxx) 
-    #         taurz = np.zeros_like(tauxx) 
-    #         tautz = np.zeros_like(tauxx) 
-    #         for i in range(len(tauxz)):
-    #             TAU = np.zeros((3,3))
-    #             TAU[0,0] = tauxx[i]
-    #             TAU[0,1] = tauxy[i]
-    #             TAU[0,2] = tauxz[i]
-    #             TAU[1,0] = tauxy[i]
-    #             TAU[1,1] = tauyy[i]
-    #             TAU[1,2] = tauyz[i]
-    #             TAU[2,0] = tauxz[i]
-    #             TAU[2,1] = tauyz[i]
-    #             TAU[2,2] = tauzz_cart[i]
-    #             TAU_cyl = rotate_cartesian_to_cylindric_tensor(theta[i], TAU)
-    #             taurr[i] = TAU_cyl[0,0]
-    #             tautt[i] = TAU_cyl[1,1]
-    #             tauzz_cyl[i] = TAU_cyl[2,2]
-    #             taurt[i] = TAU_cyl[0,1]
-    #             taurz[i] = TAU_cyl[0,2]
-    #             tautz[i] = TAU_cyl[1,2]
-    #         data_dict['Tau_rr'] = taurr
-    #         data_dict['Tau_tt'] = tautt
-    #         data_dict['Tau_zz'] = tauzz_cyl
-    #         data_dict['Tau_rt'] = taurt
-    #         data_dict['Tau_rz'] = taurz
-    #         data_dict['Tau_tz'] = tautz
-    #         # trace_cyl = taurr+tautt+tauzz_cyl
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
-    #         # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
-    #         # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
-    #         # plt.plot(theta*180/pi, trace_cyl, '.', label=r'$\tau_{rr} + \tau_{\theta} + \tau_{zz}$')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'$\tau$ [Pa]')
-    #         # plt.legend()
-
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, trace_cart, 'o', mfc='none', label='Cartesian')
-    #         # plt.plot(theta*180/pi, trace_cyl, 'x', label='Cylindrical')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'Tr$(\tau)$ [Pa]')
-    #         # plt.legend()
-
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, tauzz_cart, 'o', mfc='none', label='Cartesian')
-    #         # plt.plot(theta*180/pi, tauzz_cyl, 'x', label='Cylindrical')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'$\tau_{zz}$ [Pa]')
-    #         # plt.legend()
-            
-    #         # plt.figure()
-    #         # plt.plot(theta*180/pi, taurr, '.', label=r'$\tau_{rr}$')
-    #         # plt.plot(theta*180/pi, tautt, '.', label=r'$\tau_{\theta \theta}$')
-    #         # plt.plot(theta*180/pi, tauzz_cyl, '.', label=r'$\tau_{zz}$')
-    #         # plt.plot(theta*180/pi, taurt, '.', label=r'$\tau_{r \theta}$')
-    #         # plt.plot(theta*180/pi, taurz, '.', label=r'$\tau_{r z}$')
-    #         # plt.plot(theta*180/pi, tautz, '.', label=r'$\tau_{\theta z}$')
-    #         # plt.xlabel(r'$\theta$ [deg]')
-    #         # plt.ylabel(r'$\tau$ [Pa]')
-    #         # plt.legend()
-
-    #         # follow nomenclature page 89 of Magrini
-    #         if inviscid:
-    #             taurr *=0
-    #             tautt *=0
-    #             tauzz_cyl *= 0
-    #             tauzz_cart *= 0
-    #             taurt *= 0
-    #             taurz *= 0
-    #             tautz *= 0
-                
-    #         data_dict['A1'] = data_dict['Density']*data_dict['Velocity_Axial']**2+data_dict['Pressure']-tauzz_cyl
-    #         data_dict['A2'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Radial']-taurz
-    #         data_dict['R2'] = data_dict['Density']*data_dict['Velocity_Radial']**2+data_dict['Pressure']-taurr
-    #         data_dict['R3'] = data_dict['Density']*data_dict['Velocity_Tangential']**2+data_dict['Pressure']-tautt
-    #         data_dict['T1'] = data_dict['Density']*data_dict['Velocity_Axial']*data_dict['Velocity_Tangential']-tautz
-    #         data_dict['T2'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt
-    #         data_dict['T3'] = data_dict['Density']*data_dict['Velocity_Radial']*data_dict['Velocity_Tangential']-taurt 
-
-    #         for field in fields:
-    #             f = data_dict[field].copy()
-    #             if self.avg_type.lower() == 'raw':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
-    #             elif self.avg_type.lower() == 'density':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
-    #             elif self.avg_type.lower() == 'axialMomentum':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
-
-    #     self.meridional_fields = field_grids
-    #     self.meridional_fields['Z'] = z_grid
-    #     self.meridional_fields['R'] = r_grid
-    
-
-    # def process_paraview_dataset_marble(self, folder_path, average_type='raw', CP=1005, R=287, TREF=288.15, PREF=101300, inviscid=False):
-    #     """
-    #     Read the processed dataset stored in folder_path location obtained by the Paraview Macro, for The Marble Extraction procedure.
-    #     Average type distinguish the type of average used, raw for standard circumferential.
-    #     Inviscid=True sets the viscous stresses to zero, leading to inviscid force extraction.
-    #     """
-    #     available_avg_types = ['raw', 'density', 'axialMomentum']
-    #     self.avg_type = average_type
-    #     if self.avg_type not in available_avg_types:
-    #         raise ValueError('Not valid average type')
-    #     print('Weighted average type: %s' % self.avg_type)
-
-    #     def extract_grid_location(file_name):
-    #         print('Elaborating Filename: ' + file_name)
-    #         file_name = file_name.strip('spline_data_')
-    #         file_name = file_name.strip('.csv')
-    #         file_name = file_name.split('_')
-    #         nz = int(file_name[0])
-    #         nr = int(file_name[1])
-    #         return nz, nr
-       
-    #     data_dir = folder_path
-    #     files = [f for f in os.listdir(data_dir) if '.csv' in f]
-    #     files = sorted(files)
-
-    #     # give the name of the fields to average
-    #     fields = ['Density', 'Energy', 'Mach', 'Eddy_Viscosity', 'Pressure', 'Temperature', 'Grid_Velocity_Tangential',
-    #                 'Velocity_Radial', 'Velocity_Tangential', 'Velocity_Tangential_Relative', 'Velocity_Axial', 'Entropy']
-        
-    #     nz, nr = extract_grid_location(files[-1])
-    #     field_grids = {}
-    #     for field_name in fields:
-    #         field_grids[field_name] = np.zeros((nz+1, nr+1))
-    #     z_grid = np.zeros((nz+1, nr+1))
-    #     r_grid = np.zeros((nz+1, nr+1))
-
-    #     for file in files:
-    #         df = pd.read_csv(data_dir + file)
-    #         data_dict = df.to_dict('list')
-    #         data_dict = {key: np.array(value) for key, value in data_dict.items()}
-
-    #         x = data_dict['Points_0']
-    #         y = data_dict['Points_1']
-    #         z = data_dict['Points_2']
-    #         r = np.sqrt(x ** 2 + y ** 2)
-    #         theta = np.arctan2(y, x)
-    #         stream_id, span_id = extract_grid_location(file)
-    #         z_grid[stream_id, span_id] = np.sum(z) / len(z)
-    #         r_grid[stream_id, span_id] = np.sum(r) / len(r)
-
-    #         # Compute additional fields that will be circumferentially averaged 
-    #         data_dict['Velocity_Radial'] = data_dict['Velocity_0']*cos(theta)+data_dict['Velocity_1']*sin(theta)
-
-    #         data_dict['Velocity_Tangential'] = -data_dict['Velocity_0']*sin(theta)+data_dict['Velocity_1']*cos(theta)
-
-    #         data_dict['Grid_Velocity_Tangential'] = -data_dict['Grid_Velocity_0']*sin(theta)+data_dict['Grid_Velocity_1']*cos(theta)
-
-    #         data_dict['Velocity_Tangential_Relative'] = data_dict['Velocity_Tangential']-data_dict['Grid_Velocity_Tangential'] 
-            
-    #         data_dict['Velocity_Axial'] = data_dict['Velocity_2']
-
-    #         data_dict['Entropy'] = CP*np.log(data_dict['Temperature']/TREF)-R*np.log(data_dict['Pressure']/PREF)
-
-    #         for field in fields:
-    #             f = data_dict[field].copy()
-    #             if self.avg_type.lower() == 'raw':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f) / len(f)
-    #             elif self.avg_type.lower() == 'density':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Density']) / np.sum(data_dict['Density'])
-    #             elif self.avg_type.lower() == 'axialMomentum':
-    #                 field_grids[field][stream_id, span_id] = np.sum(f * data_dict['Momentum_2']) / np.sum(data_dict['Momentum_2'])
-
-    #     self.meridional_fields = field_grids
-    #     self.meridional_fields['Z'] = z_grid
-    #     self.meridional_fields['R'] = r_grid
-
-
-    # def contour_meridional_fields(self):
-    #     """
-    #     contour of the fields stored in meridional fields
-    #     """
-    #     output_folder = self.config.get_pictures_folder_path()
-    #     os.makedirs(output_folder, exist_ok=True)
-
-    #     z = self.meridional_fields['Z']
-    #     r = self.meridional_fields['R']
-
-    #     for key, value in self.meridional_fields.items():
-    #         if key!='Z' and key!='R':
-    #             try:
-    #                 contour_template(z, r, value, key)
-    #                 plt.savefig(output_folder + '/%s_%sAvg.pdf' % (key, self.avg_type), bbox_inches='tight')
-    #             except:
-    #                 plt.close()
-    #                 pass
-
-
-    # def compute_additional_meridional_fields(self, CP=1005, R=287, TREF=288.15, PREF=101300):
-    #     """
-    #     Compute additional Meridional Fields.
-    #     WARNING: All these fields are computed using the circumferential averages through some function. For this reason the suffix postAVG is used. 
-    #     It's probably not mathematically correct, since a function of the average is not the same of the average of a function. If that produces error, these fields should be computed
-    #     during the reading process
-    #     """
-    #     self.meridional_fields['Velocity_Meridional_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Axial']**2+
-    #                                                             self.meridional_fields['Velocity_Radial']**2)
-        
-    #     self.meridional_fields['Velocity_Tangential_Relative_postAVG'] = self.meridional_fields['Velocity_Tangential'] - self.config.get_omega_shaft()*self.meridional_fields['R']
-        
-    #     self.meridional_fields['Absolute_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential'],
-    #                                                              self.meridional_fields['Velocity_Axial'])
-        
-    #     self.meridional_fields['Relative_Flow_Angle_postAVG'] = np.arctan2(self.meridional_fields['Velocity_Tangential_Relative'],
-    #                                                              self.meridional_fields['Velocity_Axial'])
-        
-    #     self.meridional_fields['Velocity_Magnitude_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial']**2 +
-    #                                                            self.meridional_fields['Velocity_Tangential']**2 +
-    #                                                            self.meridional_fields['Velocity_Axial']**2)
-        
-    #     self.meridional_fields['Velocity_Magnitude_Relative_postAVG'] = np.sqrt(self.meridional_fields['Velocity_Radial'] ** 2 +
-    #                                                                     self.meridional_fields['Velocity_Tangential_Relative'] ** 2 +
-    #                                                                     self.meridional_fields['Velocity_Axial'] ** 2)
-        
-    #     self.meridional_fields['Mach_Relative_postAVG'] = self.meridional_fields['Velocity_Magnitude_Relative_postAVG']/np.sqrt(
-    #         1.4*self.meridional_fields['Pressure']/self.meridional_fields['Density'])
-
-    #     self.meridional_fields['Entropy_postAVG'] = CP*np.log(self.meridional_fields['Temperature']/TREF)-R*np.log(self.meridional_fields['Pressure']/PREF)
-
-
-    # def extract_body_forces(self, f_turn_method='Thermodynamic', f_loss_method='Thermodynamic'):
-    #     """
-    #     From the meridional fields, extract the body forces
-    #     :param f_turn_method: method selected to extract the turning component of the body force
-    #     :param f_loss_method: method selected to extract the loss component of the body force
-    #     """
-
-    #     # loss component
-    #     self.meridional_fields['Force_Loss'] = np.zeros_like(self.meridional_fields['Z'])
-    #     self.meridional_fields['Force_Tangential'] = np.zeros_like(self.meridional_fields['Z'])
-
-    #     if f_loss_method.lower()=='thermodynamic':
-    #         for jj in range(self.z_camber.shape[1]):
-    #             self.meridional_fields['Force_Loss'][:, jj] = ((self.meridional_fields['Temperature'][:,jj] * (
-    #                              self.meridional_fields['Entropy'][-1,jj]-self.meridional_fields['Entropy'][0,jj])
-    #                              / (self.streamline_length[-1,jj]-self.streamline_length[0,jj])) *
-    #                              np.cos(self.meridional_fields['Relative_Flow_Angle'][:,jj]))
-
-    #     self.meridional_fields['Force_Loss'] = clip_negative_values(self.meridional_fields['Force_Loss'])
-    #     self.meridional_fields['Force_Loss_Axial'] = -self.meridional_fields['Force_Loss']*self.meridional_fields['Velocity_2']/self.meridional_fields['Velocity_Magnitude_Relative']
-    #     self.meridional_fields['Force_Loss_Radial'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
-    #         'Velocity_Radial'] / self.meridional_fields['Velocity_Magnitude_Relative']
-    #     self.meridional_fields['Force_Loss_Tangential'] = -self.meridional_fields['Force_Loss'] * self.meridional_fields[
-    #         'Velocity_Tangential_Relative'] / self.meridional_fields['Velocity_Magnitude_Relative']
-    #     self.meridional_fields['Force_Loss_Normalized'] = self.meridional_fields['Force_Loss']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
-
-    #     if f_turn_method.lower()=='thermodynamic':
-    #         self.meridional_fields['Specific_Angular_Momentum'] = self.r_camber * self.meridional_fields['Velocity_Tangential']
-    #         for jj in range(self.z_camber.shape[1]):
-    #             self.meridional_fields['Force_Tangential'][:, jj] = (self.meridional_fields['Specific_Angular_Momentum'][-1, jj] - self.meridional_fields['Specific_Angular_Momentum'][0, jj]) / (self.streamline_length[-1,jj]-self.streamline_length[0,jj]) * self.meridional_fields['Velocity_Meridional'][:,jj]/self.r_camber[:,jj]
-    #     self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Tangential']-self.meridional_fields['Force_Loss_Tangential']
-    #     self.meridional_fields['Force_Turning'] = self.meridional_fields['Force_Turning_Tangential']/self.n_camber_t
-    #     self.meridional_fields['Force_Turning'] = clip_negative_values(self.meridional_fields['Force_Turning'])
-    #     self.meridional_fields['Force_Turning_Axial'] = self.meridional_fields['Force_Turning'] * self.n_camber_z
-    #     self.meridional_fields['Force_Turning_Radial'] = self.meridional_fields['Force_Turning'] * self.n_camber_r
-    #     self.meridional_fields['Force_Turning_Tangential'] = self.meridional_fields['Force_Turning'] * self.n_camber_t
-    #     self.meridional_fields['Force_Turning_Normalized'] = self.meridional_fields['Force_Turning']/(self.config.get_omega_shaft()**2*self.r_camber[0,-1])
-    #     self.meridional_fields['Total_Force_Magnitude'] = np.sqrt(self.meridional_fields['Force_Loss_Axial']**2+self.meridional_fields['Force_Turning_Axial']**2 +
-    #                                                               self.meridional_fields['Force_Loss_Radial']**2+self.meridional_fields['Force_Turning_Radial']**2 +
-    #                                                               self.meridional_fields['Force_Loss_Tangential']**2+self.meridional_fields['Force_Turning_Tangential']**2)
-    #     self.meridional_fields['Total_Force_Radial'] = self.meridional_fields['Force_Loss_Radial'] + self.meridional_fields[
-    #         'Force_Turning_Radial']
-    #     self.meridional_fields['Total_Force_Tangential'] = self.meridional_fields['Force_Loss_Tangential'] + self.meridional_fields[
-    #         'Force_Turning_Tangential']
-    #     self.meridional_fields['Total_Force_Axial'] = self.meridional_fields['Force_Loss_Axial'] + self.meridional_fields[
-    #         'Force_Turning_Axial']
-
-
-    def plot_body_forces_leading_to_trailing(self, jump=10, save_filename=None, folder_name=None):
-        """
-        plot slices of the body forces and its gradient along streamwise direction from leading to trailing edge
-        :param jump: jump between streamlines from hub to shroud
-        """
-        if folder_name is not None:
-            os.makedirs(folder_name, exist_ok=True)
-
-        stations = np.arange(0, self.z_camber.shape[1], jump)
-        if self.z_camber.shape[1] - 1 not in stations:
-            stations = np.concatenate((stations, np.array([self.z_camber.shape[1] - 1])))
-
-        plt.figure()
-        for ispan in stations:
-            plt.plot(self.streamline_length[:, ispan]/self.streamline_length[-1, ispan], self.meridional_fields['Force_Turning_Normalized'][:, ispan], '-s', ms=3,
-                     label=r'$i_{span}: \ %i/%i$' % (ispan, self.blockage.shape[1] - 1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.ylabel(r'$\bar{f}_{turn} \ \rm{[-]}$')
-        plt.xlabel(r'$\bar{s}_{stw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'f_turning_slices.pdf', bbox_inches='tight')
-
-
-    def plot_body_forces_hub_to_shroud(self, jump=5, save_filename=None, folder_name=None):
-        """
-        plot slices of the loss force along spanwise direction from hub to shroud
-        :param jump: jump between streamlines from hub to shroud
-        """
-        if folder_name is not None:
-            os.makedirs(folder_name, exist_ok=True)
-
-        stations = np.arange(0, self.z_camber.shape[0], jump)
-        if self.z_camber.shape[0]-1 not in stations:
-            stations = np.concatenate((stations, np.array([self.z_camber.shape[0] - 1])))
-
-        plt.figure()
-        for istream in stations:
-            plt.plot(self.meridional_fields['Force_Loss_Normalized'][istream, :], self.spanline_length[istream, :]/self.spanline_length[istream, -1], '-s', ms=3, label=r'$i_{stream}: \ %i/%i$' % (istream, self.blockage.shape[0]-1))
-        plt.legend()
-        plt.grid(alpha=0.3)
-        plt.xlabel(r'$\bar{f}_{loss} \ \rm{[-]}$')
-        plt.ylabel(r'$\bar{s}_{spw} \ \rm{[-]}$')
-        if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '_' + 'f_loss_slices.pdf', bbox_inches='tight')
-
-
     def compute_streamwise_meridional_projection_length(self, z1, r1, theta1, z2, r2, theta2):
         """
-        Given the coordinates defining the two sides of the blade, compute the associated curvilinear abscissa of their projection
-        on the meridional plane (z,r)
+        Given the coordinates defining the two sides of the blade, compute the associated curvilinear 
+        abscissa of their projection on the meridional plane (z,r)
         """
         blade_type = self.config.get_blade_outlet_type()[self.iblade]
         s1 = np.zeros_like(z1)
@@ -2172,7 +1036,8 @@ class Blade:
         else:
             raise ValueError('Unknown blade type')
 
-        # generate the curve from leading edge to trailing edge, deciding automatically which data using thanks to previous bookkeping
+        # generate the curve from leading edge to trailing edge, deciding automatically which data using 
+        # thanks to previous bookkeping
         if inlet_line==1 and outlet_line==2:
             zmeridional, rmeridional = z1[id_LE:], r1[id_LE:]
         elif inlet_line==2 and outlet_line==1:
@@ -2354,56 +1219,6 @@ class Blade:
         return floss 
     
 
-    def contour_template(self, z: np.ndarray, r: np.ndarray, f: np.ndarray, name: str, vmin=None, vmax=None, save_filename=None):
-        """
-        Template function for 2D contours
-        """
-        folder = self.config.get_pictures_folder_path()
-        os.makedirs(folder, exist_ok=True)
-
-        if vmin == None:
-            minval = np.min(f)
-        else:
-            minval = vmin
-        if vmax == None:
-            maxval = np.max(f)
-        else:
-            maxval = vmax
-        
-        if minval==maxval:
-            maxval += 1e-12
-        
-        levels = np.linspace(minval, maxval, N_levels)
-
-        fig, ax = plt.subplots()
-        contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
-        cbar = fig.colorbar(contour)
-        contour = ax.contour(z, r, f, levels=levels, colors='black', vmin = minval, vmax = maxval, linewidths=0.1)
-        plt.title(name)
-        ax.set_aspect('equal', adjustable='box')
-        if save_filename is not None:
-            plt.savefig(folder + '/' + save_filename + '_%sAvg.pdf' % (self.avg_type), bbox_inches='tight')
-    
-
-    # def interpolate_body_force_data(self, filepath, fields_name):
-    #     """
-    #     Interpolate the body force components stored in filepath onto the blade grid
-    #     """
-    #     with open(filepath, 'rb') as file:
-    #         data = pickle.load(file)
-
-    #     z_data = data['Z']
-    #     r_data = data['R']
-    #     return_fields = []
-    #     for field in fields_name:
-    #         contour_template(z_data, r_data, data[field], field+'_reference')
-    #         f = griddata_interpolation_with_linear_extrapolation(z_data, r_data, data[field], self.z_grid, self.r_grid)
-    #         contour_template(z_data, r_data, data[field], field+'_interpolated')
-    #         return_fields.append(f.copy())
-
-    #     return return_fields
-    
-
     def cut_blade_tip(self, clearance_meters):
         """
         Remove every force component in the gap from the shroud described by clearance_meters
@@ -2439,20 +1254,19 @@ class Blade:
         dA1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A1'])[0]
         dA2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['A2'])[1]
         self.meridional_fields['Force_Axial'] = 1/B*dA1dz+1/B/R*dA2dr
-        # contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Axial'][2:-2,2:-2], name='f_axial', vmin=0)
 
         dR1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['A2'])[0]
         dR2dr = compute_gradient_least_square(Z,R, B*R*self.meridional_fields['R2'])[1]
         self.meridional_fields['Force_Radial'] = 1/B*dR1dz+1/B/R*dR2dr-self.meridional_fields['R3']/R
-        # contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Radial'][2:-2,2:-2], name='f_radial')
 
         dT1dz = compute_gradient_least_square(Z, R, B*self.meridional_fields['T1'])[0]
         dT2dr = compute_gradient_least_square(Z, R, B*R*self.meridional_fields['T2'])[1]
         self.meridional_fields['Force_Tangential'] = 1/B*dT1dz + 1/B/R*dT2dr + self.meridional_fields['T3']/R
-        # contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], self.meridional_fields['Force_Tangential'][2:-2,2:-2], name='f_tangential', vmax=0)
 
-        fmag = np.sqrt(self.meridional_fields['Force_Radial']**2+self.meridional_fields['Force_Tangential']**2+self.meridional_fields['Force_Axial']**2)
-        # contour_template(Z[2:-2,2:-2], R[2:-2,2:-2], fmag[2:-2,2:-2], name='f_magnitude')
+        fmag = np.sqrt(
+            self.meridional_fields['Force_Radial']**2 + 
+            self.meridional_fields['Force_Tangential']**2 + 
+            self.meridional_fields['Force_Axial']**2)
 
         ni,nj = R.shape
         self.meridional_fields['Force_Viscous'] = np.zeros((ni,nj))
@@ -2472,9 +1286,9 @@ class Blade:
 
     def cure_hub(self, span_extent, f):
         """
-        For f defined on the meridional grid, cure the field within hub and the span extent. Cure means copying from the first acceptable value outside of the span extent.
+        For f defined on the meridional grid, cure the field within hub and the span extent. 
+        Cure means copying from the first acceptable value outside of the span extent.
         """
-        # contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_before')
         gap = span_extent
         self.compute_spanline_length(normalize=True)
         ni,nj = f.shape
@@ -2484,13 +1298,12 @@ class Blade:
                 j_id = j
                 j += 1
             f[i,0:j_id] = f[i,j_id]
-        # contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
     
     def cure_shroud(self, span_extent, f):
         """
-        For f defined on the meridional grid, cure the field within shroud and the span extent. Cure means copying from the first acceptable value outside of the span extent.
+        For f defined on the meridional grid, cure the field within shroud and the span extent. 
+        Cure means copying from the first acceptable value outside of the span extent.
         """
-        # contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_before')
         self.compute_spanline_length(normalize=True)
         ni,nj = f.shape
         for i in range(ni):
@@ -2499,7 +1312,6 @@ class Blade:
                 j_id = j
                 j -= 1
             f[i,j_id:] = f[i,j_id]
-        # contour_template(self.meridional_fields['Z'], self.meridional_fields['R'], f, 'f_after')
     
     def extrapolate_camber_vector(self):
         self.n_camber_r = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.n_camber_r, stream=True, span=False)
@@ -2565,24 +1377,10 @@ class Blade:
         
         return newField
         
-        
-    
-
-    def smooth_camber_vector(self):
-        smoothing_coefficient = 2
-        self.n_camber_r = gaussian_filter(self.n_camber_r, sigma=smoothing_coefficient)  # sigma controls the smoothing strength
-        self.n_camber_t = gaussian_filter(self.n_camber_t, sigma=smoothing_coefficient)
-        self.n_camber_z = gaussian_filter(self.n_camber_z, sigma=smoothing_coefficient)
-        
-        # renormalize the normal vector
-        self.n_camber_r = self.n_camber_r/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        self.n_camber_t = self.n_camber_t/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        self.n_camber_z = self.n_camber_z/np.sqrt(self.n_camber_r**2+self.n_camber_t**2+self.n_camber_z**2)
-        
-        self.blade_metal_angle = gaussian_filter(self.blade_metal_angle, sigma=smoothing_coefficient)
     
     def extract_body_force(self, metal_angle):
-        """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, compute the relevant body forces fields
+        """Given the meridional fields of the body force extraction procedure stored in the pickle at filepath, 
+        compute the relevant body forces fields
         """
         self.bodyForce = BodyForce(self.config, self.iblade)
         self.bodyForce.InterpolateCircumferentialAveragedFields(self.z_grid, self.r_grid)
@@ -2598,7 +1396,8 @@ class Blade:
         self.bodyForce.HubShroudBodyForceExtrapolation()
         
         calibrationMethod = self.config.get_body_force_calibration_method()
-        self.bodyForce.ComputeCalibrationCoefficients(calibrationMethod, self.n_camber_z, self.n_camber_r, self.n_camber_t, self.blockage)
+        self.bodyForce.ComputeCalibrationCoefficients(
+            calibrationMethod, self.n_camber_z, self.n_camber_r, self.n_camber_t, self.blockage)
         
     
     def interpolate_body_force(self):
@@ -2677,10 +1476,6 @@ class Blade:
         thetaPS = splitter_interpolation(pressSide[0], pressSide[1], pressSide[2], z_eval, r_eval, filler=0)
         thetaSS = splitter_interpolation(suctSide[0], suctSide[1], suctSide[2], z_eval, r_eval, filler=0)
         self.splitterThickness = self.r_grid*(np.abs(thetaPS-thetaSS))
-        
-        # contour_template(self.z_grid, self.r_grid, thetaPS, 'ps')
-        # contour_template(self.z_grid, self.r_grid, thetaSS, 'ss')
-        # contour_template(self.z_grid, self.r_grid, self.splitterThickness, 'splitter thickness')
     
     
     def infer_body_force(self):
@@ -2730,36 +1525,6 @@ class Blade:
                 idxRef = idxOut[0].min()-1
                 self.inviscidForceInference[i, idxOut, :] = self.inviscidForceInference[i, idxRef, :]
                 self.viscousForceInference[i, idxOut, :] = self.viscousForceInference[i, idxRef, :]
-        
-        
-        # # stream direction padding
-        # for j in range(nj):
-        #     idxOut = np.where(streamwiseCoord[:,j] < leLimit)
-        #     if idxOut[0].size > 0:
-        #         idxRef = idxOut[0].max()+1
-        #         self.inviscidForceInference[idxOut, j, :] = 0
-        #         self.viscousForceInference[idxOut, j, :] = 0
-            
-        #     idxOut = np.where(streamwiseCoord[:,j] > teLimit)
-        #     if idxOut[0].size > 0:
-        #         idxRef = idxOut[0].min()-1
-        #         self.inviscidForceInference[idxOut, j, :] = 0
-        #         self.viscousForceInference[idxOut, j, :] = 0
-        
-        # # span direction padding
-        # for i in range(ni):
-        #     idxOut = np.where(spanwiseCoord[i,:] < hubLimit)
-        #     if idxOut[0].size > 0:
-        #         idxRef = idxOut[0].max()+1
-        #         self.inviscidForceInference[i, idxOut, :] = 0
-        #         self.viscousForceInference[i, idxOut, :] = 0
-            
-        #     idxOut = np.where(spanwiseCoord[i,:] > shroudLimit)
-        #     if idxOut[0].size > 0:
-        #         idxRef = idxOut[0].min()-1
-        #         self.inviscidForceInference[i, idxOut, :] = 0
-        #         self.viscousForceInference[i, idxOut, :] = 0
-        
 
         
     def inferBodyForcePolynomials(self, coeffMatrixInference, features):
@@ -2780,37 +1545,6 @@ class Blade:
         
         inviscidCoeff = np.zeros((ni,nj,nk))
         viscousCoeff = np.zeros((ni,nj,nk))
-        
-        # linear interpolation manual
-        # for i in range(ni):
-        #     for j in range(nj):
-        #         st = streamwiseEval[i,j]
-        #         sp = spanwiseEval[i,j]
-                
-        #         # Compute squared Euclidean distance from each grid point to the target
-        #         distSquared = (streamwiseData - st)**2 + (spanwiseData - sp)**2
-                
-        #         # Get indices of N nearest neighbors
-        #         N = 4
-        #         distances = distSquared.ravel()
-        #         nearest_indices_flat = np.argpartition(distances, N)[:N]
-        #         nearest_indices_2d = np.array(np.unravel_index(nearest_indices_flat, streamwiseData.shape)).T
-                
-        #         distSquaredNeighbors = distances[nearest_indices_flat]
-        #         distSquaredNeighbors += np.finfo(float).eps # regularization
-                
-        #         denominator = np.sum(1 / distSquaredNeighbors) # denominator of interpolation
-        #         for iPoint in range(N):
-        #             d2 = distSquaredNeighbors[iPoint]
-            
-        #             idxI = nearest_indices_2d[iPoint][0]
-        #             idxJ = nearest_indices_2d[iPoint][1]
-                    
-        #             inviscidCoeff[i,j] += coeffMatrixInviscid[idxI, idxJ] / d2
-        #             viscousCoeff[i,j] += coeffMatrixViscous[idxI, idxJ] / d2
-                
-        #         inviscidCoeff[i,j] /= denominator
-        #         viscousCoeff[i,j] /= denominator
                 
         #automatic
         for k in range(nk):

@@ -108,9 +108,9 @@ class Surface:
         self.surface = {}
         keys_list = list(self.coords.keys())
         for iSurf in range(self.get_number_profiles()-1):
-            t = np.linspace(0-extension, 1+extension, points_along_profile)  # parameter flowing on one curve tangentially
+            t = np.linspace(0-extension, 1+extension, points_along_profile)  
             if iSurf == 0:
-                s = np.linspace(0-extension, 1, points_between_profiles)  # parameter connecting one curve to the other
+                s = np.linspace(0-extension, 1, points_between_profiles)  
             elif iSurf == self.get_number_profiles()-2:
                 s = np.linspace(0, 1+extension, points_between_profiles)
             else:
@@ -148,12 +148,6 @@ class Surface:
         streamSplineX, streamSplineY, streamSplineZ = [], [], []
         for i, (key, values) in enumerate(self.coords.items()):
             xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], degree=3, u_param=streamKnots)
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111, projection='3d')
-            # ax.plot(values['x'], values['y'], values['z'], '-o', label='1d-Bspline-Points')
-            # ax.plot(xint, yint, zint, ms=1, label='B-spline')
-            # ax.legend()    
-            # ax.set_title('Profile %i' % i)
             streamSplineX.append(xint)
             streamSplineY.append(yint)
             streamSplineZ.append(zint)
@@ -182,26 +176,6 @@ class Surface:
             spanSplineX.append(xint)
             spanSplineY.append(yint)
             spanSplineZ.append(zint)
-        
-        # robust version (needed?)
-        # for key, values in self.cross_coords.items():
-        #     try:
-        #         xint, yint, zint = compute_3dSpline_curve(values['x'], values['y'], values['z'], u_param=s)
-        #         crs_splx.append(xint)
-        #         crs_sply.append(yint)
-        #         crs_splz.append(zint)
-        #     except:
-        #         pass
-
-        # plot the splines that form the surface
-        # if self.config.get_visual_debug():
-        #     fig = plt.figure()
-        #     ax = fig.add_subplot(111, projection='3d')
-        #     for i in range(len(streamSplineX)):
-        #         ax.plot(streamSplineX[i], streamSplineY[i], streamSplineZ[i], 'o', ms=1, label='profile %i' % i, lw=0.5)
-        #     ax.legend()
-        #     for j in range(len(spanSplineX)):
-        #         ax.plot(spanSplineX[j], spanSplineY[j], spanSplineZ[j], 'k', label='spanwise', lw=0.5)
 
         # assign coordinates to the surface data
         streamPoints = stream_resolution

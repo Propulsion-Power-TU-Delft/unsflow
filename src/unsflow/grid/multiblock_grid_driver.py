@@ -166,10 +166,9 @@ class MultiBlockGridDriver:
                 iSplitter += 1
             
             # interpolate and compute geometrical factors on the meridional grid
-            self.blades[iblade].obtain_quantities_on_meridional_grid_thirdversion()
+            self.blades[iblade].compute_quantities_on_meridional_grid()
             self.blades[iblade].plot_blockage_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_blade_camber_angles()
-            self.blades[iblade].compute_blade_camber_curvature()
             self.blades[iblade].plot_camber_normal_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
             self.blades[iblade].compute_endwalls_gaps()
             self.blades[iblade].show_blade_angles_contour(save_filename=self.config.get_machine_name() + '_blade_%02i' % iblade)
