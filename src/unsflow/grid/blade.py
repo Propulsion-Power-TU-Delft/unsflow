@@ -70,7 +70,6 @@ class Blade:
         self.read_from_curve_file(iblade, iblock)
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
-        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.bladefileHasSplitter:>{total_chars_mid}}")
         print(f"{'Blade inlet type:':<{total_chars_mid}}{self.config.get_blade_inlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Blade outlet type:':<{total_chars_mid}}{self.config.get_blade_outlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
@@ -80,7 +79,6 @@ class Blade:
 
 
     def read_from_curve_file(self, iblade, iblock):
-        blade_type = 'MAIN' 
         if self.bladeType == 'main':
             filepath = self.config.get_blade_curve_filepath()[iblade]
         elif self.bladeType == 'splitter':
@@ -91,13 +89,16 @@ class Blade:
         with open(filepath) as f:
             lines = f.readlines()
 
+        # parsing of turbogrid .curve format (does not consider the splitter blade in the main blade file).
+        # The splitter blade must be given in a separate blade file
+        parse_key = 'MAIN' 
         for line in lines:
             line = line.strip()
             words_list = line.split()
             if len(words_list) > 0:
 
                 if words_list[0] == '##':                              
-                    blade_type = words_list[1].upper()
+                    parse_key = words_list[1].upper()
                 elif words_list[0] == '#':                              
                     profile_span = words_list[2]
                 elif (len(words_list) == 3 or len(words_list) == 4):    
@@ -107,7 +108,7 @@ class Blade:
                         self.z.append(-float(words_list[2]))
                     else:
                         self.z.append(float(words_list[2]))
-                    self.blade.append(blade_type)
+                    self.blade.append(parse_key)
                     self.profile.append(profile_span)
 
                     if len(words_list) == 3:
@@ -124,18 +125,12 @@ class Blade:
         self.profile = array(self.profile)
         self.mark = array(self.mark)
 
-        print(f"{'Coordinates rescaled to SI units by factor: ':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
-        self.x *= self.config.get_coordinates_rescaling_factor()
-        self.y *= self.config.get_coordinates_rescaling_factor()
-        self.z *= self.config.get_coordinates_rescaling_factor()
+        rescaling_factor = self.config.get_coordinates_rescaling_factor()
+        self.x *= rescaling_factor
+        self.y *= rescaling_factor
+        self.z *= rescaling_factor
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
-
-        # check if the blade has a splitter blade
-        if np.unique(self.blade).shape[0] > 1:
-            self.bladefileHasSplitter = True
-        else:
-            self.bladefileHasSplitter = False
 
         idx_main_blade = np.where(self.blade == 'MAIN')
         self.x_main = self.x[idx_main_blade]
@@ -171,8 +166,8 @@ class Blade:
             spline_points = splev(u_fine, tck)
 
             # obtain the coordinates of the spline in the blade to blade view
-            te_cutoff = self.config.cutoff_trailing_edge(iblade)
-            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points, te_cutoff)
+            is_te_cutoff = self.config.cutoff_trailing_edge(iblade)
+            r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points, is_te_cutoff)
             
             # distinguish the two sides between pressure and suction
             turningDirection = self.config.get_blade_turning_direction()[iblade]
@@ -195,35 +190,13 @@ class Blade:
                 z_ss, r_ss, theta_ss, m_ss = z2,r2,t2,m2
             else:
                 raise ValueError('Unknown turning direction for blade pressure side detection')
-                
-            # add surface data to dataset
-            self.rss_data.append(r_ss)
-            self.zss_data.append(z_ss)
-            self.thetass_data.append(theta_ss)
-            self.rps_data.append(r_ps)
-            self.zps_data.append(z_ps)
-            self.thetaps_data.append(theta_ps)
-
-            if i in profiles_to_plot:
-                plt.figure()
-                plt.plot(m_ps, r_ps*theta_ps, '-', color='C0', label='Pressure Side')
-                plt.plot(m_ss, r_ss*theta_ss, '-', color='C1', label='Suction Side')
-                plt.plot(mc, rc*tc, '-', color='C2', ms=2, label='Camber')
-                plt.xlabel(r'$m$ [m]')
-                plt.ylabel(r'$r \theta$ [m]')
-                plt.legend()
-                plt.title(f'Profile {i+1} of {number_profiles}')
-                plt.grid(alpha=grid_opacity)
-                plt.gca().set_aspect('equal', adjustable='box')
-                if i in profiles_to_plot:
-                    plt.savefig(
-                        self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' 
-                        %(self.iblade, self.bladeType,(i+1)/number_profiles), 
-                        bbox_inches='tight')
 
             self.camberSurface.add_curve(rc*np.cos(tc), rc*np.sin(tc), zc)
             self.pressureSurface.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
             self.suctionSurface.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
+            
+            if i in profiles_to_plot:
+                self.plot_b2b_profile(i, m_ps, r_ps*theta_ps, m_ss, r_ss*theta_ss, mc, rc*tc, number_profiles)
 
         self.camberSurface.bspline_surface_generation()
         self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = \
@@ -254,6 +227,7 @@ class Blade:
         ax.set_zlabel('z')      
         ax.set_title('Reconstructed blade surfaces')
         ax.set_aspect('equal')
+        plt.tight_layout()
         
         self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface = \
             self.compute_surface_normal_vectors(
@@ -524,25 +498,6 @@ class Blade:
             tol *= 10
         point = np.mean(intersection_points, axis=0)
         return point
-
-
-    def plot_blade_points(self, save_filename=None, folder_name=None):
-        """
-        Plot the blade points. Distinguish between main or main and splitter blade
-        """
-        fig = plt.figure(figsize=self.picture_size_blank)
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.x_main, self.y_main, self.z_main, label='main blade')
-        if self.bladefileHasSplitter:
-            ax.scatter(self.x_splitter, self.y_splitter, self.z_splitter, label='splitter blade')
-        ax.set_xlabel(r'$x$')
-        ax.set_ylabel(r'$y$')
-        ax.set_zlabel(r'$z$')
-        fig.legend()
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
-
 
     # def obtain_quantities_on_meridional_grid(self, smooth=1):
     #     """
@@ -993,35 +948,6 @@ class Blade:
             ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], span_v[0], span_v[1], span_v[2], length=arrow_len, color='green')
             ax.quiver(xgrid[i, j], ygrid[i, j], zgrid[i, j], normal[0], normal[1], normal[2], length=arrow_len, color='blue')
         return normal
-
-
-    def render_full_annulus(self, n_blades, render_splitter=False, save_filename=None, folder_name=None):
-        """
-        it plots all the blades around the full annulus of the machine.
-        :param n_blades: how many blades the machines has.
-        :param render_splitter: if True plots also the splitter blade, if present
-        :param save_filename: if specified, saves the plots with the given name
-        """
-
-        fig = plt.figure(figsize=self.picture_size_blank)
-        ax = fig.add_subplot(111, projection='3d')
-        for i in range(0, n_blades):
-            ax.scatter(self.r_main * np.cos(self.theta_main + i * 2 * np.pi / n_blades),
-                       self.r_main * np.sin(self.theta_main + i * 2 * np.pi / n_blades), self.z_main,
-                       label='blade %1.d' % (i + 1))
-
-            if (self.bladefileHasSplitter and render_splitter):
-                ax.scatter(self.r_splitter * np.cos(self.theta_splitter + i * 2 * np.pi / n_blades),
-                           self.r_splitter * np.sin(self.theta_splitter + i * 2 * np.pi / n_blades), self.z_splitter)
-
-        ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.3)
-        ax.set_xlabel(r'$x$')
-        ax.set_ylabel(r'$y$')
-        ax.set_zlabel(r'$z$')
-        fig.legend()
-        if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
-
 
     def find_inlet_points(self):
         """
@@ -2940,10 +2866,22 @@ class Blade:
         
         
     
-    
-        
-        
-        
+    def plot_b2b_profile(self, iprofile, x_ps, y_ps, x_ss, y_ss, x_c, y_c, number_profiles):
+        plt.figure()
+        plt.plot(x_ps, y_ps, '-', color='C0', label='Pressure Side')
+        plt.plot(x_ss, y_ss, '-', color='C1', label='Suction Side')
+        plt.plot(x_c, y_c, '-.', color='C2', ms=2, label='Camber')
+        plt.xlabel(r'$m$ [m]')
+        plt.ylabel(r'$r \theta$ [m]')
+        plt.legend()
+        plt.title(f'Profile {iprofile+1} of {number_profiles}')
+        plt.grid(alpha=grid_opacity)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.tight_layout()
+        plt.savefig(
+            self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' 
+            %(self.iblade, self.bladeType,(iprofile+1)/number_profiles), 
+            bbox_inches='tight')
         
         
 
