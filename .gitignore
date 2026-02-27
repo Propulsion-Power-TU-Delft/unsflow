@@ -67,7 +67,7 @@ Thumbs.db
 *.drg
 *.vtu
 *.dat
-*.curve
+# *.curve
 *.inf
 
 
