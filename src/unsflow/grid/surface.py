@@ -20,15 +20,8 @@ from shapely.geometry import LineString
 from scipy.spatial import KDTree
 
 class Surface:
-    """
-    class used for the surface generation by means of curves lofting.
-    """
 
     def __init__(self, name ,config):
-        """
-        General constructor.
-        :param name: string with the name of the surface
-        """
         self.name = name
         self.coords = {}
         self.config = config

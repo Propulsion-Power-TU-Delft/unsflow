@@ -516,7 +516,7 @@ class Block:
 
         # primary grid points
         if primary_grid_points:
-            plt.scatter(self.z_grid.flatten(), self.r_grid.flatten(), c='black', s=scatter_point_size,
+            plt.scatter(self.z_grid.flatten(), self.r_grid.flatten(), c='black', s=marker_size,
                         label='primary grid nodes')
 
         # secondary grid
@@ -530,7 +530,7 @@ class Block:
             plt.scatter(self.z_grid, self.r_grid, marker='+', s=marker_size_small, c='black')
 
         if secondary_grid_points:
-            plt.scatter(self.z_grid_dual.flatten(), self.r_grid_dual.flatten(), c='red', s=scatter_point_size,
+            plt.scatter(self.z_grid_dual.flatten(), self.r_grid_dual.flatten(), c='red', s=marker_size,
                         label='secondary grid nodes')
 
         if primary_grid_points or secondary_grid_points or outline:

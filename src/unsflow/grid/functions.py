@@ -356,8 +356,6 @@ def elliptic_grid_generation(
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                 elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                elif method == 'intersection':
-                    xb_new, yb_new = find_updated_point(X0[:, 0], Y0[:, 0], xp_new, yp_new, xb_old, yb_old, yb_prime)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, 0] = xb_new
@@ -366,8 +364,6 @@ def elliptic_grid_generation(
             # TOP EDGE
             x = c_top[0, :]
             y = c_top[1, :]
-            # x = X[:, -1]
-            # y = Y[:, -1]
             y_prime = np.gradient(y, x)
             for istream in range(1, nx - 1):
                 xb_old = X_old[istream, -1]
@@ -380,8 +376,6 @@ def elliptic_grid_generation(
                     xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                 elif method == 'minimize':
                     xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                elif method == 'intersection':
-                    xb_new, yb_new = find_updated_point(X0[:, -1], Y0[:, -1], xp_new, yp_new, xb_old, yb_old, yb_prime)
                 else:
                     raise ValueError('Select a valid method for borders adjustment!')
                 X[istream, -1] = xb_new
@@ -405,8 +399,6 @@ def elliptic_grid_generation(
                         xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                    elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[0, :], Y0[0, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[0, ispan] = xb_new
@@ -416,8 +408,6 @@ def elliptic_grid_generation(
             if not fix_outlet:
                 x = c_right[0, :]
                 y = c_right[1, :]
-                # x = X[-1, :]
-                # y = Y[-1, :]
                 y_prime = np.gradient(y, x)
                 for ispan in range(1, ny - 1):
                     xb_old = X_old[-1, ispan]
@@ -430,8 +420,6 @@ def elliptic_grid_generation(
                         xb_new, yb_new = find_corresponding_point(sol[0], sol[1], x, y, xb_old, yb_old, guardian=guardian)
                     elif method == 'minimize':
                         xb_new, yb_new = find_optimized_point(sol[0], sol[1], x, y, xp_new, yp_new)
-                    elif method == 'intersection':
-                        xb_new, yb_new = find_updated_point(X0[-1, :], Y0[-1, :], xp_new, yp_new, xb_old, yb_old, yb_prime)
                     else:
                         raise ValueError('Select a valid method for borders adjustment!')
                     X[-1, ispan] = xb_new
@@ -741,36 +729,6 @@ def find_corresponding_point(xb_new, yb_new, x, y, xb_old, yb_old, guardian=True
                 yb_new = yb_old
 
     return xb_new, yb_new
-
-
-# def find_updated_point(x, y, xp_new, yp_new, xb_old, yb_old, yb_prime):
-#     """
-#     Depending on which (xb_new, yb_new) is different from none, find the updated border point through an optimization problem,
-#     minimizing the distance of the new point distance from the old point.
-#     xb_old, yb_old are the cordinates of the previous iteration
-#     :param x: set of x points of the border curve.
-#     :param y: set of y points of the border curve.
-#     :param xp_new: new x cordinate of the inner point close to the border.
-#     :param yp_new: new y cordinate of the inner point close to the border.
-#     :param xb_old: old x cordinate of the border point.
-#     :param yb_old: old y cordinate of the border point.
-#     :param yb_prime: derivative of the function at the border
-#     """
-#     from intersect import intersection
-#     u = np.linspace(-0.1, 0.1, 5000)
-#     from scipy.interpolate import make_interp_spline
-#     u_border = np.linspace(0, 1, len(x))
-#     xspline_border = make_interp_spline(u_border, x, k=1)
-#     yspline_border = make_interp_spline(u_border, y, k=1)
-#     x_grid_line = xp_new + u * (-yb_prime)
-#     y_grid_line = yp_new + u * 1
-#     xb_new, yb_new = intersection(x_grid_line, y_grid_line, xspline_border(u_border), yspline_border(u_border))
-#     try:
-#         xb_new, yb_new = xb_new[0], yb_new[0]
-#     except:
-#         xb_new, yb_new = xb_old, yb_old
-
-#     return xb_new, yb_new
 
 
 def find_optimized_point(xb_new, yb_new, x, y, xp_new, yp_new):
@@ -1890,3 +1848,6 @@ def fill_nans_2d(arr):
     filled[mask] = arr[tuple(idx)][mask]
 
     return filled
+
+def compute_cartesian_coords(r, t, z):
+    return r*np.cos(t), r*np.sin(t), z

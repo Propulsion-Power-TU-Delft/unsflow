@@ -30,9 +30,6 @@ from scipy.ndimage import gaussian_filter
 
 
 class Blade:
-    """
-    class that stores the information regarding the blade topology.
-    """
 
     def __init__(self, config, iblock, iblade, bladeType):
         """
@@ -46,20 +43,25 @@ class Blade:
         `iblock` : grid block counter
         
         `iblade`: blade counter
+        
+        `bladeType`: main or splitter
         """
         print_banner('BLADE %02i %s' %(iblade, bladeType))
         self.config = config
+        
         self.x = []
         self.y = []
         self.z = []
-        self.blade = []  # main or splitter type
-        self.profile = []  # span level
-        self.mark = []  # leading, trailing edge
+        self.blade = []  
+        self.profile = []  
+        self.mark = []  
         self.leading_edge = []
         self.trailing_edge = []
+        
         self.pressureSurface = Surface('Pressure Surface', config)
         self.suctionSurface = Surface('Suction Surface', config)
         self.camberSurface = Surface('Camber Surface', config)
+        
         self.iblock = iblock
         self.iblade = iblade
         self.bladeType = bladeType
@@ -68,7 +70,7 @@ class Blade:
         self.read_from_curve_file(iblade, iblock)
         print(f"{'Rescale Factor [-]:':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         print(f"{'Reference Length [m]:':<{total_chars_mid}}{self.config.get_reference_length():>{total_chars_mid}.3f}")
-        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+        print(f"{'Splitter Blade:':<{total_chars_mid}}{self.bladefileHasSplitter:>{total_chars_mid}}")
         print(f"{'Blade inlet type:':<{total_chars_mid}}{self.config.get_blade_inlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Blade outlet type:':<{total_chars_mid}}{self.config.get_blade_outlet_type()[iblade]:>{total_chars_mid}}")
         print(f"{'Method used for blade camber reconstruction:':<{total_chars_mid}}{self.config.get_blades_camber_reconstruction()[self.iblade]:>{total_chars_mid}}")
@@ -78,25 +80,7 @@ class Blade:
 
 
     def read_from_curve_file(self, iblade, iblock):
-        """
-        Reads from a specific format of file, which has been generated during blade generation (e.g. BladeGen).
-        
-        Parameters
-        -----------------------------------
-
-        `config` : configuration object
-        
-        `iblock` : grid block counter
-        
-        `iblade`: blade counter
-
-        `poly_degree`: degree of the polynomial fitting the blade
-
-        `blade_dataset`: ordered if the points are on one side, and then on the other side. As it should be. Not order is deprecated, it could work badly.
-
-        `camber_stream_points`: points in the streamwise direction to obtain the curvilinear absicssa for each profile
-        """
-        blade_type = 'MAIN' # this is just used to read the cords
+        blade_type = 'MAIN' 
         if self.bladeType == 'main':
             filepath = self.config.get_blade_curve_filepath()[iblade]
         elif self.bladeType == 'splitter':
@@ -112,11 +96,11 @@ class Blade:
             words_list = line.split()
             if len(words_list) > 0:
 
-                if words_list[0] == '##':                               # this rows defines the blade type (main or splitter)
+                if words_list[0] == '##':                              
                     blade_type = words_list[1].upper()
-                elif words_list[0] == '#':                              # this rows define the span of the profile described below
+                elif words_list[0] == '#':                              
                     profile_span = words_list[2]
-                elif (len(words_list) == 3 or len(words_list) == 4):    # this rows has the coordinate of the blade points
+                elif (len(words_list) == 3 or len(words_list) == 4):    
                     self.x.append(float(words_list[0]))
                     self.y.append(float(words_list[1]))
                     if self.config.invert_axial_coordinates():
@@ -127,13 +111,12 @@ class Blade:
                     self.profile.append(profile_span)
 
                     if len(words_list) == 3:
-                        self.mark.append('')                            # it is a normal point on the surface
+                        self.mark.append('')                            
                     else:
-                        self.mark.append(words_list[-1])                # it is defined as leading or trailing edge point (optional)
+                        self.mark.append(words_list[-1])                
                 else:
-                    pass                                                # ignore different type of lines
+                    pass                                               
 
-        # convert in numpy arrays
         self.x = array(self.x, dtype=float)
         self.y = array(self.y, dtype=float)
         self.z = array(self.z, dtype=float)
@@ -141,47 +124,39 @@ class Blade:
         self.profile = array(self.profile)
         self.mark = array(self.mark)
 
-        # rescale the coordinates to SI units
         print(f"{'Coordinates rescaled to SI units by factor: ':<{total_chars_mid}}{self.config.get_coordinates_rescaling_factor():>{total_chars_mid}.3f}")
         self.x *= self.config.get_coordinates_rescaling_factor()
         self.y *= self.config.get_coordinates_rescaling_factor()
         self.z *= self.config.get_coordinates_rescaling_factor()
-
-        if self.config.get_normalize_coordinates():
-            self.x /= self.config.get_reference_length()
-            self.y /= self.config.get_reference_length()
-            self.z /= self.config.get_reference_length()
-
         self.theta = np.arctan2(self.y, self.x)
         self.r = np.sqrt(self.x ** 2 + self.y ** 2)
 
         # check if the blade has a splitter blade
         if np.unique(self.blade).shape[0] > 1:
-            self.splitter = True
+            self.bladefileHasSplitter = True
         else:
-            self.splitter = False
-        print(f"{'Blade coordinate file contains splitter blade:':<{total_chars_mid}}{self.splitter:>{total_chars_mid}}")
+            self.bladefileHasSplitter = False
 
-        self.idx_main = np.where(self.blade == 'MAIN')
-        self.x_main = self.x[self.idx_main]
-        self.y_main = self.y[self.idx_main]
-        self.z_main = self.z[self.idx_main]
-        self.r_main = self.r[self.idx_main]
-        self.theta_main = self.theta[self.idx_main]
+        idx_main_blade = np.where(self.blade == 'MAIN')
+        self.x_main = self.x[idx_main_blade]
+        self.y_main = self.y[idx_main_blade]
+        self.z_main = self.z[idx_main_blade]
+        self.r_main = self.r[idx_main_blade]
+        self.theta_main = self.theta[idx_main_blade]
 
-        self.number_profiles = np.unique(self.profile).shape[0]
-        print(f"{'Number of profiles:':<{total_chars_mid}}{self.number_profiles:>{total_chars_mid}}")
         main_profiles = np.unique(self.profile)
         main_profiles = [int(prof) for prof in main_profiles]
         main_profiles.sort()
+        number_profiles = len(main_profiles)
+        print(f"{'Number of profiles:':<{total_chars_mid}}{number_profiles:>{total_chars_mid}}")
         
         self.thickness = {}
         self.rc_data, self.thetac_data, self.zc_data, self.thk_data = [], [], [], []
         self.rss_data, self.thetass_data, self.zss_data = [], [], []
         self.rps_data, self.thetaps_data, self.zps_data = [], [], []
         
-        profiles_to_plot = [0, self.number_profiles//4, self.number_profiles//2, 3*self.number_profiles//4, self.number_profiles-1] # hub, mid and shroud
-        for i in range(self.number_profiles):
+        profiles_to_plot = [0, number_profiles//4, number_profiles//2, 3*number_profiles//4, number_profiles-1] 
+        for i in range(number_profiles):
             idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
             z = self.z_main[idx]
             r = self.r_main[idx]
@@ -192,23 +167,12 @@ class Blade:
             # spline of the profile in 3D
             splineOrder = self.config.get_blade_profiles_spline_order()[self.iblade]
             tck, u = splprep([x, y, z], k=splineOrder, s=0)
-            u_fine = np.linspace(0, 1, 5000) #5000 points seems like covering good any blade profile
+            u_fine = np.linspace(0, 1, 5000)
             spline_points = splev(u_fine, tck)
 
             # obtain the coordinates of the spline in the blade to blade view
             te_cutoff = self.config.cutoff_trailing_edge(iblade)
             r1,t1,m1,z1, r2,t2,m2,z2, rc,tc,mc,zc = self.compute_meridional_coordinate(spline_points, te_cutoff)
-            
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111, projection='3d')
-            # ax.scatter(x, y, z, c='C0', marker='o', label="Points")
-            # ax.plot(*spline_points, c='C1', label=f"Spline order: {splineOrder}")
-            # ax.plot(rc*np.cos(tc), rc*np.sin(tc), zc, c='C2', label="reconstructed Camber")
-            # ax.set_xlabel('x')
-            # ax.set_ylabel('y')
-            # ax.set_zlabel('z')
-            # ax.set_aspect('equal')            
-            # ax.legend()
             
             # distinguish the two sides between pressure and suction
             turningDirection = self.config.get_blade_turning_direction()[iblade]
@@ -232,7 +196,6 @@ class Blade:
             else:
                 raise ValueError('Unknown turning direction for blade pressure side detection')
                 
-            
             # add surface data to dataset
             self.rss_data.append(r_ss)
             self.zss_data.append(z_ss)
@@ -240,25 +203,6 @@ class Blade:
             self.rps_data.append(r_ps)
             self.zps_data.append(z_ps)
             self.thetaps_data.append(theta_ps)
-
-            # t_norm = self.compute_blade_thickness_normal_to_camber(mc, rc*tc, 
-            #                                                         m_ps, r_ps * theta_ps, 
-            #                                                         m_ss, r_ss * theta_ss)
-            
-            # t_tang = self.compute_blade_thickness_tangential(mc, rc*tc,
-            #                                                     m_ps, r_ps * theta_ps, 
-            #                                                     m_ss, r_ss * theta_ss)
-            
-            # if self.config.get_visual_debug():
-            #     plt.figure()
-            #     plt.plot(mc, t_norm, label='normal to camber')
-            #     plt.plot(mc, t_tang, label=r'$\theta$ direction')
-            #     plt.grid(alpha=0.2)
-            #     plt.legend()
-            #     plt.xlabel(r'$s$ [m]')
-            #     plt.ylabel(r'$t$ [m]')
-
-            # metal_angle = self.compute_metal_angle_along_camber(s_camber, rtheta_camber)
 
             if i in profiles_to_plot:
                 plt.figure()
@@ -268,41 +212,42 @@ class Blade:
                 plt.xlabel(r'$m$ [m]')
                 plt.ylabel(r'$r \theta$ [m]')
                 plt.legend()
-                plt.title(f'Profile {i+1} of {self.number_profiles}')
+                plt.title(f'Profile {i+1} of {number_profiles}')
                 plt.grid(alpha=grid_opacity)
                 plt.gca().set_aspect('equal', adjustable='box')
                 if i in profiles_to_plot:
-                    plt.savefig(self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' %(self.iblade, self.bladeType,(i+1)/self.number_profiles), bbox_inches='tight')
-
-            # self.thickness['z'] = z_camber
-            # self.thickness['r'] = r_camber
-            # self.thickness['t'] = t_tang
+                    plt.savefig(
+                        self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' 
+                        %(self.iblade, self.bladeType,(i+1)/number_profiles), 
+                        bbox_inches='tight')
 
             self.camberSurface.add_curve(rc*np.cos(tc), rc*np.sin(tc), zc)
             self.pressureSurface.add_curve(r_ps*np.cos(theta_ps), r_ps*np.sin(theta_ps), z_ps)
             self.suctionSurface.add_curve(r_ss*np.cos(theta_ss), r_ss*np.sin(theta_ss), z_ss)
 
-            # tCamb.append(t_tang)
-            # kappaCamb.append(metal_angle)
-
-
         self.camberSurface.bspline_surface_generation()
-        self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = self.camberSurface.get_global_bspline_surface(method='cylindrical')
+        self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface = \
+            self.camberSurface.get_global_bspline_surface(method='cylindrical')
         
         self.pressureSurface.bspline_surface_generation()
-        self.r_psSurface, self.theta_psSurface, self.z_psSurface = self.pressureSurface.get_global_bspline_surface(method='cylindrical')
+        self.r_psSurface, self.theta_psSurface, self.z_psSurface = \
+            self.pressureSurface.get_global_bspline_surface(method='cylindrical')
 
         self.suctionSurface.bspline_surface_generation()
-        self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = self.suctionSurface.get_global_bspline_surface(method='cylindrical')
+        self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface = \
+            self.suctionSurface.get_global_bspline_surface(method='cylindrical')
         
-        # check the full reconstructed blade
-        def cartesian_points(r, t, z):
-            return r*np.cos(t), r*np.sin(t), z
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
-        ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
-        # ax.plot_surface(*(cartesian_points(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface)), alpha=0.5)
+        ax.plot_surface(
+            *(compute_cartesian_coords(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), 
+            alpha=0.5)
+        ax.plot_surface(
+            *(compute_cartesian_coords(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), 
+            alpha=0.5)
+        ax.plot_surface(
+            *(compute_cartesian_coords(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface)), 
+            alpha=0.5)
         ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=2)
         ax.set_xlabel('x')
         ax.set_ylabel('y')
@@ -310,19 +255,12 @@ class Blade:
         ax.set_title('Reconstructed blade surfaces')
         ax.set_aspect('equal')
         
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_surface(*(cartesian_points(self.r_psSurface, self.theta_psSurface, self.z_psSurface)), alpha=0.5)
-        # ax.plot_surface(*(cartesian_points(self.r_ssSurface, self.theta_ssSurface, self.z_ssSurface)), alpha=0.5)
-        ax.plot_surface(*(cartesian_points(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface)), alpha=0.5)
-        ax.plot(self.x_main, self.y_main, self.z_main, 'o', color='k', ms=2)
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')      
-        ax.set_title('Reconstructed blade camber')
-        ax.set_aspect('equal')
-        
-        self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface = self.compute_surface_normal_vectors(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, coords='cylindrical')
+        self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface = \
+            self.compute_surface_normal_vectors(
+                self.r_camberSurface, 
+                self.theta_camberSurface, 
+                self.z_camberSurface, 
+                coords='cylindrical')
         
         turningDirection = self.config.get_blade_turning_direction()[iblade]
         avgValue = np.mean(self.nt_camberSurface)
@@ -336,9 +274,6 @@ class Blade:
             self.nr_camberSurface = -self.nr_camberSurface
             self.nz_camberSurface = -self.nz_camberSurface
         
-        # if self.config.get_visual_debug():
-        #     self.plot_surface_normals(self.r_camberSurface, self.theta_camberSurface, self.z_camberSurface, self.nr_camberSurface, self.nt_camberSurface, self.nz_camberSurface, 'cylindric', 'Camber Surface Normals')
-    
     
     def plot_surface_normals(self, x1, x2, x3, nx1, nx2, nx3, coordsFrame, title, interval=10):
         def cartesian_points(r, t, z):
@@ -598,7 +533,7 @@ class Blade:
         fig = plt.figure(figsize=self.picture_size_blank)
         ax = fig.add_subplot(111, projection='3d')
         ax.scatter(self.x_main, self.y_main, self.z_main, label='main blade')
-        if self.splitter:
+        if self.bladefileHasSplitter:
             ax.scatter(self.x_splitter, self.y_splitter, self.z_splitter, label='splitter blade')
         ax.set_xlabel(r'$x$')
         ax.set_ylabel(r'$y$')
@@ -1075,7 +1010,7 @@ class Blade:
                        self.r_main * np.sin(self.theta_main + i * 2 * np.pi / n_blades), self.z_main,
                        label='blade %1.d' % (i + 1))
 
-            if (self.splitter and render_splitter):
+            if (self.bladefileHasSplitter and render_splitter):
                 ax.scatter(self.r_splitter * np.cos(self.theta_splitter + i * 2 * np.pi / n_blades),
                            self.r_splitter * np.sin(self.theta_splitter + i * 2 * np.pi / n_blades), self.z_splitter)
 
