@@ -1575,7 +1575,6 @@ class Blade:
         if 'blade_angles' in outputFields:
             
             outputDict['bladeMetalAngle'] = self.blade_metal_angle
-            outputDict['bladeCamberCurvature'] = self.camber_curvature
             outputDict['bladeLeanAngle'] = self.blade_lean_angle
             outputDict['bladeGasPathAngle'] = self.gas_path_angle
         

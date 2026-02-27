@@ -90,7 +90,6 @@ class Block:
         
         if 'blade_angles' in outputFields:
             self.bfmFields['bladeMetalAngle'] = np.zeros((self.nstream, self.nspan))
-            self.bfmFields['bladeCamberCurvature'] = np.zeros((self.nstream, self.nspan))
             self.bfmFields['bladeLeanAngle'] = np.zeros((self.nstream, self.nspan))
             self.bfmFields['bladeGasPathAngle'] = np.zeros((self.nstream, self.nspan))
         
