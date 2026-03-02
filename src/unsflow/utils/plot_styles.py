@@ -14,7 +14,7 @@ font_colorbar = 24
 font_colorbar_axes = 18
 
 marker_size_big = 12.5
-marker_size = 7.5
+marker_size = 5
 marker_size_small = 2
 
 heavy_line_width = 3

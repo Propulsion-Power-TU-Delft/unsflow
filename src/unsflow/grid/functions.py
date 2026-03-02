@@ -1851,3 +1851,7 @@ def fill_nans_2d(arr):
 
 def compute_cartesian_coords(r, t, z):
     return r*np.cos(t), r*np.sin(t), z
+
+
+def compute_flow_averaged_quantity_along_span(quantity, span, velocity_meridional):
+    return np.trapz(quantity*velocity_meridional, span) / np.trapz(velocity_meridional, span)

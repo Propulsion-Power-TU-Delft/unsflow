@@ -322,20 +322,26 @@ def marble_postprocessing(folderpath, files, nstream, nspan):
         
         zgrid[stream_id, span_id] = np.mean(z)
         rgrid[stream_id, span_id] = np.mean(r)
-    
-    # plt.figure()
-    # plt.scatter(zgrid, rgrid, 'b.')
-    # plt.show()
         
     for iFile, file in enumerate(files):
         df = pd.read_csv(folderpath + '/' + file)
         splineData = df.to_dict('list')
         splineData = {key: np.array(value) for key, value in splineData.items()}
             
-        splineData['Velocity_Radial'] = splineData['Velocity (m/s)_0']*np.cos(theta)+splineData['Velocity (m/s)_1']*np.sin(theta)
-        splineData['Velocity_Tangential'] = -splineData['Velocity (m/s)_0']*np.sin(theta)+splineData['Velocity (m/s)_1']*np.cos(theta)
-        drag_speed_tangential = -splineData['Grid Velocity (m/s)_0']*np.sin(theta) + splineData['Grid Velocity (m/s)_1']*np.cos(theta)
+        splineData['Velocity_Radial'] = (
+            splineData['Velocity (m/s)_0']*np.cos(theta) + splineData['Velocity (m/s)_1']*np.sin(theta)
+            )
+        
+        splineData['Velocity_Tangential'] = (
+            -splineData['Velocity (m/s)_0']*np.sin(theta) + splineData['Velocity (m/s)_1']*np.cos(theta)
+            )
+        
+        drag_speed_tangential = (
+            -splineData['Grid Velocity (m/s)_0']*np.sin(theta) + splineData['Grid Velocity (m/s)_1']*np.cos(theta)
+            )
+        
         splineData['Velocity_Tangential_Relative'] = splineData['Velocity_Tangential'] - drag_speed_tangential
+        
         splineData['Velocity_Axial'] = splineData['Velocity (m/s)_2']
 
         if iFile == 0: # initialize the field_grids dictionary
