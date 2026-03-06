@@ -1855,3 +1855,17 @@ def compute_cartesian_coords(r, t, z):
 
 def compute_flow_averaged_quantity_along_span(quantity, span, velocity_meridional):
     return np.trapz(quantity*velocity_meridional, span) / np.trapz(velocity_meridional, span)
+
+def plot_twodimensional_grid(X, Y, frame='cartesian'):
+    ni, nj = X.shape
+    for i in range(ni):
+        plt.plot(X[i,:], Y[i,:], 'k', linewidth=0.5)
+    for j in range(nj):
+        plt.plot(X[:,j], Y[:,j], 'k', linewidth=0.5)
+    
+    if frame.lower()=='cartesian':
+        plt.xlabel(r'$x$')
+        plt.ylabel(r'$y$')
+    else:
+        plt.xlabel(r'$r$')
+        plt.ylabel(r'$\theta$')
