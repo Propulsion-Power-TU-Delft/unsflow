@@ -22,7 +22,8 @@ line_width = 1
 medium_line_width = 2
 light_line_width = 0.5
 
-N_levels = 25
+N_levels_coarse = 10
+N_levels_coarse = 25
 N_levels_medium = 50
 N_levels_fine = 100
 color_map = cm.turbo

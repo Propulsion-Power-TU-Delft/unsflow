@@ -275,7 +275,7 @@ class SunModel:
 
         if domain == 'spectral' or domain == 'all':
             plt.figure()
-            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.J, levels=N_levels, cmap=color_map)
+            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.J, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.title(r'$J$')
@@ -284,7 +284,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_J_xi_eta.pdf', bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.dzdx, levels=N_levels, cmap=color_map)
+            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.dzdx, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.title(r'$\frac{\partial \hat{z}}{\partial \xi}$')
@@ -293,7 +293,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_dz_dxi.pdf', bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.dzdy, levels=N_levels, cmap=color_map)
+            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.dzdy, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
@@ -302,7 +302,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_dz_deta.pdf', bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.drdx, levels=N_levels, cmap=color_map)
+            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.drdx, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
@@ -311,7 +311,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_dr_dxi.pdf', bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.drdy, levels=N_levels, cmap=color_map)
+            plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.drdy, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$\xi \ \mathrm{[-]}$')
             plt.ylabel(r'$\eta \ \mathrm{[-]}$')
             plt.colorbar()
@@ -321,7 +321,7 @@ class SunModel:
 
         if domain == 'physical' or domain == 'all':
             plt.figure()
-            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dxdr, levels=N_levels, cmap=color_map)
+            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dxdr, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$z \ \mathrm{[-]}$')
             plt.ylabel(r'$r \ \mathrm{[-]}$')
             plt.colorbar()
@@ -331,7 +331,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_dxi_dr.pdf', bbox_inches='tight')  # plt.close()
 
             plt.figure()
-            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dxdz, levels=N_levels, cmap=color_map)
+            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dxdz, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$z \ \mathrm{[-]}$')
             plt.ylabel(r'$r \ \mathrm{[-]}$')
             plt.colorbar()
@@ -341,7 +341,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_dxi_dz.pdf', bbox_inches='tight')  # plt.close()
 
             plt.figure()
-            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dydr, levels=N_levels, cmap=color_map)
+            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dydr, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$z \ \mathrm{[-]}$')
             plt.ylabel(r'$r \ \mathrm{[-]}$')
             plt.colorbar()
@@ -351,7 +351,7 @@ class SunModel:
                 plt.savefig(folder_name + '/' + save_filename + '_deta_dr.pdf', bbox_inches='tight')  # plt.close()
 
             plt.figure()
-            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dydz, levels=N_levels, cmap=color_map)
+            plt.contourf(self.grid.zGrid, self.grid.rGrid, self.dydz, levels=N_levels_coarse, cmap=color_map)
             plt.xlabel(r'$z \ \mathrm{[-]}$')
             plt.ylabel(r'$r \ \mathrm{[-]}$')
             plt.colorbar()
@@ -367,7 +367,7 @@ class SunModel:
         :param folder_name: folder name
         """
         plt.figure()
-        plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.grid.zGrid, levels=N_levels, cmap=color_map)
+        plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.grid.zGrid, levels=N_levels_coarse, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$z(\xi, \eta)$')
@@ -376,7 +376,7 @@ class SunModel:
             plt.savefig(folder_name + '/' + save_filename + '_z_xi_eta.pdf', bbox_inches='tight')
 
         plt.figure()
-        plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.grid.rGrid, levels=N_levels, cmap=color_map)
+        plt.contourf(self.gridSpectral.zGrid, self.gridSpectral.rGrid, self.grid.rGrid, levels=N_levels_coarse, cmap=color_map)
         plt.xlabel(r'$\xi \ \mathrm{[-]}$')
         plt.ylabel(r'$\eta \ \mathrm{[-]}$')
         plt.title(r'$r(\xi, \eta)$')

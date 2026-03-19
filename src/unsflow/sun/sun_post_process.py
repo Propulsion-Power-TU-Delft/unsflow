@@ -137,7 +137,7 @@ class PostProcessSun():
 
 
             for i, (ax, field, title) in enumerate(zip(axs, fields, titles)):
-                cf = ax.contourf(z, r, field, levels=N_levels, cmap=modes_map)
+                cf = ax.contourf(z, r, field, levels=N_levels_coarse, cmap=modes_map)
                 ax.set_title(title)
                 if set_aspect_equal:
                     ax.set_aspect('equal', adjustable='box')

@@ -1116,7 +1116,7 @@ def contour_template(z, r, f, name,
         
         os.makedirs(folder_name, exist_ok=True)
         
-        levels = np.linspace(minval, maxval, N_levels)
+        levels = np.linspace(minval, maxval, N_levels_coarse)
         fig, ax = plt.subplots()
         contour = ax.contourf(z, r, f, levels=levels, cmap=color_map, vmin = minval, vmax = maxval)
         
@@ -1659,7 +1659,7 @@ def scatter_template(x, y, z, xname='Streamwise', yname='Spanwise', zname='Z', s
 # template function for the triangulate contour of scatter plots
 def tricontour_template(x, y, z, xname='Streamwise', yname='Spanwise', zname='Z', save_filename = None, colorbar=True):
     plt.figure()
-    contour = plt.tricontourf(x, y, z, levels=N_levels, cmap=color_map)
+    contour = plt.tricontourf(x, y, z, levels=N_levels_coarse, cmap=color_map)
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.axis('equal')

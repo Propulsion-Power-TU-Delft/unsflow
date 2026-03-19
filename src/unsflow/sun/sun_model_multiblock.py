@@ -343,7 +343,7 @@ class SunModelMultiBlock():
             df = mode.eigenfrequency.imag / self.config.get_reference_omega()
 
             plt.figure()
-            plt.contourf(z, r, mode.eigen_rho, levels=N_levels, cmap=modes_map)
+            plt.contourf(z, r, mode.eigen_rho, levels=N_levels_coarse, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{\rho}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -355,7 +355,7 @@ class SunModelMultiBlock():
                 plt.savefig(save_foldername + '/' + save_filename + '_rho_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(z, r, mode.eigen_ur, levels=N_levels, cmap=modes_map)
+            plt.contourf(z, r, mode.eigen_ur, levels=N_levels_coarse, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{r,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -367,7 +367,7 @@ class SunModelMultiBlock():
                 plt.savefig(save_foldername + '/' + save_filename + '_ur_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels, cmap=modes_map)
+            plt.contourf(z, r, mode.eigen_utheta, levels=N_levels_coarse, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{\theta,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -379,7 +379,7 @@ class SunModelMultiBlock():
                 plt.savefig(save_foldername + '/' + save_filename + '_ut_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(z, r, mode.eigen_uz, levels=N_levels, cmap=modes_map)
+            plt.contourf(z, r, mode.eigen_uz, levels=N_levels_coarse, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{u}_{z,%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
@@ -391,7 +391,7 @@ class SunModelMultiBlock():
                 plt.savefig(save_foldername + '/' + save_filename + '_uz_%i_%i_%i.pdf' % (Nz, Nr, imode), bbox_inches='tight')
 
             plt.figure()
-            plt.contourf(z, r, mode.eigen_p, levels=N_levels, cmap=modes_map)
+            plt.contourf(z, r, mode.eigen_p, levels=N_levels_coarse, cmap=modes_map)
             plt.xlabel(r'$z$ [-]')
             plt.ylabel(r'$r$ [-]')
             plt.title(r'$\tilde{p}_{%i}: \  \hat{\omega} = [%.2f,%.2f j]$' % (imode, rs, df))
