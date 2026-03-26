@@ -16,12 +16,10 @@ class BodyForce:
     def __init__(self, config, iblade):
         self.config = config
         self.iblade = iblade
-        self.bodyForceFields = {} # contaning the body force fields
-        self.meridionalFields = {} # contaning all the meridional fields
-
+        self.bodyForceFields = {} 
+        self.meridionalFields = {} 
         
         
-    
     def InterpolateCircumferentialAveragedFields(self, zgrid, rgrid):
         """Interpolate the circumferentially averaged fields on the grid used for body force simulations
 

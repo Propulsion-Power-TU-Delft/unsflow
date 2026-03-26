@@ -17,7 +17,7 @@ from sklearn.linear_model import LinearRegression
 import plotly.graph_objects as go
 import plotly.io as pio
 from scipy import ndimage
-
+import pandas as pd
 
 
 def cluster_points(n, shrink_effect=3.5, border='default'):
@@ -1869,3 +1869,8 @@ def plot_twodimensional_grid(X, Y, frame='cartesian'):
     else:
         plt.xlabel(r'$r$')
         plt.ylabel(r'$\theta$')
+
+
+
+
+    

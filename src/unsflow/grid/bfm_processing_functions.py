@@ -6,7 +6,7 @@ from unsflow.grid.functions import *
 import os
 from scipy.interpolate import interp1d
 import pandas as pd
-
+import copy
 
 # SOME GLOBAL QUANTITIES
 gamma = 1.4
@@ -428,3 +428,221 @@ def merge_chima_profiles_with_cturbobfm_grid(gridFilePath, profilesPath, visualD
         df.to_csv(f, index=False)
     print(f"New grid file with Chima profiles saved to {output_file}")
         
+        
+        
+def read_cturbobfm_grid_file(filepath, return_type='dict_structured'):
+    with open(filepath, 'r') as f:
+        ni = int(f.readline().strip().split('=')[1])
+        nj = int(f.readline().strip().split('=')[1])
+        nk = int(f.readline().strip().split('=')[1])
+
+    df = pd.read_csv(filepath, skiprows=3)
+    print(f"File {filepath} contains the following grid sizes:")
+    print(f"NI = {ni}, NJ = {nj}, NK = {nk}")
+    print()
+    
+    if return_type != 'dict_structured':
+        return df
+    else:
+        print("Returning structured dataset in a dict")
+        dict = {}
+        for key in df.keys():
+            dict[key] = df[key].values.reshape((ni,nj,nk))
+        return dict
+        
+    
+    
+def compute_body_forces(
+    grid, 
+    data, 
+    index_le, 
+    index_te, 
+    method='Marble', 
+    tangential_force_method='local', 
+    loss_force_method='global'):
+    
+    if method.lower()!='marble':
+        raise NotImplementedError
+    
+    Tref = 288.15
+    Pref = 101325
+    cp = 1005
+    R = 287
+    
+    ni, nj, nk = grid['x'].shape
+    
+    # interpolate needed fields on dict spanning only the blade
+    blade = {}
+    for key in grid.keys():
+        blade[key] = grid[key][index_le:index_te+1, :, 0]
+    
+    blade['r'] = np.sqrt(blade['y']**2 + blade['z']**2)
+    blade['ax'] = blade['x']
+    blade['stwl'] = compute_meridional_streamwise_coordinates(blade['ax'], blade['r'])
+    
+    # compute further fields on data structure, before interpolating
+    data['rut'] = data['Velocity_Tangential']*data['Radial_Coordinate']
+    data['drut_dz'], data['drut_dr'] = compute_gradient_least_square(
+        data['Axial_Coordinate'], 
+        data['Radial_Coordinate'], 
+        data['rut'])
+    data['Entropy'] = cp * np.log(data['Temperature (K)']/Tref) - R * (data['Pressure (Pa)']/Pref)
+    data['ds_dz'], data['ds_dr'] = compute_gradient_least_square(
+        data['Axial_Coordinate'], 
+        data['Radial_Coordinate'], 
+        data['Entropy'])
+    
+    # interpolate data on blade grid
+    for key in data.keys():
+            blade[key] = robust_griddata_interpolation_with_linear_filler(data['Axial_Coordinate'], 
+                                                                          data['Radial_Coordinate'],
+                                                                          data[key],
+                                                                          blade['ax'],
+                                                                          blade['r'])
+   
+    # compute tangential force
+    nib, njb = blade['ax'].shape
+    blade['Velocity_Meridional'] = np.sqrt(blade['Velocity_Axial']**2 + blade['Velocity_Radial']**2)
+
+    if tangential_force_method.lower() == 'global':
+        drut_dm = np.zeros((nib,njb))
+        for i in range(1, nib):
+            drut_dm[i,:] = (blade['r'][i,:]*blade['Velocity_Tangential'][i,:] - 
+                            blade['r'][0,:]*blade['Velocity_Tangential'][0,:]) / (
+                            blade['stwl'][i,:]-blade['stwl'][0,:]) 
+        ftheta = drut_dm * blade['Velocity_Meridional']/blade['r']
+    else:
+        ftheta = (1/blade['r']) * (
+            blade['drut_dz'] * blade['Velocity_Axial'] + blade['drut_dr'] * blade['Velocity_Radial']
+        )
+    
+    # compute loss component
+    w = np.sqrt(blade['Velocity_Axial']**2 + blade['Velocity_Radial']**2 + blade['Velocity_Tangential_Relative']**2)
+    blade['Velocity_Relative_Mag'] = w
+    blade['fp'] = np.zeros((nib,njb))
+    if loss_force_method.lower() == 'global':
+        for i in range(nib):
+            blade['fp'][i,:] = (
+                blade['Velocity_Meridional'][i,:] * blade['Temperature (K)'][i,:] / w[i,:] * 
+                (blade['Entropy'][-1,:]-blade['Entropy'][0,:]) / (blade['stwl'][-1,:]-blade['stwl'][0,:])
+            )
+    else:
+        blade['fp'] = blade['Temperature (K)'] / w * (
+            blade['ds_dz'] * blade['Velocity_Axial'] + blade['ds_dr'] * blade['Velocity_Radial']
+        )
+    
+    fntheta = ftheta - blade['fp']*blade['Velocity_Tangential_Relative']/w    
+    blade['fn'] = np.zeros((nib,njb))
+    for i in range(nib):
+        for j in range(njb):
+            nhat = np.array([grid['normalAxial'][index_le+i, j, 0],
+                          grid['normalRadial'][index_le+i, j, 0],
+                          grid['normalTangential'][index_le+i, j, 0]])
+            nhat /= np.linalg.norm(nhat)
+            
+            what = np.array([blade['Velocity_Axial'][i,j],
+                             blade['Velocity_Radial'][i,j],
+                             blade['Velocity_Tangential_Relative'][i,j]])
+            what /= np.linalg.norm(what)
+            
+            fnhat = nhat - np.dot(nhat, what)*what
+            fnhat /= np.linalg.norm(fnhat)
+            
+            blade['fn'][i,j] = fntheta[i,j] / fnhat[2]
+    
+    return blade
+
+
+def extrapolate_body_forces(blade, hub_distance=0.05, shroud_distance=0.05, turning=True, loss=False):
+    blade_new = copy.deepcopy(blade)
+    
+    blade_new['spwl_normalized'] = compute_meridional_spanwise_coordinates(blade_new['ax'], blade_new['r'], normalize=True)
+    ni, nj = blade_new['spwl_normalized'].shape
+    
+    # extrapolate hub
+    idx = np.argmin(np.abs(blade_new['spwl_normalized'][0, :] - hub_distance))
+    if turning:
+        blade_new['fn'][:, :idx+1] = blade_new['fn'][:, [idx]]  
+    if loss:
+        blade_new['fp'][:, :idx+1] = blade_new['fp'][:, [idx]]
+    
+    # extrapolate shroud
+    idx = np.argmin(np.abs(blade_new['spwl_normalized'][-1, :] - (1.0-shroud_distance)))
+    if turning:
+        blade_new['fn'][:, idx:] = blade_new['fn'][:, [idx-1]]
+    if loss:
+        blade_new['fp'][:, idx:] = blade_new['fp'][:, [idx-1]]
+    
+    return blade_new
+
+
+def clip_body_forces(blade, vmin=None, vmax=None):
+    blade_new = copy.deepcopy(blade)
+    
+    if vmin is not None:
+        blade_new['fn'][blade_new['fn']<vmin] = vmin
+        blade_new['fp'][blade_new['fp']<vmin] = vmin
+    if vmax is not None:
+        blade_new['fn'][blade_new['fn']>vmax] = vmax
+        blade_new['fp'][blade_new['fp']>vmax] = vmax
+    
+    return blade_new
+
+
+def remove_tip_gap(blade, clearance, turning=True, loss=False):
+    blade_new = copy.deepcopy(blade)
+    spwl = compute_meridional_spanwise_coordinates(blade_new['ax'], blade_new['r'], normalize=False)
+    
+    distance_shroud = np.zeros_like(spwl)
+    for j in range(distance_shroud.shape[1]):
+        distance_shroud[:, j] = spwl[:, -1] - spwl[:, j]
+    
+    idx = np.where(distance_shroud <= clearance)
+    if turning:
+        blade_new['fn'][idx] = 0.0
+    if loss:
+        blade_new['fp'][idx] = 0.0
+    
+    return blade_new
+
+def compute_thollet_lift_drag_coefficients(blade, nblades):
+    ni, nj = blade['fn'].shape
+    
+    h = blade['r']*2*np.pi/nblades
+    beta_m = np.zeros_like(blade['fn'])
+    for i in range(ni):
+        for j in range(nj):
+            n_blade = np.array(
+                [blade['normalAxial'][i,j], 
+                 blade['normalRadial'][i,j], 
+                 blade['normalTangential'][i,j]])
+            e_theta = np.array(
+                [0.0, 
+                 0.0, 
+                 1.0])
+            beta_m[i,j] = -np.arccos(np.dot(n_blade, e_theta))
+            
+    contour_template(blade['ax'], blade['r'], beta_m*180/np.pi, 'beta_m-deg')
+    h_star = h*np.cos(beta_m)
+    contour_template(blade['ax'], blade['r'], h_star, 'h-star')
+    
+    
+    sigma = np.zeros_like(blade['fn'])
+    for i in range(ni):
+        for j in range(nj):
+            sigma[i,j] = blade['stwl'][-1,j]/h[i,j]
+    contour_template(blade['ax'], blade['r'], sigma, 'sigma')
+    
+    beta_flow = np.arctan2(blade['Velocity_Tangential_Relative'], blade['Velocity_Meridional'])
+    contour_template(blade['ax'], blade['r'], beta_flow*180/np.pi, 'beta_flow-deg')
+    
+    blade['thollet_beta0'] = beta_flow - blade['fn'] * h_star / (2*np.pi*sigma*blade['Velocity_Relative_Mag']**2)
+    contour_template(blade['ax'], blade['r'], blade['thollet_beta0']*180/np.pi, 'thollet_beta0-deg')
+    
+    blade['thollet_beta_eta_max'] = beta_flow
+    contour_template(blade['ax'], blade['r'], blade['thollet_beta_eta_max']*180/np.pi, 'thollet_beta_eta_max-deg')
+    
+    blade['thollet_kp_eta_max'] = blade['fp'] * h_star / (blade['Velocity_Relative_Mag']**2)
+    contour_template(blade['ax'], blade['r'], blade['thollet_kp_eta_max'], 'thollet_kp_eta_max')
+    
+    return blade
