@@ -1763,7 +1763,7 @@ def plot_line_template(x_tuple, y_tuple, labels=None, xname=r'$x$', yname=r'$y$'
 
 
 def write_3D_cturbobfm_csv_input_distribution_file(dataset, outputFilename='CTurboBFM_Mesh', outputFolder='Grids'):
-    """Function to generate input 2D file
+    """Function to generate inlet distribution 2D file
 
     Args:
         dataset (_type_): _description_

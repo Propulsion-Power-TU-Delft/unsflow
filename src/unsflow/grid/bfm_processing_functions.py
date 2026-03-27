@@ -589,7 +589,7 @@ def clip_body_forces(blade, vmin=None, vmax=None):
     return blade_new
 
 
-def remove_tip_gap(blade, clearance, turning=True, loss=False):
+def remove_tip_gap(blade, clearance, turning=True, loss=True):
     blade_new = copy.deepcopy(blade)
     spwl = compute_meridional_spanwise_coordinates(blade_new['ax'], blade_new['r'], normalize=False)
     
@@ -602,6 +602,8 @@ def remove_tip_gap(blade, clearance, turning=True, loss=False):
         blade_new['fn'][idx] = 0.0
     if loss:
         blade_new['fp'][idx] = 0.0
+    
+    blade_new['bladePresent'][idx] = 0
     
     return blade_new
 
@@ -636,13 +638,77 @@ def compute_thollet_lift_drag_coefficients(blade, nblades):
     beta_flow = np.arctan2(blade['Velocity_Tangential_Relative'], blade['Velocity_Meridional'])
     contour_template(blade['ax'], blade['r'], beta_flow*180/np.pi, 'beta_flow-deg')
     
-    blade['thollet_beta0'] = beta_flow - blade['fn'] * h_star / (2*np.pi*sigma*blade['Velocity_Relative_Mag']**2)
-    contour_template(blade['ax'], blade['r'], blade['thollet_beta0']*180/np.pi, 'thollet_beta0-deg')
+    blade['liftDragBeta0'] = beta_flow - blade['fn'] * h_star / (2*np.pi*sigma*blade['Velocity_Relative_Mag']**2)
+    contour_template(blade['ax'], blade['r'], blade['liftDragBeta0']*180/np.pi, 'thollet_beta0-deg')
     
-    blade['thollet_beta_eta_max'] = beta_flow
-    contour_template(blade['ax'], blade['r'], blade['thollet_beta_eta_max']*180/np.pi, 'thollet_beta_eta_max-deg')
+    blade['liftDragBetaEtamax'] = beta_flow
+    contour_template(blade['ax'], blade['r'], blade['liftDragBetaEtamax']*180/np.pi, 'thollet_beta_eta_max-deg')
     
-    blade['thollet_kp_eta_max'] = blade['fp'] * h_star / (blade['Velocity_Relative_Mag']**2)
-    contour_template(blade['ax'], blade['r'], blade['thollet_kp_eta_max'], 'thollet_kp_eta_max')
+    blade['liftDragKpEtamax'] = blade['fp'] * h_star / (blade['Velocity_Relative_Mag']**2)
+    contour_template(blade['ax'], blade['r'], blade['liftDragKpEtamax'], 'thollet_kp_eta_max')
+    
+    contour_template(blade['ax'], blade['r'], (-blade['liftDragBeta0']+beta_flow)*180/np.pi, 'beta_flow_minus_beta0-deg')
     
     return blade
+
+def write_complemented_cturbobfm_grid_file(
+    grid, 
+    blade, 
+    idxLe, 
+    idxTe, 
+    model='lift_drag', 
+    filename='grid.csv'):
+    
+    ni, nj, nk = grid['x'].shape
+    
+    if model.lower() == 'lift_drag':
+        additional_fields = ['liftDragBeta0', 'liftDragBetaEtamax', 'liftDragKpEtamax', 'bladePresent']
+    else:    
+        raise NotImplementedError
+    
+    for field in additional_fields:
+        grid[field] = np.zeros((ni,nj,nk))
+        
+        for k in range(nk):
+            grid[field][idxLe:idxTe+1,:,k] = blade[field]
+
+        contour_template(grid['x'][:,:,0], grid['y'][:,:,0], grid[field][:,:,0], field)
+    
+    write_cturbobfm_grid_file(grid, filename)
+
+
+def write_cturbobfm_grid_file(dataset, filename):
+        FMT = '%.15g'
+        ni, nj, nk = dataset['x'].shape
+        
+        outfolder = 'output'
+        os.makedirs(outfolder, exist_ok=True)
+        filepath = '%s/%s_%02i_%02i_%02i.csv' % (outfolder, filename, ni, nj, nk)
+        
+        with open(filepath, 'w') as f:
+            f.write('NI=%i\n' % ni)
+            f.write('NJ=%i\n' % nj)
+            f.write('NK=%i\n' % nk)
+            for key in dataset.keys():
+                if key == 'x':
+                    f.write('%s' % key)
+                else:
+                    f.write(',%s' % key)
+            f.write('\n')
+            for i in range(ni):
+                for j in range(nj):
+                    for k in range(nk):
+                        for key, values in dataset.items():
+                            if key == 'x':
+                                f.write(FMT % values[i,j,k])
+                            elif key == 'y' or key == 'z':
+                                f.write(',' + FMT % values[i,j,k])
+                            else:
+                                f.write(',' + FMT % values[i,j])
+                        f.write('\n')
+    
+    
+    
+    
+    
+    
