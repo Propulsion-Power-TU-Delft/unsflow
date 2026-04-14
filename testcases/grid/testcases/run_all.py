@@ -19,6 +19,8 @@ def run_main_py(base_dir: Path):
             if result.returncode != 0:
                 print(f"⚠ Warning: {path} did not finish successfully (exit code {result.returncode})")
                 failed_scripts.append(path)
+            else:
+                print(f"\tSuccessful run!\n")
         except Exception as e:
             print(f"⚠ Error running {path}: {e}")
             failed_scripts.append(path)
