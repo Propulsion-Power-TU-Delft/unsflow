@@ -1,6 +1,6 @@
 # unsflow
 
-`unsflow` is a Python package developed to support the analysis of compressor instabilities and the post-processing of CFD simulations.
+Python package developed to support the analysis of compressor instabilities and the post-processing of CFD simulations.
 
 The framework integrates multiple reduced-order stability models with dedicated tools for geometry handling and data analysis, enabling reproducible and research-oriented workflows for turbomachinery applications.
 
