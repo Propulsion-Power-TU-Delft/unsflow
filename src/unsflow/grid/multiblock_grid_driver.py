@@ -248,7 +248,7 @@ class MultiBlockGridDriver:
                 print('SU2 mesh file written in %s/mesh_%.4f.su2' %(outputFolder, self.multiBlockGrid.deltatheta_periodic))
             
             elif outputType.lower()=='meridional_splines':
-                spanValues = [0.2, 0.5, 0.8] # default span values, modify if needed
+                spanValues = [0.1, 0.3, 0.5, 0.7, 0.9] # default span values, modify if needed
                 for span in spanValues:
                     self.multiBlockGrid.export_meridional_spline(folder=outputFolder, filename='meridional_spline_%.2f' %span, span=span)
             
