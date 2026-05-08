@@ -1,0 +1,12 @@
+name: unsflow
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.12
+  - matplotlib=3.8
+  - ipykernel
+  - nbformat
+  - scikit-learn
+  - coolprop

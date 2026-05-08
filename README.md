@@ -29,7 +29,7 @@ The package is organized into modular components, each focused on a specific mod
 
 * Go to the root folder and create a new python environment (unsflow) through the .yml file:
 ```bash
-conda env create -f unsflow_env.yml
+conda env create -f environment.yml
 ```
 
 * Activate the environment:
