@@ -5,21 +5,33 @@ channels:
 
 dependencies:
   - python=3.9
+
+  # Core scientific stack
   - numpy
   - scipy
   - matplotlib=3.8
   - scikit-learn
+
+  # Jupyter
   - ipykernel
   - nbformat
+
+  # Scientific libraries
   - coolprop
+  - hdf5
+  - cython
+  - pkg-config
+  - pycgns
+
+  # Pip support
   - pip
 
+  # Pip-only packages
   - pip:
       - findiff
       - h5py
       - pandas
       - plotly
-      - pycgns
       - pytest
       - pyvista
       - pywavelets
