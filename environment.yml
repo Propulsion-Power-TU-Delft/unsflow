@@ -4,9 +4,25 @@ channels:
   - conda-forge
 
 dependencies:
-  - python=3.12
+  - python=3.9
+  - numpy
+  - scipy
   - matplotlib=3.8
+  - scikit-learn
   - ipykernel
   - nbformat
-  - scikit-learn
   - coolprop
+  - pip
+
+  - pip:
+      - findiff
+      - h5py
+      - pandas
+      - plotly
+      - pycgns
+      - pytest
+      - pyvista
+      - pywavelets
+      - shapely
+      - sympy
+      - vtk
