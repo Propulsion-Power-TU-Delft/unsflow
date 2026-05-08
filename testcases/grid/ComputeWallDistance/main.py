@@ -8,7 +8,7 @@ N = 5000
 
 
     
-inputFile = "lscc.csv"
+inputFile = "hecc.csv"
 with open(inputFile, 'r') as f:
         ni = int(f.readline().strip().split('=')[1])
         nj = int(f.readline().strip().split('=')[1])
@@ -45,4 +45,4 @@ plt.title('Wall Distance')
 
 
 
-# plt.show()
+plt.show()
