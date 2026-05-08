@@ -4,8 +4,8 @@ import os
 from scipy.optimize import fsolve
 from unsflow.utils.plot_styles import *
 import pickle
-from greitzer.src.greitzer import Greitzer
-from greitzer.src.config import Config
+from unsflow.greitzer.greitzer import Greitzer
+from unsflow.greitzer.config import Config
 
 
 with open('results/unstable.pkl', 'rb') as f:
