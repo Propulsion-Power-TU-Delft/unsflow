@@ -45,13 +45,26 @@ for i in range(len(deltax)):
     pole_dn.append(pole[idx_dn])
     dx.append(deltax[i])
 
+
+
+# read ref data
+ref_data = []
+for n in ["1", "2", "3", "4"]:
+    ref = np.loadtxt(f"ref_data/ref_line_{n}.csv", skiprows=1, dtype=float, delimiter=',')
+    ref_data.append(ref)
+
+
+
+
+
+
 pole_up = np.array([item for sublist in pole_up for item in sublist])
 pole_dn = np.array([item for sublist in pole_dn for item in sublist])
 colormap = 'viridis'
 plt.figure(figsize=(6, 4))
 colors = np.linspace(0, 1, len(pole_up))
 plt.scatter(pole_up.real, -pole_up.imag, c=colors, s=20, cmap=colormap)
-idx = np.where(-pole_dn.imag>-0.5)
+idx = np.where(-pole_dn.imag>-0.38)
 pole_dn = pole_dn[idx]
 colors = np.linspace(0, 1, len(pole_dn))
 scatter = plt.scatter(pole_dn.real, -pole_dn.imag, c=colors, s=20, cmap=colormap)
@@ -69,34 +82,43 @@ plt.savefig('pictures/root_locus_complex_plane.pdf', bbox_inches='tight')
 
 
 
-plt.figure(figsize=(6, 5))
+plt.figure(figsize=(6, 4.5))
 step = 1
 alpha=1
 ms=10
 for i in range(len(deltax)):
-    first_key = list(poles[i].keys())[0]w
+    first_key = list(poles[i].keys())[0]
     real_part = poles[i][first_key].real
     imag_part = -poles[i][first_key].imag
     deltax_var = np.zeros(len(real_part)) + deltax[i]
     if i == 0:
-        plt.scatter(deltax_var[::step], real_part[::step], edgecolors='C0', facecolors='none', marker='o', label=r'$\sigma_3$', alpha=alpha, s=ms)
-        # plt.scatter(deltax_var[::step], imag_part[::step], c='C0', marker='^', label=r'$\omega_3$', alpha=alpha, s=ms)
+        plt.scatter(deltax_var[0], real_part[0], c='C0', marker='o', label=r'$\sigma_3$', alpha=alpha, s=ms*2)
+        plt.scatter(deltax_var[0], imag_part[0], c='C1', marker='^', label=r'$\omega_3$', alpha=alpha, s=ms*2)
     else:
         if deltax[i]>0.4:  # avoid spurious eigenvalues
-            idx = np.where(imag_part>-0.4)
-            plt.scatter(deltax_var[idx][::step], real_part[idx][::step], edgecolors='C0', facecolors='none', marker='o', alpha=alpha, s=ms)
-            # plt.scatter(deltax_var[idx][::step], imag_part[idx][::step], c='C0', marker='^', alpha=alpha, s=ms)
+            idx = np.where(imag_part>-0.35)
+            plt.scatter(deltax_var[idx][::step], real_part[idx][::step], c='C0', marker='o', alpha=alpha, s=ms)
+            plt.scatter(deltax_var[idx][::step], imag_part[idx][::step], c='C1', marker='^', alpha=alpha, s=ms)
         else:
-            plt.scatter(deltax_var[::step], real_part[::step], edgecolors='C0', facecolors='none', marker='o', alpha=alpha, s=ms)
-            # plt.scatter(deltax_var[::step], imag_part[::step], c='C0', marker='^', alpha=alpha, s=ms)
+            plt.scatter(deltax_var[::step], real_part[::step], c='C0', marker='o', alpha=alpha, s=ms)
+            plt.scatter(deltax_var[::step], imag_part[::step], c='C1', marker='^', alpha=alpha, s=ms)
+
+for i in range(len(ref_data)):
+    if i==0:
+        plt.plot(ref_data[i][:, 0], ref_data[i][:, 1], '--kx', label='Reference')
+    else:
+        plt.plot(ref_data[i][:, 0], ref_data[i][:, 1], '--kx')
+
+
+
 plt.xlim([0, 1])
-plt.ylim([-1.5, 0.25])
+plt.ylim([-1.5, 2.0])
 plt.axhline(0, color='red', linestyle='--')
 # plt.title('Root Locus')
 plt.grid(alpha=0.2)
-# plt.legend()
+plt.legend()
 plt.xlabel(r'$\Delta x$')
-plt.ylabel(r'$\sigma_3$')
+plt.ylabel(r'$\sigma_3, \omega_3$')
 plt.tight_layout()
 
 plt.savefig('pictures/root_locus_variable_deltx.pdf', bbox_inches='tight')
