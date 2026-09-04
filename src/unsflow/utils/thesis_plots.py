@@ -16,26 +16,26 @@ def set_thesis_style():
     """
 
     mpl.rcParams.update({
-            # Existing typography settings
-            "text.usetex": True,
-            "text.latex.preamble": latex_preamble,
-            "font.family": "serif",
-            "font.size": 10,
-            "axes.titlesize": 10,
-            "axes.labelsize": 10,
-            "xtick.labelsize": 8,
-            "ytick.labelsize": 8,
-            "legend.fontsize": 8,
-            "savefig.pad_inches": 0.05,
-            "figure.dpi": 300,
-            
-            # New geometry and thickness settings
-            "lines.linewidth": 1.0,
-            "lines.markersize": 3.5,
-            "axes.linewidth": 0.6,
-            "grid.linewidth": 0.4,
-            "patch.linewidth": 0.6,
-            "lines.markeredgewidth": 0.6
+        # Existing typography settings
+        "text.usetex": True,
+        "text.latex.preamble": latex_preamble,
+        "font.family": "serif",
+        "font.size": 10,
+        "axes.titlesize": 10,
+        "axes.labelsize": 10,
+        "xtick.labelsize": 8,
+        "ytick.labelsize": 8,
+        "legend.fontsize": 8,
+        "savefig.pad_inches": 0.05,
+        "figure.dpi": 300,
+        
+        # New geometry and thickness settings
+        "lines.linewidth": 1.0,
+        "lines.markersize": 3.5,
+        "axes.linewidth": 0.6,
+        "grid.linewidth": 0.4,
+        "patch.linewidth": 0.6,
+        "lines.markeredgewidth": 0.6,
     })
     
 

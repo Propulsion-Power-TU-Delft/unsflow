@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import os
-from unsflow.utils.plot_styles import *
+from unsflow.utils.thesis_plots import create_figure, set_thesis_style
 
 speedline = 1
 data_folder = "../data/IRIS_single_stage/design0_beta_3.450/operating_map/"
@@ -13,22 +13,19 @@ with open(data_folder + 'beta_ts.pkl', 'rb') as f:
 with open(data_folder + 'rpm.pkl', 'rb') as f:
     rpm = pickle.load(f)
 
-plt.figure()
+set_thesis_style()
+fig, ax = create_figure(fraction=0.49, aspect_ratio=1.3, subplots=(1,1))
 for i in range(0, np.shape(mass_flow)[0] - 1):
     mdot = mass_flow[i, :]
     beta = beta_ts[i, :]
     idx = np.where(mdot > 0)
-    plt.plot(mdot[idx]*1000, beta[idx], label='%.1f krpm' % (rpm[i] / 1000), linewidth=medium_line_width)
-    plt.plot(mdot[0]*1000, beta[0], 'ks', markersize=4)
-plt.xlabel(r'$\dot{m}$ [g/s]', fontsize=font_labels)
-plt.ylabel(r'$\beta_{ts}$', fontsize=font_labels)
-plt.xticks(fontsize=font_axes)
-plt.yticks(fontsize=font_axes)
-plt.title('Compressor Curves', fontsize=font_title)
-plt.grid(alpha=0.2)
-plt.legend(fontsize=font_legend)
-plt.savefig('pictures/iris_characteristic_curves.pdf', bbox_inches='tight')
-
+    ax.plot(mdot[idx]*1E3, beta[idx], label='%.1f krpm' % (rpm[i] / 1000))
+    ax.plot(mdot[0]*1E3, beta[0], 'ks')
+ax.set_xlabel(r'$\dot{m}$ [g/s]')
+ax.set_ylabel(r'$\beta_{ts}$')
+ax.grid(alpha=0.3)
+ax.legend()
+fig.savefig('pictures/iris_characteristic_curves.pdf')
 
 mass_flow = mass_flow[speedline, :]
 beta_ts = beta_ts[speedline, :]
@@ -69,49 +66,43 @@ for i in range(len(poles)):
         Mflow[i, j] = mass_flow[idx]
         j += 1
 
-plt.figure()
+set_thesis_style()
+fig, ax = create_figure(fraction=0.49, aspect_ratio=1.3, subplots=(1,1))
 for j in range(n_harmonics):
-    plt.plot(Mflow[:, j]*1E3, GFactor[:, j], '-s', label='n= %i' % (j + 1), linewidth=medium_line_width, markersize=3)
+    ax.plot(Mflow[:, j]*1E3, GFactor[:, j], '-s', label='n= %i' % (j + 1), markersize=2)
 boundary_x = np.linspace(np.min(Mflow)*1E3, np.max(Mflow)*1E3, 100)
 boundary_y = np.zeros_like(boundary_x)
-plt.plot(boundary_x, boundary_y, '--k', linewidth=medium_line_width)
-plt.legend(fontsize=font_legend)
-plt.xlabel(r'$\dot{m}$ [g/s]', fontsize=font_labels)
-plt.ylabel(r'GF', fontsize=font_labels)
-plt.xticks(fontsize=font_axes)
-plt.yticks(fontsize=font_axes)
-plt.title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000), fontsize=font_title)
-plt.grid(alpha=0.2)
-plt.savefig('pictures/iris_growth_factors_speedline_%i.pdf' %(speedline), bbox_inches='tight')
+ax.plot(boundary_x, boundary_y, '--k')
+ax.legend()
+ax.set_xlabel(r'$\dot{m}$ [g/s]')
+ax.set_ylabel(r'GF')
+ax.set_title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000))
+ax.grid(alpha=0.2)
+fig.savefig('pictures/iris_growth_factors_speedline_%i.pdf' %(speedline))
 
-plt.figure()
+fig, ax = create_figure(fraction=0.49, aspect_ratio=1.3, subplots=(1,1))
 for j in range(n_harmonics):
-    plt.plot(Mflow[:, j]*1E3, RSpeed[:, j], '-s', label='n:%i' % (j + 1), linewidth=medium_line_width, markersize=3)
+    ax.plot(Mflow[:, j]*1E3, RSpeed[:, j], '-s', label='n:%i' % (j + 1), markersize=2)
 boundary_x = np.linspace(np.min(Mflow)*1E3, np.max(Mflow)*1E3, 100)
 boundary_y = np.zeros_like(boundary_x)
-plt.plot(boundary_x, boundary_y, '--k')
-plt.legend(fontsize=font_legend)
-plt.xlabel(r'$\dot{m}$ [g/s]', fontsize=font_labels)
-plt.ylabel(r'RS', fontsize=font_labels)
-plt.xticks(fontsize=font_axes)
-plt.yticks(fontsize=font_axes)
-plt.title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000), fontsize=font_title)
-plt.grid(alpha=0.2)
-plt.savefig('pictures/iris_rot_speed_speedline_%i.pdf' %(speedline), bbox_inches='tight')
+ax.plot(boundary_x, boundary_y, '--k')
+ax.legend()
+ax.set_xlabel(r'$\dot{m}$ [g/s]')
+ax.set_ylabel(r'RS')
+ax.set_title(r'$%.1f$ [krpm]' % (rpm[speedline] / 1000))
+ax.grid(alpha=0.2)
+fig.savefig('pictures/iris_rot_speed_speedline_%i.pdf' %(speedline))
 
 idx_instability = 5
-plt.figure()
+fig, ax = create_figure(fraction=0.49, aspect_ratio=1.3, subplots=(1,1))
 idx = np.where(mass_flow > 0)
-plt.plot(mass_flow[idx]*1E3, beta_ts[idx], linewidth=medium_line_width)
-plt.plot(mass_flow[0]*1E3, beta_ts[0], 'ks', label='Senoo')
-plt.plot(mass_flow[idx_instability]*1E3, beta_ts[idx_instability], 'k^', label='Spakovszky')
-plt.xlabel(r'$\dot{m}$ [g/s]', fontsize=font_labels)
-plt.ylabel(r'$\beta_{\rm ts}$', fontsize=font_labels)
-plt.xticks(fontsize=font_axes)
-plt.yticks(fontsize=font_axes)
-plt.title('Compressor Curve', fontsize=font_title)
-plt.grid(alpha=0.2)
-plt.legend(fontsize=font_legend)
-plt.savefig('pictures/iris_curve_speedline_%i.pdf' % (speedline), bbox_inches='tight')
+ax.plot(mass_flow[idx]*1E3, beta_ts[idx])
+ax.plot(mass_flow[0]*1E3, beta_ts[0], 'ks', label='Senoo')
+ax.plot(mass_flow[idx_instability]*1E3, beta_ts[idx_instability], 'k^', label='Spakovszky')
+ax.set_xlabel(r'$\dot{m}$ [g/s]')
+ax.set_ylabel(r'$\beta_{\rm ts}$')
+ax.set_title('Compressor Curve')
+ax.grid(alpha=0.2)
+fig.savefig('pictures/iris_curve_speedline_%i.pdf' % (speedline))
 
 plt.show()
