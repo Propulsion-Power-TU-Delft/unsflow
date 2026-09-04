@@ -102,24 +102,25 @@ class Greitzer:
     
     def plotStabilityMap(self, save_filename=None, plotSystem=False):
         os.makedirs(PICS_FOLDER, exist_ok=True)
+        from unsflow.utils.thesis_plots import set_thesis_style, create_figure
         
-        plt.figure()
+        set_thesis_style()
+        fig, ax = create_figure(fraction=0.6, aspect_ratio=1.3, subplots=(1, 1))
         
-        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='-', linewidths=2.0)
-        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
+        cs = ax.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='-')
+        ax.clabel(cs, fmt='%1.1f', inline=True)
         
-        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[-0.1], colors='b', linestyles='--', linewidths=2.0)
-        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
+        cs = ax.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[-0.1], colors='b', linestyles='--')
+        ax.clabel(cs, fmt='%1.1f', inline=True)
         
-        cs = plt.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[+0.1], colors='r', linestyles='-.', linewidths=2.0)
-        plt.clabel(cs, fmt='%1.1f', inline=True, fontsize=18)
+        cs = ax.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[+0.1], colors='r', linestyles='-.')
+        ax.clabel(cs, fmt='%1.1f', inline=True)
         
-        plt.grid(alpha=0.3)
-        plt.xlabel(r'$B$')
-        plt.ylabel(r'$G$')
-        plt.tight_layout()
+        ax.grid(alpha=0.3)
+        ax.set_xlabel(r'$B$')
+        ax.set_ylabel(r'$G$')
         if save_filename is not None:
-            plt.savefig(PICS_FOLDER + '/' + save_filename + '_stability_map_B_%.3f.pdf' % (self.B_system), bbox_inches='tight')
+            fig.savefig(PICS_FOLDER + '/' + save_filename + '_stability_map_B_%.3f.pdf' % (self.B_system))
         
     
         
