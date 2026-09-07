@@ -63,8 +63,6 @@ def create_figure(fraction=1.0, aspect_ratio=1.618, subplots=(1, 1), is_print=Fa
     fig, axes = plt.subplots(subplots[0], subplots[1], figsize=figsize, layout='constrained')
     return fig, axes
 
-
-
 # example of use
 if __name__ == "__main__":
     

@@ -105,7 +105,7 @@ class Greitzer:
         from unsflow.utils.thesis_plots import set_thesis_style, create_figure
         
         set_thesis_style()
-        fig, ax = create_figure(fraction=0.6, aspect_ratio=1.3, subplots=(1, 1))
+        fig, ax = create_figure(fraction=0.5, aspect_ratio=1.3, subplots=(1, 1))
         
         cs = ax.contour(self.B_grid, self.G_grid, self.stabilityMap, levels=[0], colors='k', linestyles='-')
         ax.clabel(cs, fmt='%1.1f', inline=True)
