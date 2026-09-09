@@ -1858,6 +1858,7 @@ def compute_flow_averaged_quantity_along_span(quantity, span, velocity_meridiona
 
 def plot_twodimensional_grid(X, Y, frame='cartesian'):
     ni, nj = X.shape
+    plt.figure(layout='constrained')
     for i in range(ni):
         plt.plot(X[i,:], Y[i,:], 'k', linewidth=0.5)
     for j in range(nj):

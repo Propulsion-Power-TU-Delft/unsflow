@@ -55,12 +55,18 @@ def get_fig_dim(fraction=1.0, aspect_ratio=1.618, subplots=(1, 1), is_print=Fals
     
     return (fig_width_in, fig_height_in)
 
-def create_figure(fraction=1.0, aspect_ratio=1.618, subplots=(1, 1), is_print=False):
+def create_figure(fraction=1.0, aspect_ratio=1.618, subplots=(1, 1), is_print=False, sharey=False, sharex=False):
     """
     Shortcut to create a properly sized figure and axes.
     """
     figsize = get_fig_dim(fraction=fraction, aspect_ratio=aspect_ratio, subplots=subplots, is_print=is_print)
-    fig, axes = plt.subplots(subplots[0], subplots[1], figsize=figsize, layout='constrained')
+    
+    fig, axes = plt.subplots(subplots[0], 
+                             subplots[1], 
+                             figsize=figsize, 
+                             layout='constrained',
+                             sharey=sharey, 
+                             sharex=sharex)
     return fig, axes
 
 # example of use
