@@ -10,7 +10,7 @@ from unsflow.utils.formatting import total_chars, total_chars_mid
 from unsflow.grid.functions import *
 from unsflow.grid.profile import Profile
 from unsflow.grid.body_force import BodyForce
-from unsflow.utils.plot_styles import *
+from unsflow.utils.thesis_plots import *
 from scipy import interpolate
 import math
 import os
@@ -24,8 +24,6 @@ from unsflow.grid.surface import Surface
 from scipy.interpolate import bisplev, bisplrep, griddata
 from scipy.interpolate import splprep, splev
 from scipy.ndimage import gaussian_filter
-
-
 
 
 
@@ -1600,21 +1598,20 @@ class Blade:
         
     
     def plot_b2b_profile(self, iprofile, x_ps, y_ps, x_ss, y_ss, x_c, y_c, number_profiles):
-        plt.figure()
-        plt.plot(x_ps, y_ps, '-', color='C0', label='Pressure Side')
-        plt.plot(x_ss, y_ss, '-', color='C1', label='Suction Side')
-        plt.plot(x_c, y_c, '-.', color='C2', ms=2, label='Camber')
-        plt.xlabel(r'$m$ [m]')
-        plt.ylabel(r'$r \theta$ [m]')
-        plt.legend()
-        plt.title(f'Profile {iprofile+1} of {number_profiles}')
-        plt.grid(alpha=grid_opacity)
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.tight_layout()
-        plt.savefig(
+        set_thesis_style()
+        fig, ax = create_figure(fraction=0.48, aspect_ratio=1.3, subplots=(1, 1))
+        ax.plot(x_ps, y_ps, '-', color='C0', label='Pressure Side')
+        ax.plot(x_ss, y_ss, '-', color='C1', label='Suction Side')
+        ax.plot(x_c, y_c, '-.', color='C2', ms=2, label='Camber')
+        ax.set_xlabel(r'$m$ [m]')
+        ax.set_ylabel(r'$r \theta$ [m]')
+        ax.legend()
+        ax.set_title(f'Profile {iprofile+1} of {number_profiles}')
+        ax.grid(alpha=grid_opacity)
+        # plt.gca().set_aspect('equal', adjustable='box')
+        fig.savefig(
             self.config.get_pictures_folder_path() + '/blade_%i_%s_b2b-profile_%.2f.pdf' 
-            %(self.iblade, self.bladeType,(iprofile+1)/number_profiles), 
-            bbox_inches='tight')
+            %(self.iblade, self.bladeType,(iprofile+1)/number_profiles))
         
         
 
