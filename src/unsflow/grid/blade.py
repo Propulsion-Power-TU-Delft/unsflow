@@ -10,7 +10,7 @@ from unsflow.utils.formatting import total_chars, total_chars_mid
 from unsflow.grid.functions import *
 from unsflow.grid.profile import Profile
 from unsflow.grid.body_force import BodyForce
-from unsflow.utils.thesis_plots import *
+# from unsflow.utils.thesis_plots import *
 from scipy import interpolate
 import math
 import os
@@ -1598,8 +1598,9 @@ class Blade:
         
     
     def plot_b2b_profile(self, iprofile, x_ps, y_ps, x_ss, y_ss, x_c, y_c, number_profiles):
-        set_thesis_style()
-        fig, ax = create_figure(fraction=0.48, aspect_ratio=1.3, subplots=(1, 1))
+        # set_thesis_style()
+        # fig, ax = create_figure(fraction=0.48, aspect_ratio=1.3, subplots=(1, 1))
+        fig, ax = plt.subplots(1, 1)
         ax.plot(x_ps, y_ps, '-', color='C0', label='Pressure Side')
         ax.plot(x_ss, y_ss, '-', color='C1', label='Suction Side')
         ax.plot(x_c, y_c, '-.', color='C2', ms=2, label='Camber')

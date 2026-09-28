@@ -14,7 +14,7 @@ with open(data_folder + 'rpm.pkl', 'rb') as f:
     rpm = pickle.load(f)
 
 set_thesis_style()
-fig, ax = create_figure(fraction=0.49, aspect_ratio=1.25, subplots=(1,1))
+fig, ax = create_figure(fraction=0.45, aspect_ratio=1.25, subplots=(1,1))
 
 stall_idxes = [6, 6, 4, 4, 4] # stall indices seen from the speedlines analysis
 mdot_senoo = []
@@ -26,13 +26,14 @@ for i in range(0, np.shape(mass_flow)[0]-1):
     mdot = mass_flow[i, :]
     beta = beta_ts[i, :]
     idx = np.where(mdot>0)
-    ax.plot(mdot[idx], beta[idx], label='%.1f krpm' %(rpm[i]/1000))
+    ax.plot(mdot[idx], beta[idx], label='%.1f' %(rpm[i]/1000))
     mdot_senoo.append(mdot[0])
     beta_senoo.append(beta[0])
     mdot_spak.append(mdot[stall_idx])
     beta_spak.append(beta[stall_idx])
 ax.set_xlabel(r'$\dot{m}$ [kg/s]')
 ax.set_ylabel(r'$\beta_{\rm ts}$')
+# ax.set_ylim(top=5.55)
 ax.grid(alpha=.3)
 ax.legend()
 fig.savefig('pictures/iris_characteristic_curves.pdf')
