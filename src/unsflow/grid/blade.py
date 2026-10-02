@@ -151,11 +151,11 @@ class Blade:
         profiles_to_plot = [0, number_profiles//4, number_profiles//2, 3*number_profiles//4, number_profiles-1] 
         for i in range(number_profiles):
             idx = np.where((self.profile == str(main_profiles[i])) & (self.blade == 'MAIN'))
-            z = self.z_main[idx]
-            r = self.r_main[idx]
-            theta = self.theta_main[idx]
-            x = self.x_main[idx]
-            y = self.y_main[idx]
+            z = self.z[idx]
+            r = self.r[idx]
+            theta = self.theta[idx]
+            x = self.x[idx]
+            y = self.y[idx]
 
             # spline of the profile in 3D
             splineOrder = self.config.get_blade_profiles_spline_order()[self.iblade]
@@ -427,6 +427,8 @@ class Blade:
             self.z_grid, 
             self.r_grid, 
             method)
+        self.x_camber = self.r_camber * np.cos(self.theta_camber)
+        self.y_camber = self.r_camber * np.sin(self.theta_camber)
 
         self.thk = self.r_grid*np.abs(self.theta_ps-self.theta_ss)
         try:
@@ -486,19 +488,23 @@ class Blade:
             self.z_grid, 
             self.r_grid, 
             normalize=normalize)
+        self.streamwise_coord = self.streamline_length
+        self.spanwise_coord = self.spanline_length
 
 
     def plot_meridional_coordinates(self, save_filename=None):
         """
         plot the streamline length contour
         """
-        contour_template(self.z_grid, self.r_grid, self.streamwise_coord, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
+        streamwise = getattr(self, 'streamwise_coord', getattr(self, 'streamline_length', None))
+        spanwise = getattr(self, 'spanwise_coord', getattr(self, 'spanline_length', None))
+        contour_template(self.z_grid, self.r_grid, streamwise, name=r'$\bar{s}_{stw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(
                 self.config.get_pictures_folder_path() + '/' + save_filename + '_streamline_length.pdf', 
                 bbox_inches='tight')
 
-        contour_template(self.z_grid, self.r_grid, self.spanwise_coord, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
+        contour_template(self.z_grid, self.r_grid, spanwise, name=r'$\bar{s}_{spw} \ \rm{[-]}$')
         if save_filename is not None:
             plt.savefig(
                 self.config.get_pictures_folder_path() + '/' + save_filename + '_spanline_length.pdf', 
@@ -616,8 +622,8 @@ class Blade:
 
         for span in self.profile_types:  # for each profile
             idx = np.where(np.logical_and(self.profile == span, self.blade == 'MAIN'))
-            z = self.z_main[idx]
-            r = self.r_main[idx]
+            z = self.z[idx]
+            r = self.r[idx]
 
             blade_inlet_type = self.config.get_blade_inlet_type()
             if isinstance(blade_inlet_type, list):
@@ -683,8 +689,8 @@ class Blade:
 
         for span in self.profile_types:  # for each profile
             idx = np.where(np.logical_and(self.profile == span, self.blade == 'MAIN'))
-            z = self.z_main[idx]
-            r = self.r_main[idx]
+            z = self.z[idx]
+            r = self.r[idx]
 
             blade_outlet_type = self.config.get_blade_outlet_type()
             if isinstance(blade_outlet_type, list):
@@ -763,8 +769,21 @@ class Blade:
         :param save_filename: if specified, saves the plots with the given name
         :param folder_name: folder name of the pictures
         """
-        self.scale = (np.max(self.z_camber) - np.min(self.z_camber)) / 15
-        fig = plt.figure()
+        if not hasattr(self, 'x_camber'):
+            self.x_camber = self.r_camber * np.cos(self.theta_camber)
+            self.y_camber = self.r_camber * np.sin(self.theta_camber)
+            self.z_camber = self.z_grid
+        self.scale = getattr(self, 'scale', (np.max(self.z_camber) - np.min(self.z_camber)) / 15)
+        if not hasattr(self, 'normal_vectors'):
+            theta = getattr(self, 'theta_camber', np.zeros_like(self.z_camber))
+            nx = self.n_camber_r * np.cos(theta) - self.n_camber_t * np.sin(theta)
+            ny = self.n_camber_r * np.sin(theta) + self.n_camber_t * np.cos(theta)
+            nz = self.n_camber_z
+            self.normal_vectors = np.empty(self.z_camber.shape, dtype=object)
+            for i in range(self.z_camber.shape[0]):
+                for j in range(self.z_camber.shape[1]):
+                    self.normal_vectors[i, j] = np.array([nx[i, j], ny[i, j], nz[i, j]])
+        fig = plt.figure(figsize=getattr(self, 'picture_size_blank', (8, 6)))
         ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
@@ -781,7 +800,8 @@ class Blade:
         ax.set_zlabel(r'$z$')
         ax.set_title('normal vectors')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            folder = folder_name if folder_name is not None else self.config.get_pictures_folder_path() + '/'
+            plt.savefig(folder + save_filename + '.pdf', bbox_inches='tight')
 
 
     def show_streamline_vectors(self, save_filename=None, folder_name=None):
@@ -790,7 +810,31 @@ class Blade:
         :param save_filename: if specified, saves the plots with the given name
         :param folder_name: folder name of the pictures
         """
-        fig = plt.figure(figsize=self.picture_size_blank)
+        if not hasattr(self, 'x_camber'):
+            self.x_camber = self.r_camber * np.cos(self.theta_camber)
+            self.y_camber = self.r_camber * np.sin(self.theta_camber)
+            self.z_camber = self.z_grid
+        self.scale = getattr(self, 'scale', (np.max(self.z_camber) - np.min(self.z_camber)) / 15)
+        if not hasattr(self, 'streamline_vectors'):
+            ni, nj = self.x_camber.shape
+            self.streamline_vectors = np.empty(self.x_camber.shape, dtype=object)
+            for i in range(ni):
+                for j in range(nj):
+                    if i == ni - 1:
+                        sv = np.array([self.x_camber[i, j] - self.x_camber[i-1, j],
+                                       self.y_camber[i, j] - self.y_camber[i-1, j],
+                                       self.z_camber[i, j] - self.z_camber[i-1, j]])
+                    elif i == 0:
+                        sv = np.array([self.x_camber[1, j] - self.x_camber[0, j],
+                                       self.y_camber[1, j] - self.y_camber[0, j],
+                                       self.z_camber[1, j] - self.z_camber[0, j]])
+                    else:
+                        sv = np.array([self.x_camber[i+1, j] - self.x_camber[i-1, j],
+                                       self.y_camber[i+1, j] - self.y_camber[i-1, j],
+                                       self.z_camber[i+1, j] - self.z_camber[i-1, j]])
+                    norm = np.linalg.norm(sv)
+                    self.streamline_vectors[i, j] = sv / norm if norm > 0 else sv
+        fig = plt.figure(figsize=getattr(self, 'picture_size_blank', (8, 6)))
         ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
@@ -815,7 +859,8 @@ class Blade:
         ax.set_box_aspect([1, 1, 1])
         ax.set_title('streamline vectors')
         if save_filename is not None:
-            plt.savefig(folder_name + save_filename + '.pdf', bbox_inches='tight')
+            folder = folder_name if folder_name is not None else self.config.get_pictures_folder_path() + '/'
+            plt.savefig(folder + save_filename + '.pdf', bbox_inches='tight')
 
 
     def show_spanline_vectors(self, save_filename=None, folder_name=None):
@@ -824,7 +869,31 @@ class Blade:
         :param save_filename: if specified, saves the plots with the given name
         :param folder_name: folder name of the pictures
         """
-        fig = plt.figure(figsize=self.picture_size_blank)
+        if not hasattr(self, 'x_camber'):
+            self.x_camber = self.r_camber * np.cos(self.theta_camber)
+            self.y_camber = self.r_camber * np.sin(self.theta_camber)
+            self.z_camber = self.z_grid
+        self.scale = getattr(self, 'scale', (np.max(self.z_camber) - np.min(self.z_camber)) / 15)
+        if not hasattr(self, 'spanline_vectors'):
+            ni, nj = self.x_camber.shape
+            self.spanline_vectors = np.empty(self.x_camber.shape, dtype=object)
+            for i in range(ni):
+                for j in range(nj):
+                    if j == nj - 1:
+                        spv = np.array([self.x_camber[i, j] - self.x_camber[i, j-1],
+                                        self.y_camber[i, j] - self.y_camber[i, j-1],
+                                        self.z_camber[i, j] - self.z_camber[i, j-1]])
+                    elif j == 0:
+                        spv = np.array([self.x_camber[i, 1] - self.x_camber[i, 0],
+                                        self.y_camber[i, 1] - self.y_camber[i, 0],
+                                        self.z_camber[i, 1] - self.z_camber[i, 0]])
+                    else:
+                        spv = np.array([self.x_camber[i, j+1] - self.x_camber[i, j-1],
+                                        self.y_camber[i, j+1] - self.y_camber[i, j-1],
+                                        self.z_camber[i, j+1] - self.z_camber[i, j-1]])
+                    norm = np.linalg.norm(spv)
+                    self.spanline_vectors[i, j] = spv / norm if norm > 0 else spv
+        fig = plt.figure(figsize=getattr(self, 'picture_size_blank', (8, 6)))
         ax = fig.add_subplot(111, projection='3d')
         surf = ax.plot_surface(self.x_camber, self.y_camber, self.z_camber, alpha=0.5)
         for i in range(0, self.x_camber.shape[0]):
@@ -849,7 +918,8 @@ class Blade:
         ax.set_box_aspect([1, 1, 1])
         ax.set_title('spanline vectors')
         if save_filename is not None:
-            plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
+            folder = folder_name if folder_name is not None else self.config.get_pictures_folder_path() + '/'
+            plt.savefig(folder + save_filename + '.pdf', bbox_inches='tight')
 
 
     def compute_blade_camber_angles(self, convention='neutral'):
@@ -1154,17 +1224,7 @@ class Blade:
         """
         clip a 2D array between vmin and vmax
         """
-        f = fsource.copy()
-        ni,nj = f.shape
-        for i in range(ni):
-            for j in range(nj):
-                if f[i,j]<vmin:
-                    f[i,j] = vmin
-                elif f[i,j]>= vmax:
-                    f[i,j]=vmax
-                else:
-                    pass
-        return f
+        return np.clip(fsource, vmin, vmax)
 
 
     def compute_marble_ftheta(self, method='local'):
@@ -1222,7 +1282,7 @@ class Blade:
         Remove every force component in the gap from the shroud described by clearance_meters
         """
         gap = clearance_meters
-        self.compute_spanline_length()
+        self.compute_meridional_coordinates(normalize=False)
         ni,nj = self.meridional_fields['R'].shape
 
         for i in range(ni):
@@ -1287,29 +1347,32 @@ class Blade:
         For f defined on the meridional grid, cure the field within hub and the span extent. 
         Cure means copying from the first acceptable value outside of the span extent.
         """
-        gap = span_extent
-        self.compute_spanline_length(normalize=True)
-        ni,nj = f.shape
+        self.compute_meridional_coordinates(normalize=True)
+        ni, nj = f.shape
         for i in range(ni):
             j = 0
-            while self.spanline_length[i,j]<span_extent:
-                j_id = j
+            while j < nj and self.spanline_length[i, j] < span_extent:
                 j += 1
-            f[i,0:j_id] = f[i,j_id]
+            if j < nj:
+                f[i, :j] = f[i, j]
+            else:
+                f[i, :] = f[i, -1]
     
     def cure_shroud(self, span_extent, f):
         """
         For f defined on the meridional grid, cure the field within shroud and the span extent. 
         Cure means copying from the first acceptable value outside of the span extent.
         """
-        self.compute_spanline_length(normalize=True)
-        ni,nj = f.shape
+        self.compute_meridional_coordinates(normalize=True)
+        ni, nj = f.shape
         for i in range(ni):
-            j = nj-1
-            while self.spanline_length[i,j]>1-span_extent:
-                j_id = j
+            j = nj - 1
+            while j >= 0 and self.spanline_length[i, j] > 1 - span_extent:
                 j -= 1
-            f[i,j_id:] = f[i,j_id]
+            if j >= 0:
+                f[i, j+1:] = f[i, j]
+            else:
+                f[i, :] = f[i, 0]
     
     def extrapolate_camber_vector(self):
         self.n_camber_r = self.extrapolate_2dfield_stream_span(self.z_grid, self.r_grid, self.n_camber_r, stream=True, span=False)

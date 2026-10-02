@@ -1060,7 +1060,7 @@ def compute_gradient_least_square(x, y, z, enlargeDomain = True):
             elif j==nj-1:
                 neighbours = [(-1,0), (-1,-1), (0,-1), (1,-1), (1,0)]
             else:
-                neighbours = [(-1,-1), (0,-1), (0,1), (-1,0), (1,0), (-1,1), (0,1), (1,1)] 
+                neighbours = [(-1,-1), (0,-1), (1,-1), (-1,0), (1,0), (-1,1), (0,1), (1,1)] 
 
             A = np.zeros((len(neighbours), 2))
             b = np.zeros((len(neighbours), 1))
@@ -1070,7 +1070,7 @@ def compute_gradient_least_square(x, y, z, enlargeDomain = True):
                 A[k,0] = x[i+istep, j+jstep]-x[i,j]
                 A[k,1] = y[i+istep, j+jstep]-y[i,j]
                 b[k,0] = z[i+istep, j+jstep]-z[i,j]
-            grad = np.linalg.inv(A.T@A) @A.T@b
+            grad = np.linalg.solve(A.T@A, A.T@b)
             dzdx[i,j] = grad[0,0]
             dzdy[i,j] = grad[1,0]
     if enlargeDomain:
@@ -1101,12 +1101,12 @@ def contour_template(z, r, f, name,
         `vmax`: max value to truncate the color range
 
         """
-        if vmin == None:
+        if vmin is None:
             minval = np.min(f)
         else:
             minval = vmin
             
-        if vmax == None:
+        if vmax is None:
             maxval = np.max(f)
         else:
             maxval = vmax
@@ -1137,9 +1137,9 @@ def contour_template(z, r, f, name,
         ax.set_aspect('equal', adjustable='box')
         if white_grid:
             ni,nj = z.shape
-            for i in range(ni, 3):
+            for i in range(0, ni, 3):
                 plt.plot(z[i,:], r[i,:], 'w', linewidth=2.5)
-            for j in range(nj, 3):
+            for j in range(0, nj, 3):
                 plt.plot(z[:,j], r[:,j], 'w', linewidth=2.5)
         if save_filename is not None:
             plt.savefig(folder_name + '/' + save_filename + '.pdf', bbox_inches='tight')
@@ -1152,7 +1152,7 @@ def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
     Q = np.array([[cos(theta),  sin(theta), 0],
                   [-sin(theta), cos(theta), 0],
                   [0,           0,          1]])
-    M_cyl = (Q.T)@M_cart@Q
+    M_cyl = Q @ M_cart @ (Q.T)
     return M_cyl
 
 
@@ -1397,9 +1397,10 @@ def ComputeAngleBetweenVectors(v1, v2):
     dot_product = np.dot(v1, v2)
     norm_v1 = np.linalg.norm(v1)
     norm_v2 = np.linalg.norm(v2)
-    cos_theta = dot_product / (norm_v1 * norm_v2)
-    # # Clamp the value to the valid range for arccos to avoid numerical issues
-    # cos_theta = np.clip(cos_theta, -1.0, 1.0)
+    denom = norm_v1 * norm_v2
+    if denom == 0:
+        return 0.0
+    cos_theta = np.clip(dot_product / denom, -1.0, 1.0)
     angle = np.arccos(cos_theta)
     return angle
 
@@ -1803,28 +1804,35 @@ def write_3D_cturbobfm_csv_input_distribution_file(dataset, outputFilename='CTur
 
 
 def computeMinDistanceFromWalls(pointCoords, hubCoords, shroudCoords, nPointsReconstruction=5000):
-    """Compute the minimum distance of a point wrt hub and shroud curves, as needed by SA model
+    """Compute the minimum distance of a point (or array of points) wrt hub and shroud curves, as needed by SA model
 
     Args:
-        pointCoords (tuple of floats): axial and radial cordinates
+        pointCoords (tuple of floats or arrays): axial and radial coordinates
         hubCoords (tuple of arr): set of points (axial and radial) defining the hub curve
         shroudCoords (tuple of arr): set of points (axial and radial) defining the shroud curve
         nPointsReconstruction (int, optional): number of points used to compute the wall splines. Defaults to 5000.
 
     Returns:
-        float: min distance from walls
+        float or np.ndarray: min distance from walls
     """
-    
     hub_ax, hub_rad = compute_2dSpline_curve(hubCoords[0], hubCoords[1], nPointsReconstruction)
-    dhub = np.sqrt((pointCoords[0]-hub_ax)**2 + (pointCoords[1]-hub_rad)**2)
-    
     shroud_ax, shroud_rad = compute_2dSpline_curve(shroudCoords[0], shroudCoords[1], nPointsReconstruction)
-    dshroud = np.sqrt((pointCoords[0]-shroud_ax)**2 + (pointCoords[1]-shroud_rad)**2)
+    wall_z = np.concatenate((hub_ax, shroud_ax))
+    wall_r = np.concatenate((hub_rad, shroud_rad))
     
-    tmp = np.concatenate((dhub, dshroud))
-    minDistance = np.min(tmp)
+    pz = np.asarray(pointCoords[0])
+    pr = np.asarray(pointCoords[1])
     
-    return minDistance
+    if pz.ndim == 0:
+        d = np.sqrt((pz - wall_z)**2 + (pr - wall_r)**2)
+        return float(np.min(d))
+    else:
+        from scipy.spatial import cKDTree
+        wall_pts = np.column_stack((wall_z, wall_r))
+        tree = cKDTree(wall_pts)
+        query_pts = np.column_stack((pz.ravel(), pr.ravel()))
+        distances, _ = tree.query(query_pts)
+        return distances.reshape(pz.shape)
 
 
 

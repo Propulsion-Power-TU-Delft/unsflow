@@ -3,12 +3,14 @@ from pathlib import Path
 import pytest
 
 
+import sys
+
 def find_main_scripts(base_dir: Path):
     return list(base_dir.rglob("main.py"))
 
 
 # Collect all scripts once
-BASE_DIR = Path.cwd()
+BASE_DIR = Path(__file__).parent
 MAIN_SCRIPTS = find_main_scripts(BASE_DIR)
 
 
@@ -18,7 +20,7 @@ def test_run_main(script_path: Path):
 
     with open(log_file, "w") as f:
         result = subprocess.run(
-            ["python", script_path.name],
+            [sys.executable, script_path.name],
             stdout=f,
             stderr=subprocess.STDOUT,
             cwd=script_path.parent

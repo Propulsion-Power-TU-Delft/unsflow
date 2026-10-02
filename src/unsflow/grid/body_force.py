@@ -497,11 +497,13 @@ class BodyForce:
         def zeroOrderExtrapolation(field, spanwiseCoords, spanExtent):
             ni,nj = field.shape
             for i in range(ni):
-                idx = np.where(spanwiseCoords[i,:]<spanExtent)
-                field[i,idx] = field[i, idx[0][-1]+1]
+                idx = np.where(spanwiseCoords[i,:]<spanExtent)[0]
+                if len(idx) > 0 and idx[-1]+1 < nj:
+                    field[i,idx] = field[i, idx[-1]+1]
 
-                idx = np.where(spanwiseCoords[i,:]>1-spanExtent)
-                field[i,idx] = field[i,idx[0][0]-1]                
+                idx = np.where(spanwiseCoords[i,:]>1-spanExtent)[0]
+                if len(idx) > 0 and idx[0]-1 >= 0:
+                    field[i,idx] = field[i,idx[0]-1]                
             return field
         
         for key in self.bodyForceFields.keys():
@@ -599,7 +601,8 @@ class BodyForce:
                 s = circumferentialPitch[i,j]
                 nt = n_camber_t[i,j]
                 delta = deviationAngle[i,j]
-                relMach = wmag / np.sqrt(1.4*self.meridionalFields['Pressure'][i,j]/self.meridionalFields['Density'][i,j])
+                gamma = self.config.get_fluid_gamma()
+                relMach = wmag / np.sqrt(gamma*self.meridionalFields['Pressure'][i,j]/self.meridionalFields['Density'][i,j])
                 kmach = self.computeKmach(relMach)
                 fnThollet[i,j] = wmag**2 / 2 / s / b / np.abs(nt) * 2 * np.pi * np.abs(delta) * kmach
         
@@ -666,7 +669,7 @@ class BodyForce:
         #     else:
         #         fn_dir = fn_versor_2
         
-        if any(math.isnan(x) for x in fn_dir):
+        if np.isnan(fn_dir).any():
             print("NaN found during calculation of inviscid force direction. Radial component set to zero.")
             fn_dir = np.array([-w_dir[2], 0, w_dir[0]])
 

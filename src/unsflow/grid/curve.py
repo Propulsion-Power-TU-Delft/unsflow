@@ -17,10 +17,11 @@ class Curve:
             if self.config.invert_axial_coordinates():
                 self.z = -self.z
             
-        elif mode == 'cordinates':
+        elif mode in ('cordinates', 'coordinates'):
             self.r = r
             self.z = z
 
+        self.degree_spline = degree_spline
         self.r_spline, self.z_spline = self.compute_spline(degree_spline=degree_spline)
         
     def read_from_curve_file(self, filepath):
@@ -43,25 +44,31 @@ class Curve:
         self.r_spline_ext, self.z_spline_ext = self.compute_spline(u_eval=u_spline_ext, degree_spline=degree_spline)
 
     def trim_curve_inlet(self, z_trim=None, r_trim=None):
-        if r_trim == None:
+        if r_trim is None:
             idx = np.where(self.z_spline >= z_trim)
-        elif z_trim == None:
+        elif z_trim is None:
             idx = np.where(self.r_spline >= r_trim)
         else:
             raise ValueError("Unknown trim type!")
         
         self.z_spline = self.z_spline[idx]
         self.r_spline = self.r_spline[idx]
+        if len(self.r_spline) > 1:
+            k = min(getattr(self, 'degree_spline', 1), len(self.r_spline) - 1)
+            self.tck, _ = splprep([self.r_spline, self.z_spline], s=0, k=k)
 
-    def trim_curve_outlet(self, z_trim='span', r_trim='span'):
-        if z_trim == 'span':
-            idx = np.where(self.r_spline <= r_trim)
-        elif r_trim == 'span':
+    def trim_curve_outlet(self, z_trim=None, r_trim=None):
+        if r_trim is None or r_trim == 'span':
             idx = np.where(self.z_spline <= z_trim)
+        elif z_trim is None or z_trim == 'span':
+            idx = np.where(self.r_spline <= r_trim)
         else:
             raise ValueError("Unknown trim type!")
         self.z_spline = self.z_spline[idx]
         self.r_spline = self.r_spline[idx]
+        if len(self.r_spline) > 1:
+            k = min(getattr(self, 'degree_spline', 1), len(self.r_spline) - 1)
+            self.tck, _ = splprep([self.r_spline, self.z_spline], s=0, k=k)
 
     def sample(self, npoints, sampling_mode='default'):
         if sampling_mode == 'default':

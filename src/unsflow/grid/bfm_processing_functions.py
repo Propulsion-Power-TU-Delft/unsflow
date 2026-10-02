@@ -79,7 +79,7 @@ def perform_chima_profiles_processing(inputFiles, massFlows, refFile, visualDebu
         massflow_ref = np.ones_like(spanwise_massflow_ref)
 
     def weighted_average(values, weights):
-        if weightedAveraging != True:
+        if not weightedAveraging:
             weights = np.ones_like(values)
         avg = np.sum(values * weights) / np.sum(weights)
         return avg
@@ -137,8 +137,6 @@ def perform_chima_profiles_processing(inputFiles, massFlows, refFile, visualDebu
     mMin = massFlowNorm.min() - deltaMass*extrapExtent
     mMax = massFlowNorm.max() + deltaMass*extrapExtent
     mFlowNew = np.linspace(mMin, mMax, 250)
-    phiTurnNew = np.interp(mFlowNew, massFlowNorm, phiTurning)
-    phiLossNew = np.interp(mFlowNew, massFlowNorm, phiLoss)
 
     # Create interpolation functions with extrapolation enabled
     phi_turning_fn = interp1d(massFlowNorm, phiTurning, kind='linear', fill_value='extrapolate')
@@ -486,7 +484,7 @@ def compute_body_forces(
         data['Axial_Coordinate'], 
         data['Radial_Coordinate'], 
         data['rut'])
-    data['Entropy'] = cp * np.log(data['Temperature (K)']/Tref) - R * (data['Pressure (Pa)']/Pref)
+    data['Entropy'] = cp * np.log(data['Temperature (K)']/Tref) - R * np.log(data['Pressure (Pa)']/Pref)
     data['ds_dz'], data['ds_dr'] = compute_gradient_least_square(
         data['Axial_Coordinate'], 
         data['Radial_Coordinate'], 

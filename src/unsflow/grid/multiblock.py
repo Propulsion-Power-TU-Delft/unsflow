@@ -34,11 +34,15 @@ class MultiBlock:
             self.bfmFields[key] = self.blocks[0].bfmFields[key][row_slice, :]
         
         bladeFlag = 1
+        self.blade_stream_indices = []
         for iBlock, block in enumerate(self.blocks[1:]):
                            
             if bladeFlag > 0: # this is a blade block, or there is only one block
                 streamSlice = slice(None)
-            elif iBlock == numberBlocks-1: # is the last block
+                inlet_idx = self.z_grid.shape[0]
+                outlet_idx = inlet_idx + block.nstream - 1
+                self.blade_stream_indices.append((inlet_idx, outlet_idx))
+            elif iBlock == len(self.blocks[1:]) - 1: # is the last block
                 streamSlice = slice(1, None)
             else:
                 streamSlice = slice(1, -1)
@@ -399,24 +403,21 @@ class MultiBlock:
         if nBlocks == 1:
             return
         
-        nstream = 0
         for iblade in range(nBlades):
-            iBlock = iblade * 2 + 1  
+            if hasattr(self, 'blade_stream_indices') and iblade < len(self.blade_stream_indices):
+                inlet_idx, outlet_idx = self.blade_stream_indices[iblade]
+            else:
+                iBlock = iblade * 2 + 1
+                inlet_idx = sum(b.nstream - 1 for b in self.blocks[:iBlock])
+                outlet_idx = inlet_idx + self.blocks[iBlock].nstream - 1
             
-            nstreamInitial = self.blocks[iBlock-1].nstream
-            nstreamFinal = nstreamInitial + self.blocks[iBlock].nstream-1
+            zcoordUp = self.z_grid[inlet_idx - offsetGridLines, :]
+            rcoordUp = self.r_grid[inlet_idx - offsetGridLines, :]
+            stwLenUp = self.streamline_length[inlet_idx - offsetGridLines, :]
             
-            zcoordUp = self.z_grid[nstreamInitial-1-offsetGridLines,:]
-            rcoordUp = self.r_grid[nstreamInitial-1-offsetGridLines,:]
-            stwLenUp = self.streamline_length[nstreamInitial-1-offsetGridLines,:]
-            
-            with open(foldername + '/spanwise_spline_inlet_blade_%i.csv' % iblade, 'w') as f:
-                for i in range(len(zcoordUp)):
-                    f.write('%.9f,%.9f\n' % (zcoordUp[i], rcoordUp[i]))
-            
-            zcoordDown = self.z_grid[nstreamFinal-1+offsetGridLines,:]
-            rcoordDown = self.r_grid[nstreamFinal-1+offsetGridLines,:]
-            stwLenDown = self.streamline_length[nstreamFinal-1+offsetGridLines,:]
+            zcoordDown = self.z_grid[outlet_idx + offsetGridLines, :]
+            rcoordDown = self.r_grid[outlet_idx + offsetGridLines, :]
+            stwLenDown = self.streamline_length[outlet_idx + offsetGridLines, :]
             
             ni = 1
             nj = len(zcoordDown)

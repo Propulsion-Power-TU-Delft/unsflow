@@ -180,9 +180,9 @@ def compute_X_matrix_derivatives(x, y, order=4):
     return Wdx, Wdy
 
 
-def compute_W_matrix(xc, yc, x, y, wfunc_type='risd'):
+def compute_W_weights(xc, yc, x, y, wfunc_type='risd'):
     """
-    compute the Weight diagonal matrix
+    compute the weight vector
     """
     wfunction_list = ['gauss', 'wendland', 'risd', 'constant']
     d = np.sqrt((x - xc) ** 2 + (y - yc) ** 2)
@@ -199,18 +199,30 @@ def compute_W_matrix(xc, yc, x, y, wfunc_type='risd'):
     elif wfunc_type == 'risd':
         weight = 1 / (d ** 2 + h ** 2)
     elif wfunc_type == 'constant':
-        weight = np.zeros_like(d) + 1
+        weight = np.ones_like(d)
     else:
         raise ValueError("Invalid weight function type")
 
-    W = np.diag(weight)
-    return W
+    return weight
+
+
+def compute_W_matrix(xc, yc, x, y, wfunc_type='risd'):
+    """
+    compute the Weight diagonal matrix
+    """
+    return np.diag(compute_W_weights(xc, yc, x, y, wfunc_type))
 
 
 def compute_Beta_coefficients(xc, yc, x, y, z):
-    W = compute_W_matrix(xc, yc, x, y)
+    weight = compute_W_weights(xc, yc, x, y)
     X = compute_X_matrix(x, y)
-    beta = np.linalg.inv((X.T @ W) @ X) @ ((X.T @ W) @ z)
+    XTW = X.T * weight
+    A = XTW @ X
+    b = XTW @ z
+    try:
+        beta = np.linalg.solve(A, b)
+    except np.linalg.LinAlgError:
+        beta = np.linalg.lstsq(A, b, rcond=None)[0]
     return beta
 
 

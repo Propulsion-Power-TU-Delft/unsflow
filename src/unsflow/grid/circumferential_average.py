@@ -24,7 +24,7 @@ def rotate_cartesian_to_cylindric_tensor(theta, M_cart):
     Q = np.array([[np.cos(theta),  np.sin(theta), 0],
                   [-np.sin(theta), np.cos(theta), 0],
                   [0,           0,          1]])
-    M_cyl = (Q.T)@M_cart@Q
+    M_cyl = Q @ M_cart @ (Q.T)
     return M_cyl
 
 
@@ -45,7 +45,7 @@ def compute_average(field, weight=None):
 
 
 def extract_grid_location(file_name):
-    """Given the name of the file, return the indices associated to strem,span location
+    """Given the name of the file, return the indices associated to stream,span location
 
     Args:
         file_name (str): file contaning data on the arc at a specific location on the meridional plane
@@ -53,12 +53,14 @@ def extract_grid_location(file_name):
     Returns:
         int: indices of stream-span location
     """
-    print('Averaging spline data: ' + file_name)
-    file_name = file_name.strip('spline_data_')
-    file_name = file_name.strip('.csv')
-    file_name = file_name.split('_')
-    nz = int(file_name[0])
-    nr = int(file_name[1])
+    base = os.path.basename(file_name)
+    if base.startswith('spline_data_'):
+        base = base[len('spline_data_'):]
+    if base.endswith('.csv'):
+        base = base[:-len('.csv')]
+    parts = base.split('_')
+    nz = int(parts[0])
+    nr = int(parts[1])
     return nz, nr
 
 
@@ -71,10 +73,11 @@ def circumferential_average_CFD_dataset(folderpath, extraction_method):
     """
 
     data_dir = folderpath
-    files = [f for f in os.listdir(data_dir) if '.csv' in f]
-    files = sorted(files)
-    nz, nr = extract_grid_location(files[-1])
-    nstream, nspan = nz+1, nr+1
+    files = [f for f in os.listdir(data_dir) if f.endswith('.csv') and 'spline_data_' in f]
+    files = sorted(files, key=extract_grid_location)
+    max_nz = max(extract_grid_location(f)[0] for f in files)
+    max_nr = max(extract_grid_location(f)[1] for f in files)
+    nstream, nspan = max_nz + 1, max_nr + 1
     fields_thetaAvg = {}
     fields_densityAvg = {}
 
@@ -327,6 +330,16 @@ def marble_postprocessing(folderpath, files, nstream, nspan):
         df = pd.read_csv(folderpath + '/' + file)
         splineData = df.to_dict('list')
         splineData = {key: np.array(value) for key, value in splineData.items()}
+
+        x = splineData['Points_0']
+        y = splineData['Points_1']
+        z = splineData['Points_2']
+        r = np.sqrt(x ** 2 + y ** 2)
+        theta = np.arctan2(y, x)
+        stream_id, span_id = extract_grid_location(file)
+
+        splineData['Axial_Coordinate'] = z
+        splineData['Radial_Coordinate'] = r
             
         splineData['Velocity_Radial'] = (
             splineData['Velocity (m/s)_0']*np.cos(theta) + splineData['Velocity (m/s)_1']*np.sin(theta)

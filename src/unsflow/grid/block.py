@@ -445,36 +445,36 @@ class Block:
         self.r_grid_dual[-1, 0] = self.r_grid[-1, 0]
 
         # istream = 0 border
-        for istream in range(0, 1):
-            for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream, ispan - 1])
-                self.z_grid_dual[istream, ispan] = z_mid_point
-                self.r_grid_dual[istream, ispan] = r_mid_point
+        istream = 0
+        for ispan in range(1, self.nspan):
+            z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream, ispan - 1])
+            r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream, ispan - 1])
+            self.z_grid_dual[istream, ispan] = z_mid_point
+            self.r_grid_dual[istream, ispan] = r_mid_point
 
         # istream = -1 border
-        for istream in range(self.nstream, self.nstream + 1):
-            for ispan in range(1, self.nspan):
-                z_mid_point = 0.5 * (self.z_grid[istream - 1, ispan] + self.z_grid[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid[istream - 1, ispan] + self.r_grid[istream - 1, ispan - 1])
-                self.z_grid_dual[istream, ispan] = z_mid_point
-                self.r_grid_dual[istream, ispan] = r_mid_point
+        istream = self.nstream
+        for ispan in range(1, self.nspan):
+            z_mid_point = 0.5 * (self.z_grid[istream - 1, ispan] + self.z_grid[istream - 1, ispan - 1])
+            r_mid_point = 0.5 * (self.r_grid[istream - 1, ispan] + self.r_grid[istream - 1, ispan - 1])
+            self.z_grid_dual[istream, ispan] = z_mid_point
+            self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = 0 border
+        ispan = 0
         for istream in range(1, self.nstream):
-            for ispan in range(0, 1):
-                z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan])
-                r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan])
-                self.z_grid_dual[istream, ispan] = z_mid_point
-                self.r_grid_dual[istream, ispan] = r_mid_point
+            z_mid_point = 0.5 * (self.z_grid[istream, ispan] + self.z_grid[istream - 1, ispan])
+            r_mid_point = 0.5 * (self.r_grid[istream, ispan] + self.r_grid[istream - 1, ispan])
+            self.z_grid_dual[istream, ispan] = z_mid_point
+            self.r_grid_dual[istream, ispan] = r_mid_point
 
         # ispan = -1 border
+        ispan = self.nspan
         for istream in range(1, self.nstream):
-            for ispan in range(self.nspan, self.nspan + 1):
-                z_mid_point = 0.5 * (self.z_grid[istream, ispan - 1] + self.z_grid[istream - 1, ispan - 1])
-                r_mid_point = 0.5 * (self.r_grid[istream, ispan - 1] + self.r_grid[istream - 1, ispan - 1])
-                self.z_grid_dual[istream, ispan] = z_mid_point
-                self.r_grid_dual[istream, ispan] = r_mid_point
+            z_mid_point = 0.5 * (self.z_grid[istream, ispan - 1] + self.z_grid[istream - 1, ispan - 1])
+            r_mid_point = 0.5 * (self.r_grid[istream, ispan - 1] + self.r_grid[istream - 1, ispan - 1])
+            self.z_grid_dual[istream, ispan] = z_mid_point
+            self.r_grid_dual[istream, ispan] = r_mid_point
 
     def plot_full_grid(self, save_filename=None, primary_grid=True, primary_grid_points=False, secondary_grid=False,
                        secondary_grid_points=False, hub_shroud=False, outline=False, grid_centers=False, ticks=True,
@@ -555,20 +555,20 @@ class Block:
         border_r = []
 
         # append hub cordinates
-        border_z.append(self.z_grid[0:, 0])
-        border_r.append(self.r_grid[0:, 0])
+        border_z.append(self.z_grid[:, 0])
+        border_r.append(self.r_grid[:, 0])
 
         # append outlet cordinates
         border_z.append(self.z_grid[-1, 1:])
         border_r.append(self.r_grid[-1, 1:])
 
-        # append shroud cordinates
-        border_z.append(np.flip(self.z_grid[0:-2, -1]))
-        border_r.append(np.flip(self.r_grid[0:-2, -1]))
+        # append shroud cordinates (reversed, excluding outlet corner)
+        border_z.append(np.flip(self.z_grid[:-1, -1]))
+        border_r.append(np.flip(self.r_grid[:-1, -1]))
 
-        # append inlet cordinates
-        border_z.append(np.flip(self.z_grid[0, 1:]))
-        border_r.append(np.flip(self.r_grid[0, 1:]))
+        # append inlet cordinates (reversed, excluding shroud and hub corners)
+        border_z.append(np.flip(self.z_grid[0, 1:-1]))
+        border_r.append(np.flip(self.r_grid[0, 1:-1]))
 
         border_z = [item for sublist in border_z for item in sublist]
         border_r = [item for sublist in border_r for item in sublist]
@@ -610,7 +610,7 @@ class Block:
 
         mesh = {'x': self.X_mesh, 'y': self.Y_mesh, 'z': self.Z_mesh}
 
-        if filepath == None:
+        if filepath is None:
             filepath = 'mesh_%02i_%02i_%2i.pickle' % (self.nstream, self.nspan, self.X_mesh.shape[2])
         with open(filepath, 'wb') as f:
             pickle.dump(mesh, f)
@@ -625,3 +625,10 @@ class Block:
         self.bfmFields = {}
         for key in fields.keys():
             self.bfmFields[key] = fields[key]
+
+    def add_inference_info(self, inviscidForce, viscousForce):
+        """
+        Add the inferred body forces to the block.
+        """
+        self.inviscidForceInference = inviscidForce
+        self.viscousForceInference = viscousForce

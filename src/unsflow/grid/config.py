@@ -177,7 +177,7 @@ class Config:
     def is_splitter_blade_present(self, iblade):
         try:
             value = str(self.config_parser.get('BLADE RECONSTRUCTION', 'SPLITTER_BLADE_PRESENT'))
-            values = [str(val.strip()) for val in value.split(',')]
+            values = [val.strip().lower() in ['true', 'yes', '1'] for val in value.split(',')]
             return values[iblade]
         except:
             nBlades = self.get_blade_rows_number()
@@ -635,8 +635,8 @@ class Config:
         return vals
     
     def convert_blockage_to_normal(self):
-        res = self.config_parser.get('BLADE RECONSTRUCTION', 'CONVERT_BLOCKAGE_TO_NORMAL')
         try:
+            res = self.config_parser.get('BLADE RECONSTRUCTION', 'CONVERT_BLOCKAGE_TO_NORMAL')
             if res.lower() == 'true' or res.lower() == 'yes':
                 return True
             else:
