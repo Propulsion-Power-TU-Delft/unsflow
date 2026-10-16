@@ -311,51 +311,75 @@ def marble_postprocessing(folderpath, files, nstream, nspan):
     # first of all read the meridional grid
     zgrid = np.zeros((nstream, nspan))
     rgrid = np.zeros((nstream, nspan))
+    
     for iFile, file in enumerate(files):
         df = pd.read_csv(folderpath + '/' + file)
-        splineData = df.to_dict('list')
-        splineData = {key: np.array(value) for key, value in splineData.items()}
-        
-        x = splineData['Points_0']
-        y = splineData['Points_1']
-        z = splineData['Points_2']
-        r = np.sqrt(x ** 2 + y ** 2)
-        theta = np.arctan2(y, x)
-        stream_id, span_id = extract_grid_location(file)
-        
-        zgrid[stream_id, span_id] = np.mean(z)
-        rgrid[stream_id, span_id] = np.mean(r)
-        
+
+        # escape if that point was slightly out from the main geometry
+        if df.empty:
+            stream_id, span_id = extract_grid_location(file)
+            zgrid[stream_id, span_id] = -8.888
+            rgrid[stream_id, span_id] = -8.888
+
+        else:
+            splineData = df.to_dict('list')
+            splineData = {key: np.array(value) for key, value in splineData.items()}
+            x = splineData['Points_0']
+            y = splineData['Points_1']
+            z = splineData['Points_2']
+            r = np.sqrt(x ** 2 + y ** 2)
+            theta = np.arctan2(y, x)
+            stream_id, span_id = extract_grid_location(file)
+            zgrid[stream_id, span_id] = np.mean(z)
+            rgrid[stream_id, span_id] = np.mean(r)
+
+    # now compute additional data
     for iFile, file in enumerate(files):
         df = pd.read_csv(folderpath + '/' + file)
-        splineData = df.to_dict('list')
-        splineData = {key: np.array(value) for key, value in splineData.items()}
 
-        x = splineData['Points_0']
-        y = splineData['Points_1']
-        z = splineData['Points_2']
-        r = np.sqrt(x ** 2 + y ** 2)
-        theta = np.arctan2(y, x)
-        stream_id, span_id = extract_grid_location(file)
+        # escape if that point was slightly out from the main geometry
+        if df.empty:
+            splineData = {
+                key: np.array([-8.888])
+                for key in [
+                    'Axial_Coordinate',
+                    'Radial_Coordinate',
+                    'Velocity_Radial',
+                    'Velocity_Tangential',
+                    'Velocity_Tangential_Relative',
+                    'Velocity_Axial',
+                ]
+            }
+        else:
 
-        splineData['Axial_Coordinate'] = z
-        splineData['Radial_Coordinate'] = r
+            splineData = df.to_dict('list')
+            splineData = {key: np.array(value) for key, value in splineData.items()}
+
+            x = splineData['Points_0']
+            y = splineData['Points_1']
+            z = splineData['Points_2']
+            r = np.sqrt(x ** 2 + y ** 2)
+            theta = np.arctan2(y, x)
+            stream_id, span_id = extract_grid_location(file)
+
+            splineData['Axial_Coordinate'] = z
+            splineData['Radial_Coordinate'] = r
+                
+            splineData['Velocity_Radial'] = (
+                splineData['Velocity (m/s)_0']*np.cos(theta) + splineData['Velocity (m/s)_1']*np.sin(theta)
+                )
             
-        splineData['Velocity_Radial'] = (
-            splineData['Velocity (m/s)_0']*np.cos(theta) + splineData['Velocity (m/s)_1']*np.sin(theta)
-            )
-        
-        splineData['Velocity_Tangential'] = (
-            -splineData['Velocity (m/s)_0']*np.sin(theta) + splineData['Velocity (m/s)_1']*np.cos(theta)
-            )
-        
-        drag_speed_tangential = (
-            -splineData['Grid Velocity (m/s)_0']*np.sin(theta) + splineData['Grid Velocity (m/s)_1']*np.cos(theta)
-            )
-        
-        splineData['Velocity_Tangential_Relative'] = splineData['Velocity_Tangential'] - drag_speed_tangential
-        
-        splineData['Velocity_Axial'] = splineData['Velocity (m/s)_2']
+            splineData['Velocity_Tangential'] = (
+                -splineData['Velocity (m/s)_0']*np.sin(theta) + splineData['Velocity (m/s)_1']*np.cos(theta)
+                )
+            
+            drag_speed_tangential = (
+                -splineData['Grid Velocity (m/s)_0']*np.sin(theta) + splineData['Grid Velocity (m/s)_1']*np.cos(theta)
+                )
+            
+            splineData['Velocity_Tangential_Relative'] = splineData['Velocity_Tangential'] - drag_speed_tangential
+            
+            splineData['Velocity_Axial'] = splineData['Velocity (m/s)_2']
 
         if iFile == 0: # initialize the field_grids dictionary
             fields_rawAvg = {key: np.zeros((nstream, nspan)) for key in splineData.keys()}

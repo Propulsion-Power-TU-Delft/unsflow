@@ -384,7 +384,7 @@ class MultiBlock:
         plt.scatter(zportion, rportion, s=5, c='red')
         plt.xlabel(r'$z \ \mathrm{[m]}$')
         plt.ylabel(r'$r \ \mathrm{[m]}$')
-        plt.gca().set_aspect('equal')
+        # plt.gca().set_aspect('equal')
         plt.title('Exported meridional grid')
     
     
