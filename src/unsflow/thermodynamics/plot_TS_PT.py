@@ -176,9 +176,35 @@ def plot_thermo_diagrams(fluid, T_min, T_max, P_isobars, quantity, N=50):
     cbar.set_label(label)
 
     plot_saturation_dome(axs[0], sat_curve)
+
+    return fig, axs
+
+def include_polytropic_transformation(fig, axs, p1, T1, p2, T2, fluid, c='r'):
+    k = np.log(p2/p1)/np.log(T2/T1)
+    n = k/(k-1)
+    T = np.linspace(T1, T2, 100)
+    p = p1 * (T/T1)**(n/(n-1))
+    s = np.zeros_like(p)
+    for i in range(len(p)):
+        s[i] = PropsSI('S', 'P', p[i], 'T', T[i], fluid)
+
+    ms = 2
+    axs[0].plot(s, T, '-%s' %c)
+    axs[0].plot(s[0], T[0], 'o%s' %c, ms=ms)
+    axs[0].plot(s[-1], T[-1], 'x%s' %c, ms=ms)
+
+    axs[1].plot(p/1e5, T, '-%s' %c)
+    axs[1].plot(p[0]/1e5, T[0], 'o%s' %c, ms=ms)
+    axs[1].plot(p[-1]/1e5, T[-1], 'x%s' %c, ms=ms)
     
 
 
-plot_thermo_diagrams('R1233zd(E)', T_min=280, T_max=620, P_isobars=[1e5, 5e5, 15e5, 25e5, 30e5], quantity='fundamental_derivative', N=100)
-plot_thermo_diagrams('MM', T_min=350, T_max=620, P_isobars=[1e5, 5e5, 15e5, 18e5], quantity='gamma_pv', N=100)
+
+fig, axs = plot_thermo_diagrams('R1233zd(E)', T_min=280, T_max=620, P_isobars=[1e5, 5e5, 15e5, 25e5, 30e5], quantity='gamma_pv', N=100)
+p1, T1 = 5e5, 355
+p2, T2 = 20.04e5, 433
+include_polytropic_transformation(fig, axs, p1, T1, p2, T2, 'R1233zd(E)', 'k')
+
+# plot_thermo_diagrams('MM', T_min=350, T_max=620, P_isobars=[1e5, 5e5, 15e5, 18e5], quantity='gamma_pv', N=100)
+# plot_thermo_diagrams('CH4', T_min=100, T_max=250, P_isobars=[1e5, 5e5, 15e5, 40e5], quantity='gamma_pv', N=100)
 plt.show()
