@@ -19,16 +19,12 @@ r = np.array([0.216, 0.224, 0.232, 0.241, 0.249, 0.259, 0.269, 0.280])
 b = np.array([0.015, 0.014, 0.012, 0.011, 0.010, 0.010, 0.010, 0.010])
 alpha_inlet = 70
 M_inlet = 1.01
-nr = 100
+nr = 120
 nspan = 50
 
 def run_hecc_air():
     pic_dir = os.path.join(os.path.dirname(__file__), "pics")
     os.makedirs(pic_dir, exist_ok=True)
-
-    print("=" * 80)
-    print(" HECC VANELESS DIFFUSER OPERATION: AIR (M1 = 1.20, alpha1 = 75 deg)")
-    print("=" * 80)
 
     cfg = SenooConfig.from_dimensional(
         r1 = r[0],
@@ -41,7 +37,8 @@ def run_hecc_air():
         fluid='Air',
         compressible=True,
         nr=nr,
-        nspan=nspan
+        nspan=nspan,
+        solver_mode='map'
     )
 
     diffuser = SenooDiffuser(cfg)
