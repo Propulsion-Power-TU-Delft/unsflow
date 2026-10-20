@@ -203,7 +203,7 @@ def include_polytropic_transformation(fig, axs, p1, T1, p2, T2, fluid, c='r'):
 fig, axs = plot_thermo_diagrams('R1233zd(E)', T_min=280, T_max=620, P_isobars=[1e5, 5e5, 15e5, 25e5, 30e5], quantity='gamma_pv', N=100)
 p1, T1 = 5e5, 355
 p2, T2 = 20.04e5, 433
-include_polytropic_transformation(fig, axs, p1, T1, p2, T2, 'R1233zd(E)', 'k')
+include_polytropic_transformation(fig, axs, p1, T1, p2, T2, 'R1233zd(E)', 'r')
 
 # plot_thermo_diagrams('MM', T_min=350, T_max=620, P_isobars=[1e5, 5e5, 15e5, 18e5], quantity='gamma_pv', N=100)
 # plot_thermo_diagrams('CH4', T_min=100, T_max=250, P_isobars=[1e5, 5e5, 15e5, 40e5], quantity='gamma_pv', N=100)
